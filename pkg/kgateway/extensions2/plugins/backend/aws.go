@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -87,7 +88,7 @@ func (u *LambdaIr) Equals(other *LambdaIr) bool {
 func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	// defensive check; this should never happen with union types
 	if ir == nil {
-		return fmt.Errorf("aws ir is nil")
+		return errors.New("aws ir is nil")
 	}
 	switch {
 	case ir.lambdaIr != nil:
@@ -95,7 +96,7 @@ func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	case ir.ec2Ir != nil:
 		return processEc2(ir.ec2Ir, out)
 	default:
-		return fmt.Errorf("aws ir is empty")
+		return errors.New("aws ir is empty")
 	}
 }
 
@@ -104,7 +105,7 @@ func processLambda(ir *LambdaIr, out *envoyclusterv3.Cluster) error {
 		AllAddressesInSingleEndpoint: true, // follows logical dns semantics
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create dns cluster config: %v", err)
+		return fmt.Errorf("failed to create dns cluster config: %w", err)
 	}
 	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
 		ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
@@ -148,7 +149,7 @@ func processLambda(ir *LambdaIr, out *envoyclusterv3.Cluster) error {
 			},
 		})
 	}); err != nil {
-		return fmt.Errorf("failed to mutate http options: %v", err)
+		return fmt.Errorf("failed to mutate http options: %w", err)
 	}
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, ir.lambdaEndpoint.hostname, ir.lambdaEndpoint.port)
@@ -177,7 +178,7 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 		}
 		derived, err := deriveStaticSecret(secret)
 		if err != nil {
-			return nil, fmt.Errorf("failed to derive static secret: %v", err)
+			return nil, fmt.Errorf("failed to derive static secret: %w", err)
 		}
 		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
 			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
@@ -188,10 +189,17 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 		}
 
 	case kgateway.AwsAuthTypeAssumeRole:
-		// handle STS role chaining. The base credentials that sign the AssumeRole request are
-		// left unset so Envoy resolves them from the default provider chain (e.g. the gateway
-		// ServiceAccount's IRSA identity). The temporary credentials returned by STS are then
-		// used to sign requests to the backend.
+		// handle STS role chaining. The assume-role provider's nested credential_provider is
+		// left unset: Envoy then builds an inner *default* provider chain (environment,
+		// credentials file, container, instance profile, web identity) to sign the AssumeRole
+		// request, so the gateway's ambient identity (e.g. the ServiceAccount's IRSA or EKS Pod
+		// Identity credentials) is used. The temporary credentials returned by STS are then used
+		// to sign requests to the backend.
+		//
+		// Envoy < v1.39.0 never subscribes that inner chain to its async providers
+		// (envoyproxy/envoy#45643), so when the base credentials come from an async source such
+		// as IRSA the AssumeRole call is never issued and every request hangs. The Envoy image
+		// pinned in the Makefile must therefore be >= v1.39.0 for this auth type to work.
 		if auth.AssumeRole == nil {
 			return nil, fmt.Errorf("assumeRole is required for %q auth", kgateway.AwsAuthTypeAssumeRole)
 		}
@@ -199,6 +207,9 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 			AssumeRoleCredentialProvider: &envoy_aws_common_v3.AssumeRoleCredentialProvider{
 				RoleArn: auth.AssumeRole.RoleArn,
 			},
+			// Without a custom chain, Envoy treats this message as a set of modifiers to the
+			// default provider chain, which does not accept an assume-role provider
+			CustomCredentialProviderChain: true,
 		}
 
 	default:
@@ -231,6 +242,7 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 func buildLambdaFilters(
 	arn string,
 	region string,
+	hostRewrite string,
 	auth *kgateway.AwsAuth,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
@@ -244,27 +256,29 @@ func buildLambdaFilters(
 		payloadPassthrough = false
 	}
 
+	// Use the Lambda endpoint authority instead of the client authority or a route-level rewrite.
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
 		Arn:                arn,
 		InvocationMode:     invokeMode,
 		PayloadPassthrough: payloadPassthrough,
+		HostRewrite:        hostRewrite,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create lambda config: %v", err)
+		return nil, fmt.Errorf("failed to create lambda config: %w", err)
 	}
 
 	awsRequestSigning, err := configureAWSAuth(auth, secret, region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
+		return nil, fmt.Errorf("failed to create aws request signing config: %w", err)
 	}
 	awsRequestSigningAny, err := utils.MessageToAny(awsRequestSigning)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
+		return nil, fmt.Errorf("failed to create aws request signing config: %w", err)
 	}
 
 	codecConfigAny, err := utils.MessageToAny(&envoy_upstream_codec.UpstreamCodec{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create upstream codec config: %v", err)
+		return nil, fmt.Errorf("failed to create upstream codec config: %w", err)
 	}
 
 	return &lambdaFilters{
@@ -312,7 +326,7 @@ func buildLambdaARN(in *kgateway.AwsBackend, region string) (string, error) {
 	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, getLambdaAccountID(in), in.Lambda.FunctionName, qualifier)
 	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse lambda arn: %v", err)
+		return "", fmt.Errorf("failed to parse lambda arn: %w", err)
 	}
 	return parsedARN.String(), nil
 }
@@ -322,6 +336,19 @@ type lambdaEndpointConfig struct {
 	hostname string
 	port     uint32
 	useTLS   bool
+}
+
+// authority returns the HTTP authority, omitting only the scheme's default port.
+func (u *lambdaEndpointConfig) authority() string {
+	host := u.hostname
+	if strings.Contains(host, ":") {
+		// url.Hostname() strips the brackets an IPv6 authority needs.
+		host = "[" + host + "]"
+	}
+	if (u.useTLS && u.port == 443) || (!u.useTLS && u.port == 80) {
+		return host
+	}
+	return host + ":" + strconv.FormatUint(uint64(u.port), 10)
 }
 
 // Equals checks if two lambdaEndpointConfig objects are equal.
@@ -345,14 +372,14 @@ func configureLambdaEndpoint(in *kgateway.AwsBackend) (*lambdaEndpointConfig, er
 	inUrl := *in.Lambda.EndpointURL
 	parsedURL, err := url.Parse(inUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
+		return nil, fmt.Errorf("failed to parse endpoint URL: %w", err)
 	}
 	config.useTLS = parsedURL.Scheme == "https"
 	config.hostname = parsedURL.Hostname()
 
 	port, err := strconv.ParseUint(parsedURL.Port(), 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse port: %v", err)
+		return nil, fmt.Errorf("failed to parse port: %w", err)
 	}
 	config.port = uint32(port)
 
@@ -366,23 +393,49 @@ type staticSecretDerivation struct {
 }
 
 // deriveStaticSecret derives the static secret from the given secret.
+//
+// Envoy's InlineCredentialProvider requires access_key_id and secret_access_key
+// to be non-empty (min_len: 1) and imposes no such constraint on session_token.
+// Enforcing the same rules here keeps a malformed Secret from producing a
+// cluster that Envoy rejects, which in the default validation mode discards the
+// entire CDS response. Returned errors name the Secret data key at fault and
+// never include the secret values themselves.
 func deriveStaticSecret(awsSecrets *ir.Secret) (*staticSecretDerivation, error) {
-	var errs []error
-	// validate that the secret has field in string format and has an access_key and secret_key
-	if awsSecrets.Data[wellknown.AccessKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.AccessKey]) {
-		// err is nil here but this is still safe
-		errs = append(errs, errors.New("access_key is not a valid string"))
+	errs := []error{
+		validateSecretDataKey(awsSecrets.Data, wellknown.AccessKey, true),
+		validateSecretDataKey(awsSecrets.Data, wellknown.SecretKey, true),
+		validateSecretDataKey(awsSecrets.Data, wellknown.SessionToken, false),
 	}
-	if awsSecrets.Data[wellknown.SecretKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.SecretKey]) {
-		errs = append(errs, errors.New("secret_key is not a valid string"))
-	}
-	// Session key is optional, but if it is present, it must be a valid string.
-	if awsSecrets.Data[wellknown.SessionToken] != nil && !utf8.Valid(awsSecrets.Data[wellknown.SessionToken]) {
-		errs = append(errs, errors.New("session_key is not a valid string"))
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
 	}
 	return &staticSecretDerivation{
 		access:  string(awsSecrets.Data[wellknown.AccessKey]),
 		session: string(awsSecrets.Data[wellknown.SessionToken]),
 		secret:  string(awsSecrets.Data[wellknown.SecretKey]),
-	}, errors.Join(errs...)
+	}, nil
+}
+
+// validateSecretDataKey checks the value stored under key in a Secret's data.
+// A required key must be present, non-empty and valid UTF-8; an optional key
+// may be absent or empty but must be valid UTF-8 when set.
+func validateSecretDataKey(data map[string][]byte, key string, required bool) error {
+	value, ok := data[key]
+	if !ok || len(value) == 0 {
+		if required {
+			return fmt.Errorf("secret data key %q is missing or empty", key)
+		}
+		return nil
+	}
+	if !utf8.Valid(value) {
+		return fmt.Errorf("secret data key %q is not a valid UTF-8 string", key)
+	}
+	// Envoy only checks that the credential is non-empty, so a padded or
+	// whitespace-only value is signed as-is and AWS answers with a 403 that does
+	// not point back at the Secret. Reject it here instead of trimming so the
+	// broken Secret gets fixed rather than silently masked.
+	if strings.TrimSpace(string(value)) != string(value) {
+		return fmt.Errorf("secret data key %q has leading or trailing whitespace", key)
+	}
+	return nil
 }

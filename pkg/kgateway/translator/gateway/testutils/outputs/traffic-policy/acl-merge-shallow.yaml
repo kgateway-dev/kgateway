@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_test_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -43,7 +41,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   metadata:
@@ -69,6 +67,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"defaultAction":"deny","rules":[{"cidrs":["192.168.0.0/16"],"action":"allow"}]}'
       filterName: http-acl
+      perRouteConfigName: http-acl
   virtualHosts:
   - domains:
     - test.com
@@ -94,6 +93,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"cidrs":["10.10.0.0/16"],"action":"deny"}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
@@ -162,6 +162,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

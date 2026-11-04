@@ -35,6 +35,9 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 1. Transform the configuration using the Kubernetes Downward API
 	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
+		// The "initializer failed" prefix is asserted by the envoy-wrapper
+		// container-structure test (test/container-structure/envoy-wrapper.yaml)
+		// as proof the binary loads and runs; update that test if this changes.
 		log.Fatalf("initializer failed: %v", err)
 	}
 

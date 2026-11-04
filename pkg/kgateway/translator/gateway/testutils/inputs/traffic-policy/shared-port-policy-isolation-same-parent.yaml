@@ -1,0 +1,92 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  # Two listeners on the SAME Gateway, sharing a port, with different
+  # hostnames -- the classic multi-tenant-single-Gateway pattern.
+  - name: wildcard-listener
+    protocol: HTTP
+    port: 9090
+    hostname: "*.example.com"
+  - name: specific-listener
+    protocol: HTTP
+    port: 9090
+    hostname: "specific.example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wildcard-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: wildcard-listener
+  hostnames:
+  - "specific.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: wildcard-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: specific-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: specific-listener
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: specific-svc
+      port: 8080
+---
+# Listener-scoped TrafficPolicy, targeting only specific-listener via sectionName.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: specific-listener-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: specific-listener
+  cors:
+    allowOrigins:
+    - "https://team-b-only.example.com"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wildcard-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: specific-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test

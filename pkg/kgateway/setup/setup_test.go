@@ -2,6 +2,7 @@ package setup_test
 
 import (
 	"bytes"
+	stdcmp "cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -46,6 +46,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
@@ -146,23 +147,6 @@ func TestTrafficDistribution(t *testing.T) {
 	runScenario(t, "testdata/traffic_distribution", st)
 }
 
-func TestWithStandardSettings(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/standard", st)
-}
-
-func TestWithExperimentalFeaturesSettings(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	st.EnableExperimentalGatewayAPIFeatures = true
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/experimental", st)
-}
-
 func TestWithIstioAutomtlsSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
@@ -173,32 +157,25 @@ func TestWithIstioAutomtlsSettings(t *testing.T) {
 	runScenario(t, "testdata/istio_mtls", st)
 }
 
-func TestWithBindIpv6(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	st.ListenerBindIpv6 = true
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/listenerbind/v6", st)
-}
-
-func TestWithBindIpv4(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	st.ListenerBindIpv6 = false
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/listenerbind/v4", st)
-}
-
-func TestWithAutoDns(t *testing.T) {
+// TestWithStandardSettings keeps two scenarios on the real control plane after the bulk
+// of testdata/standard moved to TestSetupScenarios in the gateway translator package.
+// Do not migrate these two; the translator harness cannot reproduce either:
+//
+//   - happypath is the ADS canary. It is the only remaining plain-Envoy scenario whose
+//     xDS comes off a live stream, so it covers snapshotPerClient's snapshot assembly,
+//     the local-cluster EDS subscription (omitting that cluster name withholds the whole
+//     EDS response, backend endpoints included), and dump stability - testScenario
+//     requires two identical dumps via retry.Converge(2).
+//   - extauth-gw-and-route-disable serves its HTTPRoute as v1beta1. kgateway watches
+//     only v1, so translating it at all depends on the API server's conversion; the fake
+//     client in the translator harness drops the route and the gateway reports
+//     attachedRoutes: 0.
+func TestWithStandardSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	st.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
-
-	runScenario(t, "testdata/autodns", st)
+	runScenario(t, "testdata/standard", st)
 }
 
 func TestPolicyUpdate(t *testing.T) {
@@ -277,9 +254,9 @@ spec:
 		t.Cleanup(dumper.Close)
 		t.Cleanup(func() {
 			if t.Failed() {
-				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 			}
 		})
 
@@ -357,9 +334,9 @@ spec:
 		time.Sleep(time.Second * 2)
 		t.Cleanup(func() {
 			if t.Failed() {
-				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 			}
 		})
 		initialDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
@@ -395,10 +372,10 @@ spec:
 				return fmt.Errorf("failed to get updated xDS dump: %w", err)
 			}
 			if len(updatedDump.Routes) == 0 {
-				return fmt.Errorf("no routes found in updated dump")
+				return errors.New("no routes found in updated dump")
 			}
 			if !hasWebsocketUpgradeConfig(updatedDump) {
-				return fmt.Errorf("expected websocket upgrade configuration after updating appProtocol, but found none")
+				return errors.New("expected websocket upgrade configuration after updating appProtocol, but found none")
 			}
 			t.Logf("SUCCESS: Found websocket upgrade configuration after updating appProtocol")
 			return nil
@@ -408,6 +385,9 @@ spec:
 	})
 }
 
+// runScenario runs golden-file scenarios that need a live control plane (istio integration).
+// Pure-translation scenarios live with the translator tests instead: see TestSetupScenarios
+// in pkg/kgateway/translator/gateway (inputs under testutils/inputs/setup).
 func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data
@@ -561,9 +541,9 @@ func testScenario(
 
 	t.Cleanup(func() {
 		if t.Failed() {
-			logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+			logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 		} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-			logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+			logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 		}
 	})
 
@@ -575,17 +555,17 @@ func testScenario(
 			return err
 		}
 		if len(dump.Listeners) == 0 {
-			return fmt.Errorf("timed out waiting for listeners")
+			return errors.New("timed out waiting for listeners")
 		}
 		if write {
 			t.Logf("writing out file")
 			// serialize xdsDump to yaml
 			d, err := dump.ToYaml()
 			if err != nil {
-				return fmt.Errorf("failed to serialize xdsDump: %v", err)
+				return fmt.Errorf("failed to serialize xdsDump: %w", err)
 			}
 			os.WriteFile(fout, d, 0o600)
-			return fmt.Errorf("wrote out file - nothing to test")
+			return errors.New("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)
 	}, retry.Converge(2), retry.Timeout(10*time.Second))
@@ -644,7 +624,7 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		conn: conn,
 		// Build the local cluster name with the exact same helper the control plane uses, so the
 		// dumper subscribes to the resource that actually exists in the snapshot.
-		localClusterName: proxy_syncer.LocalClusterName(gwname, gwNamespace),
+		localClusterName: ir.LocalClusterName(gwname, gwNamespace),
 		dr: &envoy_service_discovery_v3.DiscoveryRequest{
 			Node: &envoycorev3.Node{
 				Id: "gateway." + gwNamespace,
@@ -689,14 +669,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		for i := 0; i < sent; i++ {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %w", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.cluster.v3.Cluster" {
 				for _, anyCluster := range dresp.GetResources() {
 					var cluster envoyclusterv3.Cluster
 					if err := anyCluster.UnmarshalTo(&cluster); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %w", err))
 					}
 					clusters = append(clusters, &cluster)
 				}
@@ -705,10 +685,13 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 				for _, anyListener := range dresp.GetResources() {
 					var listener envoylistenerv3.Listener
 					if err := anyListener.UnmarshalTo(&listener); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %w", err))
 					}
 					listeners = append(listeners, &listener)
-					needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
+					// Tunnel listeners have no routes to wait for.
+					if listener.GetAddress().GetPipe() == nil {
+						needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
+					}
 				}
 				if len(listeners) == 0 {
 					needMoreListerners = true
@@ -732,11 +715,11 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		errs = errors.Join(errs, fmt.Errorf("timed out waiting for listener/cluster xds dump"))
+		errs = errors.Join(errs, errors.New("timed out waiting for listener/cluster xds dump"))
 		return xdsDump{}, errs
 	}
 	if len(listeners) == 0 {
-		errs = errors.Join(errs, fmt.Errorf("no listeners found"))
+		errs = errors.Join(errs, errors.New("no listeners found"))
 		return xdsDump{}, errs
 	}
 	t.Logf("xds: found %d listeners and %d clusters", len(listeners), len(clusters))
@@ -786,14 +769,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		for range 2 {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %w", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.route.v3.RouteConfiguration" {
 				for _, anyRoute := range dresp.GetResources() {
 					var route envoyroutev3.RouteConfiguration
 					if err := anyRoute.UnmarshalTo(&route); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %w", err))
 					}
 					routes = append(routes, &route)
 				}
@@ -801,7 +784,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 				for _, anyCla := range dresp.GetResources() {
 					var cla envoyendpointv3.ClusterLoadAssignment
 					if err := anyCla.UnmarshalTo(&cla); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %w", err))
 					}
 					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them.
 					// also skip the per-gateway local cluster: it's requested only to satisfy the ADS
@@ -818,7 +801,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		errs = errors.Join(errs, fmt.Errorf("timed out waiting for routes/cla xds dump"))
+		errs = errors.Join(errs, errors.New("timed out waiting for routes/cla xds dump"))
 		return xdsDump{}, errs
 	}
 
@@ -930,7 +913,7 @@ func (x *xdsDump) Compare(other xdsDump) error {
 func compareCla(c, otherc *envoyendpointv3.ClusterLoadAssignment) error {
 	if (c == nil) != (otherc == nil) {
 		if c == nil {
-			return fmt.Errorf("cluster is nil")
+			return errors.New("cluster is nil")
 		}
 		return fmt.Errorf("ep %v not found", c.ClusterName)
 	}
@@ -1041,8 +1024,8 @@ func anyJsonRoundTrip[T any, PT interface {
 func sortResource[T fmt.Stringer](resources []T) []T {
 	// clone the slice
 	resources = append([]T(nil), resources...)
-	sort.Slice(resources, func(i, j int) bool {
-		return resources[i].String() < resources[j].String()
+	slices.SortFunc(resources, func(a, b T) int {
+		return stdcmp.Compare(a.String(), b.String())
 	})
 	return resources
 }
@@ -1053,21 +1036,21 @@ func sortResource[T fmt.Stringer](resources []T) []T {
 // output. The comparison logic (equalset) is order-independent, so this only
 // affects serialization, not correctness.
 func sortLocalityLbEndpoints(eps []*envoyendpointv3.LocalityLbEndpoints) {
-	sort.SliceStable(eps, func(i, j int) bool {
-		li, lj := eps[i].GetLocality(), eps[j].GetLocality()
-		if li.GetRegion() != lj.GetRegion() {
-			return li.GetRegion() < lj.GetRegion()
+	slices.SortStableFunc(eps, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
+		la, lb := a.GetLocality(), b.GetLocality()
+		if la.GetRegion() != lb.GetRegion() {
+			return stdcmp.Compare(la.GetRegion(), lb.GetRegion())
 		}
-		if li.GetZone() != lj.GetZone() {
-			return li.GetZone() < lj.GetZone()
+		if la.GetZone() != lb.GetZone() {
+			return stdcmp.Compare(la.GetZone(), lb.GetZone())
 		}
-		if li.GetSubZone() != lj.GetSubZone() {
-			return li.GetSubZone() < lj.GetSubZone()
+		if la.GetSubZone() != lb.GetSubZone() {
+			return stdcmp.Compare(la.GetSubZone(), lb.GetSubZone())
 		}
-		if eps[i].GetPriority() != eps[j].GetPriority() {
-			return eps[i].GetPriority() < eps[j].GetPriority()
+		if a.GetPriority() != b.GetPriority() {
+			return stdcmp.Compare(a.GetPriority(), b.GetPriority())
 		}
-		return localityLbEndpointAddrs(eps[i]) < localityLbEndpointAddrs(eps[j])
+		return stdcmp.Compare(localityLbEndpointAddrs(a), localityLbEndpointAddrs(b))
 	})
 }
 
@@ -1078,7 +1061,7 @@ func localityLbEndpointAddrs(e *envoyendpointv3.LocalityLbEndpoints) string {
 	for _, lb := range e.GetLbEndpoints() {
 		addrs = append(addrs, lb.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
 	}
-	sort.Strings(addrs)
+	slices.Sort(addrs)
 	return strings.Join(addrs, ",")
 }
 

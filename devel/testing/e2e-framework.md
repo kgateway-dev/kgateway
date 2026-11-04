@@ -187,7 +187,7 @@ The convention for a new feature is:
 2. Write YAML manifests to `features/my_feature/testdata/`.
 3. Define Go type references (if needed) in `features/my_feature/types.go`.
 4. Implement the suite in `features/my_feature/suite.go`.
-5. Register the suite in the appropriate `tests/*_tests.go` file.
+5. Register the suite in the `SuiteRunner()` function of the appropriate `tests/<test>/` sub-package (e.g. `tests/kgateway/suite_runner.go`).
 
 ---
 

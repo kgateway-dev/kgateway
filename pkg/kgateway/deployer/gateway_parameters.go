@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
@@ -21,9 +19,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 var (
+	logger = logging.New("gateway-deployer")
+
 	// ErrNoValidPorts is returned when no valid ports are found for the Gateway
 	ErrNoValidPorts = errors.New("no valid ports")
 
@@ -36,10 +37,7 @@ func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *Gatewa
 		inputs: inputs,
 	}
 
-	// Only create the kgateway parameters client if Envoy is enabled
-	if inputs.CommonCollections.Settings.EnableEnvoy {
-		gp.kgwParameters = newkgatewayParameters(cli, inputs)
-	}
+	gp.kgwParameters = newkgatewayParameters(cli, inputs)
 
 	return gp
 }
@@ -61,13 +59,10 @@ func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.
 	return gp
 }
 
-// GetGatewayParametersClient returns the GatewayParameters client if Envoy is enabled, nil otherwise.
+// GetGatewayParametersClient returns the GatewayParameters client.
 // This allows the reconciler to reuse the same client for watching changes.
 func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
-	if gp.kgwParameters != nil {
-		return gp.kgwParameters.gwParamClient
-	}
-	return nil
+	return gp.kgwParameters.gwParamClient
 }
 
 func LoadEnvoyChart() (*chart.Chart, error) {
@@ -88,11 +83,7 @@ func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
 		return gp.helmValuesGeneratorOverride.GetCacheSyncHandlers()
 	}
 
-	var handlers []cache.InformerSynced
-	if gp.kgwParameters != nil {
-		handlers = append(handlers, gp.kgwParameters.GetCacheSyncHandlers()...)
-	}
-	return handlers
+	return gp.kgwParameters.GetCacheSyncHandlers()
 }
 
 // PostProcessObjects implements deployer.ObjectPostProcessor.
@@ -152,7 +143,7 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 	}
 
 	if gp.helmValuesGeneratorOverride != nil {
-		slog.Debug("using override HelmValuesGenerator for Gateway",
+		logger.Debug("using override HelmValuesGenerator for Gateway",
 			"gateway_name", gw.GetName(),
 			"gateway_namespace", gw.GetNamespace(),
 		)
@@ -160,9 +151,9 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 	}
 
 	if gp.kgwParameters == nil {
-		return nil, fmt.Errorf("no parameter clients available")
+		return nil, errors.New("no parameter clients available")
 	}
-	slog.Debug("using default HelmValuesGenerator for Gateway",
+	logger.Debug("using default HelmValuesGenerator for Gateway",
 		"gateway_name", gw.GetName(),
 		"gateway_namespace", gw.GetNamespace(),
 	)
@@ -211,7 +202,7 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
 	// we'll check for the default GWP for the GatewayClass.
 	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
-		slog.Debug("no GatewayParameters found for Gateway, using default",
+		logger.Debug("no GatewayParameters found for Gateway, using default",
 			"gateway_name", gw.GetName(),
 			"gateway_namespace", gw.GetNamespace(),
 		)
@@ -293,7 +284,7 @@ func (k *kgatewayParameters) resolveGatewayClassParameters(gwc *gwv1.GatewayClas
 	gwpName := paramRef.Name
 	if gwpName == "" {
 		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
-		slog.Error("could not get gateway parameters for gateway class",
+		logger.Error("could not get gateway parameters for gateway class",
 			"error", err,
 			"gatewayClassName", gwc.GetName(),
 		)
@@ -362,10 +353,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			},
 		},
 	}
-	if i := gw.Spec.Infrastructure; i != nil {
-		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
-		gtw.GatewayLabels = translateInfraMeta(i.Labels)
-	}
+	deployer.SetInfrastructureMetadataFromGateway(gw, gtw)
 	// construct the default values
 	vals := &deployer.HelmConfig{
 		Gateway: gtw,
@@ -383,99 +371,15 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		return vals, nil
 	}
 
-	// The security contexts may need to be updated if privileged ports are used.
-	// This may affect both the PodSecurityContext and the SecurityContexts for the containers defined in gwParam
-	// Note: this call may populate the PodSecurityContext and SecurityContext fields in the gateway parameters if they are null,
-	// so this needs to happen before those kubeProxyConfig fields are extracted to local variables.
-	deployer.UpdateSecurityContexts(gwParam.Spec.Kube, vals.Gateway.Ports)
-
 	// extract all the custom values from the GatewayParameters
-	// (note: if we add new fields to GatewayParameters, they will
-	// need to be plumbed through here as well)
-
-	kubeProxyConfig := gwParam.Spec.Kube
-	deployConfig := kubeProxyConfig.GetDeployment()
-	podConfig := kubeProxyConfig.GetPodTemplate()
-	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
-	svcConfig := kubeProxyConfig.GetService()
-	svcAccountConfig := kubeProxyConfig.GetServiceAccount()
-	istioConfig := kubeProxyConfig.GetIstio()
-
-	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
-	statsConfig := kubeProxyConfig.GetStats()
-	istioContainerConfig := istioConfig.GetIstioProxyContainer()
-
-	gateway := vals.Gateway
-
-	// deployment values
-	if deployConfig.GetReplicas() != nil {
-		gateway.ReplicaCount = new(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	if err := deployer.ApplyKubernetesProxyConfigValues(vals.Gateway, gwParam.Spec.Kube, k.inputs.IstioAutoMtlsEnabled); err != nil {
+		return nil, err
 	}
-	gateway.Strategy = deployConfig.GetStrategy()
 
-	// service values
-	gateway.Service = deployer.GetServiceValues(svcConfig)
 	// Extract loadBalancerIP from Gateway.spec.addresses and set it on the service if service type is LoadBalancer
-	if err := deployer.SetLoadBalancerIPFromGateway(gw, gateway.Service); err != nil {
+	if err := deployer.SetLoadBalancerIPFromGateway(gw, vals.Gateway.Service); err != nil {
 		return nil, err
 	}
-	// serviceaccount values
-	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
-	// pod template values
-	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
-	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
-	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
-	gateway.PodSecurityContext = podConfig.GetSecurityContext()
-	gateway.NodeSelector = podConfig.GetNodeSelector()
-	gateway.Affinity = podConfig.GetAffinity()
-	gateway.Tolerations = podConfig.GetTolerations()
-	gateway.StartupProbe = podConfig.GetStartupProbe()
-	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
-	gateway.LivenessProbe = podConfig.GetLivenessProbe()
-	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
-	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
-	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
-	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
-	gateway.PriorityClassName = podConfig.GetPriorityClassName()
-
-	gateway.DataPlaneType = deployer.DataPlaneEnvoy
-	gateway.LogFormat = envoyContainerConfig.GetBootstrap().GetLogFormat()
-	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
-	gateway.LogLevel = logLevel
-	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-	compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
-	if err != nil {
-		return nil, err
-	}
-	gateway.ComponentLogLevel = &compLogLevelStr
-
-	// Extract DNS resolver configuration
-	dnsResolverConfig := envoyContainerConfig.GetBootstrap().GetDnsResolver()
-	if dnsResolverConfig != nil {
-		var udpMaxQueries *int32
-		if maybeMaxQ := ptr.Deref(dnsResolverConfig.GetUdpMaxQueries(), 0); maybeMaxQ > 0 {
-			udpMaxQueries = &maybeMaxQ
-		}
-		gateway.DnsResolver = &deployer.HelmDnsResolver{
-			UdpMaxQueries: udpMaxQueries,
-		}
-	}
-
-	gateway.EnableReadinessProbeProxyProtocol = envoyContainerConfig.GetBootstrap().GetEnableReadinessProbeProxyProtocol()
-
-	gateway.Resources = envoyContainerConfig.GetResources()
-	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
-	gateway.ExtraArgs = envoyContainerConfig.GetExtraArgs()
-	gateway.Env = envoyContainerConfig.GetEnv()
-	gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
-
-	// istio values
-	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
-	gateway.SdsContainer = deployer.GetSdsContainerValues(sdsContainerConfig)
-	gateway.IstioContainer = deployer.GetIstioContainerValues(istioContainerConfig)
-
-	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
 	return vals, nil
 }
@@ -543,15 +447,4 @@ func getGatewayClassFromGateway(cli kclient.Client[*gwv1.GatewayClass], gw *gwv1
 	}
 
 	return gwc, nil
-}
-
-func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
-	infra := make(map[string]string, len(meta))
-	for k, v := range meta {
-		if strings.HasPrefix(string(k), "gateway.networking.k8s.io/") {
-			continue // ignore this prefix to avoid conflicts
-		}
-		infra[string(k)] = string(v)
-	}
-	return infra
 }

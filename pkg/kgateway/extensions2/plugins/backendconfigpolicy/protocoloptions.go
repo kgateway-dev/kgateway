@@ -22,6 +22,9 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *kgateway.Comm
 	if commonHttpProtocolOptions.IdleTimeout != nil {
 		out.IdleTimeout = durationpb.New(commonHttpProtocolOptions.IdleTimeout.Duration)
 	}
+	if commonHttpProtocolOptions.MaxConnectionDuration != nil {
+		out.MaxConnectionDuration = durationpb.New(commonHttpProtocolOptions.MaxConnectionDuration.Duration)
+	}
 
 	if commonHttpProtocolOptions.MaxHeadersCount != nil {
 		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
@@ -75,6 +78,18 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.Http2ProtocolO
 	}
 	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
 		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
+	}
+	if http2ProtocolOptions.ConnectionKeepalive != nil {
+		keepalive := &envoycorev3.KeepaliveSettings{
+			Timeout: durationpb.New(http2ProtocolOptions.ConnectionKeepalive.Timeout.Duration),
+		}
+		if http2ProtocolOptions.ConnectionKeepalive.Interval != nil {
+			keepalive.Interval = durationpb.New(http2ProtocolOptions.ConnectionKeepalive.Interval.Duration)
+		}
+		if http2ProtocolOptions.ConnectionKeepalive.ConnectionIdleInterval != nil {
+			keepalive.ConnectionIdleInterval = durationpb.New(http2ProtocolOptions.ConnectionKeepalive.ConnectionIdleInterval.Duration)
+		}
+		out.ConnectionKeepalive = keepalive
 	}
 	return out
 }

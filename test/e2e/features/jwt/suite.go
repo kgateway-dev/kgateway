@@ -22,12 +22,14 @@ import (
 
 var (
 	// manifests
-	setupManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	jwtManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
-	jwtRbacManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
-	jwtHTTPRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
-	jwtDisableManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-disable.yaml")
-	jwtRemoteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-remote.yaml")
+	setupManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	jwtManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
+	jwtRbacManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
+	jwtHTTPRouteManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
+	jwtDisableManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-disable.yaml")
+	jwtRemoteManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-remote.yaml")
+	jwtRemoteAsyncManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-remote-async.yaml")
+	jwtAllowMissingOrFailedManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-allow-missing-or-failed.yaml")
 
 	// Matches
 	expectedJwtMissingFailedResponse = &matchers.HttpResponse{
@@ -47,6 +49,18 @@ var (
 	expectStatus200Success = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Body:       nil,
+	}
+
+	// httpbin's /get echoes the request headers it received back in the body, so the
+	// claim headers are how we tell a verified token from an unverified one.
+	expectClaimHeadersForwarded = &matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gomega.ContainSubstring("dev1@kgateway.io"),
+	}
+
+	expectNoClaimHeadersForwarded = &matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gomega.Not(gomega.ContainSubstring("X-Email")),
 	}
 
 	expectRbacDeniedWithJwt = &matchers.HttpResponse{
@@ -102,6 +116,12 @@ var (
 		},
 		"TestJwtAuthenticationRemote": {
 			Manifests: []string{jwtRemoteManifest},
+		},
+		"TestJwtAuthenticationRemoteAsync": {
+			Manifests: []string{jwtRemoteAsyncManifest},
+		},
+		"TestJwtAllowMissingOrFailed": {
+			Manifests: []string{jwtAllowMissingOrFailedManifest},
 		},
 	}
 )
@@ -205,6 +225,33 @@ func (s *testingSuite) TestJwtAuthenticationRemote() {
 	s.assertResponse("/get", jwtRemoteOrgOne, expectStatus200Success)
 }
 
+// TestJwtAuthenticationRemoteAsync tests the JWT Policy applied at the gateway using a remote JWKS
+// server configured with async fetch and a retry policy.
+func (s *testingSuite) TestJwtAuthenticationRemoteAsync() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-get",
+		"kgateway-base",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.T().Log("status route should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/status/200", expectedJwtMissingFailedResponse)
+
+	s.T().Log("status route should succeed when correct JWT is provided")
+	s.assertResponse("/status/200", jwtRemoteOrgOne, expectStatus200Success)
+
+	s.T().Log("The /get route has a JWT config applied, should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/get", expectedJwtMissingFailedResponse)
+
+	s.T().Log("The /get route has a JWT config applied, should fail when incorrect JWT is provided")
+	s.assertResponse("/get", badJwtToken, expectedJwtIssuerNotConfigured)
+
+	s.T().Log("The /get route has a JWT config applied, should succeed when correct JWT is provided")
+	s.assertResponse("/get", jwtRemoteOrgOne, expectStatus200Success)
+}
+
 // TestJwtDisable tests that JWT can be disabled at the route level
 func (s *testingSuite) TestJwtDisable() {
 	// Wait for both routes to be accepted
@@ -234,6 +281,27 @@ func (s *testingSuite) TestJwtDisable() {
 	// The /status/200 route has JWT disabled, should work without JWT
 	s.T().Log("The /status/200 route has JWT disabled, should work without JWT")
 	s.assertResponseWithoutAuth("/status/200", expectStatus200Success)
+}
+
+// TestJwtAllowMissingOrFailed tests that validationMode AllowMissingOrFailed never rejects a
+// request, while still verifying tokens that are present.
+func (s *testingSuite) TestJwtAllowMissingOrFailed() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-allow-missing-or-failed",
+		"kgateway-base",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.T().Log("AllowMissingOrFailed should allow a request with no JWT, and forward no claim headers")
+	s.assertResponseWithoutAuth("/get", expectNoClaimHeadersForwarded)
+
+	s.T().Log("AllowMissingOrFailed should allow a request with an invalid JWT, and forward no claim headers")
+	s.assertResponse("/get", badJwtToken, expectNoClaimHeadersForwarded)
+
+	s.T().Log("AllowMissingOrFailed should still verify a valid JWT and forward its claim headers")
+	s.assertResponse("/get", dev1JwtToken, expectClaimHeadersForwarded)
 }
 
 func (s *testingSuite) assertResponse(path, authHeader string, expected *matchers.HttpResponse) {

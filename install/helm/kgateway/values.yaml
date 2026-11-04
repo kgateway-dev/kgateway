@@ -10,6 +10,10 @@ nameOverride: ""
 # -- Override the full name of resources created by the Helm chart, which is 'kgateway'. If you set 'fullnameOverride: "foo", the full name of the resources that the Helm release creates become 'foo', such as the deployment, service, and service account for the kgateway control plane in the kgateway-system namespace.
 fullnameOverride: ""
 
+# -- Configure RBAC resources (ClusterRole and ClusterRoleBinding) for the deployment.
+rbac:
+  create: true
+
 # -- Configure the service account for the deployment.
 serviceAccount:
   # -- Specify whether a service account should be created.
@@ -80,6 +84,8 @@ controller:
   securityContext: null
   # -- Configure resource requests and limits for the controller container.
   resources: null
+  # -- Keep Go-runtime-managed memory at this percentage of the controller container's live cgroup memory limit. Memory used by Envoy subprocesses during strict validation is not covered by GOMEMLIMIT, so that configuration may require additional headroom. The cgroup limit is refreshed every 30 seconds to follow in-place container resizes. Valid values are 1-100. A value of 0 preserves the startup-time resourceFieldRef behavior, which uses the container memory limit when set and otherwise uses node allocatable memory. With a nonzero value and no finite cgroup limit, GOMEMLIMIT remains unconstrained and a warning is logged. 90 is the recommended starting point. A lower value such as 80 may be appropriate when significant memory is allocated outside the Go runtime or when additional OOM headroom is needed.
+  goMemLimitPercent: 0
   # -- Set node selector labels for controller pod scheduling.
   nodeSelector: null
   # -- Set tolerations for controller pod scheduling.
@@ -258,6 +264,9 @@ image:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
+# -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
+serviceEntriesExclusionLabelSelectors: []
+
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
@@ -288,6 +297,19 @@ waypoint:
 validation:
   # -- Validation level. Accepted values: "standard" or "strict" (case-insensitive).
   #    Standard replaces invalid routes with a direct 500 response and continues applying valid configuration.
-  #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
+  #    It does not run Envoy, so configuration that only Envoy can reject, such as an invalid RE2 regex in a
+  #    route matcher, is still sent; Envoy then NACKs the update and keeps its last accepted route configuration.
+  #    Strict also runs targeted Envoy validation, such as for routes, clusters, and security-related policies,
+  #    and replaces routes that fail with a direct 500 response. A rule with an invalid matcher, such as an invalid
+  #    RE2 regex, is dropped instead of replaced. This reduces the risk that Envoy NACKs the update,
+  #    but does not prevent all NACKs, because the complete generated configuration is not validated.
+  #    Strict mode does not keep a previous version of an invalid route.
   #    Default is "standard".
   level: standard
+
+# -- Enable attaching dev.kgateway.route_source filter metadata to every Envoy route.
+# This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
+# for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
+# Default is false (disabled).
+# Note: This feature is experimental and subject to breaking changes in future releases.
+enableRouteSourceMetadata: false

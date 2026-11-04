@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_foo-svc_8080
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -33,7 +31,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: default/ls-tls-options/https-ls
-        statPrefix: http
+        statPrefix: https_443_default_ls-tls-options_https-ls
         useRemoteAddress: true
     name: default/ls-tls-options/https-ls
     transportSocket:
@@ -56,6 +54,9 @@ Listeners:
             - X25519MLKEM768
             - X25519
             - P-256
+            signatureAlgorithms:
+            - ed25519
+            - ecdsa_secp256r1_sha256
             tlsMaximumProtocolVersion: TLSv1_3
             tlsMinimumProtocolVersion: TLSv1_2
           validationContext:
@@ -83,7 +84,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -167,6 +168,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io

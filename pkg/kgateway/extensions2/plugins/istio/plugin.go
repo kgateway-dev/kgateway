@@ -69,6 +69,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Name:           "istio",
 				ProcessBackend: p.processBackend,
 				GlobalPolicies: func(_ krt.HandlerContext) ir.PolicyIR {
+					// With auto-mTLS off the policy is a no-op, and attaching it gives every listener and route a policy map.
+					if !istioSettings.EnableAutoMtls {
+						return nil
+					}
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings
 				},
@@ -202,7 +206,7 @@ func createDefaultIstioMatch() *envoyclusterv3.Cluster_TransportSocketMatch {
 	}
 
 	return &envoyclusterv3.Cluster_TransportSocketMatch{
-		Name:            fmt.Sprintf("%s-disabled", ourwellknown.TLSModeLabelShortname),
+		Name:            ourwellknown.TLSModeLabelShortname + "-disabled",
 		Match:           &structpb.Struct{},
 		TransportSocket: rawBufferTransportSocket,
 	}

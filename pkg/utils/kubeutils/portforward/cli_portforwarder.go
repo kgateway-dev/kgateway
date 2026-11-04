@@ -3,6 +3,7 @@ package portforward
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -150,7 +151,7 @@ func getFreePort() (int, error) {
 	defer l.Close()
 	tcpAddr, ok := l.Addr().(*net.TCPAddr)
 	if !ok {
-		return 0, fmt.Errorf("Error occurred looking for an open tcp port")
+		return 0, errors.New("Error occurred looking for an open tcp port")
 	}
 	return tcpAddr.Port, nil
 }

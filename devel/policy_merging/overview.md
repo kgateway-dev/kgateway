@@ -23,7 +23,6 @@ Today, the generic framework in [`pkg/pluginsdk/policy/merge.go`](/pkg/pluginsdk
 
 - `TrafficPolicy`
 - `ListenerPolicy`
-- `HTTPListenerPolicy`
 
 Notable non-users:
 
@@ -139,7 +138,7 @@ Because merging always starts with an empty PolicyIr and merge existing policies
 Today it is wired only into the `TrafficPolicy` plugin:
 
 - controller settings -> plugin registry -> `trafficpolicy.NewPlugin(..., globalSettings.PolicyMerge, ...)`
-- `ListenerPolicy` and `HTTPListenerPolicy` ignore it
+- `ListenerPolicy` ignores it
 - cross-hierarchy merge ignores it because the generic framework only passes settings during the same-hierarchy pass
 
 Current supported `TrafficPolicy` keys are:

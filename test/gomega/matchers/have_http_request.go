@@ -278,7 +278,7 @@ func (matcher *HaveHTTPRequestBodyMatcher) FailureMessage(actual any) (message s
 	case types.GomegaMatcher:
 		return e.FailureMessage(body)
 	default:
-		return fmt.Sprintf("HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n%s", format.Object(matcher.Expected, 1))
+		return "HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n" + format.Object(matcher.Expected, 1)
 	}
 }
 
@@ -296,7 +296,7 @@ func (matcher *HaveHTTPRequestBodyMatcher) NegatedFailureMessage(actual any) (me
 	case types.GomegaMatcher:
 		return e.NegatedFailureMessage(body)
 	default:
-		return fmt.Sprintf("HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n%s", format.Object(matcher.Expected, 1))
+		return "HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n" + format.Object(matcher.Expected, 1)
 	}
 }
 

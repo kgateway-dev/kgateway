@@ -10,6 +10,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+// From identifies the resource that holds a cross-namespace reference, for the
+// purpose of evaluating ReferenceGrants against it. GroupKind is the identity a
+// ReferenceGrant has to name in from.group and from.kind to permit the reference.
 type From struct {
 	schema.GroupKind
 	Namespace string
@@ -91,8 +94,9 @@ func (s *SecretIndex) GetSecretWithoutRefGrant(kctx krt.HandlerContext, secretNa
 // GetSecretsBySelector retrieves secrets matching the label selector,
 // validating reference grants to ensure the source (from) object is allowed to reference each secret.
 // Processes all matching secrets, skipping those without required ReferenceGrants.
-// Returns all accessible secrets. Only returns an error if no accessible secrets were found and some matching secrets
-// were skipped due to missing ReferenceGrants (indicating a possible configuration issue).
+// Returns all accessible secrets, and no error when there are none: a match skipped for a missing
+// ReferenceGrant must be indistinguishable from no match at all, or a referrer could probe label
+// values to learn that a secret exists in a namespace that never granted it access.
 func (s *SecretIndex) GetSecretsBySelector(
 	kctx krt.HandlerContext,
 	from From,
@@ -129,7 +133,6 @@ func (s *SecretIndex) GetSecretsBySelector(
 
 	// Validate ReferenceGrant for cross-namespace secrets and collect allowed ones
 	var allowedSecrets []ir.Secret
-	var hasMissingGrants bool
 	for _, secret := range labelMatchedSecrets {
 		// Only check ReferenceGrant if this is a cross-namespace reference
 		if from.Namespace != secret.Namespace {
@@ -140,18 +143,10 @@ func (s *SecretIndex) GetSecretsBySelector(
 				Name:      secret.Name,
 			}
 			if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
-				hasMissingGrants = true
 				continue
 			}
 		}
 		allowedSecrets = append(allowedSecrets, secret)
-	}
-
-	// Only return an error if no allowed secrets were found and there were missing grants.
-	// We don't want to list all the secrets that were skipped. We only want to hint
-	// the user that it might be a configuration issue.
-	if len(allowedSecrets) == 0 && hasMissingGrants {
-		return allowedSecrets, ErrMissingReferenceGrant
 	}
 
 	return allowedSecrets, nil

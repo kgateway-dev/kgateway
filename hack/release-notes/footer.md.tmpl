@@ -1,0 +1,28 @@
+## Installation
+
+The kgateway project is available as a Helm chart and docker images.
+
+### Helm Charts
+
+The Helm charts are available at:
+
+- oci://${VANITY_REGISTRY}/charts/kgateway
+- oci://${VANITY_REGISTRY}/charts/kgateway-crds
+
+### Docker Images
+
+The docker images are available at:
+
+- ${VANITY_REGISTRY}/kgateway:${VERSION}
+- ${VANITY_REGISTRY}/sds:${VERSION}
+- ${VANITY_REGISTRY}/envoy-wrapper:${VERSION}
+
+## Quickstart
+
+Try installing this release:
+```
+helm install kgateway-crds oci://${VANITY_REGISTRY}/charts/kgateway-crds --version ${VERSION} --namespace kgateway-system --create-namespace
+helm install kgateway oci://${VANITY_REGISTRY}/charts/kgateway --version ${VERSION} --namespace kgateway-system --create-namespace
+```
+
+For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).

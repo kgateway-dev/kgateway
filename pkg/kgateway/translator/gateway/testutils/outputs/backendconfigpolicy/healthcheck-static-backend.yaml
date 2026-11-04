@@ -25,8 +25,6 @@ Clusters:
           healthCheckConfig: {}
           hostname: internal-my-internal-loadbalancer-1998974615.ap-south-1.elb.amazonaws.com
   name: backend_default_static-dns-backend_0
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -49,7 +47,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -68,6 +66,14 @@ Routes:
         cluster: backend_default_static-dns-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
+  backends:
+    default/static-dns-backend:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:
@@ -129,6 +135,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

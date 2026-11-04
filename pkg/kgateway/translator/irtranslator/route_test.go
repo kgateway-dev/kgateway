@@ -1,16 +1,41 @@
 package irtranslator
 
 import (
+	"context"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
+
+type routeMockValidator struct {
+	validateFunc func(context.Context, *envoybootstrapv3.Bootstrap) error
+}
+
+var _ validator.Validator = &routeMockValidator{}
+
+func (m *routeMockValidator) Validate(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+	if m.validateFunc != nil {
+		return m.validateFunc(ctx, config)
+	}
+	return nil
+}
 
 func TestValidateWeightedClusters(t *testing.T) {
 	tests := []struct {
@@ -148,6 +173,453 @@ func TestSetEnvoyPathMatcher_PathPrefix(t *testing.T) {
 	}
 }
 
+func TestTranslateConnectMatcher(t *testing.T) {
+	connectMethod := gwv1.HTTPMethodConnect
+	pathPrefix := gwv1.PathMatchPathPrefix
+	pathExact := gwv1.PathMatchExact
+
+	tests := []struct {
+		name               string
+		path               *gwv1.HTTPPathMatch
+		wantConnectMatcher bool
+		wantPath           string
+		wantExactPath      bool
+		wantMethodHeader   bool
+	}{
+		{
+			name:               "omitted path uses connect matcher",
+			wantConnectMatcher: true,
+		},
+		{
+			name: "default root prefix uses connect matcher",
+			path: &gwv1.HTTPPathMatch{
+				Type:  &pathPrefix,
+				Value: new("/"),
+			},
+			wantConnectMatcher: true,
+		},
+		{
+			name: "specific prefix preserves path matcher",
+			path: &gwv1.HTTPPathMatch{
+				Type:  &pathPrefix,
+				Value: new("/tunnel"),
+			},
+			wantPath:         "/tunnel",
+			wantMethodHeader: true,
+		},
+		{
+			name: "exact root preserves path matcher",
+			path: &gwv1.HTTPPathMatch{
+				Type:  &pathExact,
+				Value: new("/"),
+			},
+			wantPath:         "/",
+			wantExactPath:    true,
+			wantMethodHeader: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			match := translateMatcher(gwv1.HTTPRouteMatch{
+				Path:   tt.path,
+				Method: &connectMethod,
+			})
+
+			if tt.wantConnectMatcher {
+				assert.NotNil(t, match.GetConnectMatcher())
+				assert.Empty(t, match.GetPath())
+				assert.Empty(t, match.GetPrefix())
+			} else {
+				assert.Nil(t, match.GetConnectMatcher())
+				if tt.wantExactPath {
+					assert.Equal(t, tt.wantPath, match.GetPath())
+				} else {
+					assert.Equal(t, tt.wantPath, match.GetPathSeparatedPrefix())
+				}
+			}
+
+			if tt.wantMethodHeader {
+				require.Len(t, match.GetHeaders(), 1)
+				assert.Equal(t, ":method", match.GetHeaders()[0].GetName())
+				assert.Equal(t, "CONNECT", match.GetHeaders()[0].GetStringMatch().GetExact())
+			} else {
+				assert.Empty(t, match.GetHeaders())
+			}
+		})
+	}
+}
+
+func TestValidateRouteStrictSkipsMatcherOnlyEnvoyValidationForCommonMatchers(t *testing.T) {
+	pathPrefix := gwv1.PathMatchPathPrefix
+	pathExact := gwv1.PathMatchExact
+
+	tests := []struct {
+		name  string
+		match gwv1.HTTPRouteMatch
+	}{
+		{
+			name: "prefix",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefix,
+					Value: new("/"),
+				},
+			},
+		},
+		{
+			name: "exact",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathExact,
+					Value: new("/exact"),
+				},
+			},
+		},
+		{
+			name: "path separated prefix",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefix,
+					Value: new("/separated"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+				calls++
+				return nil
+			}}
+
+			err := validateRoute(context.Background(), testRouteWithMatch(translateMatcher(tt.match)), v, apisettings.ValidationStrict)
+
+			require.NoError(t, err)
+			assert.Equal(t, 1, calls, "strict validation should only run full-route Envoy validation")
+		})
+	}
+}
+
+func TestValidateRouteStrictInvalidGeneratedRegexMatcher(t *testing.T) {
+	pathRegex := gwv1.PathMatchRegularExpression
+	headerRegex := gwv1.HeaderMatchRegularExpression
+	queryRegex := gwv1.QueryParamMatchRegularExpression
+
+	tests := []struct {
+		name  string
+		match gwv1.HTTPRouteMatch
+	}{
+		{
+			name: "path regex",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathRegex,
+					Value: new("[[invalid"),
+				},
+			},
+		},
+		{
+			name: "header regex",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefixPtr,
+					Value: new("/"),
+				},
+				Headers: []gwv1.HTTPHeaderMatch{{
+					Type:  &headerRegex,
+					Name:  "x-test",
+					Value: "[[invalid",
+				}},
+			},
+		},
+		{
+			name: "query regex",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefixPtr,
+					Value: new("/"),
+				},
+				QueryParams: []gwv1.HTTPQueryParamMatch{{
+					Type:  &queryRegex,
+					Name:  "q",
+					Value: "[[invalid",
+				}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+				calls++
+				return nil
+			}}
+
+			err := validateRoute(context.Background(), testRouteWithMatch(translateMatcher(tt.match)), v, apisettings.ValidationStrict)
+
+			require.ErrorIs(t, err, ErrInvalidMatcher)
+			assert.Equal(t, 0, calls, "invalid generated matcher should be rejected before Envoy validation")
+		})
+	}
+}
+
+func TestComputeRouteConfigurationStrictBatchesFullRouteValidation(t *testing.T) {
+	calls := 0
+	var routeCounts []int
+	v := &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
+		calls++
+		routeCounts = append(routeCounts, len(routesFromValidationBootstrap(t, config)))
+		return nil
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	require.Len(t, cfg.GetVirtualHosts()[0].GetRoutes(), 2)
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []int{2}, routeCounts)
+}
+
+func TestComputeRouteConfigurationStrictIsolatesInvalidRouteAfterBatchFailure(t *testing.T) {
+	calls := 0
+	var routeCounts []int
+	v := &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
+		calls++
+		routes := routesFromValidationBootstrap(t, config)
+		routeCounts = append(routeCounts, len(routes))
+		for _, route := range routes {
+			if route.GetRoute().GetCluster() == "cluster-two" {
+				return errors.New("bad route")
+			}
+		}
+		return nil
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name: "test-vhost", Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{testRouteIR(0, "/one", "cluster-one"), testRouteIR(1, "/two", "cluster-two")},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2)
+	_, ok := out.GetRoutes()[0].GetAction().(*envoyroutev3.Route_Route)
+	assert.True(t, ok)
+	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok)
+	assert.Equal(t, []int{2, 1, 2, 1, 1, 1, 1, 2, 2}, routeCounts)
+}
+
+type routeConfigPassFunc struct {
+	ir.UnimplementedProxyTranslationPass
+	apply        func(*envoyroutev3.RouteConfiguration)
+	applyContext func(*ir.RouteConfigContext)
+}
+
+func (p routeConfigPassFunc) ApplyRouteConfigPlugin(ctx *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+	if p.applyContext != nil {
+		p.applyContext(ctx)
+	}
+	if p.apply != nil {
+		p.apply(out)
+	}
+}
+
+func attachRouteConfigPass(h *httpRouteConfigurationTranslator, pass ir.ProxyTranslationPass) {
+	gk := schema.GroupKind{Group: "test", Kind: "RCPolicy"}
+	h.pluginPass = TranslationPassPlugins{gk: &TranslationPass{ProxyTranslationPass: pass}}
+	h.attachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+		gk: {{GroupKind: gk}},
+	}}
+}
+
+func invalidClusterValidator(t *testing.T, marker string) *routeMockValidator {
+	t.Helper()
+	return &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
+		for _, r := range routesFromValidationBootstrap(t, config) {
+			if strings.Contains(r.GetRoute().GetCluster(), marker) {
+				return errors.New("invalid route action injected by route-config-scope plugin")
+			}
+		}
+		return nil
+	}}
+}
+
+// TestComputeRouteConfigurationValidatesRouteConfigScopeMutations is the regression guard for the
+// validate-at-the-sink fix: a RouteConfig-scope plugin runs after the vhosts (and their routes) are
+// computed and mutates a route. Strict validation must run after that phase and isolate the now-invalid
+// route. If validation were performed earlier (e.g. inside computeVirtualHost, before the
+// RouteConfig-scope plugin loop) the mutation would slip through unvalidated and this test would fail.
+func TestComputeRouteConfigurationValidatesRouteConfigScopeMutations(t *testing.T) {
+	const marker = "rc-scope-invalid"
+	v := invalidClusterValidator(t, marker)
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		route := out.GetVirtualHosts()[0].GetRoutes()[1]
+		route.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2)
+	_, ok := out.GetRoutes()[0].GetAction().(*envoyroutev3.Route_Route)
+	assert.True(t, ok, "untouched route should be preserved")
+	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route mutated to be invalid by a RouteConfig-scope plugin must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeRouteReplacements(t *testing.T) {
+	const marker = "rc-scope-replacement-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		vhost := out.GetVirtualHosts()[0]
+		replacement := proto.Clone(vhost.GetRoutes()[1]).(*envoyroutev3.Route)
+		replacement.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		vhost.Routes[1] = replacement
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2, "expected route replacement to preserve the route count")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route pointer replaced by a RouteConfig-scope plugin must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeAppendedRoutes(t *testing.T) {
+	const marker = "rc-scope-appended-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		vhost := out.GetVirtualHosts()[0]
+		appended := proto.Clone(vhost.GetRoutes()[1]).(*envoyroutev3.Route)
+		appended.Name = "appended-route"
+		appended.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		vhost.Routes = append(vhost.Routes, appended)
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 3, "plugin-appended routes should not be dropped during isolation")
+	_, ok := out.GetRoutes()[2].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "plugin-appended invalid route must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeVirtualHostReplacements(t *testing.T) {
+	const marker = "rc-scope-vhost-replacement-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		replacement := proto.Clone(out.GetVirtualHosts()[0]).(*envoyroutev3.VirtualHost)
+		replacement.GetRoutes()[1].GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		out.VirtualHosts[0] = replacement
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2, "expected virtual host replacement to preserve the route count")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route inside a replaced virtual host must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeAppendedVirtualHosts(t *testing.T) {
+	const marker = "rc-scope-appended-vhost-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		appended := proto.Clone(out.GetVirtualHosts()[0]).(*envoyroutev3.VirtualHost)
+		appended.Name = "appended-vhost"
+		appended.Domains = []string{"appended.example.com"}
+		appended.GetRoutes()[1].GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		out.VirtualHosts = append(out.VirtualHosts, appended)
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 2, "plugin-appended virtual hosts should not be dropped")
+	out := cfg.GetVirtualHosts()[1]
+	require.Len(t, out.GetRoutes(), 2, "expected appended virtual host routes to be preserved")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route inside a plugin-appended virtual host must be isolated")
+}
+
+func TestComputeRouteConfigurationStandardValidatesRouteConfigScopeMutations(t *testing.T) {
+	v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+		t.Fatal("standard validation should not invoke Envoy validation")
+		return nil
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStandard)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		out.GetVirtualHosts()[0].GetRoutes()[1].GetRoute().PrefixRewrite = "/foo//bar"
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2, "expected route replacement to preserve the route count")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "standard validation should isolate invalid RouteConfig-scope mutations")
+}
+
 func refFor(name string) *ir.AttachedPolicyRef {
 	return &ir.AttachedPolicyRef{
 		Group:     "gateway.kgateway.dev",
@@ -155,6 +627,71 @@ func refFor(name string) *ir.AttachedPolicyRef {
 		Namespace: "ns",
 		Name:      name,
 	}
+}
+
+func testRouteWithMatch(match *envoyroutev3.RouteMatch) *envoyroutev3.Route {
+	return &envoyroutev3.Route{
+		Name:  "test-route",
+		Match: match,
+		Action: &envoyroutev3.Route_Route{
+			Route: &envoyroutev3.RouteAction{
+				ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
+					Cluster: "test-cluster",
+				},
+			},
+		},
+	}
+}
+
+var pathPrefixPtr = gwv1.PathMatchPathPrefix
+
+func testHTTPRouteTranslator(v validator.Validator, mode apisettings.ValidationMode) *httpRouteConfigurationTranslator {
+	return &httpRouteConfigurationTranslator{
+		gw: ir.GatewayIR{
+			SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{
+				Spec: gwv1.GatewaySpec{GatewayClassName: "test-class"},
+			}},
+		},
+		pluginPass:      TranslationPassPlugins{},
+		logger:          slog.Default(),
+		validator:       v,
+		validationLevel: mode,
+	}
+}
+
+func testRouteIR(matchIndex int, path string, clusterName string) ir.HttpRouteRuleMatchIR {
+	return ir.HttpRouteRuleMatchIR{
+		MatchIndex: matchIndex,
+		Match: gwv1.HTTPRouteMatch{
+			Path: &gwv1.HTTPPathMatch{
+				Type:  &pathPrefixPtr,
+				Value: new(path),
+			},
+		},
+		Backends: []ir.HttpBackend{{
+			Backend: ir.BackendRefIR{
+				ClusterName: clusterName,
+				Weight:      1,
+			},
+		}},
+	}
+}
+
+func routesFromValidationBootstrap(t *testing.T, config *envoybootstrapv3.Bootstrap) []*envoyroutev3.Route {
+	t.Helper()
+	listeners := config.GetStaticResources().GetListeners()
+	require.Len(t, listeners, 1)
+	filterChains := listeners[0].GetFilterChains()
+	require.Len(t, filterChains, 1)
+	filters := filterChains[0].GetFilters()
+	require.NotEmpty(t, filters)
+	hcm := &envoy_hcm.HttpConnectionManager{}
+	require.NoError(t, filters[0].GetTypedConfig().UnmarshalTo(hcm))
+	var routes []*envoyroutev3.Route
+	for _, vhost := range hcm.GetRouteConfig().GetVirtualHosts() {
+		routes = append(routes, vhost.GetRoutes()...)
+	}
+	return routes
 }
 
 func TestSummarizeRuleErrors_NilReturnsEmpty(t *testing.T) {
@@ -237,4 +774,215 @@ func TestSummarizeRuleErrors_FlattensNestedJoins(t *testing.T) {
 		"gateway.kgateway.dev/TrafficPolicy/ns/b-pol: b\n" +
 		"gateway.kgateway.dev/TrafficPolicy/ns/c-pol: c"
 	assert.Equal(t, want, got)
+}
+
+func TestAddRouteSourceMetadata(t *testing.T) {
+	tests := []struct {
+		name            string
+		in              ir.HttpRouteRuleMatchIR
+		initialMetadata *envoycorev3.Metadata
+		expected        map[string]string
+		expectPreserved bool
+	}{
+		{
+			name: "full metadata",
+			in: ir.HttpRouteRuleMatchIR{
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				RuleName:   "test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "test-rule",
+				"match":     "_match-2",
+			},
+		},
+		{
+			name: "missing original rule name",
+			in: ir.HttpRouteRuleMatchIR{
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "_rule-1",
+				"match":     "_match-2",
+			},
+		},
+		{
+			name: "missing rule and kind",
+			in: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+			},
+		},
+		{
+			name: "nil parent",
+			in: ir.HttpRouteRuleMatchIR{
+				Name: "test-rule",
+			},
+			expected: nil,
+		},
+		{
+			name: "existing metadata preserved",
+			in: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind: "HTTPRoute",
+						Name: "test-route",
+					},
+				},
+			},
+			initialMetadata: &envoycorev3.Metadata{
+				FilterMetadata: map[string]*structpb.Struct{
+					"existing.key": {
+						Fields: map[string]*structpb.Value{
+							"foo": structpb.NewStringValue("bar"),
+						},
+					},
+				},
+			},
+			expectPreserved: true,
+			expected: map[string]string{
+				"kind": "HTTPRoute",
+				"name": "test-route",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metadata := addRouteSourceMetadata(tt.in, tt.initialMetadata)
+
+			if tt.expected == nil {
+				if metadata != nil && metadata.FilterMetadata != nil {
+					_, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+					assert.False(t, ok, "expected no route source metadata")
+				}
+				return
+			}
+
+			require.NotNil(t, metadata, "metadata should not be nil")
+			require.NotNil(t, metadata.FilterMetadata, "filter metadata should not be nil")
+
+			structPb, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+			require.True(t, ok, "expected route source metadata key %q", routeSourceMetadataKey)
+
+			fields := structPb.Fields
+			assert.Equal(t, len(tt.expected), len(fields), "unexpected number of fields")
+
+			for k, v := range tt.expected {
+				val, ok := fields[k]
+				assert.True(t, ok, "missing expected key: %s", k)
+				assert.Equal(t, v, val.GetStringValue(), "value mismatch for key: %s", k)
+			}
+
+			if tt.expectPreserved {
+				existingPb, ok := metadata.FilterMetadata["existing.key"]
+				require.True(t, ok, "expected existing metadata key to be preserved")
+				assert.Equal(t, "bar", existingPb.Fields["foo"].GetStringValue(), "existing metadata value mismatch")
+			}
+		})
+	}
+}
+
+func TestRouteSourceMetadataFlag(t *testing.T) {
+	in := ir.HttpRouteRuleMatchIR{
+		Name: "my-rule",
+		Parent: &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Kind:      "HTTPRoute",
+				Group:     "gateway.networking.k8s.io",
+				Name:      "my-route",
+				Namespace: "default",
+			},
+		},
+	}
+
+	tests := []struct {
+		name        string
+		flagEnabled bool
+		wantMeta    bool
+	}{
+		{
+			name:        "disabled by default, no route_source metadata",
+			flagEnabled: false,
+			wantMeta:    false,
+		},
+		{
+			name:        "enabled, route_source metadata is attached",
+			flagEnabled: true,
+			wantMeta:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &httpRouteConfigurationTranslator{
+				pluginPass:                TranslationPassPlugins{},
+				enableRouteSourceMetadata: tt.flagEnabled,
+			}
+
+			// Replicate the flag gate in envoyRoutes() without needing a
+			// fully-wired translator (no backends, validator, or GatewayIR required).
+			out := h.initRoutes(in, "generated-name")
+			if h.enableRouteSourceMetadata {
+				out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
+			}
+
+			if !tt.wantMeta {
+				if out.GetMetadata() != nil {
+					_, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+					assert.False(t, ok, "route_source metadata should be absent when the flag is off")
+				}
+				return
+			}
+
+			require.NotNil(t, out.GetMetadata(), "metadata must not be nil when the flag is on")
+			srcMeta, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+			require.True(t, ok, "filter metadata must contain key %q", routeSourceMetadataKey)
+
+			fields := srcMeta.GetFields()
+			assert.Equal(t, "HTTPRoute", fields["kind"].GetStringValue())
+			assert.Equal(t, "gateway.networking.k8s.io", fields["group"].GetStringValue())
+			assert.Equal(t, "my-route", fields["name"].GetStringValue())
+			assert.Equal(t, "default", fields["namespace"].GetStringValue())
+			assert.Equal(t, "_rule-0", fields["rule"].GetStringValue())
+			assert.Equal(t, "_match-0", fields["match"].GetStringValue())
+		})
+	}
 }

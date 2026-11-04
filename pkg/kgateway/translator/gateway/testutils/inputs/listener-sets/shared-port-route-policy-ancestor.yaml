@@ -1,0 +1,127 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners: []
+  allowedListeners:
+    namespaces:
+      from: All
+---
+# Two independently-authored ListenerSets sharing a port by coincidence.
+# Neither has a listener-level policy -- only a-listenerset's route is
+# targeted by a TrafficPolicy. If route-level policy status ancestor
+# reporting is fixed to "whichever ListenerSet built the merged listener
+# first", the policy's status will show the WRONG ListenerSet as ancestor.
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: a-listenerset
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http-9090
+    protocol: HTTP
+    port: 9090
+    hostname: "a.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: b-listenerset
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http-9090
+    protocol: HTTP
+    port: 9090
+    hostname: "b.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: a-route
+spec:
+  parentRefs:
+  - name: a-listenerset
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
+  hostnames:
+  - "a.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: a-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: b-route
+spec:
+  parentRefs:
+  - name: b-listenerset
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
+  hostnames:
+  - "b.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: b-svc
+      port: 8080
+---
+# Route-attached (not listener-attached) TrafficPolicy, targeting only b-route.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: b-route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: b-route
+  statPrefix: "b-route-policy"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: b-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test

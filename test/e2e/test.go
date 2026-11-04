@@ -124,7 +124,7 @@ func (i *TestInstallation) String() string {
 
 func (i *TestInstallation) finalize() {
 	if err := os.RemoveAll(i.GeneratedFiles.TempDir); err != nil {
-		panic(fmt.Sprintf("Failed to remove temporary directory: %s", i.GeneratedFiles.TempDir))
+		panic("Failed to remove temporary directory: " + i.GeneratedFiles.TempDir)
 	}
 }
 
@@ -209,7 +209,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 		helmutils.InstallOpts{
 			Namespace:       i.Metadata.InstallNamespace,
 			CreateNamespace: true,
-			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+			ValuesFiles:     withTestAssertions([]string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile}),
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        chartUri,
 			ExtraArgs:       extraArgs,
@@ -263,7 +263,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromRelease(ctx context.Context, t
 		helmutils.InstallOpts{
 			Namespace:       i.Metadata.InstallNamespace,
 			CreateNamespace: true,
-			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+			ValuesFiles:     withTestAssertions([]string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile}),
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        helmutils.DefaultChartUri,
 			Version:         version,

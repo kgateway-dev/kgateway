@@ -103,6 +103,7 @@ spec:
     metadata:
       labels:
         app: request-id-echo
+        app.kubernetes.io/name: request-id-echo
     spec:
       containers:
         - name: request-id-echo

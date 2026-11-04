@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -16,15 +17,16 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -34,13 +36,23 @@ type httpRouteConfigurationTranslator struct {
 	fc               ir.FilterChainCommon
 	attachedPolicies ir.AttachedPolicies
 
-	routeConfigName          string
-	reporter                 reportssdk.Reporter
-	requireTlsOnVirtualHosts bool
-	pluginPass               TranslationPassPlugins
-	logger                   *slog.Logger
-	validationLevel          apisettings.ValidationMode
-	validator                validator.Validator
+	routeConfigName           string
+	reporter                  reportssdk.Reporter
+	requireTlsOnVirtualHosts  bool
+	pluginPass                TranslationPassPlugins
+	logger                    *slog.Logger
+	validationLevel           apisettings.ValidationMode
+	validator                 validator.Validator
+	enableRouteSourceMetadata bool
+
+	// backendObjectPolicyAppliers caches the plugin passes implementing ir.BackendObjectPolicyApplier,
+	// computed on first use. See runBackendObjectPolicies.
+	backendObjectPolicyAppliers []backendObjectPolicyApplier
+}
+
+type backendObjectPolicyApplier struct {
+	gk      schema.GroupKind
+	applier ir.BackendObjectPolicyApplier
 }
 
 const (
@@ -62,7 +74,11 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 	// Compute virtual hosts from the IR. In listener merging scenarios, vhosts contains
 	// all virtual hosts from multiple listeners that share the same port. Each distinct
 	// hostname on each HTTPRoute attached to a listener will be a separate vhost.
-	cfg.VirtualHosts = h.computeVirtualHosts(ctx, vhosts)
+	computedVhosts := h.computeVirtualHosts(ctx, vhosts)
+	cfg.VirtualHosts = make([]*envoyroutev3.VirtualHost, 0, len(computedVhosts))
+	for _, cvh := range computedVhosts {
+		cfg.VirtualHosts = append(cfg.VirtualHosts, cvh.out)
+	}
 
 	// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 	// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
@@ -102,6 +118,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		cfg.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, cfg.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
+	validationCtx := newRouteValidationContext(computedVhosts)
 	if len(errs) > 0 {
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
 		// attached to the RC (via Gateway or HTTPS listener), we need to replace the entire
@@ -110,22 +127,36 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		h.logger.Error("error applying route config plugins", "error", joined)
 		incRouteReplacementMetric(h.gw, joined)
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
+		// Validate the fallback that will be returned, including retained shared
+		// settings, without isolating or reporting routes that were discarded.
+		h.validateRouteConfiguration(ctx, cfg, validationCtx)
 		return cfg
 	}
 	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
 
+	h.validateRouteConfiguration(ctx, cfg, validationCtx)
+
 	return cfg
+}
+
+// computedVirtualHost carries a translated virtual host together with the state needed to report
+// route validation failures after RouteConfig-scope plugins have had their final chance to mutate
+// routes.
+type computedVirtualHost struct {
+	in     *ir.VirtualHost
+	out    *envoyroutev3.VirtualHost
+	routes []computedHTTPRoute
 }
 
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(
 	ctx context.Context,
 	virtualHosts []*ir.VirtualHost,
-) []*envoyroutev3.VirtualHost {
-	envoyVirtualHosts := make([]*envoyroutev3.VirtualHost, 0, len(virtualHosts))
+) []computedVirtualHost {
+	computed := make([]computedVirtualHost, 0, len(virtualHosts))
 	for _, virtualHost := range virtualHosts {
-		envoyVirtualHosts = append(envoyVirtualHosts, h.computeVirtualHost(ctx, virtualHost))
+		computed = append(computed, h.computeVirtualHost(ctx, virtualHost))
 	}
-	return envoyVirtualHosts
+	return computed
 }
 
 // computeVirtualHost translates one IR virtual host into an Envoy virtual host and
@@ -135,10 +166,11 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHosts(
 func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	ctx context.Context,
 	virtualHost *ir.VirtualHost,
-) *envoyroutev3.VirtualHost {
+) computedVirtualHost {
 	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
 
 	var envoyRoutes []*envoyroutev3.Route
+	var computedRoutes []computedHTTPRoute
 	for i, route := range virtualHost.Rules {
 		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
 		if route.Parent != nil {
@@ -148,9 +180,14 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
 		}
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-		computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
+		computedRoute := h.envoyRoutes(routeReport, route, generatedName)
 		if computedRoute != nil {
 			envoyRoutes = append(envoyRoutes, computedRoute)
+			computedRoutes = append(computedRoutes, computedHTTPRoute{
+				in:          route,
+				routeReport: routeReport,
+				route:       computedRoute,
+			})
 		}
 	}
 	domains := []string{virtualHost.Hostname}
@@ -183,15 +220,19 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			Message: err.Error(),
 		})
 		// replace the computed vhost with a fallback that preserves the original vhost identity
-		return setFallBackConfig(sanitizedName, domains[0])
+		return computedVirtualHost{in: virtualHost, out: setFallBackConfig(sanitizedName, domains[0])}
 	}
 	out.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
 
-	return out
+	return computedVirtualHost{in: virtualHost, out: out, routes: computedRoutes}
 }
 
 // setFallBackConfig creates a synthetic, catch-all virtual host that returns 500 errors
 // for all traffic that references this vhost.
+// Note: the route created here does not carry dev.kgateway.route_source filter metadata.
+// It is only used on error paths, where it replaces an entire RouteConfiguration or
+// virtual host with a single catch-all route — so there is no single originating xRoute
+// rule to attribute the source metadata to.
 func setFallBackConfig(name, domain string) *envoyroutev3.VirtualHost {
 	return &envoyroutev3.VirtualHost{
 		Domains: []string{domain},
@@ -224,13 +265,117 @@ type backendConfigContext struct {
 	ResponseHeadersToRemove   []string
 }
 
+type computedHTTPRoute struct {
+	in          ir.HttpRouteRuleMatchIR
+	routeReport reportssdk.ParentRefReporter
+	route       *envoyroutev3.Route
+}
+
+type routeValidationContext struct {
+	vhosts          []computedVirtualHost
+	vhostsByPointer map[*envoyroutev3.VirtualHost]computedVirtualHost
+	vhostsByName    map[string]computedVirtualHost
+}
+
+type vhostRouteValidationContext struct {
+	virtualHost     *ir.VirtualHost
+	routesByPointer map[*envoyroutev3.Route]computedHTTPRoute
+	routesByName    map[string]computedHTTPRoute
+}
+
+func newRouteValidationContext(computedVhosts []computedVirtualHost) routeValidationContext {
+	ctx := routeValidationContext{
+		vhosts:          computedVhosts,
+		vhostsByPointer: make(map[*envoyroutev3.VirtualHost]computedVirtualHost, len(computedVhosts)),
+		vhostsByName:    make(map[string]computedVirtualHost, len(computedVhosts)),
+	}
+	duplicateNames := make(map[string]struct{})
+	for _, cvh := range computedVhosts {
+		ctx.vhostsByPointer[cvh.out] = cvh
+		name := cvh.out.GetName()
+		if name == "" {
+			continue
+		}
+		if _, duplicate := duplicateNames[name]; duplicate {
+			continue
+		}
+		if _, exists := ctx.vhostsByName[name]; exists {
+			delete(ctx.vhostsByName, name)
+			duplicateNames[name] = struct{}{}
+			continue
+		}
+		ctx.vhostsByName[name] = cvh
+	}
+	return ctx
+}
+
+func (c routeValidationContext) forVirtualHost(vhost *envoyroutev3.VirtualHost, finalNameUnique bool) vhostRouteValidationContext {
+	cvh, ok := c.vhostsByPointer[vhost]
+	if !ok && finalNameUnique {
+		cvh = c.vhostsByName[vhost.GetName()]
+	}
+	ctx := newVhostRouteValidationContext(cvh)
+	// Freeze name eligibility before isolation can drop a duplicate. Removing
+	// one route must not give its source identity to an unrelated clone.
+	nameCounts := make(map[string]int, len(vhost.GetRoutes()))
+	for _, route := range vhost.GetRoutes() {
+		nameCounts[route.GetName()]++
+	}
+	for name := range ctx.routesByName {
+		if nameCounts[name] != 1 {
+			delete(ctx.routesByName, name)
+		}
+	}
+	return ctx
+}
+
+func newVhostRouteValidationContext(cvh computedVirtualHost) vhostRouteValidationContext {
+	ctx := vhostRouteValidationContext{
+		virtualHost:     cvh.in,
+		routesByPointer: make(map[*envoyroutev3.Route]computedHTTPRoute, len(cvh.routes)),
+		routesByName:    make(map[string]computedHTTPRoute, len(cvh.routes)),
+	}
+	duplicateNames := make(map[string]struct{})
+	for _, route := range cvh.routes {
+		ctx.routesByPointer[route.route] = route
+		name := route.route.GetName()
+		if name == "" {
+			continue
+		}
+		if _, duplicate := duplicateNames[name]; duplicate {
+			continue
+		}
+		if _, exists := ctx.routesByName[name]; exists {
+			delete(ctx.routesByName, name)
+			duplicateNames[name] = struct{}{}
+			continue
+		}
+		ctx.routesByName[name] = route
+	}
+	return ctx
+}
+
+func (c vhostRouteValidationContext) forRoute(route *envoyroutev3.Route, finalNameUnique bool) (computedHTTPRoute, bool) {
+	if computedRoute, ok := c.routesByPointer[route]; ok {
+		return computedRoute, true
+	}
+	if !finalNameUnique {
+		return computedHTTPRoute{}, false
+	}
+	computedRoute, ok := c.routesByName[route.GetName()]
+	return computedRoute, ok
+}
+
 func (h *httpRouteConfigurationTranslator) envoyRoutes(
-	ctx context.Context,
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
 ) *envoyroutev3.Route {
 	out := h.initRoutes(in, generatedName)
+
+	if h.enableRouteSourceMetadata {
+		out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
+	}
 
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 	if len(in.Backends) == 1 {
@@ -274,11 +419,20 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		// If there are no errors, validate the route will not be rejected by the xDS server.
 		// Skip delegating routes as they have no action and are not propagated to envoy
 		if routeProcessingErr == nil {
-			routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
+			routeProcessingErr = validateRoutePreEnvoy(out, h.validationLevel)
 		}
 	}
 
-	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
+	return h.finalizeRoute(routeReport, in, out, routeProcessingErr)
+}
+
+func (h *httpRouteConfigurationTranslator) finalizeRoute(
+	routeReport reportssdk.ParentRefReporter,
+	in ir.HttpRouteRuleMatchIR,
+	out *envoyroutev3.Route,
+	routeProcessingErr error,
+) *envoyroutev3.Route {
+	// routeAcceptanceErr is used to set the kgateway.dev/Programmed=false,Reason=RouteRuleDropped condition on the route
 	routeAcceptanceErr := errors.Join(routeProcessingErr, in.RouteAcceptanceError)
 
 	// routeReplacementErr is used to replace the route with a direct response
@@ -296,7 +450,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeAcceptanceErr != nil && errors.Is(routeAcceptanceErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher", "error", routeAcceptanceErr)
 		routeReport.SetCondition(reportssdk.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
+			Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 			Status:  metav1.ConditionFalse,
 			Reason:  reportssdk.RouteRuleDroppedReason,
 			Message: fmt.Sprintf("Dropped Rule (%d): %s", in.MatchIndex, acceptanceMsg),
@@ -308,10 +462,12 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	if routeReplacementErr != nil {
 		h.logger.Debug("invalid route", "error", routeReplacementErr)
 
-		// If routeAcceptanceErr is set, report Accepted=False with Reason=RouteRuleReplaced
+		// If routeAcceptanceErr is set, report the appropriate conditions
+		// Gateway API's Accepted condition only indicates the resource is valid not it has been successfully translated
+		// So a new condition is introduced
 		if routeAcceptanceErr != nil {
 			routeReport.SetCondition(reportssdk.RouteCondition{
-				Type:    gwv1.RouteConditionAccepted,
+				Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 				Status:  metav1.ConditionFalse,
 				Reason:  reportssdk.RouteRuleReplacedReason,
 				Message: fmt.Sprintf("Replaced Rule (%d): %s", in.MatchIndex, acceptanceMsg),
@@ -320,28 +476,324 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
 			incRouteReplacementMetric(h.gw, routeReplacementErr)
-			// Clear all headers and filter configs when the route is replaced with a direct response
-			out.TypedPerFilterConfig = nil
-			out.RequestHeadersToAdd = nil
-			out.RequestHeadersToRemove = nil
-			out.ResponseHeadersToAdd = nil
-			out.ResponseHeadersToRemove = nil
-			// Replace invalid route with a direct response
-			out.Action = &envoyroutev3.Route_DirectResponse{
-				DirectResponse: &envoyroutev3.DirectResponseAction{
-					Status: http.StatusInternalServerError,
-					Body: &envoycorev3.DataSource{
-						Specifier: &envoycorev3.DataSource_InlineString{
-							InlineString: directResponseActionBody,
-						},
-					},
-				},
-			}
-			return out
+			return replaceRouteWithDirectResponse(out)
 		}
 	}
 
 	return out
+}
+
+func replaceRouteWithDirectResponse(out *envoyroutev3.Route) *envoyroutev3.Route {
+	if out == nil {
+		return nil
+	}
+	// Clear all headers and filter configs when the route is replaced with a direct response.
+	out.TypedPerFilterConfig = nil
+	out.RequestHeadersToAdd = nil
+	out.RequestHeadersToRemove = nil
+	out.ResponseHeadersToAdd = nil
+	out.ResponseHeadersToRemove = nil
+	out.Action = &envoyroutev3.Route_DirectResponse{
+		DirectResponse: &envoyroutev3.DirectResponseAction{
+			Status: http.StatusInternalServerError,
+			Body: &envoycorev3.DataSource{
+				Specifier: &envoycorev3.DataSource_InlineString{
+					InlineString: directResponseActionBody,
+				},
+			},
+		},
+	}
+	return out
+}
+
+func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
+	ctx context.Context,
+	cfg *envoyroutev3.RouteConfiguration,
+	validationCtx routeValidationContext,
+) {
+	if h.validationLevel != apisettings.ValidationStandard && h.validationLevel != apisettings.ValidationStrict {
+		return
+	}
+	vhostNameCounts := make(map[string]int, len(cfg.GetVirtualHosts()))
+	for _, vhost := range cfg.GetVirtualHosts() {
+		if name := vhost.GetName(); name != "" {
+			vhostNameCounts[name]++
+		}
+	}
+	contexts := make([]vhostRouteValidationContext, len(cfg.GetVirtualHosts()))
+	for i, vhost := range cfg.GetVirtualHosts() {
+		name := vhost.GetName()
+		contexts[i] = validationCtx.forVirtualHost(vhost, name != "" && vhostNameCounts[name] == 1)
+		h.validateRouteBatchPreEnvoy(vhost, contexts[i])
+	}
+	if h.validationLevel != apisettings.ValidationStrict {
+		return
+	}
+	if len(cfg.VirtualHosts) > 1 {
+		// Validate shared settings and cross-vhost domain conflicts without route
+		// contents in the cache key. Route-only changes then invalidate just the
+		// affected vhost's validation, while retaining its inherited settings.
+		shared := cloneWithoutField(cfg, "virtual_hosts")
+		for _, vhost := range cfg.VirtualHosts {
+			neutral := setFallBackConfig(vhost.GetName(), "*")
+			neutral.Domains = vhost.GetDomains()
+			shared.VirtualHosts = append(shared.VirtualHosts, neutral)
+		}
+		if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
+			h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+			return
+		}
+		for i, vhost := range cfg.VirtualHosts {
+			cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, cfg, vhost, contexts[i])
+		}
+		return
+	}
+	// Repair all lightweight failures before invoking Envoy. Even a large batch
+	// with malformed rewrites or generated matchers needs only one invocation
+	// when the repaired configuration is valid.
+	if validateFullRouteConfiguration(ctx, cfg, h.validator) == nil {
+		return
+	}
+	// Check shared fields before attributing a failure to individual routes.
+	shared := cloneWithoutField(cfg, "virtual_hosts")
+	shared.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("validation", "*")}
+	if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
+		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+		return
+	}
+	for i, vhost := range cfg.GetVirtualHosts() {
+		cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, cfg, vhost, contexts[i])
+	}
+	if err := validateFullRouteConfiguration(ctx, cfg, h.validator); err != nil {
+		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+	}
+}
+
+// validateRouteBatchPreEnvoy handles cheap failures without running Envoy for
+// each healthy sibling. Name uniqueness is measured before any routes are dropped.
+func (h *httpRouteConfigurationTranslator) validateRouteBatchPreEnvoy(out *envoyroutev3.VirtualHost, validationCtx vhostRouteValidationContext) {
+	if len(out.GetRoutes()) == 0 {
+		return
+	}
+	var errs []error
+	for i, route := range out.Routes {
+		if err := validateRoutePreEnvoy(route, h.validationLevel); err != nil {
+			if errs == nil {
+				errs = make([]error, len(out.Routes))
+			}
+			errs[i] = err
+		}
+	}
+	if errs == nil {
+		return
+	}
+	nameCounts := make(map[string]int, len(out.Routes))
+	for _, route := range out.Routes {
+		if name := route.GetName(); name != "" {
+			nameCounts[name]++
+		}
+	}
+	routes := make([]*envoyroutev3.Route, 0, len(out.Routes))
+	for i, route := range out.Routes {
+		if errs[i] != nil {
+			name := route.GetName()
+			route = h.finalizeValidatedRoute(validationCtx, route, errs[i], name != "" && nameCounts[name] == 1)
+		}
+		if route != nil {
+			routes = append(routes, route)
+		}
+	}
+	out.Routes = routes
+}
+
+func (h *httpRouteConfigurationTranslator) replaceInvalidRouteConfiguration(cfg *envoyroutev3.RouteConfiguration, validationCtx routeValidationContext, err error) {
+	h.logger.Error("route configuration validation failed", "error", err)
+	incRouteReplacementMetric(h.gw, err)
+	affected := make([]*ir.VirtualHost, 0, len(validationCtx.vhosts))
+	for _, cvh := range validationCtx.vhosts {
+		affected = append(affected, cvh.in)
+	}
+	policies := h.appliedPolicyNames(h.attachedPolicies, h.gw.AttachedHttpPolicies)
+	h.reportListenerReplacement(affected, replacementMessage(fmt.Sprintf("route configuration %q", h.routeConfigName), policies, err))
+	// Invalid shared fields must not survive the fallback.
+	proto.Reset(cfg)
+	cfg.Name = h.routeConfigName
+	cfg.IgnorePortInHostMatching = true
+	cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
+}
+
+func (h *httpRouteConfigurationTranslator) validateRouteBatch(
+	ctx context.Context,
+	cfg *envoyroutev3.RouteConfiguration,
+	out *envoyroutev3.VirtualHost,
+	validationCtx vhostRouteValidationContext,
+) *envoyroutev3.VirtualHost {
+	scope := routeValidationScope{config: cfg, vhost: out}
+	if err := scope.validate(ctx, out.GetRoutes(), h.validator); err == nil {
+		return out
+	}
+	// A broken inherited setting must replace the vhost, not mark all its
+	// source routes invalid. Named RC dependencies remain available here.
+	if err := scope.validate(ctx, setFallBackConfig("validation", "*").Routes, h.validator); err != nil {
+		return h.replaceInvalidVirtualHost(validationCtx.virtualHost, out, err)
+	}
+	routeNameCounts := make(map[string]int, len(out.GetRoutes()))
+	for _, route := range out.GetRoutes() {
+		if name := route.GetName(); name != "" {
+			routeNameCounts[name]++
+		}
+	}
+
+	isolatedRoutes := make([]*envoyroutev3.Route, 0, len(out.GetRoutes()))
+	for _, route := range out.GetRoutes() {
+		routeValidationErr := scope.validateRoute(ctx, route, h.validator, h.validationLevel)
+		if routeValidationErr != nil {
+			name := route.GetName()
+			validatedRoute := h.finalizeValidatedRoute(validationCtx, route, routeValidationErr, name != "" && routeNameCounts[name] == 1)
+			if validatedRoute != nil {
+				isolatedRoutes = append(isolatedRoutes, validatedRoute)
+			}
+			continue
+		}
+		isolatedRoutes = append(isolatedRoutes, route)
+	}
+	out.Routes = isolatedRoutes
+	return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, scope, out)
+}
+
+func (h *httpRouteConfigurationTranslator) finalizeValidatedRoute(
+	validationCtx vhostRouteValidationContext,
+	route *envoyroutev3.Route,
+	routeValidationErr error,
+	finalNameUnique bool,
+) *envoyroutev3.Route {
+	if computedRoute, ok := validationCtx.forRoute(route, finalNameUnique); ok {
+		return h.finalizeRoute(computedRoute.routeReport, computedRoute.in, route, routeValidationErr)
+	}
+	if errors.Is(routeValidationErr, ErrInvalidMatcher) {
+		h.logger.Info("invalid matcher on route without reporter metadata", "route", route.GetName(), "error", routeValidationErr)
+		return nil
+	}
+	h.logger.Debug("invalid route without reporter metadata", "route", route.GetName(), "error", routeValidationErr)
+	incRouteReplacementMetric(h.gw, routeValidationErr)
+	return replaceRouteWithDirectResponse(route)
+}
+
+func (h *httpRouteConfigurationTranslator) validateIsolatedVirtualHost(
+	ctx context.Context,
+	virtualHost *ir.VirtualHost,
+	scope routeValidationScope,
+	out *envoyroutev3.VirtualHost,
+) *envoyroutev3.VirtualHost {
+	if err := scope.validate(ctx, out.GetRoutes(), h.validator); err != nil {
+		return h.replaceInvalidVirtualHost(virtualHost, out, err)
+	}
+	return out
+}
+
+func (h *httpRouteConfigurationTranslator) replaceInvalidVirtualHost(virtualHost *ir.VirtualHost, out *envoyroutev3.VirtualHost, err error) *envoyroutev3.VirtualHost {
+	h.logger.Error("virtual host validation failed", "vhost", out.GetName(), "error", err)
+	incRouteReplacementMetric(h.gw, err)
+	sets := []ir.AttachedPolicies{h.attachedPolicies, h.gw.AttachedHttpPolicies}
+	if virtualHost != nil {
+		sets = append(sets, virtualHost.AttachedPolicies)
+	}
+	message := replacementMessage(fmt.Sprintf("virtual host %q", out.GetName()), h.appliedPolicyNames(sets...), err)
+	h.reportListenerReplacement([]*ir.VirtualHost{virtualHost}, message)
+	fallback := setFallBackConfig(out.GetName(), "*")
+	if len(out.GetDomains()) > 0 {
+		fallback.Domains = append([]string(nil), out.GetDomains()...)
+	}
+	return fallback
+}
+
+// reportListenerReplacement marks every listener whose traffic a replacement now
+// answers with a 500. HTTP virtual hosts carry their listener. HTTPS virtual hosts
+// do not, but an HTTPS route configuration belongs to exactly one listener, which
+// its name identifies, as in reportRouteConfigPolicyErrors.
+func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHosts []*ir.VirtualHost, message string) {
+	if h.reporter == nil {
+		return
+	}
+	condition := reportssdk.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  reportssdk.ListenerReplacedReason,
+		Message: message,
+	}
+	type listenerKey struct {
+		parent any
+		name   gwv1.SectionName
+	}
+	reported := make(map[listenerKey]struct{}, len(virtualHosts))
+	needFilterChainListener := len(virtualHosts) == 0
+	for _, virtualHost := range virtualHosts {
+		if virtualHost == nil || virtualHost.ParentRef.Parent == nil {
+			needFilterChainListener = true
+			continue
+		}
+		key := listenerKey{parent: virtualHost.ParentRef.Parent, name: virtualHost.ParentRef.Name}
+		if _, ok := reported[key]; ok {
+			continue
+		}
+		reported[key] = struct{}{}
+		virtualHost.ParentRef.GetParentReporter(h.reporter).Listener(&virtualHost.ParentRef.Listener).SetCondition(condition)
+	}
+	if !needFilterChainListener {
+		return
+	}
+	listener := findListenerForFilterChain(h.gw, h.routeConfigName)
+	if listener == nil {
+		return
+	}
+	if _, ok := reported[listenerKey{parent: listener.Parent, name: listener.Name}]; ok {
+		return
+	}
+	listener.GetParentReporter(h.reporter).ListenerName(string(listener.Name)).SetCondition(condition)
+}
+
+// replacementMessage names what was replaced and the policies whose settings it
+// inherited. Envoy's error describes the generated configuration, so without the
+// policy names a shared-settings rejection points at nothing the user wrote.
+func replacementMessage(subject string, policies []string, err error) string {
+	var b strings.Builder
+	b.WriteString(subject)
+	b.WriteString(" was replaced with a 500 direct response because Envoy rejected its configuration")
+	if len(policies) > 0 {
+		b.WriteString(" (settings from ")
+		b.WriteString(strings.Join(policies, ", "))
+		b.WriteString(")")
+	}
+	b.WriteString(": ")
+	b.WriteString(err.Error())
+	return b.String()
+}
+
+// appliedPolicyNames lists, in apply order, the attached policies a plugin applied:
+// those with a translation pass and no policy errors. Errored policies are reported
+// by their own path and were never applied.
+func (h *httpRouteConfigurationTranslator) appliedPolicyNames(sets ...ir.AttachedPolicies) []string {
+	var names []string
+	seen := make(map[string]struct{})
+	for _, set := range sets {
+		for _, gk := range set.ApplyOrderedGroupKinds() {
+			if h.pluginPass[gk] == nil {
+				continue
+			}
+			for _, pol := range set.Policies[gk] {
+				if pol.PolicyRef == nil || len(pol.Errors) > 0 {
+					continue
+				}
+				name := pol.PolicyRef.Kind + " " + pol.PolicyRef.Namespace + "/" + pol.PolicyRef.Name
+				if _, ok := seen[name]; ok {
+					continue
+				}
+				seen[name] = struct{}{}
+				names = append(names, name)
+			}
+		}
+	}
+	return names
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(
@@ -353,6 +805,13 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 	// this is the isolation boundary: failures here replace only this vhost with
 	// a 500 direct response (preserving Name and Domains). Policies that require
 	// HCM/global knobs must be handled at RouteConfiguration scope instead.
+	//
+	// Use virtualHost.ParentRef.PolicyAncestorRef, not h.listener.PolicyAncestorRef:
+	// on a shared HTTP port, h.listener represents the whole merged filter chain and
+	// its PolicyAncestorRef is fixed to whichever Gateway/ListenerSet happened to be
+	// first in the merge, which misattributes status for every other parent sharing
+	// the port. virtualHost.ParentRef is the listener that actually won this vhost.
+	ancestorRef := virtualHost.ParentRef.PolicyAncestorRef
 	var errs []error
 	for _, gk := range virtualHost.AttachedPolicies.ApplyOrderedGroupKinds() {
 		pols := virtualHost.AttachedPolicies.Policies[gk]
@@ -360,7 +819,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 		if pass == nil {
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
@@ -376,7 +835,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 			pass.ApplyVhostPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 	}
 	return errors.Join(errs...)
 }
@@ -428,7 +887,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			ListenerPort:      h.listener.BindPort,
 			ListenerHasTLS:    h.fc.TLS != nil,
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Builtin policies use InheritedPolicyPriority
@@ -448,10 +908,25 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
+		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 	}
 
 	return errors.Join(errs...)
+}
+
+// routeAncestorRef returns the ancestor to report route-attached policy status
+// against: the route's own ListenerParentRef (the Gateway/ListenerSet it actually
+// attaches to, taken from its own spec.parentRefs and already defaulted at the
+// query layer -- see query.defaultParentRef), not fallbackRef
+// (h.listener.PolicyAncestorRef), which is fixed to whichever Gateway/ListenerSet
+// happened to build the merged HTTP filter chain first and misattributes status
+// for every other parent sharing the port. Falls back when ListenerParentRef is
+// unset, e.g. for synthetic routes that have no source HTTPRoute.
+func routeAncestorRef(in ir.HttpRouteRuleMatchIR, fallbackRef gwv1.ParentReference) gwv1.ParentReference {
+	if in.ListenerParentRef.Name == "" {
+		return fallbackRef
+	}
+	return in.ListenerParentRef
 }
 
 func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyAtt, ir.MergeOrigins) {
@@ -464,7 +939,7 @@ func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyA
 	return policies, nil
 }
 
-func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
+func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, ancestorRef gwv1.ParentReference, pCtx *ir.RouteBackendContext) error {
 	var errs []error
 	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
 		pols := in.AttachedPolicies.Policies[gk]
@@ -473,7 +948,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, _ := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Policy on extension ref
@@ -496,9 +971,56 @@ func (h *httpRouteConfigurationTranslator) runBackend(in ir.HttpBackend, pCtx *i
 				errs = append(errs, err)
 			}
 		}
+		errs = append(errs, h.runBackendObjectPolicies(in.Backend.BackendObject, pCtx))
 	}
 	// TODO: check return value, if error returned, log error and report condition
 	return errors.Join(errs...)
+}
+
+// runBackendObjectPolicies lets the plugins of policies attached to the backend object
+// (via targetRefs/targetSelectors, e.g. a BackendConfigPolicy targeting a Service)
+// contribute per-route config for that backend. Only plugins implementing
+// ir.BackendObjectPolicyApplier are called; they get the unmerged attachments so they can
+// skip merging when no policy needs per-route config.
+func (h *httpRouteConfigurationTranslator) runBackendObjectPolicies(backend *ir.BackendObjectIR, pCtx *ir.RouteBackendContext) error {
+	if len(backend.AttachedPolicies.Policies) == 0 {
+		return nil
+	}
+	var errs []error
+	// This runs for every route backend, so only look up the policy kinds that have an applier
+	// instead of iterating (and sorting) all attached policy kinds.
+	for _, a := range h.getBackendObjectPolicyAppliers() {
+		pols := backend.AttachedPolicies.Policies[a.gk]
+		if len(pols) == 0 {
+			continue
+		}
+		if err := a.applier.ApplyForBackendObjectPolicies(pols, pCtx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// getBackendObjectPolicyAppliers returns the plugin passes implementing ir.BackendObjectPolicyApplier,
+// sorted by GroupKind for a deterministic order. They are computed once per translator.
+func (h *httpRouteConfigurationTranslator) getBackendObjectPolicyAppliers() []backendObjectPolicyApplier {
+	if h.backendObjectPolicyAppliers != nil {
+		return h.backendObjectPolicyAppliers
+	}
+	appliers := []backendObjectPolicyApplier{}
+	for gk, pass := range h.pluginPass {
+		if pass == nil {
+			continue
+		}
+		if applier, ok := pass.ProxyTranslationPass.(ir.BackendObjectPolicyApplier); ok {
+			appliers = append(appliers, backendObjectPolicyApplier{gk: gk, applier: applier})
+		}
+	}
+	slices.SortFunc(appliers, func(a, b backendObjectPolicyApplier) int {
+		return strings.Compare(a.gk.String(), b.gk.String())
+	})
+	h.backendObjectPolicyAppliers = appliers
+	return appliers
 }
 
 func (h *httpRouteConfigurationTranslator) translateRouteAction(
@@ -529,7 +1051,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
 		}
 
-		reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.Backend.BackendObject)
+		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
+		reportBackendObjectPolicyStatus(h.reporter, ancestorRef, h.pluginPass, backend.Backend.BackendObject)
 
 		// non attached policy translation
 		err := h.runBackend(
@@ -543,6 +1066,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		}
 		err = h.runBackendPolicies(
 			backend,
+			ancestorRef,
 			&pCtx,
 		)
 		if err != nil {
@@ -579,7 +1103,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	// TODO: we should never get here
 	case 1:
 		// Only set the cluster name if unspecified since a plugin may have set it.
-		if action.GetCluster() == "" {
+		if action.GetClusterSpecifier() == nil {
 			action.ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{
 				Cluster: clusters[0].GetName(),
 			}
@@ -588,7 +1112,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 
 	default:
 		// Only set weighted clusters if unspecified since a plugin may have set it.
-		if action.GetWeightedClusters() == nil {
+		if action.GetClusterSpecifier() == nil {
 			action.ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{
 				WeightedClusters: &envoyroutev3.WeightedCluster{
 					Clusters: clusters,
@@ -620,11 +1144,11 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	out := &envoyroutev3.Route{
 		Match: translateMatcher(in.Match),
 	}
-	name := in.Name
-	if name != "" {
-		out.Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, name, in.MatchIndex)
+	matchIdx := strconv.Itoa(in.MatchIndex)
+	if name := in.Name; name != "" {
+		out.Name = generatedName + "-" + name + "-matcher-" + matchIdx
 	} else {
-		out.Name = fmt.Sprintf("%s-matcher-%d", generatedName, in.MatchIndex)
+		out.Name = generatedName + "-matcher-" + matchIdx
 	}
 
 	return out
@@ -635,7 +1159,8 @@ func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
 		Headers:         envoyHeaderMatcher(matcher.Headers),
 		QueryParameters: envoyQueryMatcher(matcher.QueryParams),
 	}
-	if matcher.Method != nil {
+	isConnectMatch := isDefaultPathConnectMatch(matcher)
+	if matcher.Method != nil && !isConnectMatch {
 		match.Headers = append(match.GetHeaders(), &envoyroutev3.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_StringMatch{
@@ -648,8 +1173,26 @@ func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
 		})
 	}
 
-	setEnvoyPathMatcher(matcher, match)
+	if isConnectMatch {
+		match.PathSpecifier = &envoyroutev3.RouteMatch_ConnectMatcher_{
+			ConnectMatcher: &envoyroutev3.RouteMatch_ConnectMatcher{},
+		}
+	} else {
+		setEnvoyPathMatcher(matcher, match)
+	}
 	return match
+}
+
+// isDefaultPathConnectMatch identifies authority-form CONNECT requests, which
+// require Envoy's dedicated connect matcher. Gateway API defaults an omitted
+// path to PathPrefix "/", so omission cannot be detected with match.Path == nil.
+// A non-default path remains a method-and-path match for extended CONNECT.
+func isDefaultPathConnectMatch(match gwv1.HTTPRouteMatch) bool {
+	if match.Method == nil || *match.Method != gwv1.HTTPMethodConnect {
+		return false
+	}
+	pathType, pathValue := routeutils.ParsePath(match.Path)
+	return pathType == gwv1.PathMatchPathPrefix && pathValue == "/"
 }
 
 var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
@@ -683,7 +1226,9 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch
 		}
 	case gwv1.PathMatchRegularExpression:
 		out.PathSpecifier = &envoyroutev3.RouteMatch_SafeRegex{
-			SafeRegex: regexutils.NewRegexWithProgramSize(pathValue, nil),
+			SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+				Regex: pathValue,
+			},
 		}
 	}
 }
@@ -709,7 +1254,9 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoyroutev3.HeaderMatcher
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: matcher.Value,
+							},
 						},
 					},
 				}
@@ -749,7 +1296,9 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: matcher.Value,
+							},
 						},
 					},
 				}

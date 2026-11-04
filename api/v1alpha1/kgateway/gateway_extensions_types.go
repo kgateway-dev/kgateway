@@ -78,9 +78,10 @@ type JWT struct {
 	// ValidationMode configures how JWT validation behaves.
 	// If unset or empty, Strict mode is used (JWT is required).
 	// If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
-	// If using this mode, make sure to consider the security implications and
+	// If set to AllowMissingOrFailed, no request is ever rejected by the JWT filter.
+	// If using either of those modes, make sure to consider the security implications and
 	// consider using an `RBAC` policy to enforce authorization.
-	// +kubebuilder:validation:Enum=Strict;AllowMissing
+	// +kubebuilder:validation:Enum=Strict;AllowMissing;AllowMissingOrFailed
 	// +optional
 	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
 
@@ -103,6 +104,16 @@ const (
 	// If a token exists, validate it.
 	// Warning: this allows requests without a JWT token.
 	ValidationModeAllowMissing ValidationMode = "AllowMissing"
+	// Validate tokens but never reject a request. Requests with a missing, expired,
+	// malformed, or otherwise invalid token are all allowed through.
+	// Every JWT is still verified, so a valid token still populates `claimsToHeaders`
+	// and the JWT dynamic metadata, and a verification failure is recorded in the
+	// dynamic metadata for observability. This is a non-enforcing mode,
+	// intended for evaluating a JWT policy against live traffic before enforcing it.
+	// Warning: this mode provides no authentication. A downstream `RBAC` policy that
+	// matches on JWT claims sees the same empty metadata for an invalid token as it does
+	// for a request with no token at all.
+	ValidationModeAllowMissingOrFailed ValidationMode = "AllowMissingOrFailed"
 )
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
@@ -135,6 +146,8 @@ type ExtGrpcService struct {
 
 	// RequestTimeout is the timeout for the gRPC request. This is the timeout for a specific request.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
@@ -150,15 +163,15 @@ type ExtHttpService struct {
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
-	// PathPrefix specifies a prefix to the value of the authorization request's path header.
-	// This allows customizing the path at which the authorization server expects to receive requests.
-	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
-	// If not specified, the original request path is used.
+	// PathPrefix is prepended to the authorization request path.
+	// If omitted, the original request path is used.
 	// +optional
 	PathPrefix string `json:"pathPrefix,omitempty"`
 
 	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
@@ -193,6 +206,22 @@ type AuthorizationResponse struct {
 	// Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
 	// +optional
 	HeadersToBackend []string `json:"headersToBackend,omitempty"`
+
+	// HeadersToClient specifies which headers from the authorization response
+	// should be forwarded back to the downstream client when the request is denied.
+	// Maps to Envoy's allowed_client_headers. Required for redirect-based flows
+	// (e.g. oauth2-proxy returning 302 + Location) so that the redirect Location
+	// header reaches the browser on denial.
+	// Common examples: ["location", "set-cookie", "www-authenticate"]
+	// +optional
+	HeadersToClient []string `json:"headersToClient,omitempty"`
+
+	// HeadersToClientOnSuccess specifies which headers from the authorization response
+	// should be forwarded back to the downstream client when the request is allowed.
+	// Maps to Envoy's allowed_client_headers_on_success.
+	// Common examples: ["set-cookie", "x-auth-token"]
+	// +optional
+	HeadersToClientOnSuccess []string `json:"headersToClientOnSuccess,omitempty"`
 }
 
 type ExtSvcRetryPolicy struct {
@@ -213,6 +242,8 @@ type ExtSvcRetryPolicy struct {
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
 type RetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
 	// +required
@@ -220,6 +251,8 @@ type RetryBackoff struct {
 
 	// MaxInterval specifies the maximum interval between retry attempts.
 	// Defaults to 10 times the BaseInterval if not set.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +optional
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
@@ -247,6 +280,8 @@ type RateLimitProvider struct {
 	// For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.
 	// See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="100ms"
 	Timeout metav1.Duration `json:"timeout,omitempty"`
@@ -258,6 +293,26 @@ type RateLimitProvider struct {
 	// +kubebuilder:default="Off"
 	// +optional
 	XRateLimitHeaders XRateLimitHeadersStandard `json:"xRateLimitHeaders,omitempty"`
+
+	// PercentEnabled specifies the percentage of requests for which the global rate limit filter
+	// calls the rate limit service. Requests outside this percentage skip the filter entirely.
+	// Defaults to 100 (the filter is always called) if not set.
+	// See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-filter-enabled) for more info.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentEnabled *int32 `json:"percentEnabled,omitempty"`
+
+	// PercentEnforced specifies the percentage of requests, out of those for which the filter is
+	// enabled, that are actually enforced (i.e. can be denied by the rate limit service response).
+	// Setting this below 100 while PercentEnabled is 100 puts the filter in shadow mode: the rate
+	// limit service is called and its decision is recorded in stats, but requests are not denied.
+	// Defaults to 100 (enforcement matches enablement) if not set.
+	// See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-filter-enforced) for more info.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentEnforced *int32 `json:"percentEnforced,omitempty"`
 }
 
 // XRateLimitHeadersStandard controls how XRateLimit headers will emitted.

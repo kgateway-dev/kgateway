@@ -133,6 +133,15 @@ type LocalityPod struct {
 	// Synthetic LocalityPods built from WorkloadEntries / inline endpoints set this
 	// to true, since pod readiness does not apply to them.
 	Ready bool
+	// Terminating reflects whether the pod has begun terminating (a deletionTimestamp
+	// is set). A terminating pod keeps its Ready condition True for the duration of its
+	// grace period / preStop, so readiness alone does not exclude it; it is excluded
+	// separately so ServiceEntry-derived endpoints drain it, mirroring the EndpointSlice
+	// controller which marks terminating endpoints not-ready, and ztunnel which drains
+	// them. Synthetic LocalityPods built from WorkloadEntries / inline endpoints set
+	// this to false, since pod termination does not apply to them (their health is
+	// managed by the remote cluster).
+	Terminating bool
 }
 
 // Addresses returns the first address if there are any.
@@ -147,6 +156,7 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 	return c.Named == in.Named &&
 		c.Locality == in.Locality &&
 		c.Ready == in.Ready &&
+		c.Terminating == in.Terminating &&
 		maps.Equal(c.AugmentedLabels, in.AugmentedLabels) &&
 		slices.Equal(c.Addresses, in.Addresses)
 }
@@ -169,18 +179,30 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-func NewPodsCollection(client apiclient.Client, krtOptions krtutil.KrtOptions) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
+// NewPodsCollection builds the augmented and wrapped pod collections.
+// systemNamespaceNetwork is the network of pods without a
+// topology.istio.io/network label; see NewSystemNamespaceNetwork.
+func NewPodsCollection(
+	client apiclient.Client,
+	systemNamespaceNetwork krt.Singleton[string],
+	krtOptions krtutil.KrtOptions,
+) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
 	podClient := kclient.NewFiltered[*corev1.Pod](client, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
 		ObjectFilter:    client.ObjectFilter(),
 	})
 	pods := krt.WrapClient(podClient, krtOptions.ToOptions("Pods")...)
 	nodes := newNodeCollection(client, krtOptions)
-	return NewLocalityPodsCollection(nodes, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
+	return NewLocalityPodsCollection(nodes, systemNamespaceNetwork, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
 }
 
-func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[LocalityPod] {
-	return krt.NewCollection(pods, augmentPodLabels(nodes), krtOptions.ToOptions("AugmentPod")...)
+func NewLocalityPodsCollection(
+	nodes krt.Collection[NodeMetadata],
+	systemNamespaceNetwork krt.Singleton[string],
+	pods krt.Collection[*corev1.Pod],
+	krtOptions krtutil.KrtOptions,
+) krt.Collection[LocalityPod] {
+	return krt.NewCollection(pods, augmentPodLabels(nodes, systemNamespaceNetwork), krtOptions.ToOptions("AugmentPod")...)
 }
 
 func NewPodWrapperCollection(pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[WrappedPod] {
@@ -261,7 +283,10 @@ func getPodIPs(p *corev1.Pod) []corev1.PodIP {
 	return k8sPodIPs
 }
 
-func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
+func augmentPodLabels(
+	nodes krt.Collection[NodeMetadata],
+	systemNamespaceNetwork krt.Singleton[string],
+) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
 	return func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
 		labels := maps.Clone(pod.Labels)
 		if labels == nil {
@@ -281,7 +306,16 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 
 				//	labels[label.TopologyCluster.Name] = clusterID.String()
 				labels[corev1.LabelHostname] = nodeName
-				//	labels[label.TopologyNetwork.Name] = networkID.String()
+			}
+		}
+
+		// Resolve the network the way Istio does, so that network-based failover
+		// priorities (PreferNetwork, PreferClose, ...) compare the same value for
+		// the proxy and for endpoints. Sidecar-injected pods carry the label, but
+		// ambient pods and gateway pods do not and fall back to the system namespace network.
+		if labels[label.TopologyNetwork.Name] == "" {
+			if nw := FetchSystemNamespaceNetwork(kctx, systemNamespaceNetwork); nw != "" {
+				labels[label.TopologyNetwork.Name] = nw
 			}
 		}
 
@@ -301,6 +335,7 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 			Locality:        l,
 			Addresses:       extractPodIPs(pod),
 			Ready:           isPodReadyConditionTrue(pod.Status),
+			Terminating:     pod.GetDeletionTimestamp() != nil,
 		}
 	}
 }

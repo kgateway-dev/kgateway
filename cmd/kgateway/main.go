@@ -10,11 +10,18 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/goruntime"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -26,6 +33,9 @@ func main() {
 			if kgatewayVersion {
 				fmt.Println(version.String())
 				return nil
+			}
+			if err := goruntime.ConfigureMemoryLimit(cmd.Context()); err != nil {
+				return fmt.Errorf("configure Go runtime memory limit: %w", err)
 			}
 			s, err := setup.New()
 			if err != nil {
@@ -40,7 +50,5 @@ func main() {
 	}
 	cmd.Flags().BoolVarP(&kgatewayVersion, "version", "v", false, "Print the version of kgateway")
 
-	if err := cmd.ExecuteContext(ctx); err != nil {
-		log.Fatal(err)
-	}
+	return cmd.ExecuteContext(ctx)
 }

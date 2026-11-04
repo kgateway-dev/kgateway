@@ -1,6 +1,8 @@
 package irtranslator
 
 import (
+	"fmt"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,6 +119,55 @@ func addMergeOriginsToFilterMetadata(
 		metadata.FilterMetadata = map[string]*structpb.Struct{}
 	}
 	metadata.FilterMetadata[mergeMetadataKeyPrefix+gk.String()] = pb
+	return metadata
+}
+
+const routeSourceMetadataKey = "dev.kgateway.route_source"
+
+// addRouteSourceMetadata sets the dev.kgateway.route_source filter metadata on
+// an Envoy route from the originating xRoute IR. Existing metadata is preserved.
+func addRouteSourceMetadata(in ir.HttpRouteRuleMatchIR, metadata *envoycorev3.Metadata) *envoycorev3.Metadata {
+	if in.Parent == nil {
+		return metadata
+	}
+
+	fields := map[string]*structpb.Value{}
+	if in.Parent.Kind != "" {
+		fields["kind"] = structpb.NewStringValue(in.Parent.Kind)
+	}
+	if in.Parent.Group != "" {
+		fields["group"] = structpb.NewStringValue(in.Parent.Group)
+	}
+	if in.Parent.Name != "" {
+		fields["name"] = structpb.NewStringValue(in.Parent.Name)
+	}
+	if in.Parent.Namespace != "" {
+		fields["namespace"] = structpb.NewStringValue(in.Parent.Namespace)
+	}
+	if in.RuleName != "" {
+		fields["rule"] = structpb.NewStringValue(in.RuleName)
+	} else if in.Name != "" {
+		// Generate a unique identifier for the rule in the context if its route that is *not* a valid Gateway API section name.
+		// This way, the same field can be used for named and unnamed rules without risk of conflict.
+		fields["rule"] = structpb.NewStringValue(fmt.Sprintf("_rule-%d", in.RuleIndex))
+	}
+	// Gate on unique name being set because default value (0) is a valid index
+	if in.Name != "" {
+		// Use string value so all fields are strings and because struct number type is floating point.
+		fields["match"] = structpb.NewStringValue(fmt.Sprintf("_match-%d", in.MatchIndex))
+	}
+
+	if len(fields) == 0 {
+		return metadata
+	}
+
+	if metadata == nil {
+		metadata = &envoycorev3.Metadata{}
+	}
+	if metadata.FilterMetadata == nil {
+		metadata.FilterMetadata = map[string]*structpb.Struct{}
+	}
+	metadata.FilterMetadata[routeSourceMetadataKey] = &structpb.Struct{Fields: fields}
 	return metadata
 }
 

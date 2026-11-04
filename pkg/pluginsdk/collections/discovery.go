@@ -17,7 +17,6 @@
 package collections
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -54,15 +53,9 @@ func NewDiscoveryNamespacesFilter(
 		cfgJSON = "[]"
 	}
 
-	// convert LabelSelectors to Selectors
-	var labelSelectors []metav1.LabelSelector
-	err := json.Unmarshal([]byte(cfgJSON), &labelSelectors)
+	selectors, err := ParseLabelSelectors(cfgJSON)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing discovery selectors: %v; %w", cfgJSON, err)
-	}
-	selectors, err := toSelectors(labelSelectors)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing discovery selectors: %v; %w", cfgJSON, err)
+		return nil, fmt.Errorf("error parsing discovery selectors: %w", err)
 	}
 	f := &discoveryNamespacesFilter{
 		namespaces:          namespaces,
@@ -144,18 +137,6 @@ func (d *discoveryNamespacesFilter) AddHandler(f func(added, removed sets.String
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	d.handlers = append(d.handlers, f)
-}
-
-func toSelectors(selectors []metav1.LabelSelector) ([]labels.Selector, error) {
-	out := make([]labels.Selector, 0, len(selectors))
-	for _, selector := range selectors {
-		sel, err := metav1.LabelSelectorAsSelector(&selector)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, sel)
-	}
-	return out, nil
 }
 
 func (d *discoveryNamespacesFilter) notifyHandlers(added sets.Set[string], removed sets.String) {

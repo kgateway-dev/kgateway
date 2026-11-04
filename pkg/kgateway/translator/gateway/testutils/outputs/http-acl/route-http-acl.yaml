@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -43,7 +41,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -81,6 +79,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["192.168.0.0/16"]},{"action":"deny","cidrs":["2001:db8::/32"]},{"action":"deny","cidrs":["192.168.1.100"]},{"action":"deny","cidrs":["2001:db8::1"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
 Statuses:
   gateways:
     default/example-gateway:
@@ -143,6 +142,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

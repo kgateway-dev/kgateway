@@ -8,9 +8,7 @@ import (
 )
 
 const (
-	statusSubsystem   = "status_syncer"
 	snapshotSubsystem = "xds_snapshot"
-	syncerNameLabel   = "syncer"
 	gatewayLabel      = "gateway"
 	nameLabel         = "name"
 	namespaceLabel    = "namespace"
@@ -19,28 +17,6 @@ const (
 )
 
 var (
-	statusSyncHistogramBuckets = []float64{0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5}
-	statusSyncsTotal           = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: statusSubsystem,
-			Name:      "status_syncs_total",
-			Help:      "Total number of status syncs",
-		},
-		[]string{nameLabel, namespaceLabel, syncerNameLabel, resultLabel},
-	)
-	statusSyncDuration = metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem:                       statusSubsystem,
-			Name:                            "status_sync_duration_seconds",
-			Help:                            "Status sync duration",
-			Buckets:                         statusSyncHistogramBuckets,
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  100,
-			NativeHistogramMinResetDuration: time.Hour,
-		},
-		[]string{nameLabel, namespaceLabel, syncerNameLabel},
-	)
-
 	transformsHistogramBuckets = []float64{0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5}
 	snapshotTransformsTotal    = metrics.NewCounter(
 		metrics.CounterOpts{
@@ -70,6 +46,17 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
+	// snapshotDeferredClients counts connected clients without a current snapshot
+	// row, including clients that have never received a snapshot. Brief increases
+	// occur during convergence; a sustained count indicates deferred configuration.
+	snapshotDeferredClients = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "deferred_clients",
+			Help:      "Connected xDS clients whose snapshot is currently withheld because per-client inputs are not ready",
+		},
+		[]string{gatewayLabel, namespaceLabel},
+	)
 )
 
 // snapshotResourcesMetricLabels defines the labels for XDS snapshot resources metrics.
@@ -84,47 +71,6 @@ func (r snapshotResourcesMetricLabels) toMetricsLabels() []metrics.Label {
 		{Name: gatewayLabel, Value: r.Gateway},
 		{Name: namespaceLabel, Value: r.Namespace},
 		{Name: resourceLabel, Value: r.Resource},
-	}
-}
-
-// StatusSyncMetricLabels defines the labels for status sync metrics.
-type StatusSyncMetricLabels struct {
-	Name      string
-	Namespace string
-	Syncer    string
-}
-
-func (s StatusSyncMetricLabels) toMetricsLabels() []metrics.Label {
-	return []metrics.Label{
-		{Name: nameLabel, Value: s.Name},
-		{Name: namespaceLabel, Value: s.Namespace},
-		{Name: syncerNameLabel, Value: s.Syncer},
-	}
-}
-
-// CollectStatusSyncMetrics is called at the start of a status sync function to
-// begin metrics collection and returns a function called at the end to complete
-// metrics recording.
-func CollectStatusSyncMetrics(labels StatusSyncMetricLabels) func(error) {
-	if !metrics.Active() {
-		return func(err error) {}
-	}
-
-	start := time.Now()
-
-	return func(err error) {
-		duration := time.Since(start)
-
-		statusSyncDuration.Observe(duration.Seconds(), labels.toMetricsLabels()...)
-
-		result := "success"
-		if err != nil {
-			result = "error"
-		}
-
-		statusSyncsTotal.Inc(append(labels.toMetricsLabels(),
-			metrics.Label{Name: resultLabel, Value: result},
-		)...)
 	}
 }
 
@@ -194,9 +140,13 @@ func getDetailsFromXDSClientResourceName(resourceName string) resourceNameDetail
 // ResetMetrics resets the metrics from this package.
 // This is provided for testing purposes only.
 func ResetMetrics() {
-	statusSyncDuration.Reset()
-	statusSyncsTotal.Reset()
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
+	snapshotDeferredClients.Reset()
+	snapshotPerClientWithheldClients.Reset()
+	snapshotPerClientDefersTotal.Reset()
+	snapshotPerClientBoundedPublishesTotal.Reset()
+	snapshotPerClientInconsistentTotal.Reset()
+	snapshotPerClientReclaimedTotal.Reset()
 }

@@ -9,6 +9,7 @@ Please visit the pages below for details on specific topics:
 - [Pull Requests](pull-requests.md) - Best practices for creating pull requests
 - [Contribution Conventions](conventions.md) - Coding and testing conventions
 - [Code Generation](code-generation.md) - Details on code generation make targets
+- [Adding fields to Policy CRDs](adding-policy-fields.md) - End-to-end workflow for extending an existing Policy CRD
 - [Pull Request Reviews](pull-request-reviews.md) - Best practices for reviewing pull requests
 - [Issues](issues.md) - Guidelines for reporting issues
 - [Documentation](documentation.md) - How to contribute to product documentation

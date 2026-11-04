@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -70,6 +71,8 @@ var (
 	GwApiV1_4_0 = GwApiVersionMustParse("1.4.0")
 	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.0 and is available in the standard channel.
 	GwApiV1_5_0 = GwApiVersionMustParse("1.5.0")
+	// TCPRoutes was promoted to gateway.networking.k8s.io/v1 in 1.6.0 and is available in the standard channel.
+	GwApiV1_6_0 = GwApiVersionMustParse("1.6.0")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -95,7 +98,8 @@ var (
 	}
 
 	GwApiRequireTcpRoutes = map[GwApiChannel]*GwApiVersion{
-		GwApiChannelExperimental: &GwApiV0_3_0,
+		GwApiChannelExperimental: &GwApiV1_6_0,
+		GwApiChannelStandard:     &GwApiV1_6_0,
 	}
 
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
@@ -589,7 +593,8 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 
 var decUnstructured = yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
-// Deleting namespaces is super super super slow. Avoid deleting them, ever
+// stripNamespaceResources returns the concatenated manifest contents with any Namespace
+// resources removed.
 func stripNamespaceResources(t *testing.T, manifests ...string) string {
 	cfgs := []string{}
 	for _, manifest := range manifests {
@@ -597,36 +602,39 @@ func stripNamespaceResources(t *testing.T, manifests ...string) string {
 		assert.NoError(t, err)
 		cfgs = append(cfgs, stripNamespaceResourcesFromContent(t, string(d)))
 	}
-
 	return strings.Join(cfgs, "\n---\n")
 }
 
+// stripNamespaceResourcesFromContent returns the manifest content with any Namespace
+// resources removed.
 func stripNamespaceResourcesFromContent(t *testing.T, content string) string {
 	cfgs := []string{}
-	for _, yml := range yml.SplitString(content) {
+	for _, y := range yml.SplitString(content) {
 		obj := &unstructured.Unstructured{}
-		_, gvk, err := decUnstructured.Decode([]byte(yml), nil, obj)
+		_, gvk, err := decUnstructured.Decode([]byte(y), nil, obj)
 		if runtime.IsMissingKind(err) {
-			// Not a k8s object, skip
 			continue
 		}
 		assert.NoError(t, err)
 		if gvk.Kind != "Namespace" {
-			cfgs = append(cfgs, yml)
+			cfgs = append(cfgs, y)
 		}
 	}
-
 	return strings.Join(cfgs, "\n---\n")
 }
 
-// DeleteManifests deletes the manifests and waits until the resources are deleted.
+// DeleteManifests deletes the non-namespace resources in the manifests (fire-and-forget, no wait).
+// Namespace resources are intentionally skipped: namespaces are slow to delete, and deleting one
+// here would race the follow-up apply on a test retry. Namespaces belong to the base-level
+// manifests applied by SetupBaseConfig, whose teardown deletes and waits for them.
+//
+// Deletion goes through the Istio client (not client.Delete on parsed objects) so that resources
+// whose manifests omit metadata.namespace are resolved to the same default namespace the apply used.
 func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 	nf := stripNamespaceResources(s.T(), testCase.Manifests...)
 	fp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_manifests.yaml")
 	s.Require().NoError(os.WriteFile(fp, []byte(nf), 0o600))
-
-	err := s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", fp)
-	s.Require().NoError(err)
+	s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", fp))
 
 	if len(testCase.ManifestsWithTransform) == 0 {
 		return
@@ -636,14 +644,11 @@ func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 	for manifest, transform := range testCase.ManifestsWithTransform {
 		d, err := os.ReadFile(manifest)
 		s.Require().NoError(err)
-
 		transformedCfgs = append(transformedCfgs, stripNamespaceResourcesFromContent(s.T(), transform(string(d))))
 	}
-
-	transformedDeleteManifest := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
-	s.Require().NoError(os.WriteFile(transformedDeleteManifest, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
-	err = s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedDeleteManifest)
-	s.Require().NoError(err)
+	transformedFp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
+	s.Require().NoError(os.WriteFile(transformedFp, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
+	s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedFp))
 }
 
 func (s *BaseTestingSuite) setupHelpers() {
@@ -732,12 +737,12 @@ func DetectGwApiInfo(ctx context.Context, c client.Client) (GwApiChannel, GwApiV
 
 	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
 	if !hasChannel {
-		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
+		return "", GwApiVersion{}, errors.New("Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
 	}
 
 	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
 	if !hasVersion {
-		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
+		return "", GwApiVersion{}, errors.New("Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
 	}
 
 	version, err := semver.NewVersion(versionStr)

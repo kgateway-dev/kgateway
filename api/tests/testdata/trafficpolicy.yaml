@@ -1,0 +1,323 @@
+# TrafficPolicy: valid target references
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-valid-targets
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: test-grpc-route
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
+    name: test-listener
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      app: myapp
+---
+# TrafficPolicy: invalid target reference
+_err: targetRefs may only reference Gateway, HTTPRoute, GRPCRoute, or ListenerSet resources
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-invalid-target
+spec:
+  targetRefs:
+  - group: apps
+    kind: Deployment
+    name: test-deployment
+---
+# TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute
+_err: autoHostRewrite can only be used when targeting HTTPRoute resources
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-ahr-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  autoHostRewrite: true
+---
+# TrafficPolicy: policy with urlRewrite can only target HTTPRoute
+_err: urlRewrite can only be used when targeting HTTPRoute resources
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+---
+# TrafficPolicy: policy with urlRewrite and no targets is valid (ExtensionRef usage)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-extension-ref
+spec:
+  autoHostRewrite: true
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+---
+# TrafficPolicy: policy with statPrefix can only target HTTPRoute or GRPCRoute
+_err: statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+---
+# TrafficPolicy: policy with statPrefix may target HTTPRoute
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-valid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+---
+# TrafficPolicy: statPrefix rejects a Gateway targetSelectors alongside a valid targetRefs
+_err: statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-mixed-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      gateway: example
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+---
+# TrafficPolicy: empty generic key and value in rate limit descriptor
+_errs:
+- 'spec.rateLimit.global.descriptors[0].entries[0].generic.key in body should be at least 1 chars long'
+- 'spec.rateLimit.global.descriptors[0].entries[0].generic.value in body should be at least 1 chars long'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-empty-generic-fields
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: Generic
+          generic:
+            key: ""
+            value: ""
+      extensionRef:
+        name: test-extension
+---
+# TrafficPolicy: valid retry and timeouts
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: valid-retry-and-timeouts
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 2s
+    backoffBaseInterval: 50ms
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+---
+# TrafficPolicy: retry.retryOn unset
+_err: retryOn or statusCodes must be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-retryon-unset
+spec:
+  retry:
+    attempts: 2
+    perTryTimeout: 2s
+---
+# TrafficPolicy: retry.perTryTimeout must be less than timeouts.request
+_err: retry.perTryTimeout must be less than timeouts.request
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-must-be-less-than-timeouts-request
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 6s
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+---
+# TrafficPolicy: retry.perTryTimeout must be at least 1ms
+_err: perTryTimeout must be at least 1ms
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-must-be-at-least-1ms
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 0.1ms
+---
+# TrafficPolicy: retry.perTryTimeout must be a valid duration value
+_errs:
+- 'spec.retry.perTryTimeout: Invalid value: "1f": invalid duration value'
+- 'spec.retry.perTryTimeout: Invalid value: "string": type conversion error from ''string'' to ''google.protobuf.Duration'' evaluating rule: retry.perTryTimeout must be at least 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-must-be-a-valid-duration-value
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    perTryTimeout: 1f
+---
+# TrafficPolicy: retry may target a whole Gateway without a sectionName
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-may-target-a-whole-gateway-without-a-sectionname
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  retry:
+    retryOn:
+    - gateway-error
+---
+# TrafficPolicy: timeouts.request must be a valid duration value
+_err: 'spec.timeouts.request: Invalid value: "foo": invalid duration value'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: timeouts-request-must-be-a-valid-duration-value
+spec:
+  timeouts:
+    request: foo
+---
+# TrafficPolicy: timeouts.streamIdle must be a valid duration value
+_err: 'spec.timeouts.streamIdle: Invalid value: "-1s": invalid duration value'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: timeouts-streamidle-must-be-a-valid-duration-value
+spec:
+  timeouts:
+    streamIdle: -1s
+---
+# TrafficPolicy Buffer maxRequestSize with integer
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-maxrequestsize-with-integer
+spec:
+  buffer:
+    maxRequestSize: 65536
+---
+# TrafficPolicy Buffer maxRequestSize with string
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-maxrequestsize-with-string
+spec:
+  buffer:
+    maxRequestSize: 64Ki
+---
+# TrafficPolicy Buffer maxRequestSize with invalid value
+_err: maxRequestSize must be greater than 0 and less than 4Gi
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-maxrequestsize-with-invalid-value
+spec:
+  buffer:
+    maxRequestSize: 4Gi
+---
+# TrafficPolicy Buffer with filterStage
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-with-filterstage
+spec:
+  buffer:
+    maxRequestSize: 1Ki
+    filterStage:
+      stage: AuthN
+      predicate: Before
+---
+# TrafficPolicy Buffer filterStage with disable
+_err: filterStage cannot be set when disable is set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-filterstage-with-disable
+spec:
+  buffer:
+    disable: {}
+    filterStage:
+      stage: AuthN
+      predicate: Before
+---
+# TrafficPolicy Buffer filterStage with a weight
+_err: filterStage.weight has no effect for buffer and must be 0
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-filterstage-with-a-weight
+spec:
+  buffer:
+    maxRequestSize: 1Ki
+    filterStage:
+      stage: AuthN
+      predicate: Before
+      weight: 1

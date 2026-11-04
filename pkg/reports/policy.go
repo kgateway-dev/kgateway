@@ -1,8 +1,6 @@
 package reports
 
 import (
-	"context"
-	"log/slog"
 	"slices"
 	"strings"
 
@@ -59,6 +57,29 @@ func (r *ReportMap) policy(key reporter.PolicyKey) *PolicyReport {
 	return r.Policies[key]
 }
 
+// PolicyReport returns the report for a policy, or nil if no report is present.
+func (r *ReportMap) PolicyReport(key reporter.PolicyKey) *PolicyReport {
+	return r.policy(key)
+}
+
+// MergePolicyReports folds the policy reports of src into r. When r has no report for a
+// policy, src's report is copied in. When r already has one, src's ancestors are added to it,
+// and for an ancestor both reports carry, src's entry replaces r's. This is the ancestor merge
+// the status reducer applies across contributions, for callers that assemble report maps
+// directly.
+func (r *ReportMap) MergePolicyReports(src ReportMap) {
+	for key, report := range src.Policies {
+		if report == nil {
+			continue
+		}
+		if existing := r.Policies[key]; existing != nil {
+			mergeAncestorReports(existing, report)
+			continue
+		}
+		r.Policies[key] = clonePolicyReport(report)
+	}
+}
+
 func (r *ReportMap) newPolicyReport(key reporter.PolicyKey, observedGeneration int64) *PolicyReport {
 	pr := &PolicyReport{
 		observedGeneration: observedGeneration,
@@ -104,12 +125,20 @@ func (r *PolicyReport) ancestorRefs() []gwv1.ParentReference {
 }
 
 func (r *ReportMap) BuildPolicyStatus(
-	ctx context.Context,
 	key reporter.PolicyKey,
 	controller string,
 	currentStatus gwv1.PolicyStatus,
 ) *gwv1.PolicyStatus {
-	report := r.policy(key)
+	return BuildPolicyStatus(r.policy(key), key, controller, currentStatus)
+}
+
+// BuildPolicyStatus builds a Policy status directly from its typed report fragment.
+func BuildPolicyStatus(
+	report *PolicyReport,
+	key reporter.PolicyKey,
+	controller string,
+	currentStatus gwv1.PolicyStatus,
+) *gwv1.PolicyStatus {
 	if report == nil {
 		// no report for this policy
 		return nil
@@ -166,33 +195,21 @@ func (r *ReportMap) BuildPolicyStatus(
 		status.Ancestors = append(status.Ancestors, ancestorStatus)
 	}
 
-	// now we have a status object reflecting the state of translation according to our reportMap
-	// let's add status from other controllers on the current object status
-	for _, ancestor := range currentStatus.Ancestors {
-		if ancestor.ControllerName != gwv1.GatewayController(controller) {
-			status.Ancestors = append(status.Ancestors, ancestor)
-		}
-	}
-
-	// sort all parents for consistency with Equals and for Update
-	// match sorting semantics of istio/istio, see:
-	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
+	// Ancestors owned by other controllers are deliberately absent, and so is the Gateway
+	// API cap. Both belong to the write path, which is the only layer holding an
+	// authoritative read of the live object: statussync.MergePolicyAncestorStatuses
+	// re-reads the live status, keeps every foreign ancestor, replaces ours, and caps the
+	// result. Preserving and capping here too produced entries the merge discarded and a
+	// second cap that had to be kept in lockstep with the first across two packages.
+	//
+	// currentStatus is still read above, for LastTransitionTime continuity.
+	//
+	// The sort only makes this function's output deterministic for callers that consume the
+	// desired status directly, such as the golden-output translator tests. It does not decide
+	// the published order: the merge keeps the live order and appends new entries.
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})
-
-	if len(status.Ancestors) > MaxPolicyStatusAncestors {
-		// Gateway API caps PolicyStatus.ancestors at 16 real entries. We can't
-		// invent a synthetic ancestor entry here, so log the truncation explicitly.
-		slog.WarnContext(ctx,
-			"truncating policy status ancestors to Gateway API limit",
-			"policy", key.DisplayString(),
-			"controller", controller,
-			"total_ancestors", len(status.Ancestors),
-			"dropped_ancestors", len(status.Ancestors)-MaxPolicyStatusAncestors,
-		)
-		status.Ancestors = status.Ancestors[:MaxPolicyStatusAncestors]
-	}
 
 	return &status
 }

@@ -183,3 +183,42 @@ spec:
       requestRedirect:
         scheme: http
         statusCode: 302
+---
+# https://github.com/kgateway-dev/kgateway/issues/14443
+# A ReplaceFullPath redirect may carry a query string; the route must not be replaced.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: replace-full-path-with-query
+spec:
+  parentRefs:
+    - name: test
+  hostnames:
+    - "replace-full-path-with-query.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /rule0
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        hostname: example.com
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /test?foo=bar
+        statusCode: 301
+  # A redirect target is never matched on, so sequences that are rejected in a match path
+  # are legal here - Envoy accepts them and normalizes on its own side.
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /rule1
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: //test/../other?a=1#frag
+        statusCode: 302

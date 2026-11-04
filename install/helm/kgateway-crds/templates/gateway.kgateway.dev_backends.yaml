@@ -299,6 +299,57 @@ spec:
                 required:
                 - host
                 type: object
+              priorityGroups:
+                description: |-
+                  PriorityGroups is an ordered list of backend groups used for failover.
+                  Traffic is sent to the backends of the first group; each subsequent
+                  group is only used when the backends of all preceding groups are
+                  unhealthy. The health check can be configured via the BackendConfigPolicy
+                  that targets this Backend
+
+                  Note: This field is part of an experimental API and subject to breaking changes in future releases.
+                items:
+                  description: |-
+                    PriorityGroup defines one failover priority level of a priority groups backend.
+
+                    Note: This struct is part of an experimental API and subject to breaking changes in future releases.
+                  properties:
+                    backendRefs:
+                      description: |-
+                        BackendRefs references the Backends that make up this priority group.
+                        Referenced Backends must be in the same namespace and must not be
+                        priority groups backends themselves.
+                      items:
+                        description: |-
+                          LocalObjectReference contains enough information to let you locate the
+                          referenced object inside the same namespace.
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      maxItems: 16
+                      minItems: 1
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
+                      x-kubernetes-validations:
+                      - message: backend reference name must not be empty
+                        rule: self.all(r, size(r.name) > 0)
+                  required:
+                  - backendRefs
+                  type: object
+                maxItems: 16
+                minItems: 1
+                type: array
               static:
                 description: Static is the static backend configuration.
                 properties:
@@ -344,22 +395,27 @@ spec:
                 - Static
                 - DynamicForwardProxy
                 - GCP
+                - PriorityGroups
                 type: string
             type: object
             x-kubernetes-validations:
             - message: aws backend must be specified when type is 'AWS'
-              rule: 'self.type == ''AWS'' ? has(self.aws) : true'
+              rule: '!has(self.type) || (self.type == ''AWS'' ? has(self.aws) : true)'
             - message: static backend must be specified when type is 'Static'
-              rule: 'self.type == ''Static'' ? has(self.static) : true'
+              rule: '!has(self.type) || (self.type == ''Static'' ? has(self.static)
+                : true)'
             - message: dynamicForwardProxy backend must be specified when type is
                 'DynamicForwardProxy'
-              rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
-                : true'
+              rule: '!has(self.type) || (self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
+                : true)'
             - message: gcp backend must be specified when type is 'GCP'
-              rule: 'self.type == ''GCP'' ? has(self.gcp) : true'
+              rule: '!has(self.type) || (self.type == ''GCP'' ? has(self.gcp) : true)'
+            - message: priorityGroups backend must be specified when type is 'PriorityGroups'
+              rule: '!has(self.type) || (self.type == ''PriorityGroups'' ? has(self.priorityGroups)
+                : true)'
             - message: exactly one of the fields in [aws static dynamicForwardProxy
-                gcp] must be set
-              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp)].filter(x,x==true).size()
+                gcp priorityGroups] must be set
+              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.gcp),has(self.priorityGroups)].filter(x,x==true).size()
                 == 1'
           status:
             description: BackendStatus defines the observed state of Backend.

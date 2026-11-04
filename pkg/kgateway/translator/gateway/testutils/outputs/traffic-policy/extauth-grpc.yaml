@@ -24,8 +24,6 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -53,6 +51,7 @@ Listeners:
           name: ext_auth/infra/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -69,6 +68,7 @@ Listeners:
           name: ext_auth/infra/section-name-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -101,7 +101,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tls1
-        statPrefix: http
+        statPrefix: https_443_tls1
         useRemoteAddress: true
     name: tls1
     transportSocket:
@@ -138,6 +138,7 @@ Listeners:
           name: ext_auth/infra/basic-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -170,7 +171,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tls2
-        statPrefix: http
+        statPrefix: https_443_tls2
         useRemoteAddress: true
     name: tls2
     transportSocket:
@@ -220,6 +221,7 @@ Listeners:
           name: ext_auth/infra/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -236,6 +238,7 @@ Listeners:
           name: ext_auth/infra/basic-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -252,6 +255,7 @@ Listeners:
           name: ext_auth/infra/section-name-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -284,7 +288,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   metadata:
@@ -313,6 +317,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - example.com
@@ -346,6 +351,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2-0
       metadata:
@@ -371,6 +377,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2-1
       metadata:
@@ -391,6 +398,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{}'
           filterName: rustformation
+          perRouteConfigName: rustformation
         global_disable/ext_auth:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
@@ -406,6 +414,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
   - domains:
     - no-auth.example.com
     name: listener~80~no-auth_example_com
@@ -435,6 +444,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - tls.example.com
@@ -464,6 +474,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-route-tls-section-name
       metadata:
@@ -487,6 +498,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /example-tls-sibling-route
       name: tls1~tls_example_com-route-2-httproute-example-tls-sibling-route-infra-0-0-matcher-0
@@ -516,6 +528,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
@@ -535,6 +548,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - no-auth-tls.example.com
@@ -693,6 +707,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -711,6 +730,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -729,6 +753,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -747,6 +776,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -765,6 +799,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -783,6 +822,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -801,6 +845,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

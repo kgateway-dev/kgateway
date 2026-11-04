@@ -10,6 +10,8 @@ type Timeouts struct {
 	// It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
 	// +optional
 	//
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Request *metav1.Duration `json:"request,omitempty"`
 
@@ -17,6 +19,8 @@ type Timeouts struct {
 	// A value of 0 effectively disables the timeout.
 	// +optional
 	//
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdle *metav1.Duration `json:"streamIdle,omitempty"`
 }

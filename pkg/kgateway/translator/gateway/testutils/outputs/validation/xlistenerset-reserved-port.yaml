@@ -1,6 +1,3 @@
-Clusters:
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Statuses:
   gateways:
     default/test:
@@ -11,7 +8,7 @@ Statuses:
         status: "False"
         type: Accepted
       - lastTransitionTime: null
-        message: ""
+        message: No valid listeners
         reason: Invalid
         status: "False"
         type: Programmed

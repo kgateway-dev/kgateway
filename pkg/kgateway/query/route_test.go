@@ -264,3 +264,31 @@ func TestGetRouteChain(t *testing.T) {
 		})
 	}
 }
+
+func TestRouteKeyMatches(t *testing.T) {
+	parents := []client.Object{
+		nil,
+		&gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "gw"}},
+		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "ls"}},
+		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Namespace: "other", Name: "ls"}},
+		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Name: "ls"}},
+	}
+	listenerNames := []string{"https", "http", ""}
+
+	keys := []string{"", "listener~80", "default/ls", "default/ls/", "default//https", "default/lsx/https", "default/ls/https/extra", "xdefault/ls/https"}
+	for _, p := range parents {
+		for _, ln := range listenerNames {
+			keys = append(keys, query.GenerateRouteKey(p, ln))
+		}
+	}
+
+	for _, p := range parents {
+		for _, ln := range listenerNames {
+			want := query.GenerateRouteKey(p, ln)
+			for _, key := range keys {
+				assert.Equal(t, key == want, query.RouteKeyMatches(key, p, ln),
+					"RouteKeyMatches(%q, %T, %q) must agree with GenerateRouteKey %q", key, p, ln, want)
+			}
+		}
+	}
+}

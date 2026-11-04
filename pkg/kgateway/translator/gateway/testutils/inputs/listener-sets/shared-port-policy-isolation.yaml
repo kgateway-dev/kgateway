@@ -1,0 +1,132 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners: []
+  allowedListeners:
+    namespaces:
+      from: All
+---
+# Team A's ListenerSet: a wildcard listener meant to catch any subdomain
+# they haven't explicitly delegated. No policy attached here.
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: wildcard-listenerset
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http-9090
+    protocol: HTTP
+    port: 9090
+    hostname: "*.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# Team B's ListenerSet: independently authored, picks the same port by
+# coincidence, and scopes a listener-level TrafficPolicy to its own
+# specific hostname, expecting isolation from anything else on the Gateway.
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: specific-listenerset
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http-9090
+    protocol: HTTP
+    port: 9090
+    hostname: "specific.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# Team A's route, served through their wildcard listener, but it happens to
+# claim the exact same hostname that Team B's listener uses.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wildcard-route
+spec:
+  parentRefs:
+  - name: wildcard-listenerset
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
+  hostnames:
+  - "specific.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: wildcard-svc
+      port: 8080
+---
+# Team B's route, served through their own specific listener.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: specific-route
+spec:
+  parentRefs:
+  - name: specific-listenerset
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: specific-svc
+      port: 8080
+---
+# Team B's listener-scoped TrafficPolicy. Intended to apply only to
+# Team B's own routes on specific-listenerset.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: specific-listener-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
+    name: specific-listenerset
+    sectionName: http-9090
+  cors:
+    allowOrigins:
+    - "https://team-b-only.example.com"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wildcard-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: specific-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: HTTP
+      port: 8080
+      targetPort: test

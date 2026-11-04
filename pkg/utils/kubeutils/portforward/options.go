@@ -1,7 +1,6 @@
 package portforward
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -24,7 +23,7 @@ type properties struct {
 }
 
 func WithKindCluster(kindClusterName string) Option {
-	return WithKubeContext(fmt.Sprintf("kind-%s", kindClusterName))
+	return WithKubeContext("kind-" + kindClusterName)
 }
 
 func WithKubeContext(kubeContext string) Option {

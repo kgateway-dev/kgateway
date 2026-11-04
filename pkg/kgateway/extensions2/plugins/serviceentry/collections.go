@@ -17,6 +17,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -129,27 +130,30 @@ func initServiceEntryCollections(
 	)
 	WorkloadEntries := krt.WrapClient(weInformer, commonCols.KrtOpts.ToOptions("WorkloadEntries")...)
 
+	ServiceEntries := filteredServiceEntries(commonCols.ServiceEntries, opts.ServiceEntriesExclusionLabelSelectors)
+
 	// compute intermediate state collections
-	SelectingServiceEntries := krt.NewCollection(commonCols.ServiceEntries, func(ctx krt.HandlerContext, i *networkingclient.ServiceEntry) *seSelector {
+	SelectingServiceEntries := krt.NewCollection(ServiceEntries, func(ctx krt.HandlerContext, i *networkingclient.ServiceEntry) *seSelector {
 		return &seSelector{ServiceEntry: i}
 	}, krt.WithName("SelectingServiceEntries"))
 	SelectedWorkloads, selectedWorkloadsIndex := selectedWorkloads(
 		SelectingServiceEntries,
 		WorkloadEntries,
 		commonCols.LocalityPods,
+		commonCols.SystemNamespaceNetwork,
 		opts.Aliaser,
 		opts.WorkloadEntriesExclusionLabelKeys,
 		opts.PromoteWorkloadEntryAnnotations,
 	)
 
 	// init the outputs
-	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts, opts.Aliaser)
+	Backends := backendsCollections(logger, ServiceEntries, commonCols.SystemNamespaceNetwork, commonCols.KrtOpts, opts.Aliaser)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
 
 	return serviceEntryPlugin{
 		logger: logger,
 
-		ServiceEntries:  commonCols.ServiceEntries,
+		ServiceEntries:  ServiceEntries,
 		WorkloadEntries: WorkloadEntries,
 
 		SelectingServiceEntries: SelectingServiceEntries,
@@ -159,6 +163,18 @@ func initServiceEntryCollections(
 		Backends:  Backends,
 		Endpoints: Endpoints,
 	}
+}
+
+func filteredServiceEntries(
+	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
+	exclusionSelectors []labels.Selector,
+) krt.Collection[*networkingclient.ServiceEntry] {
+	return krt.NewCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) **networkingclient.ServiceEntry {
+		if serviceEntryIsExcluded(se.GetLabels(), exclusionSelectors) {
+			return nil
+		}
+		return &se
+	}, krt.WithName("FilteredServiceEntries"))
 }
 
 func (s *serviceEntryPlugin) HasSynced() bool {
@@ -181,6 +197,7 @@ func selectedWorkloads(
 	ServiceEntries krt.Collection[seSelector],
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
+	systemNamespaceNetwork krt.Singleton[string],
 	aliaser Aliaser,
 	weExclusionLabelKeys sets.Set[string],
 	promoteAnnotationKeys sets.Set[string],
@@ -228,6 +245,7 @@ func selectedWorkloads(
 			promoteAnnotationKeys,
 			&we.Spec,
 			selectedByServiceEntries,
+			krtcollections.FetchSystemNamespaceNetwork(ctx, systemNamespaceNetwork),
 		)
 
 		return &workload
@@ -270,6 +288,7 @@ func selectedWorkloadFromEntry(
 	promoteAnnotationKeys sets.Set[string],
 	weSpec *networking.WorkloadEntry,
 	selectedBy []seSelector,
+	systemNamespaceNetwork string,
 ) selectedWorkload {
 	labels := maps.Clone(weSpec.GetLabels())
 	if labels == nil {
@@ -294,6 +313,11 @@ func selectedWorkloadFromEntry(
 	network := weSpec.GetNetwork()
 	if network == "" && labels[label.TopologyNetwork.Name] != "" {
 		network = labels[label.TopologyNetwork.Name]
+	}
+	// Like Istio, a WorkloadEntry without a network is in the system namespace network,
+	// which is also what pods without a network label resolve to.
+	if network == "" {
+		network = systemNamespaceNetwork
 	}
 
 	// we propagate the value to the labels so that endpoint plugins can see it
@@ -327,9 +351,10 @@ func selectedWorkloadFromEntry(
 			Locality:        locality,
 			AugmentedLabels: labels,
 			Addresses:       []string{weSpec.GetAddress()},
-			// WorkloadEntry / inline endpoints have no pod readiness concept; their
-			// health is managed by the remote cluster (e.g. cross-network endpoints),
-			// so treat them as ready and never filter them on readiness.
+			// WorkloadEntry / inline endpoints have no pod readiness or termination
+			// concept; their health is managed by the remote cluster (e.g. cross-network
+			// endpoints), so treat them as ready and never filter them on local pod
+			// readiness/termination. Terminating is left at its false zero value.
 			Ready: true,
 		},
 
@@ -364,6 +389,11 @@ func parseWorkloadEntryLocality(locality string) ir.PodLocality {
 		out.Subzone = parts[2]
 	}
 	return out
+}
+
+// serviceEntryIsExcluded returns true if the ServiceEntry metadata labels match any exclusion selector.
+func serviceEntryIsExcluded(metadataLabels map[string]string, exclusionSelectors []labels.Selector) bool {
+	return collections.MatchesAnyLabelSelector(exclusionSelectors, metadataLabels)
 }
 
 // workloadEntryIsExcluded returns true if the merged label set (metadata + spec labels) contains

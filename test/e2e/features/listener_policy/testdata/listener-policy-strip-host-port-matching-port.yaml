@@ -133,6 +133,7 @@ spec:
     metadata:
       labels:
         app: raw-header-echo
+        app.kubernetes.io/name: raw-header-echo
     spec:
       containers:
         - name: raw-header-echo

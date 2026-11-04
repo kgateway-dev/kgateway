@@ -1,0 +1,91 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test
+---
+# A single HTTPRoute produces one vhost with two routes: rule0 has its own
+# retry TrafficPolicy attached, rule1 has none.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /own-retry
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - name: rule1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /inherit-retry
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+# Listener-attached retry (via Gateway sectionName). This should fan out to
+# every route in the vhost that does not already carry its own retry policy,
+# i.e. rule1 but not rule0.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-retry
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http
+  retry:
+    retryOn:
+    - gateway-error
+    attempts: 3
+    backoffBaseInterval: 25ms
+---
+# Route-rule-attached retry on rule0. A more specific route-level retry must
+# win over the listener-attached one, so rule0 keeps these values.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-retry
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+    sectionName: rule0
+  retry:
+    retryOn:
+    - reset
+    attempts: 7
+    perTryTimeout: 250ms
+    statusCodes:
+    - 503
+    backoffBaseInterval: 100ms

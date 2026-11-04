@@ -1,6 +1,3 @@
-Clusters:
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -23,7 +20,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https
-        statPrefix: http
+        statPrefix: https_443_https
         useRemoteAddress: true
     name: https
     transportSocket:
@@ -46,6 +43,9 @@ Listeners:
             - X25519MLKEM768
             - X25519
             - P-256
+            signatureAlgorithms:
+            - ed25519
+            - ecdsa_secp256r1_sha256
             tlsMaximumProtocolVersion: TLSv1_3
             tlsMinimumProtocolVersion: TLSv1_2
           validationContext:
@@ -76,7 +76,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-with-hostname
-        statPrefix: http
+        statPrefix: https_8443_https-with-hostname
         useRemoteAddress: true
     name: https-with-hostname
     transportSocket:

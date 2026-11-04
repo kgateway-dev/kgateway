@@ -3,12 +3,7 @@ package gwextbase
 import (
 	"context"
 
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"istio.io/istio/pkg/kube/krt"
-
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -25,6 +20,7 @@ type (
 	ProviderNeededMap               = trafficpolicy.ProviderNeededMap
 	TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
 	TrafficPolicyMergeOpts          = trafficpolicy.TrafficPolicyMergeOpts
+	TrafficPolicyConstructorOption  = trafficpolicy.TrafficPolicyConstructorOption
 )
 
 var (
@@ -32,32 +28,22 @@ var (
 	EnableFilterPerRoute           = trafficpolicy.EnableFilterPerRoute
 	MergeTrafficPolicies           = trafficpolicy.MergeTrafficPolicies
 	AddDisableFilterIfNeeded       = trafficpolicy.AddDisableFilterIfNeeded
+
+	// WithSourceGroupKind sets the identity a ReferenceGrant has to name for the
+	// cross-namespace references held by a TrafficPolicySpec. See
+	// trafficpolicy.WithSourceGroupKind.
+	WithSourceGroupKind = trafficpolicy.WithSourceGroupKind
 )
 
 // NewTrafficPolicyConstructor creates a traffic policy constructor. This converts a traffic policy into its IR form.
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
+	opts ...trafficpolicy.TrafficPolicyConstructorOption,
 ) *trafficpolicy.TrafficPolicyConstructor {
-	return trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol)
+	return trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol, opts...)
 }
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthSucceededMetadata bool) ir.ProxyTranslationPass {
 	return trafficpolicy.NewGatewayTranslationPass(tctx, reporter, enableAuthSucceededMetadata)
-}
-
-// ResolveExtGrpcService resolves a gateway extension gRPC service by looking up the backend reference
-// and constructing an Envoy gRPC service configuration. It takes the following parameters:
-//   - krtctx: The KRT context
-//   - backends: The backend index collection
-//   - disableExtensionRefValidation: Whether to skip reference grant validation
-//   - objectSource: The source object making the request
-//   - grpcService: The gRPC service configuration to resolve
-//
-// Returns:
-//   - *envoycorev3.GrpcService: The resolved Envoy gRPC service configuration
-//   - error: Any error that occurred during resolution
-
-func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *kgateway.ExtGrpcService) (*envoycorev3.GrpcService, error) {
-	return trafficpolicy.ResolveExtGrpcService(krtctx, backends, disableExtensionRefValidation, objectSource, grpcService)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
 	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
@@ -25,7 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -35,7 +35,11 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
-	// +krtEqualsTodo decide whether extension name should affect equality
+	// Name is this extension's KRT key, but it must still be compared: policy IRs embed a
+	// *TrafficPolicyGatewayExtensionIR and delegate to this Equals (see extauth/extproc/jwt/
+	// oauth2/global_rate_limit), and the name reaches the dataplane through providerName() as
+	// the ext_proc/ext_authz filter name and per-route typed-config key. Two identically
+	// configured extensions with different names produce different Envoy config.
 	Name             string
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
@@ -53,6 +57,9 @@ func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
+	if e.Name != other.Name {
+		return false
+	}
 	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
@@ -92,7 +99,7 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 	if e.Err != nil {
 		// If there's an error in the IR, validation doesn't make sense.
-		return nil
+		return nil //nolint:nilerr // The stored IR error is reported separately; skip redundant validation.
 	}
 	if e.ExtAuth != nil {
 		if err := e.ExtAuth.ValidateAll(); err != nil {
@@ -121,9 +128,22 @@ func TranslateGatewayExtensionBuilder(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
 ) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
-	oidcDiscoverer := newOIDCProviderConfigDiscoverer()
-	go oidcDiscoverer.refresh(ctx)
+	oidcDiscoverer := newOIDCProviderConfigDiscoverer(
+		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
+		commoncol.KrtOpts.ToOptions("OIDCDiscoveryTrigger")...,
+	)
+	go oidcDiscoverer.run(ctx)
 
+	return gatewayExtensionBuilder(ctx, commoncol, oidcDiscoverer)
+}
+
+// gatewayExtensionBuilder is split out of TranslateGatewayExtensionBuilder so that tests can
+// supply a discoverer with shorter refresh intervals than the production defaults.
+func gatewayExtensionBuilder(
+	ctx context.Context,
+	commoncol *collections.CommonCollections,
+	oidcDiscoverer *oidcProviderConfigDiscoverer,
+) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
@@ -133,7 +153,7 @@ func TranslateGatewayExtensionBuilder(
 		switch {
 		case gExt.ExtAuth != nil:
 			if gExt.ExtAuth.GrpcService != nil {
-				envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+				envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
 				if err != nil {
 					// TODO: should this be a warning, and set cluster to blackhole?
 					p.Err = fmt.Errorf("failed to resolve ExtAuth gRPC backend: %w", err)
@@ -150,7 +170,7 @@ func TranslateGatewayExtensionBuilder(
 					StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
 				}
 			} else if gExt.ExtAuth.HttpService != nil {
-				envoyHttpService, err := ResolveExtHttpService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.HttpService)
+				envoyHttpService, err := ResolveExtHttpService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, gExt.ExtAuth.HttpService)
 				if err != nil {
 					p.Err = fmt.Errorf("failed to resolve ExtAuth HTTP backend: %w", err)
 					return p
@@ -171,6 +191,9 @@ func TranslateGatewayExtensionBuilder(
 			}
 
 			// Common configuration for both gRPC and HTTP
+			// Emit filter state stats so ext-auth latency can be access-logged
+			// via %FILTER_STATE(ext_auth/<ns>/<name>:FIELD:latency_us)%.
+			p.ExtAuth.EmitFilterStateStats = true
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
 					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
@@ -186,7 +209,7 @@ func TranslateGatewayExtensionBuilder(
 			}
 
 		case gExt.ExtProc != nil:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
@@ -195,14 +218,14 @@ func TranslateGatewayExtensionBuilder(
 			p.FilterStage = gExt.ExtProc.FilterStage
 
 		case gExt.RateLimit != nil:
-			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
+			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("ratelimit: %w", err)
 				return p
 			}
 
 			// Use the specialized function for rate limit service resolution
-			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
+			rateLimitConfig := buildRateLimitFilter(p.Name, grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
 		case gExt.JWT != nil:
@@ -220,7 +243,7 @@ func TranslateGatewayExtensionBuilder(
 			p.Jwt = buildCompositeJwtFilter(jwtConfig)
 
 		case gExt.OAuth2 != nil:
-			out, err := buildOAuth2ProviderConfig(krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)
+			out, err := buildOAuth2ProviderConfig(ctx, krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)
 			if err != nil {
 				p.Err = fmt.Errorf("error building OAuth2 config: %w", err)
 				return p
@@ -256,7 +279,7 @@ func resolveJwtProviders(
 		uniqProviders[providerNameForExt] = jwtProvider
 	}
 
-	requirementsName := fmt.Sprintf("%s_requirements", extNameNamespace)
+	requirementsName := extNameNamespace + "_requirements"
 	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
 	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders, jwt.ValidationMode)
 
@@ -266,23 +289,9 @@ func resolveJwtProviders(
 	}, nil
 }
 
-func resolveBackend(
-	krtctx krt.HandlerContext,
-	backends *krtcollections.BackendIndex,
-	disableExtensionRefValidation bool,
-	objectSource ir.ObjectSource,
-	backendRef gwv1.BackendObjectReference,
-) (*ir.BackendObjectIR, error) {
-	if disableExtensionRefValidation {
-		return backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-	}
-	return backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-}
-
 func ResolveExtGrpcService(
 	krtctx krt.HandlerContext,
 	backends *krtcollections.BackendIndex,
-	disableExtensionRefValidation bool,
 	objectSource ir.ObjectSource,
 	grpcService *kgateway.ExtGrpcService,
 ) (*envoycorev3.GrpcService, error) {
@@ -291,10 +300,8 @@ func ResolveExtGrpcService(
 		return nil, errors.New("grpcService not provided")
 	}
 
-	var backend *ir.BackendObjectIR
-	var err error
 	backendRef := grpcService.BackendRef.BackendObjectReference
-	backend, err = resolveBackend(krtctx, backends, disableExtensionRefValidation, objectSource, backendRef)
+	backend, err := backends.GetBackendFromRef(krtctx, objectSource, backendRef)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +336,6 @@ func ResolveExtGrpcService(
 func ResolveExtHttpService(
 	krtctx krt.HandlerContext,
 	backends *krtcollections.BackendIndex,
-	disableExtensionRefValidation bool,
 	objectSource ir.ObjectSource,
 	httpService *kgateway.ExtHttpService,
 ) (*envoy_ext_authz_v3.HttpService, error) {
@@ -338,14 +344,8 @@ func ResolveExtHttpService(
 	}
 
 	// Resolve backend
-	var backend *ir.BackendObjectIR
-	var err error
 	backendRef := httpService.BackendRef.BackendObjectReference
-	if disableExtensionRefValidation {
-		backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-	} else {
-		backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-	}
+	backend, err := backends.GetBackendFromRef(krtctx, objectSource, backendRef)
 	if err != nil {
 		return nil, err
 	}
@@ -393,9 +393,14 @@ func ResolveExtHttpService(
 	}
 
 	// Configure authorization response
-	if httpService.AuthorizationResponse != nil && len(httpService.AuthorizationResponse.HeadersToBackend) > 0 {
-		envoyHttpService.AuthorizationResponse = &envoy_ext_authz_v3.AuthorizationResponse{
-			AllowedUpstreamHeaders: buildStringListMatcher(httpService.AuthorizationResponse.HeadersToBackend),
+	if httpService.AuthorizationResponse != nil {
+		ar := httpService.AuthorizationResponse
+		if len(ar.HeadersToBackend) > 0 || len(ar.HeadersToClient) > 0 || len(ar.HeadersToClientOnSuccess) > 0 {
+			envoyHttpService.AuthorizationResponse = &envoy_ext_authz_v3.AuthorizationResponse{
+				AllowedUpstreamHeaders:        buildStringListMatcher(ar.HeadersToBackend),
+				AllowedClientHeaders:          buildStringListMatcher(ar.HeadersToClient),
+				AllowedClientHeadersOnSuccess: buildStringListMatcher(ar.HeadersToClientOnSuccess),
+			}
 		}
 	}
 
@@ -442,7 +447,10 @@ func buildStringListMatcher(headers []string) *envoymatcherv3.ListStringMatcher 
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
-func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *kgateway.RateLimitProvider) *ratev3.RateLimit {
+// providerName is the unique (namespace/name) resource name of the owning GatewayExtension -
+// unlike RateLimitProvider.Domain, it cannot collide across providers, so it is safe to use to
+// scope the filter_enabled/filter_enforced runtime keys below.
+func buildRateLimitFilter(providerName string, grpcService *envoycorev3.GrpcService, rateLimit *kgateway.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
@@ -455,6 +463,27 @@ func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *kgate
 
 	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
 	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
+
+	// Only populate FilterEnabled/FilterEnforced when the user actually set the corresponding
+	// percentage. Leaving them nil when unset preserves Envoy's own fallback behavior (consulting
+	// the shared "ratelimit.http_filter_enabled"/"ratelimit.http_filter_enforcing" runtime keys),
+	// so existing configs - and any operator relying on those global keys as a kill switch - are
+	// unaffected. The runtime key is scoped by providerName rather than Domain so distinct
+	// RateLimitProvider extensions in the same proxy can be toggled independently even if they
+	// happen to share a domain.
+	keyScope := strings.ReplaceAll(providerName, "/", ".")
+	if percent := toFractionalPercent(rateLimit.PercentEnabled); percent != nil {
+		envoyRateLimit.FilterEnabled = &envoycorev3.RuntimeFractionalPercent{
+			RuntimeKey:   fmt.Sprintf("ratelimit.%s.filter_enabled", keyScope),
+			DefaultValue: percent,
+		}
+	}
+	if percent := toFractionalPercent(rateLimit.PercentEnforced); percent != nil {
+		envoyRateLimit.FilterEnforced = &envoycorev3.RuntimeFractionalPercent{
+			RuntimeKey:   fmt.Sprintf("ratelimit.%s.filter_enforced", keyScope),
+			DefaultValue: percent,
+		}
+	}
 
 	return envoyRateLimit
 }

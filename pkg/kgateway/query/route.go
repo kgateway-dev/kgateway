@@ -2,8 +2,10 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -91,9 +93,9 @@ func (r *RouteInfo) Clone() *RouteInfo {
 // and the given indexes.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int, ruleName string) string {
 	if ruleName == "" {
-		return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
+		return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx, ruleName)
+	return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx) + "-" + ruleName
 }
 
 // GetRouteChain recursively resolves all backends for the given route object.
@@ -107,9 +109,18 @@ func (r *gatewayQueries) GetRouteChain(
 ) *RouteInfo {
 	var children BackendMap[[]*RouteInfo]
 
+	// parentRef comes straight from route's own spec.parentRefs, so Group, Kind,
+	// and Namespace may be nil/empty when the user relied on Gateway API's implicit
+	// defaults (Group=gateway.networking.k8s.io, Kind=Gateway, Namespace=route's own
+	// namespace). Apply those defaults here, once, at the top of the chain, so
+	// descendant delegated routes -- which inherit this same parentRef unchanged --
+	// report status against the correct ancestor instead of re-deriving (and
+	// potentially misresolving) it from their own, different, namespace later.
+	defaultedParentRef := defaultParentRef(parentRef, route.GetNamespace())
+
 	switch typedRoute := route.(type) {
 	case *ir.HttpRouteIR:
-		children = r.getDelegatedChildren(kctx, parentRef, typedRoute, sets.New[types.NamespacedName]())
+		children = r.getDelegatedChildren(kctx, defaultedParentRef, typedRoute, sets.New[types.NamespacedName]())
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	case *ir.TlsRouteIR:
@@ -121,9 +132,28 @@ func (r *gatewayQueries) GetRouteChain(
 		Object:            route,
 		HostnameOverrides: hostnames,
 		ParentRef:         parentRef,
-		ListenerParentRef: parentRef,
+		ListenerParentRef: defaultedParentRef,
 		Children:          children,
 	}
+}
+
+// defaultParentRef fills in a ParentReference's Group, Kind, and Namespace with
+// Gateway API's implicit defaults (Group=gateway.networking.k8s.io, Kind=Gateway,
+// Namespace=routeNamespace) wherever the route left them unset.
+func defaultParentRef(ref gwv1.ParentReference, routeNamespace string) gwv1.ParentReference {
+	if ref.Group == nil {
+		group := gwv1.Group(wellknown.GatewayGroup)
+		ref.Group = &group
+	}
+	if ref.Kind == nil {
+		kind := gwv1.Kind(wellknown.GatewayKind)
+		ref.Kind = &kind
+	}
+	if ref.Namespace == nil && routeNamespace != "" {
+		ns := gwv1.Namespace(routeNamespace)
+		ref.Namespace = &ns
+	}
+	return ref
 }
 
 func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener) (func(krt.HandlerContext, string) bool, []metav1.GroupKind, error) {
@@ -153,7 +183,7 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 				allowedNs = krtcollections.AllNamespace()
 			case gwv1.NamespacesFromSelector:
 				if ar.Namespaces.Selector == nil {
-					return nil, nil, fmt.Errorf("selector must be set")
+					return nil, nil, errors.New("selector must be set")
 				}
 				selector, err := metav1.LabelSelectorAsSelector(ar.Namespaces.Selector)
 				if err != nil {
@@ -249,13 +279,8 @@ func (r *gatewayQueries) getDelegatedChildren(
 
 				// Recursively get the route chain for each child route
 				routeInfo := &RouteInfo{
-					Object: &childRoute,
-					ParentRef: gwv1.ParentReference{
-						Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-						Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-						Namespace: new(gwv1.Namespace(parent.Namespace)),
-						Name:      gwv1.ObjectName(parent.Name),
-					},
+					Object:            &childRoute,
+					ParentRef:         childParentRef(&childRoute, parentRef),
 					ListenerParentRef: listenerRef,
 					Children:          r.getDelegatedChildren(kctx, listenerRef, &childRoute, visited),
 				}
@@ -266,6 +291,24 @@ func (r *gatewayQueries) getDelegatedChildren(
 		}
 	}
 	return children
+}
+
+// childParentRef returns the ParentReference a delegatee (child) route is attached to its parent by,
+// and under which its status is reported. When the child names the parent in its parentRefs, that
+// reference is used exactly as written: route status is built by looking up the spec's parentRefs,
+// so a synthesized reference that differs from it (e.g. by an explicit namespace the user omitted)
+// would leave the child without status. Otherwise the child attached implicitly and a fully
+// qualified reference is synthesized.
+func childParentRef(child *ir.HttpRouteIR, parent types.NamespacedName) gwv1.ParentReference {
+	if ref, ok := delegationutils.MatchingParentRef(child.Namespace, child.ParentRefs, parent); ok {
+		return ref
+	}
+	return gwv1.ParentReference{
+		Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+		Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
+		Namespace: new(gwv1.Namespace(parent.Namespace)),
+		Name:      gwv1.ObjectName(parent.Name),
+	}
 }
 
 // fetchRoutesByRef fetches the routes referenced by HTTPBackendOrDelegate
@@ -375,7 +418,29 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	if _, ok := parent.(*gwv1.Gateway); ok {
 		return listenerName
 	}
-	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
+	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
+}
+
+// RouteKeyMatches reports whether key equals GenerateRouteKey(parent, listenerName)
+// without building the key, so callers can scan every listener without allocating.
+func RouteKeyMatches(key string, parent client.Object, listenerName string) bool {
+	if parent == nil {
+		return key == listenerName
+	}
+	if _, ok := parent.(*gwv1.Gateway); ok {
+		return key == listenerName
+	}
+	rest, ok := strings.CutPrefix(key, parent.GetNamespace())
+	if ok {
+		rest, ok = strings.CutPrefix(rest, "/")
+	}
+	if ok {
+		rest, ok = strings.CutPrefix(rest, parent.GetName())
+	}
+	if ok {
+		rest, ok = strings.CutPrefix(rest, "/")
+	}
+	return ok && rest == listenerName
 }
 
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {
@@ -388,7 +453,7 @@ func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 	case krtcollections.ListenerCollection:
 		listeners = typed.GetListeners()
 	default:
-		return nil, fmt.Errorf("unknown type")
+		return nil, errors.New("unknown type")
 	}
 	return listeners, nil
 }

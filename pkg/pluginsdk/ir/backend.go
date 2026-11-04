@@ -3,6 +3,7 @@ package ir
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -128,14 +129,13 @@ type BackendObjectIR struct {
 	// cannot mutate cluster-name-relevant fields after construction.
 	objectSource ObjectSource
 	// optional port for if ObjectSource is a service that can have multiple ports.
-	// +krtEqualsTodo propagate backend port differences in equality
+	// Encoded into resourceName and clusterName, so equality is covered by those comparisons.
+	// +noKrtEquals
 	port int32
 	// optional port name for the backend (e.g., "https", "http"). Used for sectionName based
 	// policy attachment (e.g., BackendTLSPolicy targeting a specific port by name).
-	// +krtEqualsTodo propagate backend port name differences in equality
 	PortName string
 	// optional application protocol for the backend. Can be used to enable http2.
-	// +krtEqualsTodo include AppProtocol in backend equality
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
@@ -144,7 +144,6 @@ type BackendObjectIR struct {
 	// +noKrtEquals gvPrefix is compared in ClusterName()
 	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
-	// +krtEqualsTodo evaluate canonical hostname equality
 	CanonicalHostname string
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
@@ -154,7 +153,6 @@ type BackendObjectIR struct {
 	ObjIr interface{ Equals(any) bool }
 
 	// Aliases that we can key by when referencing this backend from policy or routes.
-	// +krtEqualsTodo ensure alias list is compared
 	Aliases []ObjectSource
 
 	// ExtraKey allows ensuring uniqueness in the KRT key
@@ -162,15 +160,15 @@ type BackendObjectIR struct {
 	// TODO this is a hack for ServiceEntry to workaround only having one
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
-	// +krtEqualsTodo determine equality semantics for extra key
+	// Encoded into resourceName and clusterName, so equality is covered by those comparisons.
+	// +noKrtEquals
 	extraKey string
 
-	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
-	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
-	// +krtEqualsTodo compare RequiresPolicyStatus or document ignoring
+	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy.
+	// This is a precomputation derived from AttachedPolicies, which is already compared in Equals.
+	// +noKrtEquals
 	RequiresPolicyStatus bool
 
-	// +krtEqualsTodo include attached policies in equality diff
 	AttachedPolicies AttachedPolicies
 
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
@@ -195,6 +193,32 @@ type BackendObjectIR struct {
 	// When set, the backend must be translated to a distinct cluster so the client
 	// identity does not leak across Gateways that share the same backend.
 	GatewayBackendClientCertificate *GatewayBackendClientCertificateIR
+
+	// SupportedRouteKinds lists the route kinds that may reference this backend
+	// through a backendRef. Nil means every route kind.
+	//
+	// A backend plugin sets this when the backend only works on a particular data
+	// path. A backend that depends on an HTTP filter has nothing to
+	// attach to on a TCPRoute or TLSRoute. Declaring the supported kinds here lets
+	// the route translator reject the reference with ResolvedRefs=False/InvalidKind
+	// instead.
+	SupportedRouteKinds []schema.GroupKind
+}
+
+// HTTPRouteKinds is the set of route kinds that carry HTTP traffic. A backend plugin
+// whose backend is realised through HTTP filters sets SupportedRouteKinds to this.
+var HTTPRouteKinds = []schema.GroupKind{
+	wellknown.HTTPRouteGVK.GroupKind(),
+	wellknown.GRPCRouteGVK.GroupKind(),
+}
+
+// SupportsRouteKind reports whether a route of the given kind may reference this
+// backend. A backend that declares no SupportedRouteKinds supports every kind.
+func (c BackendObjectIR) SupportsRouteKind(gk schema.GroupKind) bool {
+	if len(c.SupportedRouteKinds) == 0 {
+		return true
+	}
+	return slices.Contains(c.SupportedRouteKinds, gk)
 }
 
 // NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
@@ -233,20 +257,42 @@ func (c BackendObjectIR) ResourceName() string {
 	return c.resourceName
 }
 
-func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
+// Equals has a pointer receiver so that krt finds it for both
+// krt.Collection[BackendObjectIR] and krt.Collection[*BackendObjectIR]. With a
+// value receiver, a pointer collection has no Equaler[*BackendObjectIR] and krt
+// falls back to reflect.DeepEqual, which walks attached policy IR protos and
+// races with goroutines that marshal clusters built from them.
+func (c *BackendObjectIR) Equals(in *BackendObjectIR) bool {
 	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
+	if c.resourceName != in.resourceName {
+		return false
+	}
+	if c.PortName != in.PortName {
+		return false
+	}
+	if c.AppProtocol != in.AppProtocol {
+		return false
+	}
+	if c.CanonicalHostname != in.CanonicalHostname {
+		return false
+	}
+	if !slices.EqualFunc(c.Aliases, in.Aliases, ObjectSource.Equals) {
+		return false
+	}
 	if !versionEquals(c.Obj, in.Obj) {
+		return false
+	}
+	// Compare ObjIr symmetrically so adding or removing plugin state always
+	// invalidates the row, regardless of which object is the receiver.
+	if (c.ObjIr == nil) != (in.ObjIr == nil) {
 		return false
 	}
 	if c.ObjIr != nil && !c.ObjIr.Equals(in.ObjIr) {
 		return false
 	}
 	if !c.AttachedPolicies.Equals(in.AttachedPolicies) {
-		return false
-	}
-	if c.resourceName != in.resourceName {
 		return false
 	}
 	if c.ClusterName() != in.ClusterName() {
@@ -259,6 +305,9 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		return false
 	}
 	if !equalsGatewayBackendClientCertificate(c.GatewayBackendClientCertificate, in.GatewayBackendClientCertificate) {
+		return false
+	}
+	if !slices.Equal(c.SupportedRouteKinds, in.SupportedRouteKinds) {
 		return false
 	}
 	return true
@@ -353,6 +402,46 @@ func (c BackendObjectIR) GetAttachedPolicies() AttachedPolicies {
 	return c.AttachedPolicies
 }
 
+// BackendObjectStatus carries additional status conditions that a backend plugin
+// contributes to a Backend resource beyond the Accepted condition (e.g. the EC2
+// EndpointsDiscovered condition produced by runtime endpoint discovery). Each entry
+// is keyed by the Backend it applies to via Source. LastTransitionTime and
+// ObservedGeneration are intentionally left unset here; they are assigned when the
+// final Backend status is built.
+type BackendObjectStatus struct {
+	// Source identifies the Backend these conditions apply to.
+	Source ObjectSource
+	// Conditions is the set of status conditions to merge onto the Backend.
+	Conditions []metav1.Condition
+}
+
+func (c BackendObjectStatus) ResourceName() string {
+	return c.Source.ResourceName()
+}
+
+func (c BackendObjectStatus) Equals(in BackendObjectStatus) bool {
+	if !c.Source.Equals(in.Source) {
+		return false
+	}
+	if len(c.Conditions) != len(in.Conditions) {
+		return false
+	}
+	// Compare by condition type rather than by position: conditions form a set keyed by
+	// Type, so a reordering of otherwise-identical conditions must not register as a
+	// change (which would trigger spurious recomputation and redundant status writes).
+	other := make(map[string]metav1.Condition, len(in.Conditions))
+	for _, cond := range in.Conditions {
+		other[cond.Type] = cond
+	}
+	for _, a := range c.Conditions {
+		b, ok := other[a.Type]
+		if !ok || a.Status != b.Status || a.Reason != b.Reason || a.Message != b.Message {
+			return false
+		}
+	}
+	return true
+}
+
 type Secret struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
@@ -364,6 +453,13 @@ type Secret struct {
 
 	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
+
+	// TLSValidation keeps the result of ValidateTLS, so the listeners that reference this
+	// Secret validate it once instead of once each. Copies of a Secret share it. The Secret
+	// collection builds a new Secret for each version of the object, so a changed Secret is
+	// validated again. When nil, ValidateTLS checks on every call.
+	// +noKrtEquals derived from Data
+	TLSValidation *SecretValidation
 }
 
 func (c Secret) ResourceName() string {
@@ -647,12 +743,12 @@ func backendObjectEqual(a, b *BackendObjectIR) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Equals(*b)
+	return a.Equals(b)
 }
 
 func errorsEqual(a, b error) bool {
 	if a == nil || b == nil {
-		return a == b
+		return errors.Is(a, b)
 	}
 	return a.Error() == b.Error()
 }

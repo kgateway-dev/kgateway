@@ -4,15 +4,25 @@ package apikeyauth
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
+	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -298,13 +308,13 @@ func (s *testingSuite) TestAPIKeyAuthWithSecretUpdate() {
 
 	// Step 1: Verify initial API keys work (k-123, k-456)
 	s.T().Log("Step 1: Verifying initial API keys (k-123, k-456) work")
-	statusWithK123 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithK123 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK123...,
 	)
-	statusWithK456 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithK456 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -343,18 +353,18 @@ stringData:
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
-		append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))...,
+		curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))...,
 	)
 
 	// Step 3: Verify new keys work
 	s.T().Log("Step 3: Verifying new API keys (k-789, k-999) work")
-	statusWithK789 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	statusWithK789 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK789...,
 	)
-	statusWithK999 := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	statusWithK999 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -363,13 +373,13 @@ stringData:
 
 	// Step 4: Verify old keys no longer work
 	s.T().Log("Step 4: Verifying old API keys (k-123, k-456) no longer work")
-	statusWithK123Old := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithK123Old := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
 		statusWithK123Old...,
 	)
-	statusWithK456Old := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithK456Old := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -396,25 +406,25 @@ stringData:
 	// Step 6: Verify the final set of keys work
 	// After Step 5 merge update, the secret has: client1 (k-123), client3 (k-789), client4 (k-999), client5 (k-111)
 	s.T().Log("Step 6: Verifying final API keys (k-123, k-789, k-999, k-111) works")
-	statusWithK123Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithK123Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK123Final...,
 	)
-	statusWithK789Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	statusWithK789Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK789Final...,
 	)
-	statusWithK999Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	statusWithK999Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK999Final...,
 	)
-	statusWithK111Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-111"))
+	statusWithK111Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-111"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -424,7 +434,7 @@ stringData:
 	// Step 7: Verify removed keys no longer work
 	// k-456 was removed in Step 2, so it should not work
 	s.T().Log("Step 7: Verifying removed API key (k-456) no longer work")
-	statusWithK456Removed := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithK456Removed := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -456,7 +466,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has valid API key from route-level secret, should succeed
 	s.T().Log("The /get route should succeed with valid API key from route-level secret (k-789)")
-	getWithRouteAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	getWithRouteAPIKeyCurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -465,7 +475,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has another valid API key from route-level secret, should succeed
 	s.T().Log("The /get route should succeed with another valid API key from route-level secret (k-999)")
-	getWithRouteAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	getWithRouteAPIKey2CurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-999"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -474,7 +484,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has API key from gateway-level secret, should fail (route-level policy overrides)
 	s.T().Log("The /get route should fail with API key from gateway-level secret (k-123) - route-level policy overrides")
-	getWithGatewayAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	getWithGatewayAPIKeyCurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -483,7 +493,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has another API key from gateway-level secret, should fail
 	s.T().Log("The /get route should fail with another API key from gateway-level secret (k-456) - route-level policy overrides")
-	getWithGatewayAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	getWithGatewayAPIKey2CurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -507,7 +517,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has valid API key from gateway-level secret, should succeed
 	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level secret (k-123)")
-	statusWithGatewayAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithGatewayAPIKeyCurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -516,7 +526,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has another valid API key from gateway-level secret, should succeed
 	s.T().Log("The /status/200 route should succeed with another valid API key from gateway-level secret (k-456)")
-	statusWithGatewayAPIKey2CurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithGatewayAPIKey2CurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -525,7 +535,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has API key from route-level secret, should fail (only applies to /get route)
 	s.T().Log("The /status/200 route should fail with API key from route-level secret (k-789) - only gateway-level policy applies")
-	statusWithRouteAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	statusWithRouteAPIKeyCurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -555,7 +565,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 
 	// has valid API key, should succeed
 	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level policy")
-	statusWithAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithAPIKeyCurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -578,10 +588,177 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 
 	// has API key, should still succeed (API key is ignored when disabled)
 	s.T().Log("The /get route with disable should succeed even with API key present")
-	getWithAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	getWithAPIKeyCurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		getWithAPIKeyCurlOpts...,
 	)
+}
+
+// xdsUpdatesRejected sums every Envoy *.update_rejected counter (rds, cds, lds, sds).
+//
+// The defect is a NACK, and a NACK leaves the last accepted config in force, so the listener keeps
+// answering exactly as a working one does. A flat counter is the direct evidence that every config
+// kgateway emitted was accepted.
+func (s *testingSuite) xdsUpdatesRejected() uint64 {
+	var total uint64
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			out, err := adminClient.GetStats(ctx, map[string]string{
+				"format": "json",
+				"filter": ".*update_rejected$",
+			})
+			s.Require().NoError(err, "can get envoy stats")
+
+			var resp map[string][]adminv3.SimpleMetric
+			s.Require().NoError(json.Unmarshal([]byte(out), &resp), "can unmarshal envoy stats")
+			// An empty result would make every assertion below vacuous.
+			s.Require().NotEmpty(resp["stats"], "expected at least one update_rejected counter")
+
+			stats := resp["stats"]
+			for i := range stats {
+				total += stats[i].GetValue()
+			}
+		},
+	)
+	return total
+}
+
+// TestAPIKeyAuthDuplicateKeyValues covers duplicate api key values across the Secrets one policy
+// selects. Envoy requires credential keys to be unique within an ApiKeyAuth config and NACKs the
+// whole RouteConfiguration when they are not, which freezes config delivery for the entire listener
+// while every Kubernetes-facing surface still reports Accepted. Translation collapses the harmless
+// duplicate and rejects the ambiguous one, so neither shape ever reaches Envoy.
+//
+// Status codes alone cannot show this, since a frozen listener still answers. The steps below assert
+// two things a frozen listener could not produce: that new config still lands while the duplicate
+// exists, and that Envoy never rejected an update.
+func (s *testingSuite) TestAPIKeyAuthDuplicateKeyValues() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-duplicate", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+
+	statusReqCurlOpts := []curl.Option{
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+	}
+
+	// Baseline rather than zero: an earlier suite may have left the counter non-zero.
+	rejectedAtStart := s.xdsUpdatesRejected()
+
+	// Step 1: two Secrets carry the identical credential. The repeat is collapsed, so the route is
+	// programmed and enforcing. Before the dedup, the RouteConfiguration carrying this route was
+	// rejected, so the route never landed and the listener kept serving whatever it last accepted.
+	s.T().Log("Step 1: the same credential in two Secrets is collapsed and the route enforces")
+	common.BaseGateway.Send(
+		s.T(),
+		expectStatus200Success,
+		curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-dup-111"))...,
+	)
+	common.BaseGateway.Send(
+		s.T(),
+		expectAPIKeyAuthDenied,
+		statusReqCurlOpts...,
+	)
+	s.Require().Equal(rejectedAtStart, s.xdsUpdatesRejected(),
+		"Envoy must not have rejected any config: the repeated credential was collapsed, not emitted")
+
+	// Step 2: the differential. A brand new credential has to land while the duplicate pair is
+	// still in place. On a frozen listener it never would, and step 1 would still have passed.
+	s.T().Log("Step 2: a new credential still lands while the duplicate pair is in place")
+	newClientSecret := []byte(`apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-duplicate-new-client
+  namespace: kgateway-base
+  labels:
+    apikey-duplicate-test: "true"
+type: Opaque
+stringData:
+  client2: k-dup-222
+`) //gosec:disable G101
+	testutils.Cleanup(s.T(), func() {
+		_ = s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, newClientSecret)
+	})
+	err := s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, newClientSecret)
+	s.Require().NoError(err, "failed to apply the new client secret")
+
+	common.BaseGateway.Send(
+		s.T(),
+		expectStatus200Success,
+		curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-dup-222"))...,
+	)
+	s.Require().Equal(rejectedAtStart, s.xdsUpdatesRejected(),
+		"the new credential landed through an accepted update, not on top of a frozen listener")
+
+	// Step 3: the ambiguous duplicate. A second client claiming client1's key value cannot be
+	// resolved, so translation fails: the policy reports Invalid and the route is replaced with a
+	// 500 rather than left on stale config that claims to enforce.
+	s.T().Log("Step 3: two clients sharing a key value fail translation and replace the route")
+	conflictingSecret := []byte(`apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-duplicate-conflict
+  namespace: kgateway-base
+  labels:
+    apikey-duplicate-test: "true"
+type: Opaque
+stringData:
+  client3: k-dup-111
+`) //gosec:disable G101
+	testutils.Cleanup(s.T(), func() {
+		_ = s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, conflictingSecret)
+	})
+	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, conflictingSecret)
+	s.Require().NoError(err, "failed to apply the conflicting secret")
+
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		tp := &kgateway.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "api-key-auth-policy-duplicate", Namespace: "kgateway-base"},
+			tp,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get api-key-auth-policy-duplicate TrafficPolicy")
+		g.Expect(tp.Status.Ancestors).NotTo(gomega.BeEmpty(), "TrafficPolicy should report ancestor status")
+
+		cond := apimeta.FindStatusCondition(tp.Status.Ancestors[0].Conditions, string(shared.PolicyConditionAccepted))
+		g.Expect(cond).NotTo(gomega.BeNil(), "TrafficPolicy should have an Accepted condition")
+		g.Expect(cond.Status).To(gomega.Equal(metav1.ConditionFalse), "conflicting api keys should be Accepted=False")
+		g.Expect(cond.Reason).To(gomega.Equal(string(shared.PolicyReasonInvalid)), "reason should be Invalid")
+		g.Expect(cond.Message).To(gomega.ContainSubstring("client1"), "status should name the conflicting clients")
+		g.Expect(cond.Message).To(gomega.ContainSubstring("client3"), "status should name the conflicting clients")
+		// A status message is more widely readable, and more widely replicated, than a log line.
+		g.Expect(cond.Message).NotTo(gomega.ContainSubstring("k-dup-111"), "status must not leak the api key value")
+	}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
+
+	// Matched on the body: the 500 has to be kgateway's replacement direct response, not an
+	// upstream error and not stale config.
+	common.BaseGateway.Send(
+		s.T(),
+		expectRouteReplaced,
+		curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-dup-111"))...,
+	)
+	s.Require().Equal(rejectedAtStart, s.xdsUpdatesRejected(),
+		"the ambiguous duplicate must fail translation, so Envoy never sees a config to reject")
+
+	// Step 4: removing the conflict recovers the route.
+	s.T().Log("Step 4: removing the conflicting Secret recovers the route")
+	err = s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, conflictingSecret)
+	s.Require().NoError(err, "failed to delete the conflicting secret")
+
+	common.BaseGateway.Send(
+		s.T(),
+		expectStatus200Success,
+		curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-dup-111"))...,
+	)
+	common.BaseGateway.Send(
+		s.T(),
+		expectAPIKeyAuthDenied,
+		statusReqCurlOpts...,
+	)
+	s.Require().Equal(rejectedAtStart, s.xdsUpdatesRejected(),
+		"no update was rejected at any point in this arm")
 }

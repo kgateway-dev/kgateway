@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -12,7 +11,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -58,7 +56,7 @@ func flattenDelegatedRoutes(
 	for _, child := range children {
 		childRoute, ok := child.Object.(*ir.HttpRouteIR)
 		if !ok {
-			slog.Warn("ignoring unsupported child route type",
+			logger.Warn("ignoring unsupported child route type",
 				"route_type", fmt.Sprintf("%T", child.Object), "parent_resource_ref", parentRef)
 			continue
 		}
@@ -68,7 +66,7 @@ func flattenDelegatedRoutes(
 			// This is an _extra_ safety check, but the given HTTPRouteInfo shouldn't ever contain cycles.
 			msg := fmt.Sprintf("cyclic reference detected while evaluating delegated routes for parent: %s; child route %s will be ignored",
 				parentRef, childRef)
-			slog.Warn(msg) //nolint:sloglint // ignore formatting
+			logger.Warn(msg) //nolint:sloglint // ignore formatting
 			parentReporter.SetCondition(reports.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
@@ -79,12 +77,7 @@ func flattenDelegatedRoutes(
 		}
 
 		// Create a new reporter for the child route
-		reporter := baseReporter.Route(childRoute.GetSourceObject()).ParentRef(&gwv1.ParentReference{
-			Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-			Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-			Name:      gwv1.ObjectName(parentRef.Name),
-			Namespace: new(gwv1.Namespace(parentRef.Namespace)),
-		})
+		reporter := baseReporter.Route(childRoute.GetSourceObject()).ParentRef(&child.ParentRef)
 
 		if err := validateChildRoute(*childRoute); err != nil {
 			reporter.SetCondition(reports.RouteCondition{

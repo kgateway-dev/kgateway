@@ -90,8 +90,10 @@ type OAuth2Provider struct {
 	// It discovers the authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI if specified in the discovery response.
 	// Explicit configuration of these options will take precedence over the discovered values.
 	// Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig for more details.
-	// Note that the OpenID provider configuration is cached and only refreshed periodically when the GatewayExtension object
-	// is reprocessed.
+	// Note that the OpenID provider configuration is cached. It is refreshed periodically in the background, and a failed
+	// discovery is retried, so a provider that is unreachable when the configuration is first discovered is picked up once
+	// it becomes reachable. Discovery stops once authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI
+	// (when JWT parsing is configured) are all set explicitly, since none of the discovered values are then used.
 	// +optional
 	//
 	// +kubebuilder:validation:Pattern=`^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$`
@@ -234,11 +236,8 @@ type OAuth2JWTProcessingConfig struct {
 	// +optional
 	Audiences []string `json:"audiences,omitempty"`
 
-	// ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
-	// Optionally set the claims from the JWT payload that you want to extract and add as headers
-	// to the request before the request is forwarded to the upstream destination.
-	// Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-	// This allows the JWT filter to correctly affect routing decisions.
+	// ClaimsToHeaders copies JWT claims into upstream request headers.
+	// Setting this clears Envoy's route cache so routing uses the updated headers.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +optional

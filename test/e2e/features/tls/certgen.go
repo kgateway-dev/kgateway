@@ -28,7 +28,7 @@ const (
 func SecretManifest(ns string, expiration time.Duration) (string, error) {
 	certPEM, keyPEM, err := generateSelfSignedCert("test-ca", expiration)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate self-signed certificate: %v", err)
+		return "", fmt.Errorf("failed to generate self-signed certificate: %w", err)
 	}
 	secretYAML := fmt.Sprintf(`apiVersion: v1
 kind: Secret

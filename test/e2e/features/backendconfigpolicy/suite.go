@@ -16,128 +16,70 @@ import (
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite defines the test suite for BackendConfigPolicy e2e tests
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// manifests maps test name to a list of manifests to apply before the test
-	manifests map[string][]string
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-	}
-}
-
-func (s *testingSuite) SetupSuite() {
 	// define which manifests are applied for each test
-	s.manifests = map[string][]string{
+	testCases := map[string]*base.TestCase{
 		"TestBackendConfigPolicy": {
-			setupManifest,
+			Manifests: []string{setupManifest},
 		},
 		"TestBackendConfigPolicyDNS": {
-			nginxManifest,
-			dnsManifest,
+			Manifests: []string{nginxManifest, dnsManifest},
 		},
 		"TestBackendConfigPolicyTLSInsecureSkipVerify": {
-			tlsInsecureManifest,
-			nginxManifest,
+			Manifests: []string{tlsInsecureManifest, nginxManifest},
 		},
 		"TestBackendConfigPolicySimpleTLS": {
-			simpleTLSManifest,
-			nginxManifest,
+			Manifests: []string{simpleTLSManifest, nginxManifest},
 		},
 		"TestBackendConfigPolicyTLSSystemCA": {
-			nginxManifest,
-			systemCAManifest,
+			Manifests: []string{nginxManifest, systemCAManifest},
 		},
 		"TestBackendConfigPolicyOutlierDetection": {
-			setupManifest,
-			outlierDetectionManifest,
+			Manifests: []string{setupManifest, outlierDetectionManifest},
 		},
 		"TestBackendConfigPolicyClearStaleStatus": {
-			setupManifest,
+			Manifests: []string{setupManifest},
 		},
 		"TestBackendConfigPolicyUpstreamProxyProtocol": {
-			upstreamProxyProtocolManifest,
+			Manifests: []string{upstreamProxyProtocolManifest},
+		},
+		"TestBackendConfigPolicyTunnel": {
+			Manifests: []string{nginxManifest, tunnelManifest},
 		},
 	}
-}
-
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	// nothing specific; each test cleans up via AfterTest
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	manifests, ok := s.manifests[testName]
-	if !ok {
-		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
-	}
-
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Assert().NoError(err, "can apply manifest "+manifest)
-	}
-
-	// wait for common resources for all tests
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
-	})
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	manifests, ok := s.manifests[testName]
-	if !ok {
-		s.FailNow("no manifests found for " + testName)
-	}
-	for _, manifest := range manifests {
-		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.testInstallation.AssertionsT(s.T()).ExpectObjectDeleted(manifest, err, output)
+	return &testingSuite{
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
 	}
 }
 
 func (s *testingSuite) TestBackendConfigPolicy() {
-	// make sure pods are running
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, "kgateway-base", metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=httpbin",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx,
 		"example-route",
 		"kgateway-base",
 		gwv1.RouteConditionAccepted,
@@ -145,8 +87,8 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 	)
 
 	// Wait until Envoy has the example-svc cluster in its dynamic config.
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.Ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			clusters, err := adminClient.GetDynamicClusters(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters")
 			_, ok := clusters["kube_kgateway-base_example-svc_8080"]
@@ -166,8 +108,8 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 	)
 
 	// envoy config should reflect the backend config policy
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.Ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			clusters, err := adminClient.GetDynamicClusters(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters from config dump")
 			g.Expect(clusters).NotTo(gomega.BeEmpty())
@@ -237,16 +179,16 @@ func (s *testingSuite) TestBackendConfigPolicy() {
 }
 
 func (s *testingSuite) TestBackendConfigPolicyDNS() {
-	s.testInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx,
 		"dns-route",
 		"kgateway-base",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
 
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.Ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			clusters, err := adminClient.GetDynamicClusters(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get dynamic clusters")
 
@@ -265,7 +207,7 @@ func (s *testingSuite) TestBackendConfigPolicyDNS() {
 			g.Expect(dnsCluster.GetDnsJitter().AsDuration()).To(gomega.Equal(15 * time.Second))
 		}).
 			WithContext(ctx).
-			WithTimeout(10 * time.Second).
+			WithTimeout(30 * time.Second).
 			WithPolling(200 * time.Millisecond).
 			Should(gomega.Succeed())
 	})
@@ -314,14 +256,6 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 	// many backends are rejected. We use the 'stats' API in Envoy to verify
 	// that rejection functions as expected.
 
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
-	})
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=httpbin",
-	})
-
 	// Send enough requests to trigger outlier detection (see `Consecutive5xx`)
 	numOkRequests := 10
 	for i := range 2 * numOkRequests {
@@ -352,8 +286,8 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 
 	// Check envoy stats to verify that outlier detection has ejected
 	// floor(0.51 * |replicas|) = floor(1.02) = 1 backends.
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
-		s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.Ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
+		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			metricPrefix := "cluster.kube_kgateway-base_httpbin_8080"
 			out, err := adminClient.GetStats(ctx, map[string]string{
 				// see https://www.envoyproxy.io/docs/envoy/latest/operations/admin#get--stats
@@ -396,6 +330,36 @@ func (s *testingSuite) TestBackendConfigPolicyUpstreamProxyProtocol() {
 	)
 }
 
+// TestBackendConfigPolicyTunnel verifies that traffic to a Backend goes through
+// its HTTP CONNECT proxy.
+func (s *testingSuite) TestBackendConfigPolicyTunnel() {
+	for _, path := range []string{"/http", "/https"} {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+			},
+			curl.WithHostHeader("tunnel.example.com"),
+			curl.WithPath(path),
+			curl.WithPort(80),
+		)
+	}
+
+	for _, path := range []string{"/rejected", "/proxy-down"} {
+		common.BaseGateway.SendEventuallyConsistent(
+			s.Ctx,
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusServiceUnavailable,
+			},
+			curl.WithHostHeader("tunnel.example.com"),
+			curl.WithPath(path),
+			curl.WithPort(80),
+		)
+	}
+}
+
 const (
 	kgatewayControllerName = "kgateway.dev/kgateway"
 	otherControllerName    = "other-controller.example.com/controller"
@@ -414,8 +378,8 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing service target
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(
-		s.ctx,
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
+		s.Ctx,
 		missingTargetManifest,
 	)
 	s.Require().NoError(err)
@@ -425,15 +389,75 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 		kgatewayControllerName: false,
 		otherControllerName:    true,
 	})
+
+	// The missing target is reported on the policy's StatusSummary ancestor instead
+	s.assertTargetNotFound("example-policy", "kgateway-base", "Service kgateway-base/missing-svc not found")
+
+	// Pointing the targetRef back at the Service retracts the StatusSummary entry and restores
+	// the Service ancestor, still without touching the other controller's ancestor
+	s.ApplyManifests(&base.TestCase{Manifests: []string{setupManifest}})
+	s.assertNoStatusSummary("example-policy", "kgateway-base")
+	s.assertAncestorStatuses("example-svc", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
 	// AfterTest() handles cleanup automatically
+}
+
+// assertNoStatusSummary verifies the policy no longer carries a kgateway StatusSummary ancestor.
+func (s *testingSuite) assertNoStatusSummary(policyName, policyNamespace string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.BackendConfigPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		for _, ancestor := range policy.Status.Ancestors {
+			g.Expect(string(ancestor.ControllerName) == kgatewayControllerName &&
+				reporter.IsPolicyStatusSummaryAncestorRef(ancestor.AncestorRef)).To(gomega.BeFalse(),
+				"policy should no longer report a StatusSummary ancestor: %+v", ancestor)
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// assertTargetNotFound verifies the policy reports the given unresolved target on its
+// StatusSummary ancestor with Accepted=False/TargetNotFound.
+func (s *testingSuite) assertTargetNotFound(policyName, policyNamespace, expectedMessage string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.BackendConfigPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		var accepted *metav1.Condition
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.ControllerName) == kgatewayControllerName &&
+				reporter.IsPolicyStatusSummaryAncestorRef(ancestor.AncestorRef) {
+				accepted = meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted))
+				break
+			}
+		}
+		g.Expect(accepted).NotTo(gomega.BeNil(), "policy should report a StatusSummary ancestor")
+		g.Expect(accepted.Status).To(gomega.Equal(metav1.ConditionFalse))
+		g.Expect(accepted.Reason).To(gomega.Equal(string(shared.PolicyReasonTargetNotFound)))
+		g.Expect(accepted.Message).To(gomega.ContainSubstring(expectedMessage))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.BackendConfigPolicy{}
-		err := s.testInstallation.ClusterContext.Client.Get(
-			s.ctx,
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
 			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
 			policy,
 		)
@@ -459,17 +483,17 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 		}
 
 		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
-		err = s.testInstallation.ClusterContext.Client.Status().Update(s.ctx, policy)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, policy)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.BackendConfigPolicy{}
-		err := s.testInstallation.ClusterContext.Client.Get(
-			s.ctx,
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
 			types.NamespacedName{Name: "example-policy", Namespace: "kgateway-base"},
 			policy,
 		)

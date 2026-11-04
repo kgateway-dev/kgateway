@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
@@ -224,5 +225,32 @@ func listenerIsolationRouteInfo(hostnames []string) *query.RouteInfo {
 			Rules: []ir.HttpRouteRuleIR{{}},
 		},
 		ParentRef: gwv1.ParentReference{Name: "gw"},
+	}
+}
+
+func TestBuildStatPrefix(t *testing.T) {
+	gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Namespace: "infra", Name: "gw"}}
+	ls := &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Namespace: "team-a", Name: "shop.v2"}}
+	listener := func(parent client.Object) ir.Listener {
+		return ir.Listener{Listener: gwv1.Listener{Name: "web", Port: 443}, Parent: parent}
+	}
+
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"plain http", buildStatPrefix("http", 80), "http_80"},
+		{"https gateway listener", buildStatPrefix("https", 443, listenerStatSegments(listener(gw))...), "https_443_web"},
+		{"https listenerset listener", buildStatPrefix("https", 443, listenerStatSegments(listener(ls))...), "https_443_team-a_shop.v2_web"},
+		{"https without parent", buildStatPrefix("https", 443, listenerStatSegments(listener(nil))...), "https_443_web"},
+		{"tcp route", buildStatPrefix("tcp", 9000, "default", "example"), "tcp_9000_default_example"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.got != tt.want {
+				t.Errorf("got %q, want %q", tt.got, tt.want)
+			}
+		})
 	}
 }

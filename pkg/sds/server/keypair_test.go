@@ -100,7 +100,7 @@ func TestUpdateSDSConfigMatchingPair(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := SetupEnvoySDS([]Secret{{
+	srv := SetupEnvoySDS(context.Background(), []Secret{{
 		SslKeyFile:        keyPath,
 		SslCertFile:       certPath,
 		SslCaFile:         caPath,
@@ -131,7 +131,7 @@ func TestUpdateSDSConfigMismatchedPairDoesNotReplaceExistingSnapshot(t *testing.
 		t.Fatal(err)
 	}
 
-	srv := SetupEnvoySDS([]Secret{{
+	srv := SetupEnvoySDS(context.Background(), []Secret{{
 		SslKeyFile:        keyPath,
 		SslCertFile:       certPath,
 		SslCaFile:         caPath,

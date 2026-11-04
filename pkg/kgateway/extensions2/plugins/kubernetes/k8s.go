@@ -31,13 +31,14 @@ func NewPlugin(ctx context.Context, commonCol *collections.CommonCollections) sd
 		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
 	)
 	endpointSlices := krt.WrapClient(epSliceClient, commonCol.KrtOpts.ToOptions("EndpointSlices")...)
-	return NewPluginFromCollections(ctx, commonCol.KrtOpts, commonCol.LocalityPods, commonCol.Services, endpointSlices, commonCol.Settings)
+	return NewPluginFromCollections(ctx, commonCol.KrtOpts, commonCol.LocalityPods, commonCol.SystemNamespaceNetwork, commonCol.Services, endpointSlices, commonCol.Settings)
 }
 
 func NewPluginFromCollections(
 	ctx context.Context,
 	krtOpts krtutil.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
+	systemNamespaceNetwork krt.Singleton[string],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	stngs apisettings.Settings,
@@ -50,7 +51,7 @@ func NewPluginFromCollections(
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
 
-	inputs := krtcollections.NewKgatewayK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
+	inputs := krtcollections.NewKgatewayK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, systemNamespaceNetwork, k8sServiceBackends)
 	k8sServiceEndpoints := krtcollections.NewK8sEndpoints(ctx, inputs)
 
 	return sdk.Plugin{

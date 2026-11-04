@@ -5,8 +5,6 @@ package backendconfigpolicy
 import (
 	"path/filepath"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -23,22 +21,11 @@ var (
 	outlierDetectionManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	missingTargetManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
 	upstreamProxyProtocolManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-proxy-protocol.yaml")
+	tunnelManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tunnel.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: "kgateway-base",
 	}
-
-	nginxPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx",
-			Namespace: "kgateway-base",
-		},
-	}
-	httpbinMeta = metav1.ObjectMeta{
-		Name:      "httpbin",
-		Namespace: "kgateway-base",
-	}
-	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinMeta}
 )

@@ -2,9 +2,12 @@ package downward
 
 import (
 	"bytes"
+	"cmp"
 	"io"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"istio.io/api/label"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -73,8 +76,12 @@ func AddNodeLocalityToBootstrapYaml(bootstrapBytes []byte, api DownwardAPI) ([]b
 	return yaml.Marshal(bootstrap)
 }
 
+// nodeLocalityFromApi derives the proxy's locality from env vars, then pod's well-known topology labels.
 func nodeLocalityFromApi(api DownwardAPI) *envoycorev3.Locality {
-	zone, region, subzone := api.NodeZone(), api.NodeRegion(), api.NodeSubzone()
+	labels := api.PodLabels()
+	region := cmp.Or(api.NodeRegion(), labels[corev1.LabelTopologyRegion])
+	zone := cmp.Or(api.NodeZone(), labels[corev1.LabelTopologyZone])
+	subzone := cmp.Or(api.NodeSubzone(), labels[label.TopologySubzone.Name])
 	if zone == "" && region == "" && subzone == "" {
 		return nil
 	}

@@ -2,8 +2,8 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -58,7 +58,7 @@ func (a *KubeJWTAuthenticator) Authenticate(authRequest security.AuthContext) (*
 func (a *KubeJWTAuthenticator) authenticateHTTP(req *http.Request) (*security.Caller, error) {
 	targetJWT, err := extractRequestToken(req)
 	if err != nil {
-		return nil, fmt.Errorf("target JWT extraction error: %v", err)
+		return nil, fmt.Errorf("target JWT extraction error: %w", err)
 	}
 	return a.authenticate(targetJWT)
 }
@@ -66,7 +66,7 @@ func (a *KubeJWTAuthenticator) authenticateHTTP(req *http.Request) (*security.Ca
 func (a *KubeJWTAuthenticator) authenticateGrpc(ctx context.Context) (*security.Caller, error) {
 	targetJWT, err := security.ExtractBearerToken(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("target JWT extraction error: %v", err)
+		return nil, fmt.Errorf("target JWT extraction error: %w", err)
 	}
 
 	return a.authenticate(targetJWT)
@@ -75,13 +75,13 @@ func (a *KubeJWTAuthenticator) authenticateGrpc(ctx context.Context) (*security.
 func (a *KubeJWTAuthenticator) authenticate(targetJWT string) (*security.Caller, error) {
 	id, err := tokenreview.ValidateK8sJwt(a.kubeClient, targetJWT, xdsTokenAudiences)
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate the JWT token: %v", err)
+		return nil, fmt.Errorf("failed to validate the JWT token: %w", err)
 	}
 	if id.PodServiceAccount == "" {
-		return nil, fmt.Errorf("failed to parse the JWT; service account required")
+		return nil, errors.New("failed to parse the JWT; service account required")
 	}
 	if id.PodNamespace == "" {
-		return nil, fmt.Errorf("failed to parse the JWT; namespace required")
+		return nil, errors.New("failed to parse the JWT; namespace required")
 	}
 	return &security.Caller{
 		AuthSource:     security.AuthSourceIDToken,
@@ -94,14 +94,14 @@ func (a *KubeJWTAuthenticator) authenticate(targetJWT string) (*security.Caller,
 func extractRequestToken(req *http.Request) (string, error) {
 	value := req.Header.Get(authorizationHeader)
 	if value == "" {
-		return "", fmt.Errorf("no HTTP authorization header exists")
+		return "", errors.New("no HTTP authorization header exists")
 	}
 
 	if after, ok := strings.CutPrefix(value, bearerTokenPrefix); ok {
 		return after, nil
 	}
 
-	return "", fmt.Errorf("no bearer token exists in HTTP authorization header")
+	return "", errors.New("no bearer token exists in HTTP authorization header")
 }
 
 // authenticationManager orchestrates all authenticators to perform authentication.
@@ -117,7 +117,7 @@ func (am *authenticationManager) authenticate(ctx context.Context) *security.Cal
 	for _, authn := range am.Authenticators {
 		u, err := authn.Authenticate(req)
 		if u != nil && err == nil { // we don't validate len(u.Identities) here like Istio does since this isn't relevant
-			slog.Debug("authentication succeeded", "auth_source", u.AuthSource)
+			controlPlaneLogger.Debug("authentication succeeded", "auth_source", u.AuthSource)
 			return u
 		}
 		am.authFailMsgs = append(am.authFailMsgs, fmt.Sprintf("Authenticator %s: %v", authn.AuthenticatorType(), err))

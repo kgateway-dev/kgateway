@@ -26,10 +26,11 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	// manifests for verify-certificate-hash tests (TestVerifyCertificateHash)
-	gatewayManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw.yaml")
-	tlsSecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-secret.yaml")
-	clientCertsSecret = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-certs-8443-9443-secret.yaml")
-	curlPodWithCerts  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
+	gatewayManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw.yaml")
+	tlsRSASecretManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-rsa-secret.yaml")
+	tlsECDSAP256SecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-ecdsa-p256-secret.yaml")
+	clientCertsSecret          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-certs-8443-9443-secret.yaml")
+	curlPodWithCerts           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
 	// curlNamespaceManifest creates the 'curl' namespace. The curl pod and its
 	// mounted client-cert Secrets live in this namespace, so it must exist before
 	// either is applied. It is applied first (and sequentially) by SetupSuite.
@@ -49,6 +50,12 @@ var (
 	nonMatchingSanCertPath = "/etc/client-non-matching-san/tls.crt"
 	nonMatchingSanKeyPath  = "/etc/client-non-matching-san/tls.key"
 
+	// client certificate paths for signature-algorithms tests
+	matchingSignatureCertPath    = "/etc/client-matching-signature/tls.crt"
+	matchingSignatureKeyPath     = "/etc/client-matching-signature/tls.key"
+	nonMatchingSignatureCertPath = "/etc/client-non-matching-signature/tls.crt"
+	nonMatchingSignatureKeyPath  = "/etc/client-non-matching-signature/tls.key"
+
 	// manifests for FrontendTLSConfig tests (TestFrontendTLSConfig)
 	// Note: gatewayManifest and curlPodWithCerts are shared with verify-certificate-hash tests
 	caCertConfigMapManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "ca-cert-configmap.yaml")
@@ -62,6 +69,11 @@ var (
 	caAltNamesConfigMapManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "ca-alt-names-configmap.yaml")
 	clientMatchingSanSecret     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "client-matching-san-secret.yaml")
 	clientNonMatchingSanSecret  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "client-non-matching-san-secret.yaml")
+
+	// manifests for signature-algorithms tests (TestClientSignatureAlgorithms)
+	caSigAlgsConfigMapManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-sigalgs", "ca-sigalgs-configmap.yaml")
+	clientMatchingSignatureSecret    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-sigalgs", "client-matching-signature-secret.yaml")
+	clientNonMatchingSignatureSecret = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-sigalgs", "client-non-matching-signature-secret.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -87,7 +99,11 @@ func prerequisiteManifests() []string {
 		caAltNamesConfigMapManifest,
 		clientMatchingSanSecret,
 		clientNonMatchingSanSecret,
-		tlsSecretManifest,
+		caSigAlgsConfigMapManifest,
+		clientMatchingSignatureSecret,
+		clientNonMatchingSignatureSecret,
+		tlsRSASecretManifest,
+		tlsECDSAP256SecretManifest,
 	}
 }
 
@@ -105,15 +121,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 
 	testCases := map[string]*base.TestCase{
-		"TestALPNProtocol":           {},
-		"TestCipherSuites":           {},
-		"TestECDHCurves":             {},
-		"TestMinTLSVersion":          {},
-		"TestMaxTLSVersion":          {},
-		"TestVerifyCertificateHash":  {},
-		"TestFrontendTLSConfig":      {}, // All required resources are already in setup
-		"TestMultipleCACertificates": {}, // All required resources are already in setup
-		"TestVerifySubjectAltNames":  {}, // All required resources are already in setup
+		"TestALPNProtocol":              {},
+		"TestCipherSuites":              {},
+		"TestECDHCurves":                {},
+		"TestSignatureAlgorithms":       {},
+		"TestMinTLSVersion":             {},
+		"TestMaxTLSVersion":             {},
+		"TestVerifyCertificateHash":     {},
+		"TestFrontendTLSConfig":         {}, // All required resources are already in setup
+		"TestMultipleCACertificates":    {}, // All required resources are already in setup
+		"TestVerifySubjectAltNames":     {}, // All required resources are already in setup
+		"TestClientSignatureAlgorithms": {}, // All required resources are already in setup
 	}
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
@@ -264,6 +282,20 @@ func (s *testingSuite) TestECDHCurves() {
 	})
 }
 
+func (s *testingSuite) TestSignatureAlgorithms() {
+	s.Run("RSA signature succeeds", func() {
+		s.assertEventualCurlResponse(
+			curl.WithSignatureAlgorithms(curl.SignatureAlgorithmRSAPSSRSAESHA256),
+		)
+	})
+
+	s.Run("disallowed signature fails despite certificate present", func() {
+		s.assertEventualCurlError(
+			curl.WithSignatureAlgorithms(curl.SignatureAlgorithmECDSASECP256R1SHA256),
+		)
+	})
+}
+
 func (s *testingSuite) TestMinTLSVersion() {
 	s.Run("TLS 1.2 succeeds", func() {
 		// TLS 1.2 should work (gateway min is 1.2)
@@ -399,7 +431,7 @@ func (s *testingSuite) assertEventualCurlErrorForMTLS(hostname string, port int,
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		curlOpts,
-		16, // CURLE_SSL_CACERT_BADFILE
+		55, // CURLE_SEND_ERROR
 		10*time.Second,
 	)
 }
@@ -407,13 +439,13 @@ func (s *testingSuite) assertEventualCurlErrorForMTLS(hostname string, port int,
 func (s *testingSuite) TestFrontendTLSConfig() {
 	s.Run("AllowValidOnly requires client cert", func() {
 		// Should fail without client cert on port 8445 (per-port config with AllowValidOnly)
-		// Use error code 16 (CURLE_SSL_CACERT_BADFILE) which is what we get when client cert is required
+		// Use error code 55 (CURLE_SEND_ERROR) which is what we get when client cert is required
 		curlOpts := append(commonCurlOpts(), curl.WithPort(8445))
 		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
-			16, // CURLE_SSL_CACERT_BADFILE
+			55, // CURLE_SEND_ERROR
 			10*time.Second,
 		)
 	})
@@ -490,7 +522,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
-			16, // CURLE_SSL_CACERT_BADFILE
+			55, // CURLE_SEND_ERROR
 			10*time.Second,
 		)
 	})
@@ -522,7 +554,39 @@ func (s *testingSuite) TestVerifySubjectAltNames() {
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
 			append(curlOpts8447, curl.WithClientCert(nonMatchingSanCertPath, nonMatchingSanKeyPath)),
-			16, // CURLE_SSL_CACERT_BADFILE - client cert rejected due to SAN mismatch
+			55, // CURLE_SEND_ERROR - client cert rejected due to SAN mismatch
+			10*time.Second,
+		)
+	})
+}
+
+func (s *testingSuite) TestClientSignatureAlgorithms() {
+	// Custom curl options for port 8448
+	curlOpts8448 := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+		curl.WithPort(8448),
+		curl.WithScheme("https"),
+		curl.IgnoreServerCert(),
+		curl.WithHeader("Host", "example.com"),
+		curl.VerboseOutput(),
+	}
+
+	s.Run("signature-algorithms for client with matching RSA signature should work", func() {
+		// Port 8448 requires RSA+SHA256 signature
+		// client-matching-signature.crt was signed that way - should succeed
+		s.assertEventualCurlResponse(
+			append(curlOpts8448, curl.WithClientCert(matchingSignatureCertPath, matchingSignatureKeyPath))...,
+		)
+	})
+
+	s.Run("signature-algorithms for client with non-matching ECDSA signature should fail", func() {
+		// Port 8448 requires RSA+SHA256 signature
+		// client-non-matching-signature.crt was signed with ECDSA - should fail
+		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			append(curlOpts8448, curl.WithClientCert(nonMatchingSignatureCertPath, nonMatchingSignatureKeyPath)),
+			55, // CURLE_SEND_ERROR - client cert rejected due to signature mismatch
 			10*time.Second,
 		)
 	})

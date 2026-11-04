@@ -44,6 +44,12 @@ spec:
                         audience: kgateway
                         expirationSeconds: 43200
                         path: xds-token
+              - name: podinfo
+                downwardAPI:
+                  items:
+                    - path: labels
+                      fieldRef:
+                        fieldPath: metadata.labels
             containers:
               - name: kgateway-proxy
                 volumeMounts:

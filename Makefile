@@ -44,6 +44,9 @@ BUILD_TOOLS_VERSION ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo
 OSV_SCANNER_IMAGE ?= ghcr.io/google/osv-scanner-action:v2.3.5
 OSV_SCAN_IMAGES ?=
 OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
+# Set to any value to read images from the local Docker daemon (docker save) instead of pulling from a registry.
+# Used by osv-scan-local-images; not set by default so osv-scan always pulls fresh remote images.
+OSV_SCAN_LOCAL ?=
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
@@ -63,13 +66,20 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.4.0-main
+ROLLING_MAIN_VERSION ?= v2.5.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
+
+# Tag used for built image artifacts (per-arch images and multi-arch manifests). Distinct from
+# VERSION, which is compiled into the binary via LDFLAGS. Defaults to VERSION so local dev, PR
+# snapshots, and rolling-main builds are unchanged; the release workflow overrides it with a
+# non-semver staging tag (e.g. stage-<gitsha>-<version>) so consumption automation (Kargo, semver-only)
+# does not adopt the artifacts before they are validated and published.
+export ARTIFACT_TAG ?= $(VERSION)
 
 UNAME_M := $(shell uname -m)
 # if `GOARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
@@ -92,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.4
 
 # Envoy version tag (e.g. v1.38.1) extracted from ENVOY_IMAGE, used to suffix the registry
 # layer-cache tags. The Envoy base is the layer that differs across release lines
@@ -131,10 +141,7 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Base Alpine image used for SDS and dummy-idp containers. Exported for use in goreleaser.yaml.
-export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
-
-# Distroless glibc base used for the kgateway controller container. Exported for use in goreleaser.yaml.
+# Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
 # to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
 # may be garbage-collected on the free tier. Release builds set DOCKER_NO_CACHE=1, which adds --pull so each
@@ -196,12 +203,10 @@ fmt-changed: fmt-go-changed fmt-yaml-changed ## Format changed Go and YAML files
 mod-download:  ## Download transitive dependencies
 	go mod download
 	cd tools && go mod download
-	cd test/e2e/defaults/extproc && go mod download
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy the go mod file
 	@echo "Tidying tools..." && cd tools && go mod tidy
-	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 	@echo "Tidying top level" && go mod tidy
 
 #----------------------------------------------------------------------------
@@ -297,7 +302,10 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 			image_arch="$${image_platform#*/}"; \
 			image_arch="$${image_arch%%/*}"; \
 			rm -f "$$host_image_archive"; \
-			if command -v skopeo > /dev/null 2>&1; then \
+			if [[ -n "$(OSV_SCAN_LOCAL)" ]]; then \
+				echo "Saving local image $$image via docker save"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			elif command -v skopeo > /dev/null 2>&1; then \
 				if skopeo copy \
 					--override-os "$$image_os" \
 					--override-arch "$$image_arch" \
@@ -378,6 +386,13 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 osv-scan-latest-main-images:
 	$(MAKE) osv-scan OSV_SCAN_IMAGES="ghcr.io/kgateway-dev/kgateway:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/sds:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/envoy-wrapper:$(ROLLING_MAIN_VERSION)"
 
+.PHONY: osv-scan-local-images
+osv-scan-local-images: ## Build images from the current branch and run OSV-Scanner against them
+	$(MAKE) -B kgateway-docker sds-docker envoy-wrapper-docker
+	$(MAKE) osv-scan \
+		OSV_SCAN_LOCAL=1 \
+		OSV_SCAN_IMAGES="$(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)"
+
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -446,6 +461,15 @@ e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 
+# Compiles the e2e test binary with the same build flags as e2e-test, but runs
+# nothing (-exec=true), so a later e2e-test starts from a warm build cache. CI
+# runs this in the background while the cluster is being set up.
+.PHONY: warm-e2e-test
+warm-e2e-test: go-test
+warm-e2e-test: TEST_TAG = e2e
+warm-e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+warm-e2e-test: GO_TEST_USER_ARGS = -exec=true
+
 .PHONY: e2e-shared-images-docker
 e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
 
@@ -471,17 +495,17 @@ test-with-coverage: test
 
 .PHONY: golden-deployer
 golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
-	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	HELM="$(HELM)" REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
 	@echo ""
 	@echo "This must pass after refreshing:"
-	go test ./test/deployer/...
+	HELM="$(HELM)" go test ./test/deployer/...
 
 .PHONY: golden-helm
 golden-helm:  ## Refreshes golden files for ./test/helm snapshot testing
-	REFRESH_GOLDEN=true go test ./test/helm/... > /dev/null || true
+	HELM="$(HELM)" REFRESH_GOLDEN=true go test ./test/helm/... > /dev/null || true
 	@echo ""
 	@echo "This must pass after refreshing:"
-	go test ./test/helm/...
+	HELM="$(HELM)" go test ./test/helm/...
 
 ## Refreshes golden files for translation testing
 golden-translator-%:
@@ -494,7 +518,11 @@ golden-translator-%:
 # Env test
 #----------------------------------------------------------------------------------
 
-ENVTEST_K8S_VERSION = 1.31
+# Gateway API v1.6 experimental CRDs (xbackends) use the CEL format library,
+# which requires a kube-apiserver newer than 1.31.
+# Defaults to a version compatible with the Gateway API experimental CRDs. CI
+# matrix lanes may override this to match their Kubernetes version.
+ENVTEST_K8S_VERSION ?= 1.33
 ENVTEST ?= go -C tools tool setup-envtest
 
 .PHONY: envtest-path
@@ -584,21 +612,21 @@ container-structure-test: container-structure-test-kgateway container-structure-
 .PHONY: container-structure-test-kgateway
 container-structure-test-kgateway: ## Run container structure tests for kgateway image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
 
 .PHONY: container-structure-test-sds
 container-structure-test-sds: ## Run container structure tests for sds image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/sds.yaml
 
 .PHONY: container-structure-test-envoy-wrapper
 container-structure-test-envoy-wrapper: ## Run container structure tests for envoy-wrapper image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/envoy-wrapper.yaml
 
@@ -663,8 +691,7 @@ MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum \
-	tools/go.mod tools/go.sum \
-	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
+	tools/go.mod tools/go.sum
 
 # Clean generated code
 .PHONY: clean-gen
@@ -777,6 +804,7 @@ $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
@@ -813,12 +841,13 @@ $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
 
 $(SDS_OUTPUT_DIR)/Dockerfile.sds: cmd/sds/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
 	$(BUILDX_BUILD) --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(SDS_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
 	@touch $@
@@ -877,9 +906,11 @@ $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY
 		$(ENVOY_MODULES_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
@@ -887,6 +918,7 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 	$(BUILDX_BUILD) --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(ENVOYINIT_CACHE_FROM) \
 		$(ENVOYINIT_LOCAL_CACHE_FROM_ARG) \
 		$(ENVOYINIT_LOCAL_CACHE_TO_ARG) \
@@ -904,6 +936,10 @@ DUMMY_IDP_DIR=hack/dummy-idp
 DUMMY_IDP_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_IDP_DIR)
 export DUMMY_IDP_IMAGE_REPO ?= dummy-idp
 DUMMY_IDP_VERSION=0.0.1
+# dummy-idp.go embeds the cert and key, so they are sources too. The directory
+# itself is listed so that adding or deleting a file, which $(wildcard) alone
+# cannot see, also triggers a rebuild.
+DUMMY_IDP_SOURCES=$(DUMMY_IDP_DIR) $(wildcard $(DUMMY_IDP_DIR)/*.go $(DUMMY_IDP_DIR)/*.cert $(DUMMY_IDP_DIR)/*.key) go.mod go.sum
 
 $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./hack/dummy-idp...
@@ -912,12 +948,12 @@ $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 dummy-idp: $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH)
 
 $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
 	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
 	@touch $@
 
@@ -937,10 +973,21 @@ EXTPROC_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(EXTPROC_SERVER_DIR)
 export EXTPROC_SERVER_IMAGE_REPO ?= extproc-server
 EXTPROC_SERVER_VERSION=0.0.1
 
-$(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(shell find $(EXTPROC_SERVER_DIR) -name '*.go') $(EXTPROC_SERVER_DIR)/Dockerfile
-	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTPROC_SERVER_DIR) -f $(EXTPROC_SERVER_DIR)/Dockerfile \
-		-t $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+# Built from the root module so it shares the root go.mod/go.sum (and their CVE bumps).
+$(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH): $(shell find $(EXTPROC_SERVER_DIR) -name '*.go') go.mod go.sum
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./$(EXTPROC_SERVER_DIR)
+
+.PHONY: extproc-server
+extproc-server: $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH)
+
+$(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server: $(EXTPROC_SERVER_DIR)/Dockerfile
 	@mkdir -p $(dir $@)
+	cp $< $@
+
+$(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH) $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server
+	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTPROC_SERVER_OUTPUT_DIR) -f $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
 	@touch $@
 
 .PHONY: extproc-server-docker
@@ -1030,7 +1077,7 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) ENVOY_VERSION_TAG=$(ENVOY_VERSION_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
-	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
+	./hack/generate-release-notes.sh -p "$${PREVIOUS_TAG:-}" -c "$${CURRENT_TAG:-HEAD}"
 
 #----------------------------------------------------------------------------------
 # MARK: Development
@@ -1044,17 +1091,17 @@ INSTALL_NAMESPACE ?= kgateway-system
 
 # The version of the Node Docker image to use for booting the kind cluster: https://hub.docker.com/r/kindest/node/tags
 # This version should stay in sync with `hack/kind/setup-kind.sh`.
-CLUSTER_NODE_VERSION ?= v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
+CLUSTER_NODE_VERSION ?= v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
 
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND ?= false
 
 .PHONY: kind-create
 kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.5.1
+CONFORMANCE_VERSION ?= v1.6.2
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
@@ -1241,32 +1288,132 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
 	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
+.PHONY: run-load-tests-strict-churn
+run-load-tests-strict-churn: ## Run strict-validation churn convergence test (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_STRICT_CHURN=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -timeout 30m ./test/e2e/tests -run "^TestKgateway$$/^StrictChurn$$"
+
+# XdsCost prices what each kind of change costs the controller, by scraping the
+# controller's own metrics. Override the fleet shape and mode with
+# KGW_BENCH_GATEWAYS / KGW_BENCH_STATIC_BACKENDS / KGW_BENCH_EDS_ROUTES /
+# KGW_BENCH_ITERATIONS / KGW_BENCH_VALIDATION (STANDARD|STRICT), and name the
+# build under test with KGW_BENCH_LABEL. -count=1 is required: go test caches a
+# successful run and will otherwise replay it under new env vars.
+XDS_COST_GO_ARGS ?= -timeout=60m
+XDS_FLEET_GO_ARGS ?= -timeout=180m
+
+.PHONY: run-xds-cost-bench
+run-xds-cost-bench: ## Run the per-client xDS control-plane cost benchmark (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_XDS_COST=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -count=1 $(XDS_COST_GO_ARGS) ./test/e2e/tests -run "^TestKgateway$$/^XdsCost$$"
+
+# XdsFleet is XdsCost at production fan-out: thousands of Services and hundreds
+# of Gateways, driven by synthetic xDS streams instead of real Envoy pods, which
+# no single machine can host. Knobs: KGW_FLEET_SERVICES / KGW_FLEET_GATEWAYS /
+# KGW_FLEET_INLINE_BACKENDS / KGW_FLEET_STREAMS_PER_GATEWAY / KGW_FLEET_WAVES.
+.PHONY: run-xds-fleet-bench
+run-xds-fleet-bench: ## Run the fleet-scale per-client xDS cost benchmark (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_XDS_FLEET=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -count=1 $(XDS_FLEET_GO_ARGS) ./test/e2e/tests -run "^TestKgateway$$/^XdsFleet$$"
+
+
+# A bounded CI workload shared by nightly and staged-release load testing.
+# These numbers exercise fan-out and churn; they are not a production capacity claim.
+XDS_BENCH_OUTPUT_DIR ?= $(OUTPUT_DIR)/xds-bench
+.PHONY: run-xds-bench-ci
+run-xds-bench-ci: export KGW_BENCH_VALIDATION := STANDARD
+run-xds-bench-ci: export KGW_BENCH_GATEWAYS := 3
+run-xds-bench-ci: export KGW_BENCH_STATIC_BACKENDS := 30
+run-xds-bench-ci: export KGW_BENCH_EDS_ROUTES := 30
+run-xds-bench-ci: export KGW_BENCH_ITERATIONS := 3
+run-xds-bench-ci: export KGW_BENCH_IDLE_SECONDS := 5
+run-xds-bench-ci: export KGW_FLEET_SERVICES := 500
+run-xds-bench-ci: export KGW_FLEET_GATEWAYS := 24
+run-xds-bench-ci: export KGW_FLEET_INLINE_BACKENDS := 10
+run-xds-bench-ci: export KGW_FLEET_STREAMS_PER_GATEWAY := 2
+run-xds-bench-ci: export KGW_FLEET_WAVES := 4
+run-xds-bench-ci: export KGW_FLEET_ZONES := 3
+run-xds-bench-ci: export KGW_FLEET_POD_LOCALITY := false
+run-xds-bench-ci: export KGW_FLEET_ENDPOINT_PODS := false
+run-xds-bench-ci: export KGW_FLEET_MEMORY_LIMIT := 2Gi
+run-xds-bench-ci: export KGW_FLEET_ITERATIONS := 3
+run-xds-bench-ci: export KGW_FLEET_SETTLE_MS := 1500
+run-xds-bench-ci: export KGW_FLEET_WAVE_TIMEOUT_SECONDS := 120
+run-xds-bench-ci: export KGW_FLEET_ITERATION_TIMEOUT_SECONDS := 120
+run-xds-bench-ci: ## Run bounded xDS benchmarks and validate their results (existing installation)
+	@set -euo pipefail; \
+	mkdir -p "$(XDS_BENCH_OUTPUT_DIR)"; \
+	failed=0; \
+	for suite in cost fleet; do \
+		records="$(XDS_BENCH_OUTPUT_DIR)/$$suite.records"; \
+		: > "$$records"; \
+		if ! KGW_BENCH_OUT="$$records" $(MAKE) --no-print-directory run-xds-$$suite-bench \
+			XDS_COST_GO_ARGS=-timeout=20m XDS_FLEET_GO_ARGS=-timeout=20m \
+			2>&1 | tee "$(XDS_BENCH_OUTPUT_DIR)/$$suite.log"; then \
+			failed=1; \
+		fi; \
+		if ! jq -Rc 'capture("^(?<event>[^ ]+) (?<payload>.*)$$") | {event, data: (.payload | fromjson)}' \
+			"$$records" > "$(XDS_BENCH_OUTPUT_DIR)/$$suite.jsonl"; then \
+			failed=1; \
+		fi; \
+		if ! $(MAKE) --no-print-directory validate-xds-bench-ci-results XDS_BENCH_SUITE="$$suite"; then \
+			failed=1; \
+		fi; \
+	done; \
+	exit "$$failed"
+
+.PHONY: validate-xds-bench-ci-results
+validate-xds-bench-ci-results: ## Check benchmark completion and fleet failure verdicts
+	@jq -es --arg suite "$(XDS_BENCH_SUITE)" \
+		"if \$$suite == \"cost\" then \
+			([.[] | select(.event == \"xds_cost_result\") | .data.phase] | sort) == [\"BaseChurn\",\"EdsChurn\",\"Reconnect\"] \
+			and all(.[] | select(.event == \"xds_cost_result\"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
+			and any(.[]; .event == \"xds_cost_summary\" and (.data.phases | length) == 3) \
+		elif \$$suite == \"fleet\" then \
+			all(.[]; .event != \"xds_fleet_verdict\") \
+			and ([.[] | select(.event == \"xds_fleet_wave\")] | length) == 4 \
+			and all(.[] | select(.event == \"xds_fleet_wave\"); .data.served == true and .data.settled == true) \
+			and any(.[]; .event == \"xds_fleet_wave\" and .data.gateways == 24 and .data.clients == 24) \
+			and ([.[] | select(.event == \"xds_fleet_result\") | .data.phase] | sort) == [\"BaseChurn\",\"EdsChurn\",\"StreamReconnect\"] \
+			and all(.[] | select(.event == \"xds_fleet_result\"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
+		else false end" "$(XDS_BENCH_OUTPUT_DIR)/$(XDS_BENCH_SUITE).jsonl"
+
 #----------------------------------------------------------------------------------
 # MARK: Conformance
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
-CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=https://github.com/kgateway-dev/kgateway -contact=https://github.com/kgateway-dev/kgateway/issues/new/choose
+# This test uses port 9091 which is reserved for the metrics port. The test passes if the port in the conformance test is changed
+CONFORMANCE_SKIP_TESTS :=
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
+CONFORMANCE_GO_TEST_ARGS ?= -timeout=60m
 
 .PHONY: conformance ## Run the conformance test suite
 conformance:  ## Run the Gateway API conformance suite
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance $(CONFORMANCE_GO_TEST_ARGS) -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
 conformance-%:  ## Run only the specified Gateway API conformance test by ShortName
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance $(CONFORMANCE_GO_TEST_ARGS) -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 # An alias target for running all conformance test suites.
 .PHONY: all-conformance
 all-conformance: conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
+
+# Fail if the controller recorded a client NACK or an inconsistent snapshot.
+# Consistency needs KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true; the script warns
+# otherwise. Example: make conformance xds-consistency-check
+.PHONY: xds-consistency-check
+xds-consistency-check: ## Fail on recorded client NACKs or inconsistent snapshots
+	INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) ./hack/xds-consistency-check.sh
 
 #----------------------------------------------------------------------------------
 # Dependency Bumping

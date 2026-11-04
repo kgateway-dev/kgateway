@@ -5,8 +5,9 @@ package loadtesting
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -63,7 +64,7 @@ func (s *LoadTestingSuite) measureControllerRolloutStartup() (*startupBenchmarkR
 			Namespace:       namespace,
 			Deployment:      controllerDeploymentName,
 			DesiredReplicas: desiredReplicas,
-		}, fmt.Errorf("controller deployment has no desired replicas")
+		}, errors.New("controller deployment has no desired replicas")
 	}
 
 	version, channel := s.detectGatewayAPIMetadata()
@@ -254,7 +255,7 @@ func (s *LoadTestingSuite) controllerPodSnapshot(namespace string, selector *met
 		))
 	}
 
-	sort.Strings(snapshots)
+	slices.Sort(snapshots)
 	return strings.Join(snapshots, " | ")
 }
 
@@ -289,8 +290,8 @@ func (s *LoadTestingSuite) recentControllerEvents(namespace string, selector *me
 		return "no recent controller pod events"
 	}
 
-	sort.Slice(matchingEvents, func(i, j int) bool {
-		return eventTime(matchingEvents[i]).Before(eventTime(matchingEvents[j]))
+	slices.SortFunc(matchingEvents, func(a, b corev1.Event) int {
+		return eventTime(a).Compare(eventTime(b))
 	})
 
 	const maxEvents = 8

@@ -126,7 +126,7 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 	configMap := newActualBackendTLSTestConfigMap()
 
 	fakeClient := apifake.NewClient(t, service, configMap)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -169,12 +169,12 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 			commoncol.BackendIndex.HasSynced() &&
 			plugins.HasSynced() &&
 			finalBackends.HasSynced() &&
-			clusters.clusters.HasSynced()
+			clusters.HasSynced()
 	}, 5*time.Second, 50*time.Millisecond)
 
 	require.Eventually(t, func() bool {
-		fetched := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-		return len(fetched) == 1 && fetched[0].Cluster != nil && fetched[0].Cluster.GetTransportSocket() == nil
+		fetched := clustersForClient(krt.TestingDummyContext{}, ctx, translator, clusters.base, ucc)
+		return len(fetched) == 1 && !fetched[0].Cluster.IsNil() && fetched[0].Cluster.Clone().GetTransportSocket() == nil
 	}, 5*time.Second, 50*time.Millisecond)
 
 	older := time.Now()
@@ -187,12 +187,12 @@ func TestPerClientClustersUpdateWhenActualBackendTLSPolicyAddedLater(t *testing.
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		fetched := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-		if len(fetched) != 1 || fetched[0].Cluster == nil {
+		fetched := clustersForClient(krt.TestingDummyContext{}, ctx, translator, clusters.base, ucc)
+		if len(fetched) != 1 || fetched[0].Cluster.IsNil() {
 			return false
 		}
 
-		transportSocket := fetched[0].Cluster.GetTransportSocket()
+		transportSocket := fetched[0].Cluster.Clone().GetTransportSocket()
 		if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
 			return false
 		}
@@ -217,7 +217,7 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 		newActualBackendTLSPolicy("backend-tls-older", "other.example.com", older),
 		newActualBackendTLSPolicy("backend-tls-newer", "abc.example.com", older.Add(time.Second)),
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -260,19 +260,19 @@ func TestPerClientClustersUseActualBackendTLSPolicyWhenConflictsExistAtStartup(t
 			commoncol.BackendIndex.HasSynced() &&
 			plugins.HasSynced() &&
 			finalBackends.HasSynced() &&
-			clusters.clusters.HasSynced()
+			clusters.HasSynced()
 	}, 5*time.Second, 50*time.Millisecond)
 
 	require.Eventually(t, func() bool {
-		fetched := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-		if len(fetched) != 1 || fetched[0].Cluster == nil {
+		fetched := clustersForClient(krt.TestingDummyContext{}, ctx, translator, clusters.base, ucc)
+		if len(fetched) != 1 || fetched[0].Cluster.IsNil() {
 			return false
 		}
 		if fetched[0].Name != "kube_default_backend-service_443" {
 			return false
 		}
 
-		transportSocket := fetched[0].Cluster.GetTransportSocket()
+		transportSocket := fetched[0].Cluster.Clone().GetTransportSocket()
 		if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
 			return false
 		}

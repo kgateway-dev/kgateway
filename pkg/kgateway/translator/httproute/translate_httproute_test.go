@@ -167,7 +167,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(new(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(new("/")))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
+				routeStatus := reportsMap.BuildRouteStatus(route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")
@@ -245,7 +245,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(new(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(new("/")))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
+				routeStatus := reportsMap.BuildRouteStatus(route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")
@@ -378,7 +378,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				routeStatus := reportsMap.BuildRouteStatus(route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was not accepted")
@@ -426,7 +426,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				routeStatus := reportsMap.BuildRouteStatus(route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was not accepted due to incompatible filters")
@@ -518,7 +518,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					},
 				}))
 
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				routeStatus := reportsMap.BuildRouteStatus(route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				By("verifying the route was accepted")

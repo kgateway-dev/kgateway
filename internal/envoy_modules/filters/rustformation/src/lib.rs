@@ -11,15 +11,17 @@ use once_cell::sync::Lazy;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use transformation::{
-    jinja::ProcessFlags, LocalTransform, LocalTransformationConfig, TransformationError,
-    TransformationOps,
+    jinja::{ProcessFlags, TransformFlags},
+    LocalTransform, LocalTransformationConfig, TransformationError, TransformationOps,
 };
 
-static EMPTY_MAP: Lazy<HashMap<String, String>> = Lazy::new(HashMap::new);
+static EMPTY_MAP: Lazy<HashMap<String, Vec<String>>> = Lazy::new(HashMap::new);
 #[derive(Clone)]
 pub struct FilterConfig {
     transformations: LocalTransformationConfig,
     env: Environment<'static>,
+    request_transform_flags: TransformFlags,
+    response_transform_flags: TransformFlags,
 }
 
 struct EnvoyTransformationOps<'a, EHF: EnvoyHttpFilter> {
@@ -243,9 +245,22 @@ impl FilterConfig {
             }
         };
 
+        let request_transform_flags = config
+            .request
+            .as_ref()
+            .map(transformation::jinja::compute_transform_flags)
+            .unwrap_or(TransformFlags::empty());
+        let response_transform_flags = config
+            .response
+            .as_ref()
+            .map(transformation::jinja::compute_transform_flags)
+            .unwrap_or(TransformFlags::empty());
+
         Some(FilterConfig {
             transformations: config,
             env,
+            request_transform_flags,
+            response_transform_flags,
         })
     }
 }
@@ -268,7 +283,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
 pub struct Filter {
     filter_config: FilterConfig,
     per_route_config: Option<Box<PerRouteConfig>>,
-    request_headers_map: Option<HashMap<String, String>>,
+    request_headers_map: Option<HashMap<String, Vec<String>>>,
     is_upgrade_request: bool,
 }
 
@@ -311,7 +326,7 @@ impl Filter {
         }
     }
 
-    fn get_request_headers_map(&self) -> &HashMap<String, String> {
+    fn get_request_headers_map(&self) -> &HashMap<String, Vec<String>> {
         self.request_headers_map.as_ref().unwrap_or(&EMPTY_MAP)
     }
 
@@ -328,6 +343,20 @@ impl Filter {
         match self.get_per_route_config() {
             Some(config) => &config.transformations.response,
             None => &self.filter_config.transformations.response,
+        }
+    }
+
+    fn get_request_transform_flags(&self) -> TransformFlags {
+        match self.get_per_route_config() {
+            Some(config) => config.request_transform_flags,
+            None => self.filter_config.request_transform_flags,
+        }
+    }
+
+    fn get_response_transform_flags(&self) -> TransformFlags {
+        match self.get_per_route_config() {
+            Some(config) => config.response_transform_flags,
+            None => self.filter_config.response_transform_flags,
         }
     }
 
@@ -387,6 +416,7 @@ impl Filter {
             transform,
             self.get_request_headers_map(),
             flags,
+            self.get_request_transform_flags(),
             EnvoyTransformationOps::new(envoy_filter),
         ) {
             Ok(()) => {}
@@ -416,6 +446,7 @@ impl Filter {
             self.get_request_headers_map(),
             &response_headers_map,
             flags,
+            self.get_response_transform_flags(),
             EnvoyTransformationOps::new(envoy_filter),
         ) {
             Ok(()) => {}

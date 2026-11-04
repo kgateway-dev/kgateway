@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"cmp"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -10,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -33,7 +34,16 @@ import (
 )
 
 const (
-	PayloadInMetadata                       = "payload"
+	// PayloadInMetadata is the dynamic metadata key, under the
+	// `envoy.filters.http.jwt_authn` namespace, that the JWT filter writes a verified
+	// token's payload to.
+	PayloadInMetadata = "payload"
+	// FailedStatusInMetadata is the dynamic metadata key, under the same namespace, that
+	// the filter writes the verification failure `{code, message}` to. It is set on every
+	// provider so that rejections (and, in AllowMissingOrFailed mode, would-be rejections) are visible
+	// in access logs.
+	FailedStatusInMetadata = "failed_status"
+
 	jwtFilterNamePrefix                     = "jwt"
 	jwtConfigMapKey                         = "jwks"
 	jwtGlobalDisableFilterName              = "global_disable/jwt"
@@ -133,7 +143,7 @@ func constructJwt(
 
 	if spec.ExtensionRef == nil {
 		// shouldn't happen due to CRD validation
-		return fmt.Errorf("jwt: extensionRef is required if disable is not set")
+		return errors.New("jwt: extensionRef is required if disable is not set")
 	}
 	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
@@ -210,15 +220,30 @@ func translateProvider(
 		shouldForward = true
 	}
 	jwtProvider := &jwtauthnv3.JwtProvider{
-		Issuer:            provider.Issuer,
-		Audiences:         provider.Audiences,
-		PayloadInMetadata: PayloadInMetadata,
-		ClaimToHeaders:    claimToHeaders,
-		Forward:           shouldForward,
+		Issuer:                 provider.Issuer,
+		Audiences:              provider.Audiences,
+		PayloadInMetadata:      PayloadInMetadata,
+		FailedStatusInMetadata: FailedStatusInMetadata,
+		ClaimToHeaders:         claimToHeaders,
+		Forward:                shouldForward,
 		// TODO(npolshak): Do we want to set NormalizePayload  to support https://datatracker.ietf.org/doc/html/rfc8693#name-scope-scopes-claim
 	}
 	if len(claimToHeaders) > 0 {
 		jwtProvider.ClearRouteCache = true
+	}
+	if provider.ClockSkew != nil {
+		// Envoy only accepts whole seconds here; the CRD validation rejects sub-second
+		// durations and anything above 87600h, so this conversion cannot overflow or truncate.
+		jwtProvider.ClockSkewSeconds = uint32(provider.ClockSkew.Duration.Seconds()) //nolint:gosec // G115: bounded by kubebuilder validation
+	}
+	if provider.Cache != nil {
+		jwtProvider.JwtCacheConfig = &jwtauthnv3.JwtCacheConfig{}
+		if provider.Cache.Size != nil {
+			jwtProvider.JwtCacheConfig.JwtCacheSize = *provider.Cache.Size
+		}
+		if provider.Cache.MaxTokenSize != nil {
+			jwtProvider.JwtCacheConfig.JwtMaxTokenSize = *provider.Cache.MaxTokenSize
+		}
 	}
 	translateTokenSource(provider, jwtProvider)
 	err := translateJwks(krtctx, provider.JWKS, jwtProvider, configMaps, resolver, gwExtObj)
@@ -284,7 +309,7 @@ func translateJwks(
 		case jwkConfig.LocalJWKS.ConfigMapRef != nil:
 			cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, gwExtObj.Namespace)
 			if err != nil {
-				return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
+				return fmt.Errorf("failed to find configmap %s: %w", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
 			}
 			jwkSource, err := translateJwksConfigMap(cm)
 			if err != nil {
@@ -298,10 +323,16 @@ func translateJwks(
 		if err != nil {
 			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}
+
+		timeout := &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs}
+		if remote.Timeout != nil {
+			timeout = durationpb.New(remote.Timeout.Duration)
+		}
+
 		jwksOut := &jwtauthnv3.JwtProvider_RemoteJwks{
 			RemoteJwks: &jwtauthnv3.RemoteJwks{
 				HttpUri: &envoycorev3.HttpUri{
-					Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
+					Timeout: timeout,
 					Uri:     remote.URL,
 					HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
 						Cluster: backend.ClusterName(),
@@ -312,9 +343,41 @@ func translateJwks(
 		if remote.CacheDuration != nil {
 			jwksOut.RemoteJwks.CacheDuration = durationpb.New(remote.CacheDuration.Duration)
 		}
+		if remote.AsyncFetch != nil {
+			jwksOut.RemoteJwks.AsyncFetch = translateJwksAsyncFetch(remote.AsyncFetch)
+		}
+		if remote.RetryPolicy != nil {
+			jwksOut.RemoteJwks.RetryPolicy = translateJwksRetryPolicy(remote.RetryPolicy)
+		}
 		out.JwksSourceSpecifier = jwksOut
 	}
 	return nil
+}
+
+func translateJwksAsyncFetch(in *kgateway.JWKSAsyncFetch) *jwtauthnv3.JwksAsyncFetch {
+	asyncFetch := &jwtauthnv3.JwksAsyncFetch{
+		FastListener: ptr.Deref(in.FastListener, false),
+	}
+	if in.FailedRefetchDuration != nil {
+		asyncFetch.FailedRefetchDuration = durationpb.New(in.FailedRefetchDuration.Duration)
+	}
+	return asyncFetch
+}
+
+func translateJwksRetryPolicy(in *kgateway.JWKSRetryPolicy) *envoycorev3.RetryPolicy {
+	retryPolicy := &envoycorev3.RetryPolicy{}
+	if in.NumRetries != nil {
+		retryPolicy.NumRetries = wrapperspb.UInt32(uint32(*in.NumRetries)) //nolint:gosec // G115: kubebuilder validation ensures NumRetries is >= 1
+	}
+	if in.BackOff != nil {
+		retryPolicy.RetryBackOff = &envoycorev3.BackoffStrategy{
+			BaseInterval: durationpb.New(in.BackOff.BaseInterval.Duration),
+		}
+		if in.BackOff.MaxInterval != nil {
+			retryPolicy.RetryBackOff.MaxInterval = durationpb.New(in.BackOff.MaxInterval.Duration)
+		}
+	}
+	return retryPolicy
 }
 
 func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
@@ -328,12 +391,12 @@ func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_Local
 func translateJwksInline(inlineKey string) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
 	keyset, err := TranslateKey(inlineKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse inline jwks: %v", err)
+		return nil, fmt.Errorf("failed to parse inline jwks: %w", err)
 	}
 
 	keysetJson, err := json.Marshal(keyset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize inline jwks: %v", err)
+		return nil, fmt.Errorf("failed to serialize inline jwks: %w", err)
 	}
 
 	return &jwtauthnv3.JwtProvider_LocalJwks{
@@ -353,7 +416,7 @@ func TranslateKey(key string) (*jose.JSONWebKeySet, error) {
 	if err == nil {
 		return ks, nil
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("PEM %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("PEM %w", err))
 
 	ks, err = parseKeySet(key)
 	if err == nil {
@@ -362,15 +425,15 @@ func TranslateKey(key string) (*jose.JSONWebKeySet, error) {
 		}
 		err = errors.New("no keys in set")
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("JWKS %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("JWKS %w", err))
 
 	ks, err = parseKey(key)
 	if err == nil {
 		return ks, nil
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("JWK %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("JWK %w", err))
 
-	return nil, fmt.Errorf("cannot parse local jwks: %v", multierr)
+	return nil, fmt.Errorf("cannot parse local jwks: %w", multierr)
 }
 
 func parseKeySet(key string) (*jose.JSONWebKeySet, error) {
@@ -444,7 +507,9 @@ func buildJwtRequirementFromProviders(
 	}
 
 	// sort for idempotency
-	sort.Slice(reqs, func(i, j int) bool { return reqs[i].GetProviderName() < reqs[j].GetProviderName() })
+	slices.SortFunc(reqs, func(a, b *jwtauthnv3.JwtRequirement) int {
+		return cmp.Compare(a.GetProviderName(), b.GetProviderName())
+	})
 
 	var jwtReqs *jwtauthnv3.JwtRequirement
 	// if there is only one requirement, return it directly
@@ -461,24 +526,35 @@ func buildJwtRequirementFromProviders(
 		}
 	}
 
+	var nonStrictReq *jwtauthnv3.JwtRequirement
 	if validationMode != nil {
 		switch *validationMode {
 		case kgateway.ValidationModeAllowMissing:
-			allowMissingReq := &jwtauthnv3.JwtRequirement{
+			// satisfied when no JWT is present, but a present-and-invalid JWT still fails
+			nonStrictReq = &jwtauthnv3.JwtRequirement{
 				RequiresType: &jwtauthnv3.JwtRequirement_AllowMissing{
 					AllowMissing: &empty.Empty{},
 				},
 			}
-			jwtReqs = &jwtauthnv3.JwtRequirement{
-				RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
-					RequiresAny: &jwtauthnv3.JwtRequirementOrList{
-						Requirements: []*jwtauthnv3.JwtRequirement{
-							jwtReqs,
-							allowMissingReq,
-						},
-					},
+		case kgateway.ValidationModeAllowMissingOrFailed:
+			// always satisfied, whether the JWT is missing or fails verification
+			nonStrictReq = &jwtauthnv3.JwtRequirement{
+				RequiresType: &jwtauthnv3.JwtRequirement_AllowMissingOrFailed{
+					AllowMissingOrFailed: &empty.Empty{},
 				},
 			}
+		}
+	}
+	if nonStrictReq != nil {
+		jwtReqs = &jwtauthnv3.JwtRequirement{
+			RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
+				RequiresAny: &jwtauthnv3.JwtRequirementOrList{
+					Requirements: []*jwtauthnv3.JwtRequirement{
+						jwtReqs,
+						nonStrictReq,
+					},
+				},
+			},
 		}
 	}
 	return jwtReqs

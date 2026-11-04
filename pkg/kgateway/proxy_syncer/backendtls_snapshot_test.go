@@ -116,7 +116,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		newActualBackendTLSTestConfigMap(),
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -154,14 +154,15 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		if xdsSnap == nil {
 			return nil
 		}
-		return toResources(gw, *xdsSnap, reportsMap)
+		return &toTranslationOutput(gw, *xdsSnap, reportsMap, clusterScoping{}).Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		uccs,
 		newFinalBackendEndpoints(krtopts, finalBackends, commoncol.Endpoints),
-		translator.TranslateEndpoints,
+		translator.ResolveEndpoints,
+		translator.BuildClusterLoadAssignment,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
@@ -170,7 +171,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		finalBackends,
 		uccs,
 	)
-	snapshots := snapshotPerClient(krtopts, uccs, mostXdsSnapshots, epPerClient, clustersPerClient)
+	snapshots := snapshotPerClient(krtopts, uccs, mostXdsSnapshots, epPerClient, clustersPerClient, clusterScoping{})
 
 	fakeClient.RunAndWait(ctx.Done())
 
@@ -355,7 +356,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		sectionSpecificPolicy,
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -393,14 +394,15 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		if xdsSnap == nil {
 			return nil
 		}
-		return toResources(gw, *xdsSnap, reportsMap)
+		return &toTranslationOutput(gw, *xdsSnap, reportsMap, clusterScoping{}).Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		uccs,
 		newFinalBackendEndpoints(krtopts, finalBackends, commoncol.Endpoints),
-		translator.TranslateEndpoints,
+		translator.ResolveEndpoints,
+		translator.BuildClusterLoadAssignment,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
@@ -409,7 +411,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		finalBackends,
 		uccs,
 	)
-	snapshots := snapshotPerClient(krtopts, uccs, mostXdsSnapshots, epPerClient, clustersPerClient)
+	snapshots := snapshotPerClient(krtopts, uccs, mostXdsSnapshots, epPerClient, clustersPerClient, clusterScoping{})
 
 	fakeClient.RunAndWait(ctx.Done())
 

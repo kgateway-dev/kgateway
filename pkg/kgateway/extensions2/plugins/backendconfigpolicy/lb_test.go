@@ -931,8 +931,8 @@ func TestTranslateZoneAwareForceIR(t *testing.T) {
 		ir, err := translateLoadBalancerConfig(config, "test-policy", "default")
 		assert.NoError(t, err)
 		assert.True(t, ir.hasZoneAware)
-		assert.NotNil(t, ir.zoneAwareForce)
-		assert.Equal(t, uint32(5), ir.zoneAwareForce.minEndpointsInZoneThreshold)
+		assert.NotNil(t, ir.zoneAwareForceMinEndpoints)
+		assert.Equal(t, uint32(5), *ir.zoneAwareForceMinEndpoints)
 	})
 
 	t.Run("prefer local force mode default threshold is 1", func(t *testing.T) {
@@ -947,8 +947,8 @@ func TestTranslateZoneAwareForceIR(t *testing.T) {
 		ir, err := translateLoadBalancerConfig(config, "test-policy", "default")
 		assert.NoError(t, err)
 		assert.True(t, ir.hasZoneAware)
-		assert.NotNil(t, ir.zoneAwareForce)
-		assert.Equal(t, uint32(1), ir.zoneAwareForce.minEndpointsInZoneThreshold)
+		assert.NotNil(t, ir.zoneAwareForceMinEndpoints)
+		assert.Equal(t, uint32(1), *ir.zoneAwareForceMinEndpoints)
 	})
 
 	t.Run("prefer local mode does not set zoneAwareForce", func(t *testing.T) {
@@ -961,71 +961,32 @@ func TestTranslateZoneAwareForceIR(t *testing.T) {
 		ir, err := translateLoadBalancerConfig(config, "test-policy", "default")
 		assert.NoError(t, err)
 		assert.True(t, ir.hasZoneAware)
-		assert.Nil(t, ir.zoneAwareForce)
+		assert.Nil(t, ir.zoneAwareForceMinEndpoints)
 	})
 }
 
-func TestZoneAwareForceIREquals(t *testing.T) {
-	tests := []struct {
-		name     string
-		a        *ZoneAwareForceIR
-		b        *ZoneAwareForceIR
-		expected bool
-	}{
-		{
-			name:     "both nil",
-			a:        nil,
-			b:        nil,
-			expected: true,
-		},
-		{
-			name:     "a nil b non-nil",
-			a:        nil,
-			b:        &ZoneAwareForceIR{minEndpointsInZoneThreshold: 1},
-			expected: false,
-		},
-		{
-			name:     "equal values",
-			a:        &ZoneAwareForceIR{minEndpointsInZoneThreshold: 5},
-			b:        &ZoneAwareForceIR{minEndpointsInZoneThreshold: 5},
-			expected: true,
-		},
-		{
-			name:     "different values",
-			a:        &ZoneAwareForceIR{minEndpointsInZoneThreshold: 3},
-			b:        &ZoneAwareForceIR{minEndpointsInZoneThreshold: 7},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.a.Equals(tt.b))
-		})
-	}
-}
-
 func TestLoadBalancerConfigIREqualsWithZoneAware(t *testing.T) {
-	t.Run("both with same zoneAwareForce are equal", func(t *testing.T) {
+	u32 := func(v uint32) *uint32 { return &v }
+
+	t.Run("both with same zoneAwareForceMinEndpoints are equal", func(t *testing.T) {
 		a := &LoadBalancerConfigIR{
-			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
-			zoneAwareForce: &ZoneAwareForceIR{minEndpointsInZoneThreshold: 3},
+			commonLbConfig:             &envoyclusterv3.Cluster_CommonLbConfig{},
+			zoneAwareForceMinEndpoints: u32(3),
 		}
 		b := &LoadBalancerConfigIR{
-			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
-			zoneAwareForce: &ZoneAwareForceIR{minEndpointsInZoneThreshold: 3},
+			commonLbConfig:             &envoyclusterv3.Cluster_CommonLbConfig{},
+			zoneAwareForceMinEndpoints: u32(3),
 		}
 		assert.True(t, a.Equals(b))
 	})
 
-	t.Run("different zoneAwareForce are not equal", func(t *testing.T) {
+	t.Run("different zoneAwareForceMinEndpoints are not equal", func(t *testing.T) {
 		a := &LoadBalancerConfigIR{
-			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
-			zoneAwareForce: &ZoneAwareForceIR{minEndpointsInZoneThreshold: 3},
+			commonLbConfig:             &envoyclusterv3.Cluster_CommonLbConfig{},
+			zoneAwareForceMinEndpoints: u32(3),
 		}
 		b := &LoadBalancerConfigIR{
 			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
-			zoneAwareForce: nil,
 		}
 		assert.False(t, a.Equals(b))
 	})
@@ -1037,6 +998,28 @@ func TestLoadBalancerConfigIREqualsWithZoneAware(t *testing.T) {
 		}
 		b := &LoadBalancerConfigIR{
 			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+		}
+		assert.False(t, a.Equals(b))
+	})
+
+	t.Run("both nil zoneAwareForceMinEndpoints are equal", func(t *testing.T) {
+		a := &LoadBalancerConfigIR{
+			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+		}
+		b := &LoadBalancerConfigIR{
+			commonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+		}
+		assert.True(t, a.Equals(b))
+	})
+
+	t.Run("different zoneAwareForceMinEndpoints values are not equal", func(t *testing.T) {
+		a := &LoadBalancerConfigIR{
+			commonLbConfig:             &envoyclusterv3.Cluster_CommonLbConfig{},
+			zoneAwareForceMinEndpoints: u32(3),
+		}
+		b := &LoadBalancerConfigIR{
+			commonLbConfig:             &envoyclusterv3.Cluster_CommonLbConfig{},
+			zoneAwareForceMinEndpoints: u32(7),
 		}
 		assert.False(t, a.Equals(b))
 	})

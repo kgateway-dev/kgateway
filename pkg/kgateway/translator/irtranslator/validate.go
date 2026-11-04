@@ -10,8 +10,12 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
@@ -29,6 +33,7 @@ var (
 
 	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
 	ValidRoutePatternError            = fmt.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	RedirectPathControlCharacterError = errors.New("must not contain NUL, CR or LF")
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
 		return fmt.Errorf("path [%s] cannot contain [%s]", s, invalid)
 	}
@@ -42,18 +47,18 @@ var (
 	ErrInvalidRoute = errors.New("invalid route configuration")
 )
 
-// validateRoute performs RDS validation against the given route that's been translated from the IR.
+// validateRoute performs RDS validation against a single route that's been translated from the IR.
 // It provides validation checks that prevent invalid routes from being sent to the xDS server.
 //
 // The validation pipeline runs lightweight checks regardless of route replacement mode.
 // These include basic Envoy route property validation such as paths, prefixes, and weighted clusters,
 // along with quick checks for common issues that could cause problems.
 //
-// In strict mode, the full route is validated against envoy in a single invocation. If that
-// invocation fails, a second matcher-only invocation disambiguates whether the failure
-// originates in the route's match block (drop the route) or in its action (replace with a
-// direct response). Valid routes, the common case, pay only one envoy invocation; invalid
-// routes pay two.
+// In strict mode, generated Gateway API matchers are checked in-process where possible. The full route
+// is then validated against Envoy in a single invocation. If that invocation fails, matcher validation
+// disambiguates whether the failure originates in the route's match block (drop the route) or in its
+// action (replace with a direct response). Matcher shapes this code cannot prove safe fall back to Envoy
+// matcher-only validation.
 //
 // This two-tiered approach is necessary because Envoy validate mode output does not provide
 // enough information to determine if the error is due to an invalid matcher (drop route)
@@ -64,8 +69,18 @@ func validateRoute(
 	v validator.Validator,
 	mode apisettings.ValidationMode,
 ) error {
+	if err := validateRoutePreEnvoy(route, mode); err != nil {
+		return err
+	}
+	if mode != apisettings.ValidationStrict {
+		return nil
+	}
+	return validateRouteWithEnvoy(ctx, route, v)
+}
+
+func validateRoutePreEnvoy(route *envoyroutev3.Route, mode apisettings.ValidationMode) error {
 	if route == nil {
-		return fmt.Errorf("route cannot be nil for RDS validation")
+		return errors.New("route cannot be nil for RDS validation")
 	}
 	if err := validateEnvoyRoute(route); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidRoute, err)
@@ -73,13 +88,27 @@ func validateRoute(
 	if mode != apisettings.ValidationStrict {
 		return nil
 	}
-	fullErr := validateFullRoute(ctx, route, v)
+	if handled, err := validateGeneratedMatcher(route.GetMatch()); handled && err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
+	}
+	return nil
+}
+
+func validateRouteWithEnvoy(
+	ctx context.Context,
+	route *envoyroutev3.Route,
+	v validator.Validator,
+) error {
+	if route == nil {
+		return errors.New("route cannot be nil for RDS validation")
+	}
+	fullErr := validateFullRoutes(ctx, []*envoyroutev3.Route{route}, v)
 	if fullErr == nil {
 		return nil
 	}
 	// Only run the matcher-only validation when the full route already failed,
 	// purely to attribute the failure to ErrInvalidMatcher vs ErrInvalidRoute.
-	if matcherErr := validateMatcherOnly(ctx, route, v); matcherErr != nil {
+	if matcherErr := validateMatcherOnlyEnvoy(ctx, route, v); matcherErr != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidMatcher, matcherErr)
 	}
 	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
@@ -94,7 +123,7 @@ func validateEnvoyRoute(r *envoyroutev3.Route) error {
 	validatePath(match.GetPath(), &errs)
 	validatePath(match.GetPrefix(), &errs)
 	validatePath(match.GetPathSeparatedPrefix(), &errs)
-	validatePath(re.GetPathRedirect(), &errs)
+	validateRedirectPath(re.GetPathRedirect(), &errs)
 	validatePath(re.GetHostRedirect(), &errs)
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
@@ -127,6 +156,22 @@ func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWe
 func validatePath(path string, errs *[]error) {
 	if err := ValidateRoutePath(path); err != nil {
 		*errs = append(*errs, fmt.Errorf("the \"%s\" path is invalid: %w", path, err))
+	}
+}
+
+// validateRedirectPath validates an Envoy path_redirect. Unlike a match path or a prefix
+// rewrite, this is a redirect *target* rather than a path the proxy routes on, so the RFC
+// 3986 pchar rules in ValidateRoutePath do not govern it: it may carry a query string and a
+// fragment, and sequences such as "//" and "/../" are legal here - they matter for path
+// confusion only when matching, and Envoy has its own normalization (merge_slashes,
+// normalize_path) for that. Envoy constrains the field to ^[^\x00\n\r]*$ and nothing more,
+// so mirror exactly that; anything stricter rejects config the proxy would have accepted.
+//
+// The check is still worth making rather than deferring to Envoy: a violation makes Envoy
+// reject the entire RouteConfiguration, whereas failing here costs only the offending route.
+func validateRedirectPath(path string, errs *[]error) {
+	if strings.ContainsAny(path, "\x00\n\r") {
+		*errs = append(*errs, fmt.Errorf("the \"%q\" path is invalid: %w", path, RedirectPathControlCharacterError))
 	}
 }
 
@@ -186,7 +231,7 @@ func runValidation(
 	return nil
 }
 
-func validateMatcherOnly(ctx context.Context, route *envoyroutev3.Route, v validator.Validator) error {
+func validateMatcherOnlyEnvoy(ctx context.Context, route *envoyroutev3.Route, v validator.Validator) error {
 	clusterName := "dummy-cluster"
 	builder := bootstrap.New()
 	builder.AddRoute(&envoyroutev3.Route{
@@ -206,16 +251,204 @@ func validateMatcherOnly(ctx context.Context, route *envoyroutev3.Route, v valid
 	return runValidation(ctx, v, builder, validator.CallerRouteMatcher)
 }
 
-// validateFullRoute validates the complete route configuration.
-func validateFullRoute(ctx context.Context, route *envoyroutev3.Route, v validator.Validator) error {
+// validateFullRoutes validates a set of complete route configurations in one Envoy invocation.
+func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, &envoyroutev3.RouteConfiguration{
+		VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "placeholder_vhost", Domains: []string{"*"}, Routes: routes}},
+	}, v)
+}
+
+// validateFullRouteConfiguration retains the final scope-level settings as well as
+// routes. Rebuilding only the routes loses inherited filter config and vhost rate limits.
+func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator) error {
+	return validateRouteConfigurationWithCaller(ctx, config, v, validator.CallerRouteFull)
+}
+
+func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator, caller validator.ValidationCaller) error {
 	builder := bootstrap.New()
-	builder.AddRoute(route)
-	stubClusters := createStubClusters(extractClusterNames(route))
-	for _, cluster := range stubClusters {
+	builder.SetRouteConfiguration(config)
+	for _, cluster := range createStubClusters(routeConfigurationClusterNames(config)) {
 		builder.AddCluster(cluster)
 	}
 
-	return runValidation(ctx, v, builder, validator.CallerRouteFull)
+	return runValidation(ctx, v, builder, caller)
+}
+
+// routeValidationScope preserves inherited configuration and named dependencies
+// while narrowing the routes under validation. It never edits the emitted config.
+type routeValidationScope struct {
+	config *envoyroutev3.RouteConfiguration
+	vhost  *envoyroutev3.VirtualHost
+}
+
+func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoyroutev3.RouteConfiguration {
+	config := cloneWithoutField(s.config, "virtual_hosts")
+	vhost := cloneWithoutField(s.vhost, "routes")
+	vhost.Routes = routes
+	config.VirtualHosts = []*envoyroutev3.VirtualHost{vhost}
+	return config
+}
+
+// cloneWithoutField returns a new message whose fields alias src's, minus the
+// excluded field, so isolating one route copies neither its siblings nor the
+// shared settings. Callers may assign fields on the result but must not mutate
+// anything reachable through it; the copies here are only marshalled. Building a
+// new message avoids modifying src or copying protobuf's internal state.
+func cloneWithoutField[T proto.Message](src T, excluded protoreflect.Name) T {
+	message := src.ProtoReflect()
+	shallow := message.New()
+	message.Range(func(field protoreflect.FieldDescriptor, value protoreflect.Value) bool {
+		if field.Name() != excluded {
+			shallow.Set(field, value)
+		}
+		return true
+	})
+	shallow.SetUnknown(message.GetUnknown())
+	return shallow.Interface().(T)
+}
+
+func (s routeValidationScope) validate(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, s.configuration(routes), v)
+}
+
+func (s routeValidationScope) validateRoute(ctx context.Context, route *envoyroutev3.Route, v validator.Validator, mode apisettings.ValidationMode) error {
+	if err := validateRoutePreEnvoy(route, mode); err != nil {
+		return err
+	}
+	if mode != apisettings.ValidationStrict {
+		return nil
+	}
+	fullErr := s.validate(ctx, []*envoyroutev3.Route{route}, v)
+	if fullErr == nil {
+		return nil
+	}
+	// Shared settings have already passed validation with a neutral route. Retain
+	// them while distinguishing a bad matcher from a bad action or route override.
+	matcherRoute := &envoyroutev3.Route{
+		Name: route.GetName(), Match: route.GetMatch(),
+		Action: &envoyroutev3.Route_DirectResponse{DirectResponse: &envoyroutev3.DirectResponseAction{Status: 500}},
+	}
+	if err := validateRouteConfigurationWithCaller(ctx, s.configuration([]*envoyroutev3.Route{matcherRoute}), v, validator.CallerRouteMatcher); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
+	}
+	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
+}
+
+func validateGeneratedMatcher(match *envoyroutev3.RouteMatch) (bool, error) {
+	if match == nil {
+		return false, nil
+	}
+	if match.GetRuntimeFraction() != nil || match.GetGrpc() != nil || match.GetTlsContext() != nil || match.GetDynamicMetadata() != nil {
+		return false, nil
+	}
+
+	if handled, err := validateGeneratedPathMatcher(match); !handled || err != nil {
+		return handled, err
+	}
+	for _, header := range match.GetHeaders() {
+		if handled, err := validateGeneratedHeaderMatcher(header); !handled || err != nil {
+			return handled, err
+		}
+	}
+	for _, query := range match.GetQueryParameters() {
+		if handled, err := validateGeneratedQueryMatcher(query); !handled || err != nil {
+			return handled, err
+		}
+	}
+
+	return true, nil
+}
+
+func validateGeneratedPathMatcher(match *envoyroutev3.RouteMatch) (bool, error) {
+	switch path := match.GetPathSpecifier().(type) {
+	case *envoyroutev3.RouteMatch_Path:
+		return true, nil
+	case *envoyroutev3.RouteMatch_Prefix:
+		return true, nil
+	case *envoyroutev3.RouteMatch_PathSeparatedPrefix:
+		if !isValidPathSeparated(path.PathSeparatedPrefix) {
+			return true, fmt.Errorf("path separated prefix %q is invalid", path.PathSeparatedPrefix)
+		}
+		return true, nil
+	case *envoyroutev3.RouteMatch_SafeRegex:
+		return true, validateRegexMatcher(path.SafeRegex, "path regex")
+	default:
+		return false, nil
+	}
+}
+
+func validateGeneratedHeaderMatcher(header *envoyroutev3.HeaderMatcher) (bool, error) {
+	if header == nil {
+		return false, nil
+	}
+	switch matcher := header.GetHeaderMatchSpecifier().(type) {
+	case *envoyroutev3.HeaderMatcher_PresentMatch:
+		return true, nil
+	case *envoyroutev3.HeaderMatcher_StringMatch:
+		return validateGeneratedStringMatcher(matcher.StringMatch, fmt.Sprintf("header %q", header.GetName()))
+	default:
+		return false, nil
+	}
+}
+
+func validateGeneratedQueryMatcher(query *envoyroutev3.QueryParameterMatcher) (bool, error) {
+	if query == nil {
+		return false, nil
+	}
+	switch matcher := query.GetQueryParameterMatchSpecifier().(type) {
+	case *envoyroutev3.QueryParameterMatcher_PresentMatch:
+		return true, nil
+	case *envoyroutev3.QueryParameterMatcher_StringMatch:
+		return validateGeneratedStringMatcher(matcher.StringMatch, fmt.Sprintf("query parameter %q", query.GetName()))
+	default:
+		return false, nil
+	}
+}
+
+func validateGeneratedStringMatcher(matcher *envoy_type_matcher_v3.StringMatcher, field string) (bool, error) {
+	if matcher == nil {
+		return false, nil
+	}
+	switch pattern := matcher.GetMatchPattern().(type) {
+	case *envoy_type_matcher_v3.StringMatcher_Exact:
+		return true, nil
+	case *envoy_type_matcher_v3.StringMatcher_SafeRegex:
+		return true, validateRegexMatcher(pattern.SafeRegex, field+" regex")
+	default:
+		return false, nil
+	}
+}
+
+// validateRegexMatcher checks RE2 *syntax* only. Envoy's RE2 max_program_size
+// (default 100) is the compiled-instruction count, which Go's regexp cannot
+// reproduce, so an oversized-but-syntactically-valid regex passes here and is
+// caught by the authoritative Envoy validation in validateFullRoutes.
+func validateRegexMatcher(matcher *envoy_type_matcher_v3.RegexMatcher, field string) error {
+	if matcher == nil {
+		return fmt.Errorf("%s is missing", field)
+	}
+	if err := regexutils.CheckRegexString(matcher.GetRegex()); err != nil {
+		return fmt.Errorf(
+			"validation failed: %w: error initializing configuration '/dev/fd/0': %s",
+			validator.ErrInvalidXDS,
+			envoyRegexError(matcher.GetRegex(), err),
+		)
+	}
+	return nil
+}
+
+func envoyRegexError(pattern string, err error) string {
+	errText := err.Error()
+	if strings.Contains(errText, "missing closing ]") {
+		if bracket := strings.Index(pattern, "["); bracket >= 0 {
+			pattern = pattern[bracket:]
+		}
+		return "missing ]: " + pattern
+	}
+	if strings.Contains(errText, "invalid named capture") {
+		return "invalid named capture group: " + pattern
+	}
+	return errText
 }
 
 // createStubClusters creates minimal cluster definitions for validation purposes.
@@ -232,36 +465,52 @@ func createStubClusters(clusterNames []string) []*envoyclusterv3.Cluster {
 	return clusters
 }
 
-// extractClusterNames extracts all cluster names referenced by a route,
-// handling both single cluster routes and weighted cluster routes.
-// Returns a slice of unique cluster names to prevent redundant stub cluster creation.
-func extractClusterNames(route *envoyroutev3.Route) []string {
-	clusterNameSet := make(map[string]struct{})
-	if route == nil {
-		return []string{}
+// routeConfigurationClusterNames returns every cluster name Envoy resolves when it loads
+// the configuration, once each. Envoy rejects a mirror policy whose cluster is unknown
+// ("unknown shadow cluster"), so mirrors at every scope need stubs as well as route targets.
+func routeConfigurationClusterNames(config *envoyroutev3.RouteConfiguration) []string {
+	var clusterNames []string
+	seen := make(map[string]struct{})
+	appendClusterName := func(name string) {
+		if name == "" {
+			return
+		}
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		clusterNames = append(clusterNames, name)
 	}
+	appendMirrorClusterNames := func(mirrors []*envoyroutev3.RouteAction_RequestMirrorPolicy) {
+		for _, mirror := range mirrors {
+			appendClusterName(mirror.GetCluster())
+		}
+	}
+	appendMirrorClusterNames(config.GetRequestMirrorPolicies())
+	for _, vhost := range config.GetVirtualHosts() {
+		appendMirrorClusterNames(vhost.GetRequestMirrorPolicies())
+		for _, route := range vhost.GetRoutes() {
+			appendRouteClusterNames(route, appendClusterName)
+			appendMirrorClusterNames(route.GetRoute().GetRequestMirrorPolicies())
+		}
+	}
+	return clusterNames
+}
+
+func appendRouteClusterNames(route *envoyroutev3.Route, appendClusterName func(string)) {
 	switch action := route.GetAction().(type) {
 	case *envoyroutev3.Route_Route:
 		if action.Route != nil {
 			switch clusterSpec := action.Route.GetClusterSpecifier().(type) {
 			case *envoyroutev3.RouteAction_Cluster:
-				if clusterSpec.Cluster != "" {
-					clusterNameSet[clusterSpec.Cluster] = struct{}{}
-				}
+				appendClusterName(clusterSpec.Cluster)
 			case *envoyroutev3.RouteAction_WeightedClusters:
 				if clusterSpec.WeightedClusters != nil {
 					for _, weightedCluster := range clusterSpec.WeightedClusters.GetClusters() {
-						if weightedCluster.GetName() != "" {
-							clusterNameSet[weightedCluster.GetName()] = struct{}{}
-						}
+						appendClusterName(weightedCluster.GetName())
 					}
 				}
 			}
 		}
 	}
-	clusterNames := make([]string, 0, len(clusterNameSet))
-	for name := range clusterNameSet {
-		clusterNames = append(clusterNames, name)
-	}
-	return clusterNames
 }

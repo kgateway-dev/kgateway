@@ -2,7 +2,7 @@ package ir
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"maps"
 	"slices"
 	"time"
@@ -35,6 +35,10 @@ type ListenerContext struct {
 	Port              uint32
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
+	// FilterChainName identifies the FilterChain this hook is targeting.
+	// Empty when the hook is not scoped to a specific FilterChain (e.g. ApplyListenerPlugin).
+	// Plugins implementing ApplyPostListener should mutate only the FilterChain whose Name matches.
+	FilterChainName string
 }
 
 type HttpFiltersContext struct {
@@ -131,7 +135,7 @@ type HcmContext struct {
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
 type ProxyTranslationPass interface {
-	// ApplyListenerPlugin is called 1 time for each listener
+	// ApplyListenerPlugin is called 1 time per listener, before FilterChains are built.
 	ApplyListenerPlugin(
 		pCtx *ListenerContext,
 		out *envoylistenerv3.Listener,
@@ -199,8 +203,30 @@ type ProxyTranslationPass interface {
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
+	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
+	// Use this to mutate FilterChain-level fields that depend on the assembled chains.
+	ApplyPostListener(
+		pCtx *ListenerContext,
+		out *envoylistenerv3.Listener,
+	)
+
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd() Resources
+}
+
+// BackendObjectPolicyApplier is an optional interface a ProxyTranslationPass can implement to
+// contribute per-route config for policies attached to the backend object itself (via targetRefs
+// or targetSelectors on the policy, e.g. a policy targeting a Service), as opposed to
+// ApplyForRouteBackend which handles policies attached via extensionRef on the BackendRef.
+//
+// ApplyForBackendObjectPolicies is called for every backend in a route that has policies of the
+// plugin's kind attached, with the unmerged attachments. It runs on every route translation, so
+// implementations should return early when none of the policies need per-route config, and only
+// then merge them (skipping a merged policy with errors, like cluster translation does).
+// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend,
+// ApplyForRouteBackend and ApplyForBackendObjectPolicies
+type BackendObjectPolicyApplier interface {
+	ApplyForBackendObjectPolicies(policies []PolicyAtt, pCtx *RouteBackendContext) error
 }
 
 type UnimplementedProxyTranslationPass struct{}
@@ -210,21 +236,7 @@ var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
-	return nil
-}
-
 func (s UnimplementedProxyTranslationPass) ApplyForBackend(pCtx *RouteBackendContext, in HttpBackend, out *envoyroutev3.Route) error {
-	return nil
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
-}
-
-func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
 	return nil
 }
 
@@ -232,8 +244,14 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
-	return nil, nil
+func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
 }
 
 func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedUpstreamHttpFilter, error) {
@@ -242,6 +260,17 @@ func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(hCtx HttpFiltersC
 
 func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
 	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+	return nil, nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyPostListener(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
 func (s UnimplementedProxyTranslationPass) ResourcesToAdd() Resources {
@@ -298,6 +327,12 @@ func (c PolicyWrapper) ResourceName() string {
 }
 
 func versionEquals(a, b metav1.Object) bool {
+	// An IR built without a backing object (test fixtures, synthetic backends)
+	// has no version to compare; two such objects are equal, and one is never
+	// equal to a real object.
+	if a == nil || b == nil {
+		return a == b
+	}
 	var versionEquals bool
 	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
 		versionEquals = a.GetGeneration() == b.GetGeneration()
@@ -337,7 +372,13 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
 }
 
-var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
+// VersionEquals reports whether a and b are the same version of a source object, by the rule
+// the IR Equals methods apply to the objects they hold (see versionEquals).
+func VersionEquals(a, b metav1.Object) bool {
+	return versionEquals(a, b)
+}
+
+var ErrNotAttachable = errors.New("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.

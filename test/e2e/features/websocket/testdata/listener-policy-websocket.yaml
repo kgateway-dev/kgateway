@@ -1,5 +1,5 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: websocket-upgrade-policy
   namespace: kgateway-base
@@ -8,6 +8,8 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: gateway
-  upgradeConfig:
-    enabledUpgrades:
-      - "websocket"
+  default:
+    httpSettings:
+      upgradeConfig:
+        enabledUpgrades:
+          - "websocket"

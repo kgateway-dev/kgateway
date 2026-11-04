@@ -17,6 +17,10 @@ import (
 // buildInlineEndpoints creates a static EndpointsForBackend for non-EDS a ServiceEntry using
 // the inline endpoints (or hosts field for DNS resolution without endpoints).
 func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *networkingclient.ServiceEntry) *ir.EndpointsForBackend {
+	var systemNamespaceNetwork string
+	if seIR, ok := be.ObjIr.(*serviceEntryBackendIR); ok {
+		systemNamespaceNetwork = seIR.systemNamespaceNetwork
+	}
 	var inlineWorkloads []selectedWorkload
 	for i, e := range se.Spec.GetEndpoints() {
 		converted := selectedWorkloadFromEntry(
@@ -27,6 +31,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 			nil,          // no annotation keys to promote
 			e,
 			nil, // not in krt, don't need selectedBy
+			systemNamespaceNetwork,
 		)
 		inlineWorkloads = append(inlineWorkloads, converted)
 	}
@@ -43,6 +48,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 				nil,                                    // no annotation keys to promote
 				&networking.WorkloadEntry{Address: hostname},
 				nil, // not in krt, don't need selectedBy
+				"",  // like Istio, endpoints made from hosts get no network
 			)
 			inlineWorkloads = append(inlineWorkloads, converted)
 		}
@@ -118,13 +124,16 @@ func endpointsFromWorkloads(
 
 	eps := ir.NewEndpointsForBackend(be)
 	for _, workload := range workloads {
-		// Skip NotReady pod-backed workloads so that ingress (and any other
-		// ServiceEntry consumer) does not send traffic to pods that Kubernetes has
-		// marked NotReady. This mirrors the EndpointSlice-based Service path, which
-		// skips endpoints whose Ready condition is not true, and lets locality
-		// failover promote endpoints in a peer cluster when all local pods are
-		// NotReady. WorkloadEntry and inline endpoints set Ready=true.
-		if !workload.Ready {
+		// Skip NotReady or Terminating pod-backed workloads so that ingress (and any
+		// other ServiceEntry consumer) does not send traffic to pods that Kubernetes
+		// has marked NotReady or has begun draining (a deletionTimestamp is set). This
+		// mirrors the EndpointSlice-based Service path, which skips endpoints whose
+		// Ready condition is not true (terminating endpoints included), and lets
+		// locality failover promote endpoints in a peer cluster when all local pods
+		// are NotReady or terminating. A terminating pod keeps its Ready condition True
+		// through its grace period, so Terminating must be checked separately from
+		// Ready. WorkloadEntry and inline endpoints set Ready=true, Terminating=false.
+		if !workload.Ready || workload.Terminating {
 			continue
 		}
 

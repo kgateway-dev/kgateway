@@ -47,3 +47,4 @@ spec:
   default:
     httpSettings:
       idleTimeout: "30s"
+      maxConnectionDuration: "10m"

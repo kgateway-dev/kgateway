@@ -6,7 +6,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/api/label"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -46,7 +46,10 @@ type EndpointsInputs struct {
 	EndpointSlices          krt.Collection[*discoveryv1.EndpointSlice]
 	EndpointSlicesByService krt.Index[types.NamespacedName, *discoveryv1.EndpointSlice]
 	Pods                    krt.Collection[LocalityPod]
-	EndpointsSettings       EndpointsSettings
+	// SystemNamespaceNetwork is the network of endpoints without a Pod; see
+	// NewSystemNamespaceNetwork.
+	SystemNamespaceNetwork krt.Singleton[string]
+	EndpointsSettings      EndpointsSettings
 
 	KrtOpts krtutil.KrtOptions
 }
@@ -56,6 +59,7 @@ func NewKgatewayK8sEndpointInputs(
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
+	systemNamespaceNetwork krt.Singleton[string],
 	k8sBackends krt.Collection[ir.BackendObjectIR],
 ) EndpointsInputs {
 	endpointSettings := EndpointsSettings{
@@ -79,6 +83,7 @@ func NewKgatewayK8sEndpointInputs(
 		EndpointSlices:          endpointSlices,
 		EndpointSlicesByService: endpointSlicesByService,
 		Pods:                    pods,
+		SystemNamespaceNetwork:  systemNamespaceNetwork,
 		EndpointsSettings:       endpointSettings,
 		KrtOpts:                 krtopts,
 	}
@@ -186,14 +191,24 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 
 					var augmentedLabels map[string]string
 					var l ir.PodLocality
+					var foundPod bool
 					if podName != "" {
 						maybePod := krt.FetchOne(kctx, augmentedPods, krt.FilterObjectName(types.NamespacedName{
 							Namespace: podNamespace,
 							Name:      podName,
 						}))
 						if maybePod != nil {
+							foundPod = true
 							l = maybePod.Locality
 							augmentedLabels = maybePod.AugmentedLabels
+						}
+					}
+					// Like Istio, an endpoint without a Pod (no Pod targetRef, e.g. a
+					// handmade slice for a selectorless Service) is in the system
+					// namespace network.
+					if !foundPod {
+						if nw := FetchSystemNamespaceNetwork(kctx, inputs.SystemNamespaceNetwork); nw != "" {
+							augmentedLabels = map[string]string{label.TopologyNetwork.Name: nw}
 						}
 					}
 					ep := CreateLBEndpoint(addr, port, augmentedLabels, enableAutoMtls)
@@ -217,21 +232,20 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoyendpointv3.LbEndpoint {
 	// Don't get the metadata labels and filter metadata for the envoy load balancer based on the backend, as this is not used
 	// metadata := getLbMetadata(upstream, labels, "")
-	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled
-	metadata := &envoycorev3.Metadata{
-		FilterMetadata: map[string]*structpb.Struct{},
-	}
-	metadata = addIstioAutomtlsMetadata(metadata, podLabels, enableAutoMtls)
+	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled.
+	// Only allocate the Metadata proto when it will actually be populated: this
+	// function runs once per endpoint per backend and dominates control-plane
+	// heap in large clusters.
 	// Don't add the annotations to the metadata - it's not documented so it's not coming
 	// metadata = addAnnotations(metadata, addr.GetMetadata().GetAnnotations())
-
-	if len(metadata.GetFilterMetadata()) == 0 {
-		metadata = nil
-	}
+	metadata := istioAutomtlsMetadata(podLabels, enableAutoMtls)
 
 	return &envoyendpointv3.LbEndpoint{
-		Metadata:            metadata,
-		LoadBalancingWeight: wrapperspb.UInt32(1),
+		Metadata: metadata,
+		// LoadBalancingWeight is left unset: Envoy treats an unset per-endpoint
+		// weight as 1, so omitting the wrapper avoids one protobuf wrapper
+		// allocation per endpoint. Readers must treat nil as weight 1
+		// (see kgateway/endpoints.lbWeight).
 		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 			Endpoint: &envoyendpointv3.Endpoint{
 				Address: &envoycorev3.Address{
@@ -250,11 +264,21 @@ func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, 
 	}
 }
 
-func addIstioAutomtlsMetadata(metadata *envoycorev3.Metadata, labels map[string]string, enableAutoMtls bool) *envoycorev3.Metadata {
+// istioAutomtlsMetadata returns the filter metadata enabling the Istio
+// transport socket match for the endpoint, or nil when auto-mTLS is disabled
+// or the pod is not Istio-managed. Returning nil avoids allocating an empty
+// Metadata proto (and its FilterMetadata map) for every endpoint.
+func istioAutomtlsMetadata(labels map[string]string, enableAutoMtls bool) *envoycorev3.Metadata {
 	const EnvoyTransportSocketMatch = "envoy.transport_socket_match"
-	if enableAutoMtls {
-		if _, ok := labels[wellknown.IstioTlsModeLabel]; ok {
-			metadata.GetFilterMetadata()[EnvoyTransportSocketMatch] = &structpb.Struct{
+	if !enableAutoMtls {
+		return nil
+	}
+	if _, ok := labels[wellknown.IstioTlsModeLabel]; !ok {
+		return nil
+	}
+	return &envoycorev3.Metadata{
+		FilterMetadata: map[string]*structpb.Struct{
+			EnvoyTransportSocketMatch: {
 				Fields: map[string]*structpb.Value{
 					wellknown.TLSModeLabelShortname: {
 						Kind: &structpb.Value_StringValue{
@@ -262,10 +286,9 @@ func addIstioAutomtlsMetadata(metadata *envoycorev3.Metadata, labels map[string]
 						},
 					},
 				},
-			}
-		}
+			},
+		},
 	}
-	return metadata
 }
 
 func findPortForService(svc *corev1.Service, svcPort uint32) (*corev1.ServicePort, bool) {

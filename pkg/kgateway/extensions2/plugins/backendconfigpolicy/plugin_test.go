@@ -56,6 +56,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					},
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
 						IdleTimeout:              new(metav1.Duration{Duration: 60 * time.Second}),
+						MaxConnectionDuration:    new(metav1.Duration{Duration: 10 * time.Minute}),
 						MaxHeadersCount:          new(int32(100)),
 						MaxStreamDuration:        new(metav1.Duration{Duration: 30 * time.Second}),
 						MaxRequestsPerConnection: new(int32(100)),
@@ -81,6 +82,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
 						CommonHttpProtocolOptions: &envoycorev3.HttpProtocolOptions{
 							IdleTimeout:              durationpb.New(60 * time.Second),
+							MaxConnectionDuration:    durationpb.New(10 * time.Minute),
 							MaxHeadersCount:          &wrapperspb.UInt32Value{Value: 100},
 							MaxStreamDuration:        durationpb.New(30 * time.Second),
 							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 100},
@@ -222,6 +224,56 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 										InitialConnectionWindowSize:             &wrapperspb.UInt32Value{Value: 65536},
 										MaxConcurrentStreams:                    &wrapperspb.UInt32Value{Value: 100},
 										OverrideStreamErrorOnInvalidHttpMessage: &wrapperspb.BoolValue{Value: true},
+									},
+								},
+							},
+						},
+					}),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "http2 connection keepalive applied to http2 backend",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
+						ConnectionKeepalive: &kgateway.ConnectionKeepalive{
+							Timeout:                metav1.Duration{Duration: 5 * time.Second},
+							Interval:               new(metav1.Duration{Duration: 30 * time.Second}),
+							ConnectionIdleInterval: new(metav1.Duration{Duration: 60 * time.Second}),
+						},
+					},
+				},
+			},
+			backend: &ir.BackendObjectIR{
+				AppProtocol: ir.HTTP2AppProtocol,
+			},
+			cluster: &envoyclusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
+								},
+							},
+						},
+					}),
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				TypedExtensionProtocolOptions: map[string]*anypb.Any{
+					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
+						UpstreamProtocolOptions: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+							ExplicitHttpConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
+								ProtocolConfig: &envoy_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+									Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
+										ConnectionKeepalive: &envoycorev3.KeepaliveSettings{
+											Timeout:                durationpb.New(5 * time.Second),
+											Interval:               durationpb.New(30 * time.Second),
+											ConnectionIdleInterval: durationpb.New(60 * time.Second),
+										},
 									},
 								},
 							},
@@ -670,15 +722,15 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		}
 	}
 
-	newPolicy := func(hasZoneAware bool, force *ZoneAwareForceIR, policyRef *ir.AttachedPolicyRef) ir.PolicyAtt {
+	newPolicy := func(hasZoneAware bool, forceMinEndpoints *uint32, policyRef *ir.AttachedPolicyRef) ir.PolicyAtt {
 		return ir.PolicyAtt{
 			GroupKind:  wellknown.BackendConfigPolicyGVK.GroupKind(),
 			Generation: 1,
 			PolicyRef:  policyRef,
 			PolicyIr: &BackendConfigPolicyIR{
 				loadBalancerConfig: &LoadBalancerConfigIR{
-					hasZoneAware:   hasZoneAware,
-					zoneAwareForce: force,
+					hasZoneAware:               hasZoneAware,
+					zoneAwareForceMinEndpoints: forceMinEndpoints,
 				},
 			},
 		}
@@ -697,12 +749,18 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		}
 		return inputs
 	}
+	runPlugin := func(plugin backendConfigEndpointPlugin, ucc ir.UniquelyConnectedClient, inputs *endpoints.EndpointsInputs) uint64 {
+		resolver := endpoints.NewEndpointInputsResolver(*inputs)
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ucc, resolver)
+		*inputs = resolver.Inputs()
+		return hash
+	}
 
 	t.Run("ignores policies without zoneAware", func(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(false, nil, servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{}, inputs)
 
 		assert.Zero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionPreferSameZone, inputs.EndpointsForBackend.TrafficDistribution)
@@ -713,7 +771,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(true, nil, servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -721,10 +779,10 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 	})
 
 	t.Run("force mode clears service traffic distribution", func(t *testing.T) {
-		inputs := withPolicies(newInputs(), newPolicy(true, &ZoneAwareForceIR{minEndpointsInZoneThreshold: 2}, servicePolicyRef))
+		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(2)), servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -732,14 +790,14 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 	})
 
 	t.Run("force mode preserves existing endpoint priority", func(t *testing.T) {
-		inputs := withPolicies(newInputs(), newPolicy(true, &ZoneAwareForceIR{minEndpointsInZoneThreshold: 1}, servicePolicyRef))
+		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(1)), servicePolicyRef))
 		priorityInfo := &endpoints.PriorityInfo{
 			FailoverPriority: endpoints.NewPriorities([]string{corev1.LabelTopologyZone}),
 		}
 		inputs.PriorityInfo = priorityInfo
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -757,10 +815,10 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 			Namespace: "default",
 			Name:      "hostname-policy",
 		}
-		inputs = withPolicies(inputs, newPolicy(true, &ZoneAwareForceIR{minEndpointsInZoneThreshold: 1}, hostnamePolicyRef))
+		inputs = withPolicies(inputs, newPolicy(true, new(uint32(1)), hostnamePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -773,4 +831,13 @@ func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
 	a, err := utils.MessageToAny(msg)
 	require.NoError(t, err, "failed to convert message to Any")
 	return a
+}
+
+func TestBackendConfigPolicyIREqualsTunnel(t *testing.T) {
+	a := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
+	b := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
+	assert.True(t, a.Equals(b), "identical tunnels should be equal")
+
+	b.tunnel = nil
+	assert.False(t, a.Equals(b), "removing the tunnel must change the policy IR")
 }

@@ -38,12 +38,13 @@ metadata:
   namespace: curl
   labels:
     app: curl
+    app.kubernetes.io/name: curl
     version: v1
 spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
+      image: ghcr.io/kgateway-dev/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
@@ -67,12 +68,13 @@ metadata:
   namespace: curl
   labels:
     app: curl-mtls
+    app.kubernetes.io/name: curl-mtls
     version: v1
 spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
+      image: ghcr.io/kgateway-dev/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"

@@ -32,7 +32,7 @@ func (v gatewayScopedBackend) Equals(other gatewayScopedBackend) bool {
 	if v.backend == nil || other.backend == nil {
 		return v.backend == other.backend
 	}
-	return v.backend.Equals(*other.backend)
+	return v.backend.Equals(other.backend)
 }
 
 func newGatewayBackendVariants(
@@ -93,11 +93,10 @@ func newGatewayBackendVariantEndpoints(
 		}
 
 		clone := ir.NewEndpointsForBackend(*variant.backend)
-		for locality, endpoints := range base.LbEps {
-			for _, endpoint := range endpoints {
-				clone.Add(locality, endpoint)
-			}
-		}
+		// The endpoint protos are shared with the base backend; reuse the
+		// precomputed equality hash as well to avoid re-marshaling every
+		// LbEndpoint proto (HashProtoWithHasher) on each recompute.
+		clone.ReuseEndpointsFrom(base)
 
 		return clone
 	}, krtopts.ToOptions("GatewayBackendClientCertificateVariantEndpoints")...)

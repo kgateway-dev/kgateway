@@ -4,115 +4,58 @@ package extauth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"time"
+	"strings"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is a suite of tests for ExtAuth functionality
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// manifests shared by all tests
-	commonManifests []string
-	// resources from manifests shared by all tests
-	commonResources []client.Object
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	setup := base.TestCase{
+		Manifests: []string{
+			routeManifest,
+			gatewayWithRouteManifest,
+			extAuthManifest,
+		},
+	}
+	testCases := map[string]*base.TestCase{
+		"TestExtAuthPolicy": {
+			Manifests: []string{securedGatewayPolicyManifest, insecureRouteManifest},
+		},
+		"TestRouteTargetedExtAuthPolicy": {
+			Manifests: []string{securedRouteManifest, insecureRouteManifest},
+		},
+		// The buffer filter's placement is a property of the whole filter chain, so the staged and
+		// default-staged routes cannot share a listener: they run as separate test cases.
+		"TestBufferFilterStageEnforcesAheadOfExtAuth": {
+			Manifests: []string{bufferedRouteManifest},
+		},
+		"TestDefaultBufferStageDoesNotEnforceBehindExtAuth": {
+			Manifests: []string{bufferedRouteDefaultStageManifest},
+		},
+	}
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
-}
-
-func (s *testingSuite) SetupSuite() {
-	s.commonManifests = []string{
-		simpleServiceManifest,
-		gatewayWithRouteManifest,
-		extAuthManifest,
-	}
-	s.commonResources = []client.Object{
-		// resources from service manifest
-		basicSecureRoute, simpleSvc, simpleDeployment,
-		// extauth resources
-		extAuthSvc, extAuthExtension,
-	}
-
-	// set up common resources once
-	for _, manifest := range s.commonManifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
-
-	// make sure pods are running
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjMeta.GetName()),
-	}, time.Minute*2)
-}
-
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	// clean up common resources
-	for _, manifest := range s.commonManifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err, "can delete "+manifest)
-	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 }
 
 // TestExtAuthPolicy tests the basic ExtAuth functionality with header-based allow/deny
 // Checks for gateway level auth with route level opt out
 func (s *testingSuite) TestExtAuthPolicy() {
-	manifests := []string{
-		securedGatewayPolicyManifest,
-		insecureRouteManifest,
-	}
-
-	resources := []client.Object{
-		gatewayAttachedTrafficPolicy,
-		insecureRoute,
-	}
-	testutils.Cleanup(s.T(), func() {
-		for _, manifest := range manifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, resources...)
-	})
-	// set up common resources once
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, resources...)
-
-	// Wait for pods to be running
-	s.ensureBasicRunning()
-
 	testCases := []struct {
 		name                         string
 		headers                      map[string]string
@@ -177,32 +120,6 @@ func (s *testingSuite) TestExtAuthPolicy() {
 
 // TestRouteTargetedExtAuthPolicy tests route level only extauth
 func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
-	manifests := []string{
-		securedRouteManifest,
-		insecureRouteManifest,
-	}
-
-	resources := []client.Object{
-		secureRoute, secureTrafficPolicy,
-		insecureRoute, insecureTrafficPolicy,
-	}
-	testutils.Cleanup(s.T(), func() {
-		for _, manifest := range manifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, resources...)
-	})
-	// set up common resources once
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, resources...)
-
-	// Wait for pods to be running
-	s.ensureBasicRunning()
-
 	testCases := []struct {
 		name                         string
 		headers                      map[string]string
@@ -263,11 +180,94 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 	}
 }
 
-func (s *testingSuite) ensureBasicRunning() {
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=gateway",
-	}, time.Minute)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, extAuthSvc.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=ext-authz",
+// bufferedRequest is a request against one of the buffered routes: `maxRequestSize` is 1024 on
+// both, and ext_authz reads the body with an 8192-byte limit of its own, so the only filter that
+// can reject a body between those sizes is the buffer filter.
+type bufferedRequest struct {
+	name           string
+	hostname       string
+	headers        map[string]string
+	bodySize       int
+	expectedStatus int
+}
+
+func (s *testingSuite) sendBufferedRequests(testCases []bufferedRequest) {
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			opts := []curl.Option{
+				curl.WithHostHeader(tc.hostname),
+				curl.WithPort(80),
+				curl.WithBody(strings.Repeat("x", tc.bodySize)),
+			}
+			for k, v := range tc.headers {
+				opts = append(opts, curl.WithHeader(k, v))
+			}
+
+			common.BaseGateway.Send(
+				s.T(),
+				&testmatchers.HttpResponse{
+					StatusCode: tc.expectedStatus,
+				},
+				opts...)
+		})
+	}
+}
+
+// TestBufferFilterStageEnforcesAheadOfExtAuth checks that `buffer.filterStage` makes
+// `maxRequestSize` enforce ahead of an ext_authz check that reads the request body: an oversized
+// body gets a 413 whether or not the auth service would have allowed it, which is what proves the
+// buffer filter runs first.
+func (s *testingSuite) TestBufferFilterStageEnforcesAheadOfExtAuth() {
+	s.sendBufferedRequests([]bufferedRequest{
+		{
+			name:           "small body with allow header reaches the backend",
+			hostname:       "bufferedroute.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       512,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "small body without allow header is denied by auth",
+			hostname:       "bufferedroute.com",
+			bodySize:       512,
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "oversized body with allow header is rejected by the buffer filter",
+			hostname:       "bufferedroute.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       1500,
+			expectedStatus: http.StatusRequestEntityTooLarge,
+		},
+		{
+			// A 403 here would mean ext_authz ran first.
+			name:           "oversized body is rejected before auth gets to deny it",
+			hostname:       "bufferedroute.com",
+			bodySize:       1500,
+			expectedStatus: http.StatusRequestEntityTooLarge,
+		},
+	})
+}
+
+// TestDefaultBufferStageDoesNotEnforceBehindExtAuth pins the behavior `buffer.filterStage` exists
+// to work around: with ext_authz reading the body ahead of the buffer filter's default placement,
+// `maxRequestSize` is inert and an oversized body reaches the backend. See
+// buffered-route-default-stage.yaml.
+func (s *testingSuite) TestDefaultBufferStageDoesNotEnforceBehindExtAuth() {
+	s.sendBufferedRequests([]bufferedRequest{
+		{
+			name:           "oversized body with allow header reaches the backend",
+			hostname:       "bufferedroute-default.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       1500,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			// Auth runs first at the default placement, so the oversized body is denied, not 413'd.
+			name:           "oversized body without allow header is denied by auth",
+			hostname:       "bufferedroute-default.com",
+			bodySize:       1500,
+			expectedStatus: http.StatusForbidden,
+		},
 	})
 }

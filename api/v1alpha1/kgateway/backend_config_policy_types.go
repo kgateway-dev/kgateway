@@ -40,6 +40,8 @@ type BackendConfigPolicyList struct {
 // BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
 //
 // +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || !has(self.targetSelectors)",message="tunnel does not support targetSelectors"
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r, r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="tunnel requires targetRefs that reference Backends"
 type BackendConfigPolicySpec struct {
 	// TargetRefs specifies the target references to attach the policy to.
 	// +optional
@@ -55,6 +57,8 @@ type BackendConfigPolicySpec struct {
 
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
@@ -84,12 +88,12 @@ type BackendConfigPolicySpec struct {
 
 	// Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
 	// Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
-	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http2protocoloptions) for more details.
 	// +optional
 	Http2ProtocolOptions *Http2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
 	// TLS contains the options necessary to configure a backend to use TLS origination.
-	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-upstreamtlscontext) for more details.
 	// +optional
 	TLS *TLS `json:"tls,omitempty"`
 
@@ -116,6 +120,180 @@ type BackendConfigPolicySpec struct {
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
 	// +optional
 	UpstreamProxyProtocol *UpstreamProxyProtocol `json:"upstreamProxyProtocol,omitempty"`
+
+	// Tunnel sends Backend connections through an HTTP CONNECT proxy.
+	// Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+	// Requires Backend targetRefs; targetSelectors are not supported.
+	// +optional
+	Tunnel *Tunnel `json:"tunnel,omitempty"`
+
+	// SessionPersistence pins a client to one endpoint of the backend using a
+	// cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+	// the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+	// splits traffic, it only pins a client to an endpoint within the backend
+	// chosen by the split. When set, it takes precedence over the
+	// sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+	//
+	// This field is experimental and subject to breaking changes. It mirrors the
+	// experimental Gateway API SessionPersistence type (v1.7).
+	// +optional
+	SessionPersistence *SessionPersistence `json:"sessionPersistence,omitempty"`
+}
+
+// SessionPersistence defines the desired state of SessionPersistence.
+// It mirrors the Gateway API v1.7 SessionPersistence type.
+//
+// This type is experimental and subject to breaking changes.
+// +kubebuilder:validation:XValidation:message="AbsoluteTimeout must be specified when cookie lifetimeType is Permanent",rule="!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType != 'Permanent' || has(self.absoluteTimeout)"
+// +kubebuilder:validation:XValidation:message="cookie must be nil if type is not Cookie",rule="!has(self.cookie) || self.type == 'Cookie'"
+// +kubebuilder:validation:XValidation:message="cookie must be specified for Cookie type",rule="self.type != 'Cookie' || has(self.cookie)"
+// +kubebuilder:validation:XValidation:message="header must be nil if type is not Header",rule="!has(self.header) || self.type == 'Header'"
+// +kubebuilder:validation:XValidation:message="header must be specified for Header type",rule="self.type != 'Header' || has(self.header)"
+type SessionPersistence struct {
+	// AbsoluteTimeout defines the absolute timeout of the persistent
+	// session. Once the AbsoluteTimeout duration has elapsed, the
+	// session becomes invalid.
+	//
+	// Only cookie sessions with lifetimeType Permanent support this field, where it
+	// sets the cookie lifetime. It has no effect for header sessions and for Session
+	// cookies (the default lifetimeType), as the gateway does not track the session
+	// lifetime separately from the cookie.
+	//
+	// +optional
+	AbsoluteTimeout *gwv1.Duration `json:"absoluteTimeout,omitempty"`
+
+	// Type defines the type of session persistence such as through
+	// the use of a header or cookie. Defaults to cookie based session
+	// persistence.
+	//
+	// +unionDiscriminator
+	// +optional
+	// +kubebuilder:default=Cookie
+	Type *SessionPersistenceType `json:"type,omitempty"`
+
+	// Cookie provides configuration settings that are specific
+	// to cookie-based session persistence.
+	//
+	// +optional
+	Cookie *SessionPersistenceCookieConfig `json:"cookie,omitempty"`
+
+	// Header provides configuration settings that are specific
+	// to header-based session persistence.
+	//
+	// +optional
+	Header *SessionPersistenceHeaderConfig `json:"header,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Cookie;Header
+type SessionPersistenceType string
+
+const (
+	// CookieBasedSessionPersistence specifies cookie-based session
+	// persistence.
+	CookieBasedSessionPersistence SessionPersistenceType = "Cookie"
+
+	// HeaderBasedSessionPersistence specifies header-based session
+	// persistence.
+	HeaderBasedSessionPersistence SessionPersistenceType = "Header"
+)
+
+// SessionPersistenceCookieConfig defines the configuration for cookie-based session persistence.
+type SessionPersistenceCookieConfig struct {
+	// Name defines the name of the cookie used for session persistence.
+	// If not specified, a unique cookie name is generated for each backend.
+	// Users should avoid reusing cookie names to prevent unintended
+	// consequences, such as rejection or unpredictable behavior. Avoid using the
+	// same cookie name for backends in the same traffic split, as clients lose
+	// their session whenever the split switches backends.
+	//
+	// +optional
+	Name *CookieName `json:"name,omitempty"`
+
+	// Path defines the cookie Path attribute. Defaults to "/".
+	//
+	// +optional
+	// +kubebuilder:default="/"
+	// +kubebuilder:validation:MaxLength=1024
+	Path *string `json:"path,omitempty"`
+
+	// LifetimeType specifies whether the cookie has a permanent or
+	// session-based lifetime. A permanent cookie persists until its
+	// specified expiry time, defined by the Expires or Max-Age cookie
+	// attributes, while a session cookie is deleted when the current
+	// session ends.
+	//
+	// When set to "Permanent", AbsoluteTimeout indicates the
+	// cookie's lifetime via the Expires or Max-Age cookie attributes
+	// and is required.
+	//
+	// When set to "Session", AbsoluteTimeout has no effect, as the
+	// gateway does not track the session lifetime separately from
+	// the cookie.
+	//
+	// Defaults to "Session".
+	//
+	// +optional
+	// +kubebuilder:default=Session
+	LifetimeType *CookieLifetimeType `json:"lifetimeType,omitempty"`
+}
+
+// CookieName is the name of a cookie. Cookie names and header names share the
+// same RFC token character set (RFC 6265 defines cookie-name = token).
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
+// +k8s:deepcopy-gen=false
+type CookieName string
+
+// +kubebuilder:validation:Enum=Permanent;Session
+type CookieLifetimeType string
+
+const (
+	// SessionCookieLifetimeType specifies the type for a session
+	// cookie.
+	SessionCookieLifetimeType CookieLifetimeType = "Session"
+
+	// PermanentCookieLifetimeType specifies the type for a permanent
+	// cookie.
+	PermanentCookieLifetimeType CookieLifetimeType = "Permanent"
+)
+
+// SessionPersistenceHeaderConfig defines the configuration for header-based session persistence.
+type SessionPersistenceHeaderConfig struct {
+	// Name defines the name of the header used for session persistence.
+	// The client must include this header in subsequent requests to
+	// maintain the session. Avoid using the same header name for backends in
+	// the same traffic split, as clients lose their session whenever the split
+	// switches backends.
+	//
+	// +required
+	Name gwv1.HeaderName `json:"name"`
+}
+
+// Tunnel configures HTTP CONNECT tunneling through a forward proxy.
+type Tunnel struct {
+	// Proxy identifies the forward proxy that establishes the tunnel.
+	// +required
+	Proxy TunnelProxy `json:"proxy"`
+
+	// Headers are sent only on CONNECT requests. Each requires a name and
+	// exactly one of value or secretRef.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(h, has(h.name))",message="tunnel headers require a name"
+	// +kubebuilder:validation:XValidation:rule="self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')",message="tunnel headers cannot set Host"
+	Headers []shared.HTTPHeader `json:"headers,omitempty"`
+}
+
+// TunnelProxy identifies the forward proxy for a tunnel.
+type TunnelProxy struct {
+	// BackendRef references the proxy Service or Backend. CONNECT uses that
+	// backend's HTTP protocol.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="(self.group == '' && self.kind == 'Service') || (self.group == 'gateway.kgateway.dev' && self.kind == 'Backend')",message="proxy backendRef must reference a Service or a Backend"
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 }
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
@@ -164,6 +342,8 @@ type DNS struct {
 	// so RefreshRate acts as the maximum polling interval.
 	// Recommended value for large-scale deployments is 60s or higher.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
 	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
@@ -172,6 +352,8 @@ type DNS struct {
 	// spreading query load over time and helping prevent thundering-herd spikes.
 	// Must be less than or equal to refreshRate when both are set.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Jitter *metav1.Duration `json:"jitter,omitempty"`
 
@@ -213,12 +395,25 @@ type CommonHttpProtocolOptions struct {
 	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
 	//	FIN packets, etc.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
-	// Specifies the maximum number of headers that the connection will accept.
-	// If not specified, the default of 100 is used. Requests that exceed this limit will receive
-	// a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
+	// MaxConnectionDuration is the maximum duration of a connection, measured from
+	// when the connection was established. When this duration is reached, Envoy starts
+	// the drain sequence. If unset, there is no maximum connection duration.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
+
+	// Specifies the maximum number of response headers that the upstream connection will accept
+	// from the backend. If not specified, the default of 100 is used.
+	// To configure the maximum number of headers accepted in downstream requests, use
+	// ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
@@ -226,6 +421,8 @@ type CommonHttpProtocolOptions struct {
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
@@ -263,6 +460,46 @@ type Http2ProtocolOptions struct {
 	// When enabled, only the offending stream is terminated.
 	// +optional
 	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
+
+	// ConnectionKeepalive enables HTTP/2 keepalive PINGs on upstream connections,
+	// actively detecting half-dead connections: if a PING is not acknowledged
+	// within the timeout, the connection is closed.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+	// +optional
+	ConnectionKeepalive *ConnectionKeepalive `json:"connectionKeepalive,omitempty"`
+}
+
+// ConnectionKeepalive configures HTTP/2 keepalive PINGs for upstream connections.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-keepalivesettings) for more details.
+type ConnectionKeepalive struct {
+	// Timeout after which the connection is closed if no response to a keepalive
+	// PING is received. A PING response is considered received if any frame
+	// arrives on the connection while the PING is outstanding.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms"
+	// +required
+	Timeout metav1.Duration `json:"timeout"`
+
+	// Interval between keepalive PINGs. If unset, PINGs are only sent when
+	// triggered by ConnectionIdleInterval.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// If set, a PING is sent before dispatching new streams on a connection that
+	// has been idle for at least this duration, verifying the connection is
+	// still alive before reusing it.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="connectionIdleInterval must be at least 1ms"
+	ConnectionIdleInterval *metav1.Duration `json:"connectionIdleInterval,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive) for more details.
@@ -274,12 +511,16 @@ type TCPKeepalive struct {
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveTime must be at least 1 second"
 	KeepAliveTime *metav1.Duration `json:"keepAliveTime,omitempty"`
 
 	// The number of seconds between keep-alive probes.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
@@ -364,6 +605,9 @@ type TLSParameters struct {
 
 	// +optional
 	EcdhCurves []string `json:"ecdhCurves,omitempty"`
+
+	// +optional
+	SignatureAlgorithms []string `json:"signatureAlgorithms,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
@@ -397,6 +641,8 @@ type LoadBalancer struct {
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
 	// Set to 0 to disable and have changes applied immediately.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	UpdateMergeWindow *metav1.Duration `json:"updateMergeWindow,omitempty"`
 
@@ -430,6 +676,8 @@ type LoadBalancer struct {
 	// When enabled, traffic is preferentially routed to endpoints in the same
 	// availability zone as the Envoy proxy.
 	// This is mutually exclusive with localityType.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	// +optional
 	ZoneAware *ZoneAwareLoadBalancer `json:"zoneAware,omitempty"`
 
@@ -512,6 +760,8 @@ type (
 		// If set, the newly created host remains in slow start mode starting from its creation time
 		// for the duration of slow start window.
 		// +optional
+		// +kubebuilder:validation:Type=string
+		// +kubebuilder:validation:MaxLength=32
 		// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 		Window *metav1.Duration `json:"window,omitempty"`
 
@@ -551,12 +801,14 @@ const (
 // ZoneAwareLoadBalancer configures zone-aware routing behavior.
 // Currently, preferLocal must be specified.
 //
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
+//
 // +kubebuilder:validation:AtLeastOneOf=preferLocal
 type ZoneAwareLoadBalancer struct {
 	// PreferLocal enables Envoy's zone-aware routing which prefers sending traffic
 	// to local zone endpoints while maintaining overall traffic balance across zones.
-	// This requires the Envoy proxy to be aware of its own zone, which can be configured
-	// via the KGATEWAY_NODE_ZONE environment variable on the proxy pod.
+	// On Kubernetes 1.35+, the zone is automatically derived from node label.
+	// The KGATEWAY_NODE_* environment variables on the proxy pod can be set as an explicit override.
 	// See https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/zone_aware
 	// +optional
 	PreferLocal *ZoneAwarePreferLocal `json:"preferLocal,omitempty"`
@@ -565,6 +817,8 @@ type ZoneAwareLoadBalancer struct {
 // ZoneAwarePreferLocal configures Envoy's native zone-aware routing.
 // Envoy will prefer sending traffic to endpoints in the same zone as the proxy,
 // while still maintaining rough request balance across all upstream hosts.
+//
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
 type ZoneAwarePreferLocal struct {
 	// Force enables Envoy forced zone-local routing. Envoy routes to same-zone
 	// endpoints while the local endpoint threshold is met. If there are not enough
@@ -593,6 +847,8 @@ type ZoneAwarePreferLocal struct {
 }
 
 // ZoneAwareForce configures Envoy forceLocalZone behavior.
+//
+// Note: This struct is part of an experimental API and subject to breaking changes in future releases.
 type ZoneAwareForce struct {
 	// MinEndpointsInZoneThreshold is the minimum number of endpoints that must
 	// exist in the local zone for forced zone-local routing to be active.
@@ -613,11 +869,15 @@ type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
 	// health check attempt will be considered a failure.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Timeout metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Interval metav1.Duration `json:"interval"`
 
@@ -688,11 +948,52 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Minimum=0
 	Consecutive5xx *int32 `json:"consecutive5xx,omitempty"`
 
+	// The percentage chance that a host is ejected when an outlier status is
+	// detected through consecutive 5xx responses. This setting can be used to
+	// disable ejection or to ramp it up slowly. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	EnforcingConsecutive5xx *int32 `json:"enforcingConsecutive5xx,omitempty"`
+
+	// The number of consecutive gateway failures (502, 503 and 504 status
+	// codes) before a host is ejected. When set, ejection is always enforced.
+	// When unset, consecutive gateway failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ConsecutiveGatewayFailure *int32 `json:"consecutiveGatewayFailure,omitempty"`
+
+	// Determines whether to distinguish locally originated failures from
+	// externally generated errors. When true, consecutiveLocalOriginFailure and
+	// enforcingConsecutiveLocalOriginFailure are used for locally originated
+	// failures. Defaults to false.
+	// +optional
+	SplitExternalLocalOriginErrors *bool `json:"splitExternalLocalOriginErrors,omitempty"`
+
+	// The number of consecutive locally originated failures before an ejection
+	// occurs. Defaults to 5. This setting takes effect only when
+	// splitExternalLocalOriginErrors is true. If this is zero, consecutive local
+	// origin failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	ConsecutiveLocalOriginFailure *int32 `json:"consecutiveLocalOriginFailure,omitempty"`
+
+	// The percentage chance that a host is ejected when an outlier status is
+	// detected through consecutive locally originated failures. This setting can
+	// be used to disable ejection or to ramp it up slowly. Defaults to 100 and
+	// takes effect only when splitExternalLocalOriginErrors is true.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	EnforcingConsecutiveLocalOriginFailure *int32 `json:"enforcingConsecutiveLocalOriginFailure,omitempty"`
+
 	// The time interval between ejection analysis sweeps. This can result in
 	// both new ejections as well as hosts being returned to service. Defaults
 	// to 10s.
 	// +optional
 	// +kubebuilder:default="10s"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
 	Interval *metav1.Duration `json:"interval,omitempty"`
@@ -702,6 +1003,8 @@ type OutlierDetection struct {
 	// Defaults to 30s.
 	// +optional
 	// +kubebuilder:default="30s"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseEjectionTime must be at least 1ms"
 	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
@@ -757,6 +1060,8 @@ type Cookie struct {
 	// If specified, a cookie with the TTL will be generated if the cookie is not present.
 	// If the TTL is present and zero, the generated cookie will be a session cookie.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
 

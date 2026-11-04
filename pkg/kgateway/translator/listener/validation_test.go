@@ -49,7 +49,17 @@ func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwv1.ListenerSet) *ir.Gateway
 }
 
 func lsToIR(ls *gwv1.ListenerSet) ir.ListenerSet {
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	lsGVK := ls.GroupVersionKind()
 	out := ir.ListenerSet{
+		ObjectSource: ir.ObjectSource{
+			Group:     lsGVK.Group,
+			Kind:      lsGVK.Kind,
+			Namespace: ls.Namespace,
+			Name:      ls.Name,
+		},
 		Obj:       ls,
 		Listeners: make([]ir.Listener, 0, len(ls.Spec.Listeners)),
 	}

@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_gwtest_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -33,7 +31,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080
@@ -50,12 +48,10 @@ Routes:
         - name: x-test-invalid-header
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: '[invalid-regex'
         - name: x-test-valid-header
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: .*[valid]
         pathSeparatedPrefix: /test
       name: listener~8080~www_example_com-route-0-httproute-invalid-regex-route-gwtest-0-0-matcher-0
@@ -124,6 +120,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

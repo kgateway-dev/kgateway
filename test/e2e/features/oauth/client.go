@@ -5,6 +5,7 @@ package oauth
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -151,7 +152,7 @@ func extractLoginForm(htmlContent string) (*LoginForm, error) {
 	// Find the login form for Keycloak
 	form := doc.Find("form#kc-form-login").First()
 	if form.Length() == 0 {
-		return nil, fmt.Errorf("login form not found")
+		return nil, errors.New("login form not found")
 	}
 
 	method, _ := form.Attr("method")

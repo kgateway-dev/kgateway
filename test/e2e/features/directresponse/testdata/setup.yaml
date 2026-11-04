@@ -43,6 +43,8 @@ spec:
     metadata:
       labels:
         app: httpbin
+        # required by the e2e framework's pod readiness wait
+        app.kubernetes.io/name: httpbin
         version: v1
     spec:
       serviceAccountName: httpbin

@@ -8,6 +8,22 @@ import (
 	"testing"
 )
 
+// Option configures the behavior of Run.
+type Option func(*config)
+
+type config struct {
+	includeUnexported bool
+}
+
+// IncludeUnexported makes the completeness check consider unexported fields in
+// addition to exported ones. Use it for IR types whose fields are all
+// unexported (e.g. plugin-internal PolicyIRs), where the default
+// exported-only check would enforce nothing. The test must live in the same
+// package as T so its Mutate closures can reach those fields.
+func IncludeUnexported() Option {
+	return func(c *config) { c.includeUnexported = true }
+}
+
 // Case mutates one logical field of T and states whether Equals must
 // report inequality afterwards.
 type Case[T any] struct {
@@ -29,8 +45,13 @@ type Case[T any] struct {
 //
 // T must be a struct or a pointer to a struct; pointers are dereferenced one
 // level before field reflection.
-func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []Case[T], exempt []string) {
+func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []Case[T], exempt []string, opts ...Option) {
 	t.Helper()
+
+	cfg := config{}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 
 	// 1. Reflexivity check: two identical base instances must be equal.
 	t.Run("reflexivity", func(t *testing.T) {
@@ -78,7 +99,7 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 		t.Fatalf("equalstest.Run: type %s is not a struct or pointer to struct", typ)
 	}
 
-	missing := uncoveredFields(typ, covered, exemptSet)
+	missing := uncoveredFields(typ, covered, exemptSet, cfg.includeUnexported)
 	if len(missing) > 0 {
 		t.Errorf(
 			"completeness check failed for %s: exported field(s) %v are neither covered by a mutation Case nor listed as exempt — add a Case or add the field name to exempt",
@@ -91,9 +112,9 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 // uncoveredFields returns the exported field names of typ that are not present
 // in covered or exempt. It flattens anonymous (embedded) struct fields one
 // level deep, matching the same logic used by Run's completeness check.
-func uncoveredFields(typ reflect.Type, covered map[string]bool, exempt map[string]bool) []string {
+func uncoveredFields(typ reflect.Type, covered map[string]bool, exempt map[string]bool, includeUnexported bool) []string {
 	var missing []string
-	for _, field := range exportedFields(typ) {
+	for _, field := range candidateFields(typ, includeUnexported) {
 		if !covered[field] && !exempt[field] {
 			missing = append(missing, field)
 		}
@@ -101,19 +122,21 @@ func uncoveredFields(typ reflect.Type, covered map[string]bool, exempt map[strin
 	return missing
 }
 
-// exportedFields returns all exported field names of a struct type, flattening
-// anonymous (embedded) struct fields one level deep.
-func exportedFields(t reflect.Type) []string {
+// candidateFields returns the field names of a struct type that the
+// completeness check should cover, flattening anonymous (embedded) struct
+// fields one level deep. Unexported fields are included only when
+// includeUnexported is set.
+func candidateFields(t reflect.Type, includeUnexported bool) []string {
 	var names []string
 	for f := range t.Fields() {
-		if !f.IsExported() {
+		if !f.IsExported() && !includeUnexported {
 			continue
 		}
 		if f.Anonymous && f.Type.Kind() == reflect.Struct {
 			// Flatten embedded struct fields one level.
 			embedded := f.Type
 			for ef := range embedded.Fields() {
-				if ef.IsExported() {
+				if ef.IsExported() || includeUnexported {
 					names = append(names, ef.Name)
 				}
 			}

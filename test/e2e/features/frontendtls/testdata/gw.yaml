@@ -55,6 +55,15 @@ spec:
                 - name: ca-alt-names-cert
                   kind: ConfigMap
                   group: ""
+        # test supported signature algorithms
+        - port: 8448
+          tls:
+            validation:
+              mode: AllowValidOnly
+              caCertificateRefs:
+                - name: ca-sigalgs-cert
+                  kind: ConfigMap
+                  group: ""
   listeners:
     # Test default tls options
     - name: https
@@ -64,11 +73,16 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          # Added as certificate, but should not be used because of signature algorithms exposed
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
         options:
           kgateway.dev/alpn-protocols: "h2"
-          kgateway.dev/cipher-suites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+          kgateway.dev/cipher-suites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
           kgateway.dev/ecdh-curves: "X25519,P-256"
+          kgateway.dev/signature-algorithms: "rsa_pss_rsae_sha256"
           kgateway.dev/min-tls-version: "1.2"
           kgateway.dev/max-tls-version: "1.2"
       allowedRoutes:
@@ -82,7 +96,10 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
         options:
           # SHA256 fingerprint of client-8443.crt - see CLIENT_CERTS_README.md for generation
           kgateway.dev/verify-certificate-hash: "59:CF:81:16:72:71:C7:17:23:4E:CE:4F:F9:B9:68:B5:B0:40:2A:00:BB:14:64:E0:42:B9:AD:DA:61:C7:03:F0"
@@ -97,7 +114,10 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
         options:
           # SHA256 fingerprint of client-9443.crt - see CLIENT_CERTS_README.md for generation
           kgateway.dev/verify-certificate-hash: "E8:44:3B:AA:87:7C:DD:71:31:59:02:77:A4:2F:20:C6:B6:F5:7B:02:29:07:E0:F7:8C:21:DE:41:5B:28:CF:BB,
@@ -112,7 +132,10 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
       allowedRoutes:
         namespaces:
           from: All
@@ -123,7 +146,10 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
       allowedRoutes:
         namespaces:
           from: All
@@ -134,7 +160,10 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
       allowedRoutes:
         namespaces:
           from: All
@@ -146,9 +175,29 @@ spec:
         certificateRefs:
           - group: ""
             kind: Secret
-            name: test-tls
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
         options:
           kgateway.dev/verify-subject-alt-names: "mtls.example.com"
+      allowedRoutes:
+        namespaces:
+          from: All
+    # Test listener for supported signature algorithm list
+    - name: https-client-signature-algorithms
+      protocol: HTTPS
+      port: 8448
+      tls:
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: test-tls-rsa
+          - group: ""
+            kind: Secret
+            name: test-tls-ecdsa-p256
+        options:
+          kgateway.dev/signature-algorithms: "rsa_pss_rsae_sha256,rsa_pkcs1_sha256"
       allowedRoutes:
         namespaces:
           from: All

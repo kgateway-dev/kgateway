@@ -18,6 +18,10 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
     - CRDs are generated in the CRD helm chart template dir: [install/helm/kgateway-crds/templates](/install/helm/kgateway-crds/templates)
     - RBAC roles are generated in [install/helm/kgateway/templates/role.yaml](/install/helm/kgateway/templates/role.yaml)
     - Updates the [api/applyconfiguration](/api/applyconfiguration), [pkg/generated](/pkg/generated) and [pkg/client](/pkg/client) folders with kube clients. These are used in plugin initialization and the fake client is used in tests.
+4. Register the CRD with the client in [pkg/apiclient/types.go](/pkg/apiclient/types.go).
+5. Register the CRD for tests, in both places:
+    - `filterObjects` in [pkg/apiclient/fake/fake.go](/pkg/apiclient/fake/fake.go)
+    - `AllCRDs` in [test/testutils/crd.go](/test/testutils/crd.go)
 
 ## API guidelines
 - Include documentation as well as any appropriate json and kubebuilder annotations on all fields.
@@ -31,6 +35,7 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
     - Required fields MUST NOT set the `omitempty` json struct tag.
 - Avoid using slices with pointers (e.g. use `[]string` instead of `[]*string`). See: https://github.com/kubernetes/code-generator/issues/166
 - For time duration fields, use the `metav1.Duration` type and use CEL validation rules to ensure it is within the correct range.
+- For constraints across a group of fields, use `+kubebuilder:validation:AtLeastOneOf` or `+kubebuilder:validation:ExactlyOneOf` rather than hand-written CEL.
 
 ### Replicating Gateway API policies in TrafficPolicy API
 

@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_test_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -43,7 +41,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   metadata:
@@ -71,6 +69,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["192.168.0.0/16"]}]}'
       filterName: http-acl
+      perRouteConfigName: http-acl
   virtualHosts:
   - domains:
     - test.com
@@ -96,6 +95,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"allow","rules":[{"action":"deny","cidrs":["172.16.0.0/12"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
     - match:
         pathSeparatedPrefix: /route-1
       metadata:
@@ -117,6 +117,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["138.16.0.0/12"]},{"action":"deny","cidrs":["11.11.0.0/16"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
     - match:
         pathSeparatedPrefix: /route-2
       name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
@@ -185,6 +186,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

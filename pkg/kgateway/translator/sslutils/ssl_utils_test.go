@@ -55,6 +55,24 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "signature_algorithms",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256,rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_with_whitespace",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256, rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
 			name: "subject_alt_names",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
@@ -100,9 +118,12 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			// A minimum alone normalizes the maximum to the highest supported protocol, so it
+			// never leaves an inverted range against Envoy's own implicit default maximum.
 			name: "tls_min_version",
 			out: &ir.TLSConfig{
 				MinTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_3),
+				MaxTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_3),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MinTLSVersion: "1.3",
@@ -161,6 +182,19 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 			errors: []string{
 				"unknown tls option: kgateway.dev/min-tls-versions",
+			},
+		},
+		{
+			// TLS options maps are shared with other implementations, so keys outside the
+			// kgateway.dev/ prefix are skipped, while kgateway keys alongside them still apply.
+			name: "foreign_options_skipped",
+			out: &ir.TLSConfig{
+				EcdhCurves: []string{"P-384"},
+			},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				"example.com/other-implementation": "value",
+				"unprefixed-option":                "value",
+				annotations.EcdhCurves:             "P-384",
 			},
 		},
 	}

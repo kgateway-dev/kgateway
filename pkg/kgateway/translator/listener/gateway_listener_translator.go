@@ -1,12 +1,13 @@
 package listener
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -16,6 +17,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/httproute"
@@ -81,11 +83,6 @@ func mergeGWListeners(
 	}
 	for _, listener := range listeners {
 		result := routesForGw.GetListenerResult(listener.Parent, string(listener.Name))
-		if result == nil || result.Error != nil {
-			// TODO report
-			// TODO, if Error is not nil, this is a user-config error on selectors
-			// continue
-		}
 		parentReporter := listener.GetParentReporter(reporter)
 		listenerReporter := parentReporter.ListenerName(string(listener.Name))
 		var routes []*query.RouteInfo
@@ -546,6 +543,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
+				StatPrefix:      buildStatPrefix("tcp", tc.parents.listener.Port, tRoute.Namespace, tRoute.Name),
 				TLS:             tlsConfig,
 			},
 			BackendRefs: backends,
@@ -632,6 +630,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
+				StatPrefix:      buildStatPrefix("tls", tc.parents.listener.Port, tRoute.Namespace, tRoute.Name),
 				Matcher:         matcher,
 				TLS:             tlsConfig,
 			},
@@ -646,7 +645,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 // attachment of a route that lost the oldest-wins selection.
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
-		Type:   gwv1.RouteConditionAccepted,
+		Type:   conditions.KgatewayConditionProgrammed,
 		Status: metav1.ConditionFalse,
 		Reason: gwv1.RouteConditionReason("Conflicted"),
 	}
@@ -792,7 +791,9 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		}
 
 		// ensure we sort the routes before creating the vhost
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 
 		// ensure we don't create duplicate vhosts
 		vhostName := makeVhostName(ctx, parentName, host)
@@ -810,14 +811,15 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		})
 	}
 	// sort vhosts, to make sure the resource is stable
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	// TODO: Make a similar change for other filter chains ???
 	return ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: parentName,
+			StatPrefix:      buildStatPrefix("http", httpFilterChain.parents[0].gatewayListener.Port),
 		},
 		// Http plain text filter chains do not have attached policies.
 		// Because a single chain is shared across multiple gateway-api listeners, we don't have a clean way
@@ -864,7 +866,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		sort.Stable(vhostRoutes)
+		slices.SortStableFunc(vhostRoutes, func(a, b *routeutils.SortableRoute) int {
+			return a.CompareTo(b)
+		})
 		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
@@ -909,13 +913,14 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 			return nil, err
 		}
 	}
-	sort.Slice(virtualHosts, func(i, j int) bool {
-		return virtualHosts[i].Name < virtualHosts[j].Name
+	slices.SortFunc(virtualHosts, func(a, b *ir.VirtualHost) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: hfc.gatewayListenerName,
+			StatPrefix:      buildStatPrefix("https", hfc.listener.Port, listenerStatSegments(hfc.listener)...),
 			Matcher:         matcher,
 			TLS:             tlsConfig,
 		},
@@ -1053,9 +1058,8 @@ func translateTLSConfig(
 			continue
 		}
 
-		// The resulting sslconfig will still have to go through a real translation where we run through this again.
-		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
-		if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
+		// Only the validation result is used here; the IR carries the Secret's data as is.
+		if err := secret.ValidateTLS(); err != nil {
 			certErr = errors.Join(certErr, err)
 			continue
 		}
@@ -1341,6 +1345,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref(s)."
 	acceptedReason := gwv1.ListenerReasonInvalid
+	resolvedRefsOK := false
 
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
@@ -1353,6 +1358,9 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
+		// verify-subject-alt-names requires CA is a TLS configuration issue,
+		// not a certificate reference problem — the secret refs resolved fine.
+		resolvedRefsOK = true
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidCACertificateRef):
 		reason = sslutils.ListenerReasonInvalidCACertificateRef
@@ -1361,6 +1369,12 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	case errors.Is(err, sslutils.ErrInvalidCACertificateKind):
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
+		// Unknown TLS extension options are not a certificate reference problem;
+		// the cert refs resolved fine. Per the Gateway API spec, this is an
+		// Invalid condition on Programmed/Accepted, not a ResolvedRefs issue.
+		resolvedRefsOK = true
 		message = err.Error()
 	}
 
@@ -1373,12 +1387,18 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 	}
 
-	listenerReporter.SetCondition(reports.ListenerCondition{
-		Type:    gwv1.ListenerConditionResolvedRefs,
-		Status:  metav1.ConditionFalse,
-		Reason:  reason,
-		Message: message,
-	})
+	// When resolvedRefsOK is true, do not set a ResolvedRefs condition at all
+	// — listenerConditionsWithDefaults sets ResolvedRefs=True as the default
+	// for any condition type that was not explicitly set. We only need to
+	// override it when references genuinely failed to resolve.
+	if !resolvedRefsOK {
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
+		})
+	}
 
 	// Accepted and Programmed conditions are set to true if the listener is partially valid
 	acceptedProgrammedStatus := metav1.ConditionFalse
@@ -1417,4 +1437,30 @@ func GenerateListenerName(listener ir.Listener) string {
 func GenerateListenerNameFromPort(port gwv1.PortNumber) string {
 	// Add a ~ to make sure the name won't collide with user provided names in other listeners
 	return fmt.Sprintf("listener~%d", port)
+}
+
+// Stat prefixes surface in user-facing metrics (e.g. the
+// envoy_http_conn_manager_prefix and envoy_tcp_prefix tags), so they follow
+// their own stable format instead of reusing filter chain names:
+//
+//	http_<port>                                        plain HTTP (all listeners on the port share one chain)
+//	https_<port>_<section>                             HTTPS Gateway listener
+//	https_<port>_<lsNamespace>_<lsName>_<section>      HTTPS ListenerSet listener
+//	tcp_<port>_<routeNamespace>_<routeName>            TCPRoute
+//	tls_<port>_<routeNamespace>_<routeName>            TLSRoute
+//
+// Segments are joined with "_", which Kubernetes names never contain, and the
+// IR translator replaces "." with "_" so each prefix is a single stat segment.
+func buildStatPrefix(protocol string, port gwv1.PortNumber, segments ...string) string {
+	return strings.Join(append([]string{protocol, strconv.Itoa(int(port))}, segments...), "_")
+}
+
+// listenerStatSegments identifies a Gateway API listener within its Gateway:
+// the section name alone for a Gateway, prefixed by namespace and name for a
+// ListenerSet.
+func listenerStatSegments(listener ir.Listener) []string {
+	if _, ok := listener.Parent.(*gwv1.Gateway); ok || listener.Parent == nil {
+		return []string{string(listener.Name)}
+	}
+	return []string{listener.Parent.GetNamespace(), listener.Parent.GetName(), string(listener.Name)}
 }
