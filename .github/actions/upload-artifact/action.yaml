@@ -30,8 +30,20 @@ runs:
           echo "job_id=$ts" >> $GITHUB_OUTPUT
         fi
     - name: Upload artifacts
+      id: upload
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ${{ inputs.name }}-${{ github.run_id }}-${{ steps.get-job-id.outputs.job_id }}
         path: ${{ inputs.path }}
         if-no-files-found: warn
+    # Surface the artifact's direct download link on the run page and the job
+    # summary, so a failure is one click from its dump.
+    - name: Link uploaded artifact
+      if: ${{ steps.upload.outputs.artifact-url != '' }}
+      shell: bash
+      env:
+        ARTIFACT_NAME: ${{ inputs.name }}-${{ github.run_id }}-${{ steps.get-job-id.outputs.job_id }}
+        ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+      run: |
+        echo "::notice title=Artifact ${ARTIFACT_NAME}::${ARTIFACT_URL}"
+        echo "Artifact [${ARTIFACT_NAME}](${ARTIFACT_URL})" >> "$GITHUB_STEP_SUMMARY"
