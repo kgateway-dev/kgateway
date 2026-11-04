@@ -313,8 +313,6 @@ type EnvoyContainer struct {
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
-
 	// The container environment variables.
 	//
 	// +optional
@@ -491,7 +489,6 @@ type IstioIntegration struct {
 	// +optional
 	IstioProxyContainer *IstioContainer `json:"istioProxyContainer,omitempty"`
 
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 	// Override the default Istio sidecar in gateway-proxy with a custom container.
 	//
 	// +optional
@@ -684,8 +681,6 @@ type AiExtension struct {
 	//
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 
 	// The extension's container environment variables.
 	//
@@ -1080,8 +1075,6 @@ type Agentgateway struct {
 	//
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 
 	// The container environment variables.
 	//

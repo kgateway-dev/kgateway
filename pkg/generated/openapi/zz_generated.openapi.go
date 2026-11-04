@@ -4662,7 +4662,7 @@ func schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref common.ReferenceCallba
 					},
 					"customSidecars": {
 						SchemaProps: spec.SchemaProps{
-							Description: "do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166 Override the default Istio sidecar in gateway-proxy with a custom container.",
+							Description: "Override the default Istio sidecar in gateway-proxy with a custom container.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6057,7 +6057,7 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 					},
 					"tolerations": {
 						SchemaProps: spec.SchemaProps{
-							Description: "do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166 If specified, the pod's tolerations. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core for details.",
+							Description: "If specified, the pod's tolerations. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core for details.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -7957,7 +7957,7 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 					},
 					"autoHostRewrite": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream. NOTE: This field is only honoured for HTTPRoute targets. NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter) configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.",
+							Description: "AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream. NOTE: This field is only honoured for HTTPRoute targets. NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter) configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
