@@ -12,6 +12,7 @@ env:
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
   CONTROLLER_CACHE_REF: ghcr.io/${{ github.repository_owner }}/kgateway-cache
   SDS_CACHE_REF: ghcr.io/${{ github.repository_owner }}/sds-cache
+  ENVOY_MODULES_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-modules-cache
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -28,17 +29,11 @@ jobs:
         uses: ./.github/actions/prep-go-runner
       - name: Setup Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Restore Rust module
-        id: rust-module
-        uses: ./.github/actions/restore-rust-module
       - name: Build shared e2e images
-        env:
-          MAKE_ARGS: ${{ steps.rust-module.outputs.make-args }}
         run: |
           # Build the images in parallel. --output-sync keeps each target's log
           # together, so a target's output only appears once it finishes.
-          # shellcheck disable=SC2086 # MAKE_ARGS is a word list
-          make -j --output-sync=target $MAKE_ARGS save-e2e-shared-images
+          make -j --output-sync=target save-e2e-shared-images
       - name: Upload shared e2e images
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

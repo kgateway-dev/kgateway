@@ -862,6 +862,11 @@ ENVOYINIT_CACHE_REF ?=
 ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF):$(GOARCH),)
 
 ENVOY_MODULES_DIR := internal/envoy_modules/
+
+# Registry cache for the Rust module build (set to enable, e.g., ghcr.io/kgateway-dev/envoy-modules-cache).
+# goreleaser writes it on main/release; the arch tag is appended as :$(GOARCH) to match.
+ENVOY_MODULES_CACHE_REF ?=
+ENVOY_MODULES_CACHE_FROM := $(if $(ENVOY_MODULES_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOY_MODULES_CACHE_REF):$(GOARCH),)
 # find all the files under the envoy modules directory but exclude the target, vendor and pkg directory
 ENVOY_MODULES_SRC_FILES := $(shell find $(ENVOY_MODULES_DIR) \( -type d -name target -o -type d -name pkg -o -type d -name vendor \) -prune -o -type f -print)
 
@@ -881,6 +886,7 @@ $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY
 		--output type=local,dest=$(ENVOY_MODULE_OUTPUT_DIR) \
 		--target export \
 		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
+		$(ENVOY_MODULES_CACHE_FROM) \
 		-f $(ENVOY_MODULE_DOCKERFILE) \
 		$(ENVOY_MODULES_DIR)
 

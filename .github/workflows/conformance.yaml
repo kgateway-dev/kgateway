@@ -11,6 +11,7 @@ env:
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
   CONTROLLER_CACHE_REF: ghcr.io/${{ github.repository_owner }}/kgateway-cache
   SDS_CACHE_REF: ghcr.io/${{ github.repository_owner }}/sds-cache
+  ENVOY_MODULES_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-modules-cache
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
