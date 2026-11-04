@@ -1,8 +1,5 @@
 name: Restore Rust module
-description: >-
-  Restore the prebuilt Envoy dynamic module (librust_module.so) that the Cache
-  Setup workflow builds on main, so jobs that build the kgateway and
-  envoy-wrapper images skip the ~3 minute uncached Rust build.
+description: "Restore the prebuilt Envoy dynamic module (librust_module.so) that the Cache Setup workflow builds on main, so jobs that build the kgateway and envoy-wrapper images skip the uncached Rust build."
 
 outputs:
   cache-hit:
@@ -12,10 +9,10 @@ outputs:
     description: "Cache key for the current sources, for the job that saves it"
     value: ${{ steps.key.outputs.key }}
   make-args:
-    description: >-
-      Arguments to pass to make: on a hit, `-o <module>` so make does not
-      rebuild the restored module because the fresh checkout's sources are
-      newer than it. The cache key already covers those sources.
+    # On a hit, `-o <module>` stops make from rebuilding the restored module
+    # because the fresh checkout's sources are newer than it. The cache key
+    # already covers those sources.
+    description: "Arguments to pass to make"
     value: ${{ steps.make-args.outputs.make-args }}
 
 runs:
