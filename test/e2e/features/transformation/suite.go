@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -22,9 +23,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/helper"
@@ -70,7 +71,6 @@ var (
 	// test cases
 	setup = base.TestCase{
 		Manifests: []string{
-			defaults.CurlPodManifest,
 			simpleServiceManifest,
 			gatewayManifest,
 			transformForCustomFunctionsManifest,
@@ -884,26 +884,24 @@ func (s *testingSuite) TestGatewayWithTransformation() {
 }
 
 func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 			// make sure to pass in subtest "t" below instead of the parent test s.T()
-			// otherwise, when the test fail the first time, it would call FailNow
-			// on the parent test and prevent retrying even with Eventually()
-			resp := s.TestInstallation.AssertionsT(t).AssertEventualCurlReturnResponse(
-				s.Ctx,
-				defaults.CurlPodExecOpt,
-				append(tc.opts,
-					curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			// so a failure ends only this case
+			resp := gw.SendWithResponse(
+				t,
+				tc.resp,
+				curl.Extend(tc.opts,
 					curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
 					curl.WithPort(8080),
 					curl.WithPath(httpbin_echo_base_path+tc.url), // This is the endpoint for httpbin to return the request in json
-					curl.WithRetries(1, 1, 5),
-					curl.WithRetryConnectionRefused(true),
-				),
-				tc.resp,
-				6, /* timeout */
-				2 /* retry interval */)
+				)...,
+			)
 			if resp.StatusCode == http.StatusOK {
 				req, err := helper.CreateRequestFromHttpBinResponse(resp.Body)
 				g.Expect(err).NotTo(gomega.HaveOccurred())
