@@ -2,9 +2,12 @@ package curl
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,4 +36,27 @@ func TestExecuteRequestWithDialContext(t *testing.T) {
 
 	assert.Equal(t, http.StatusTeapot, resp.StatusCode)
 	assert.Equal(t, "unreachable.invalid:8080", dialed, "dialer should get the URL's host and port")
+}
+
+// WithConnectionTimeout must still let the caller read a body larger than one read chunk after
+// ExecuteRequest returns.
+func TestExecuteRequestWithConnectionTimeoutReadsWholeBody(t *testing.T) {
+	body := strings.Repeat("x", 100_000)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer server.Close()
+
+	host, port, err := net.SplitHostPort(server.Listener.Addr().String())
+	require.NoError(t, err)
+	portNum, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	resp, err := ExecuteRequest(WithHost(host), WithPort(portNum), WithConnectionTimeout(5))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	got, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "reading the body should not be cut off by the timeout")
+	assert.Len(t, got, len(body))
 }

@@ -70,15 +70,12 @@ func (c *requestConfig) executeNative() (*http.Response, error) {
 		}
 	}
 
-	// Create context with timeout
+	// connectionTimeout is enforced by the client's Timeout, which also covers reading the
+	// body. A context timeout here would be canceled when this function returns, cutting off
+	// a body the caller has not read yet.
 	ctx := c.ctx
 	if ctx == nil {
 		ctx = context.Background()
-	}
-	if c.connectionTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.connectionTimeout)*time.Second)
-		defer cancel()
 	}
 	if method == "" {
 		method = "GET"
