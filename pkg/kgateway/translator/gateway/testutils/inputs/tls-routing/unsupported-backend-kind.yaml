@@ -1,0 +1,39 @@
+# A TLSRoute referencing a Backend type that only works on HTTP routes. See
+# tcp-routing/unsupported-backend-kind.yaml; the TLS passthrough path has the same
+# gap and reports it the same way.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: example-tls-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - backendRefs:
+    - name: dfp-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tls
+    protocol: TLS
+    hostname: "example.com"
+    tls:
+      mode: Passthrough
+    port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp-backend
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy: {}

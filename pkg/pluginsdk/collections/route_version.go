@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/sleep"
 	"istio.io/istio/pkg/util/sets"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -18,9 +19,31 @@ import (
 	"k8s.io/client-go/discovery"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 var logger = logging.New("pluginsdk/collections")
+
+// joinRouteCollections combines the per-version collections of one route kind into the single
+// normalized collection the rest of the control plane consumes.
+//
+// A kind with no served version we watch still gets a collection -- an empty one -- so every
+// consumer can be wired unconditionally rather than nil-checked. A single version is returned
+// as-is: a join over one member is pure indirection on every lookup.
+func joinRouteCollections[T any](
+	cols []krt.Collection[T],
+	krtOpts krtutil.KrtOptions,
+	name string,
+) krt.Collection[T] {
+	switch len(cols) {
+	case 0:
+		return krt.NewStaticCollection[T](nil, nil, krtOpts.ToOptions("disable/"+name)...)
+	case 1:
+		return cols[0]
+	default:
+		return krt.JoinCollection(cols, krtOpts.ToOptions(name)...)
+	}
+}
 
 const (
 	// crdLookupTimeout bounds a single read of the served versions.

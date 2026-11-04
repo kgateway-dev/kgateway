@@ -26,6 +26,9 @@ type workflowConfig struct {
 
 var e2eTestsNotRequiredInPRShards = map[string]string{
 	"TestKgateway/AttachedRoutes": "load tests run in the dedicated nightly load-test workflow",
+	"TestKgateway/StrictChurn":    "opt-in load test runs in the dedicated nightly load-test workflow",
+	"TestKgateway/XdsCost":        "opt-in control-plane cost benchmark, run on demand via make run-xds-cost-bench",
+	"TestKgateway/XdsFleet":       "opt-in fleet-scale cost benchmark, run on demand via make run-xds-fleet-bench",
 	"TestZoneAwareRouting":        "requires a multi-zone multi-worker kind cluster; check guide to run manually",
 }
 
@@ -66,7 +69,7 @@ func TestAllE2ETestsInShards(t *testing.T) {
 // For test functions whose sub-package registers suites, individual suite
 // paths are returned (e.g., "TestKgateway/JWT"). For test functions with no
 // registered suites, the top-level function name is returned (e.g.,
-// "TestAPIValidation"). Suite runner calls in the wrapper file itself
+// "TestRouteReplacement"). Suite runner calls in the wrapper file itself
 // (e.g., FooSuiteRunner().Run()) are still resolved for tests that haven't
 // been split into a sub-package.
 func discoverE2ETestPaths(t *testing.T) []string {

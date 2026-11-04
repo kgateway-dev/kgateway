@@ -131,7 +131,7 @@ func TestClassifyEc2DiscoveryError(t *testing.T) {
 	}{
 		{
 			name:       "credential error",
-			err:        &ec2CredentialError{err: errors.New("invalid aws secret: access_key is not a valid string")},
+			err:        &ec2CredentialError{err: errors.New(`invalid aws secret: secret data key "accessKey" is missing or empty`)},
 			wantReason: string(kgateway.BackendReasonCredentialError),
 		},
 		{

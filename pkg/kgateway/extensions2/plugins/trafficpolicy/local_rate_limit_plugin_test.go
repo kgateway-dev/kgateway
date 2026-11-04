@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestLocalRateLimitIREquals(t *testing.T) {
@@ -188,6 +191,48 @@ func TestLocalRateLimitIRValidate(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestToLocalRateLimitFilterConfigShareAcrossGateway(t *testing.T) {
+	tokenBucket := &kgateway.TokenBucket{
+		MaxTokens:    100,
+		FillInterval: metav1.Duration{Duration: time.Second},
+	}
+
+	tests := []struct {
+		name               string
+		shareAcrossGateway *bool
+		wantLocalCluster   bool
+	}{
+		{
+			name:               "unset keeps per-replica rate limiting",
+			shareAcrossGateway: nil,
+			wantLocalCluster:   false,
+		},
+		{
+			name:               "false keeps per-replica rate limiting",
+			shareAcrossGateway: new(false),
+			wantLocalCluster:   false,
+		},
+		{
+			name:               "true shares the token bucket across the local cluster",
+			shareAcrossGateway: new(true),
+			wantLocalCluster:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toLocalRateLimitFilterConfig(&kgateway.LocalRateLimitPolicy{
+				TokenBucket:        tokenBucket,
+				ShareAcrossGateway: tt.shareAcrossGateway,
+			})
+			assert.Equal(t, tt.wantLocalCluster, got.GetLocalClusterRateLimit() != nil)
+			assert.False(t, got.GetLocalRateLimitPerDownstreamConnection(),
+				"per-connection rate limiting is incompatible with local_cluster_rate_limit")
+			assert.Equal(t, uint32(100), got.GetTokenBucket().GetMaxTokens())
 		})
 	}
 }

@@ -30,6 +30,7 @@ func MergeHttpPolicies(
 		mergeGenerateRequestId,
 		mergeNormalizePath,
 		mergeMergeSlashes,
+		mergePathWithEscapedSlashesAction,
 		mergeProxy100Continue,
 		mergeXffNumTrustedHops,
 		mergeXffConfig,
@@ -38,6 +39,7 @@ func MergeHttpPolicies(
 		mergeServerNameTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
+		mergeMaxConnectionDuration,
 		mergeHttp2ProtocolOptions,
 		mergeHealthCheckPolicy,
 		mergeGrpcStats,
@@ -209,6 +211,22 @@ func mergeMergeSlashes(
 
 	p1.mergeSlashes = p2.mergeSlashes
 	mergeOrigins.SetOne(origin+"mergeSlashes", p2Ref, p2MergeOrigins)
+}
+
+func mergePathWithEscapedSlashesAction(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.pathWithEscapedSlashesAction, p2.pathWithEscapedSlashesAction, opts) {
+		return
+	}
+
+	p1.pathWithEscapedSlashesAction = p2.pathWithEscapedSlashesAction
+	mergeOrigins.SetOne(origin+"pathWithEscapedSlashesAction", p2Ref, p2MergeOrigins)
 }
 
 func mergeProxy100Continue(
@@ -385,6 +403,22 @@ func mergeIdleTimeout(
 
 	p1.idleTimeout = p2.idleTimeout
 	mergeOrigins.SetOne(origin+"mergeIdleTimeout", p2Ref, p2MergeOrigins)
+}
+
+func mergeMaxConnectionDuration(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxConnectionDuration, p2.maxConnectionDuration, opts) {
+		return
+	}
+
+	p1.maxConnectionDuration = p2.maxConnectionDuration
+	mergeOrigins.SetOne(origin+"maxConnectionDuration", p2Ref, p2MergeOrigins)
 }
 
 func mergeHttp2ProtocolOptions(

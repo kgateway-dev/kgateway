@@ -1,0 +1,137 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  # buffers ahead of ext_authz, so the limit is enforced before the request body reaches it
+  - name: before-auth
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /before-auth
+  # keeps the default placement, and shares the chain's single buffer filter
+  - name: default-stage
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /default
+  # gzip request bodies, decompressed before they are measured against the limit
+  - name: decompressed
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /decompressed
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-before-auth
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: before-auth
+  buffer:
+    maxRequestSize: "1024"
+    filterStage:
+      stage: AuthN
+      predicate: Before
+  extAuth:
+    extensionRef:
+      name: extauth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-default-stage
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: default-stage
+  buffer:
+    maxRequestSize: "65536"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffer-decompressed
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: decompressed
+  buffer:
+    maxRequestSize: "2048"
+    filterStage:
+      stage: AuthN
+      predicate: Before
+  compression:
+    requestDecompression:
+      libraries:
+      - Gzip
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ext-authz
+spec:
+  ports:
+  - port: 9000
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+    targetPort: 9000
+  selector:
+    app: ext-authz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

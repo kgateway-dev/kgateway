@@ -41,11 +41,11 @@ type UniquelyConnectedClient struct {
 	// have no matching static cluster in their bootstrap and can never name it,
 	// so this must default to false and only ever be set by observing a real
 	// request (see pkg/krtcollections/uniqueclients.go) — never assume support.
-	// Without this gate, go-control-plane's ADS "superset" check
-	// (github.com/envoyproxy/go-control-plane pkg/cache/v3/simple.go) withholds
-	// the *entire* EDS response to a client that doesn't ask for every resource
-	// in the snapshot, breaking all endpoint updates for that client, not just
-	// the local cluster (see https://github.com/kgateway-dev/kgateway/issues/14471).
+	// The local-cluster CLA is built only for clients with this set. Before EDS
+	// was served per request (newSnapshotCache in pkg/kgateway/setup), an
+	// unrequested CLA made go-control-plane's ADS cache withhold the client's
+	// *entire* EDS response, breaking all endpoint updates for that client, not
+	// just the local cluster (https://github.com/kgateway-dev/kgateway/issues/14471).
 	KnowsLocalCluster bool
 
 	// modified role that includes the namespace and the hash of the labels.
@@ -220,8 +220,8 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// ResourceName and ClusterName here so Gateway-scoped backend clones that
 	// share the same Service and endpoints, but differ in client certificate
 	// identity, do not collapse to the same endpoint hash.
-	// note: we no longer need to add the upstream body hash to the clustername, as we applied `use_eds_cache_for_ads`
-	// to mitigate https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
+	// note: we no longer need to add the upstream body hash to the clustername, as Envoy's EDS cache for ADS
+	// (always on since Envoy 1.37) mitigates https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
 
 	h := fnv.New64a()
 	objSrc := us.GetObjectSource()
@@ -236,12 +236,14 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte(objSrc.Name))
 	h.Write([]byte{0})
 	h.Write([]byte(objSrc.Namespace))
-	for k, v := range labels {
-		h.Write([]byte{0})
-		h.Write([]byte(k + "=" + v))
-	}
+	// Fold the labels in through HashLabels, which XORs a per-label hash and is therefore
+	// order-independent. Writing the label pairs straight into this hasher makes the result
+	// depend on Go's randomized map iteration order, so two identical backends hash
+	// differently and every recomputation of this collection looks like a change.
 	h.Write([]byte{0})
-	h.Write([]byte{byte(us.TrafficDistribution)})
+	utils.HashUint64(h, utils.HashLabels(labels))
+	h.Write([]byte{0})
+	h.Write([]byte{byte(us.TrafficDistribution)}) //nolint:gosec // G115: TrafficDistribution is a small iota enum
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{

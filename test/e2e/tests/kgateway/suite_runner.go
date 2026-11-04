@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dualstack"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/ec2"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
@@ -50,6 +51,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/websocket"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xds_starvation"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xds_warming"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xdsidentityrace"
 )
 
 // SuiteRunner returns the suite runner for the TestKgateway scenario.
@@ -95,7 +98,21 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
+	// StrictChurn mutates the controller deployment (strict validation, a
+	// mid-test restart), so it is hard-gated behind KGW_ENABLE_STRICT_CHURN
+	// in its SetupSuite and skips otherwise — broad -run regexes (e.g. the
+	// nightly e2e lane's unanchored ^TestKgateway) cannot run it implicitly.
+	// The nightly load-test lane invokes `make run-load-tests-strict-churn`
+	// explicitly after its shared suites.
+	kubeGatewaySuiteRunner.Register("StrictChurn", loadtesting.NewStrictChurnSuite)
+	// XdsCost and XdsFleet are StrictChurn's measurement siblings: they price
+	// what each kind of change costs the controller rather than asserting
+	// liveness. Both mutate the controller deployment, so both are hard-gated
+	// (KGW_ENABLE_XDS_COST / KGW_ENABLE_XDS_FLEET) and run via make targets.
+	kubeGatewaySuiteRunner.Register("XdsCost", loadtesting.NewXdsCostSuite)
+	kubeGatewaySuiteRunner.Register("XdsFleet", loadtesting.NewXdsFleetSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("DualStack", dualstack.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("InternalRedirect", internalredirect.NewTestingSuite)
@@ -108,6 +125,8 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("WebSocket", websocket.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("XdsStarvation", xds_starvation.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("XdsWarming", xds_warming.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("XdsIdentityRace", xdsidentityrace.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

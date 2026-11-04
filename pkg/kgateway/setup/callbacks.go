@@ -2,14 +2,45 @@ package setup
 
 import (
 	"context"
+	"reflect"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
+// ChainCallbacks returns callbacks that run cbs in order. Hooks that can reject
+// (OnStreamOpen, OnStreamRequest, OnFetchRequest, OnDeltaStreamOpen,
+// OnStreamDeltaRequest) stop at the first error. Close and response hooks reach
+// every callback. go-control-plane calls a stream's close hook even when its open
+// hook failed, so each callback must tolerate a close for a stream it never saw
+// open. Nil entries, including nil pointers, are skipped.
+//
+// Forks that call NewControlPlane directly use it to put their extra callbacks
+// ahead of the unique-client callbacks, as Start does.
+func ChainCallbacks(cbs ...xdsserver.Callbacks) xdsserver.Callbacks {
+	return chainCallbacks(cbs...)
+}
+
 func chainCallbacks(cbs ...xdsserver.Callbacks) xdsserver.Callbacks {
-	return &callbacksChain{Callbacks: cbs}
+	chain := &callbacksChain{}
+	for _, cb := range cbs {
+		if !isNilCallbacks(cb) {
+			chain.Callbacks = append(chain.Callbacks, cb)
+		}
+	}
+	return chain
+}
+
+// isNilCallbacks also catches a nil pointer stored in the interface, which would
+// panic on the first hook that uses its receiver. It runs once per chain, not
+// per hook.
+func isNilCallbacks(cb xdsserver.Callbacks) bool {
+	if cb == nil {
+		return true
+	}
+	v := reflect.ValueOf(cb)
+	return v.Kind() == reflect.Pointer && v.IsNil()
 }
 
 type callbacksChain struct {

@@ -23,27 +23,44 @@ func newFinalBackendEndpoints(
 ) krt.Collection[ir.EndpointsForBackend] {
 	return krt.NewCollection(finalBackends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) *ir.EndpointsForBackend {
 		raw := krt.FetchOne(kctx, rawEndpoints, krt.FilterKey(backend.ResourceName()))
-		if raw == nil {
-			return nil
-		}
-
-		final := raw.EmptyCopy()
-		final.AttachedPolicies = backend.AttachedPolicies
-		final.ClusterName = backend.ClusterName()
-		final.UpstreamResourceName = backend.ResourceName()
-		// Reuse the endpoint protos AND their precomputed equality hash instead
-		// of re-Adding every endpoint: Add re-marshals each LbEndpoint proto
-		// (HashProtoWithHasher), which is a major allocation source at scale.
-		final.ReuseEndpointsFrom(raw)
-		// A same-named EDS cluster can still re-warm when policy changes CDS.
-		// Bump only the endpoint version so Envoy receives a fresh CLA response.
-		if policyHash := backendEndpointVersionHash(backend); policyHash != 0 {
-			final.FoldVersion(policyHash)
-		}
-		return &final
+		return FinalBackendEndpoints(backend, raw)
 	}, krtopts.ToOptions("FinalBackendEndpoints")...)
 }
 
+// FinalBackendEndpoints projects a backend's raw endpoint IR onto the
+// policy-attached backend view, returning the EDS input the endpoint plugins
+// and the endpoint translator actually run on. Returns nil when the backend
+// contributes no endpoints.
+//
+// This is the per-backend body of the FinalBackendEndpoints collection. It is
+// exported because the raw endpoint collections are contributed by backend
+// plugins and are built before policies are attached: anything that translates
+// endpoints outside the syncer — the translator golden tests, for one — has to
+// go through here or every endpoint plugin silently sees no policies.
+func FinalBackendEndpoints(backend *ir.BackendObjectIR, raw *ir.EndpointsForBackend) *ir.EndpointsForBackend {
+	if backend == nil || raw == nil {
+		return nil
+	}
+
+	final := raw.EmptyCopy()
+	final.AttachedPolicies = backend.AttachedPolicies
+	final.ClusterName = backend.ClusterName()
+	final.UpstreamResourceName = backend.ResourceName()
+	// Reuse the endpoint protos AND their precomputed equality hash instead
+	// of re-Adding every endpoint: Add re-marshals each LbEndpoint proto
+	// (HashProtoWithHasher), which is a major allocation source at scale.
+	final.ReuseEndpointsFrom(raw)
+	// A same-named EDS cluster can still re-warm when policy changes CDS.
+	// Bump only the endpoint version so Envoy receives a fresh CLA response.
+	if policyHash := backendEndpointVersionHash(backend); policyHash != 0 {
+		final.FoldVersion(policyHash)
+	}
+	return &final
+}
+
+// backendEndpointVersionHash hashes attached policies so policy-only endpoint
+// changes invalidate KRT rows. It returns zero for no policies, which callers
+// treat as "contributes nothing".
 func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 	if backend == nil || len(backend.AttachedPolicies.Policies) == 0 {
 		return 0

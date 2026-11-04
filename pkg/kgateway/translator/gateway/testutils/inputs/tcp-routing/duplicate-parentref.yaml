@@ -1,0 +1,39 @@
+# The TCPRoute reaches the listener through two parentRefs (by sectionName and
+# by Gateway name). It is the only route, so it is programmed and must not be
+# reported as conflicting with itself.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tcp
+  - name: example-gateway
+  rules:
+  - backendRefs:
+    - name: example-tcp-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-tcp-svc
+spec:
+  selector:
+    app: example
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80

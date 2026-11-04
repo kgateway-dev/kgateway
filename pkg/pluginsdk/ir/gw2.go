@@ -121,8 +121,16 @@ type TLSCertificate struct {
 }
 
 type FilterChainCommon struct {
-	Matcher              FilterChainMatch
-	FilterChainName      string
+	Matcher         FilterChainMatch
+	FilterChainName string
+	// Listener is the Gateway API listener this chain serves alone, used to report
+	// status on it. HTTPS chains set it. A plain HTTP chain merges every listener on
+	// its port and leaves it nil, and TCP and TLS chains do not set it yet.
+	Listener *Listener
+	// StatPrefix is the stat_prefix for the chain's HCM or TcpProxy. It is kept
+	// separate from FilterChainName because it surfaces in user-facing metrics
+	// and must follow a stable format. Empty falls back to a protocol default.
+	StatPrefix           string
 	CustomNetworkFilters []CustomEnvoyFilter
 	NetworkFilters       []*anypb.Any
 	TLS                  *TLSConfig
@@ -147,7 +155,8 @@ type HttpFilterChainIR struct {
 
 type TcpIR struct {
 	FilterChainCommon
-	BackendRefs []BackendRefIR
+	BackendRefs      []BackendRefIR
+	AttachedPolicies AttachedPolicies
 }
 
 // this is 1:1 with envoy deployments

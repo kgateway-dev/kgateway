@@ -92,13 +92,23 @@ type Namespaced interface {
 type AppProtocol string
 
 const (
-	DefaultAppProtocol   AppProtocol = ""
+	DefaultAppProtocol AppProtocol = ""
+	// HTTP1AppProtocol is an explicit HTTP/1.1 app protocol. It is handled like DefaultAppProtocol,
+	// except that a backend with a BackendTLSPolicy keeps HTTP/1.1 instead of negotiating it via ALPN.
+	HTTP1AppProtocol     AppProtocol = "http1"
 	HTTP2AppProtocol     AppProtocol = "http2"
 	WebSocketAppProtocol AppProtocol = "ws"
 )
 
+// HTTPAppProtocolName is the IANA and istio app protocol for HTTP/1.1.
+const HTTPAppProtocolName = "http"
+
+// kubernetesWssAppProtocol is the GEP-1911 app protocol for WebSocket over TLS.
+// It is only valid on Services; TLS comes from a BackendTLSPolicy.
+const kubernetesWssAppProtocol = "kubernetes.io/wss"
+
 // ParseAppProtocol takes an app protocol string provided on a Backend or Kubernetes Service, and maps it
-// to one of the app protocol types supported by kgateway (http2, websocket, or default).
+// to one of the app protocol types supported by kgateway (http1, http2, websocket, or default).
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
@@ -111,7 +121,11 @@ func ParseAppProtocol(appProtocol *string) AppProtocol {
 		fallthrough
 	case string(kgateway.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
+	case HTTPAppProtocolName:
+		return HTTP1AppProtocol
 	case string(kgateway.AppProtocolKubernetesWs):
+		fallthrough
+	case kubernetesWssAppProtocol:
 		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
@@ -193,6 +207,32 @@ type BackendObjectIR struct {
 	// When set, the backend must be translated to a distinct cluster so the client
 	// identity does not leak across Gateways that share the same backend.
 	GatewayBackendClientCertificate *GatewayBackendClientCertificateIR
+
+	// SupportedRouteKinds lists the route kinds that may reference this backend
+	// through a backendRef. Nil means every route kind.
+	//
+	// A backend plugin sets this when the backend only works on a particular data
+	// path. A backend that depends on an HTTP filter has nothing to
+	// attach to on a TCPRoute or TLSRoute. Declaring the supported kinds here lets
+	// the route translator reject the reference with ResolvedRefs=False/InvalidKind
+	// instead.
+	SupportedRouteKinds []schema.GroupKind
+}
+
+// HTTPRouteKinds is the set of route kinds that carry HTTP traffic. A backend plugin
+// whose backend is realised through HTTP filters sets SupportedRouteKinds to this.
+var HTTPRouteKinds = []schema.GroupKind{
+	wellknown.HTTPRouteGVK.GroupKind(),
+	wellknown.GRPCRouteGVK.GroupKind(),
+}
+
+// SupportsRouteKind reports whether a route of the given kind may reference this
+// backend. A backend that declares no SupportedRouteKinds supports every kind.
+func (c BackendObjectIR) SupportsRouteKind(gk schema.GroupKind) bool {
+	if len(c.SupportedRouteKinds) == 0 {
+		return true
+	}
+	return slices.Contains(c.SupportedRouteKinds, gk)
 }
 
 // NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
@@ -231,7 +271,12 @@ func (c BackendObjectIR) ResourceName() string {
 	return c.resourceName
 }
 
-func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
+// Equals has a pointer receiver so that krt finds it for both
+// krt.Collection[BackendObjectIR] and krt.Collection[*BackendObjectIR]. With a
+// value receiver, a pointer collection has no Equaler[*BackendObjectIR] and krt
+// falls back to reflect.DeepEqual, which walks attached policy IR protos and
+// races with goroutines that marshal clusters built from them.
+func (c *BackendObjectIR) Equals(in *BackendObjectIR) bool {
 	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
@@ -253,6 +298,11 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if !versionEquals(c.Obj, in.Obj) {
 		return false
 	}
+	// Compare ObjIr symmetrically so adding or removing plugin state always
+	// invalidates the row, regardless of which object is the receiver.
+	if (c.ObjIr == nil) != (in.ObjIr == nil) {
+		return false
+	}
 	if c.ObjIr != nil && !c.ObjIr.Equals(in.ObjIr) {
 		return false
 	}
@@ -269,6 +319,9 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		return false
 	}
 	if !equalsGatewayBackendClientCertificate(c.GatewayBackendClientCertificate, in.GatewayBackendClientCertificate) {
+		return false
+	}
+	if !slices.Equal(c.SupportedRouteKinds, in.SupportedRouteKinds) {
 		return false
 	}
 	return true
@@ -414,6 +467,13 @@ type Secret struct {
 
 	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
+
+	// TLSValidation keeps the result of ValidateTLS, so the listeners that reference this
+	// Secret validate it once instead of once each. Copies of a Secret share it. The Secret
+	// collection builds a new Secret for each version of the object, so a changed Secret is
+	// validated again. When nil, ValidateTLS checks on every call.
+	// +noKrtEquals derived from Data
+	TLSValidation *SecretValidation
 }
 
 func (c Secret) ResourceName() string {
@@ -697,7 +757,7 @@ func backendObjectEqual(a, b *BackendObjectIR) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Equals(*b)
+	return a.Equals(b)
 }
 
 func errorsEqual(a, b error) bool {

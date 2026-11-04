@@ -10,7 +10,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -60,6 +59,7 @@ func (hm *headerModifiersIR) Validate() error {
 func constructHeaderModifiers(
 	krtctx krt.HandlerContext,
 	policy *kgateway.TrafficPolicy,
+	from krtcollections.From,
 	secrets *krtcollections.SecretIndex,
 	out *trafficPolicySpecIr,
 ) error {
@@ -68,10 +68,6 @@ func constructHeaderModifiers(
 	}
 
 	spec := policy.Spec.HeaderModifiers
-	from := krtcollections.From{
-		GroupKind: wellknown.TrafficPolicyGVK.GroupKind(),
-		Namespace: policy.Namespace,
-	}
 
 	p := &header_mutationv3.HeaderMutationPerRoute{
 		Mutations: &header_mutationv3.Mutations{},

@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -21,6 +22,9 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *kgateway.Comm
 	}
 	if commonHttpProtocolOptions.IdleTimeout != nil {
 		out.IdleTimeout = durationpb.New(commonHttpProtocolOptions.IdleTimeout.Duration)
+	}
+	if commonHttpProtocolOptions.MaxConnectionDuration != nil {
+		out.MaxConnectionDuration = durationpb.New(commonHttpProtocolOptions.MaxConnectionDuration.Duration)
 	}
 
 	if commonHttpProtocolOptions.MaxHeadersCount != nil {
@@ -140,6 +144,11 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *envoycorev3.Http2ProtocolOp
 	}
 
 	if backend.AppProtocol != ir.HTTP2AppProtocol {
+		// A BackendTLSPolicy lets a backend without an app protocol negotiate HTTP/2 via ALPN;
+		// the BackendTLSPolicy plugin then applies these options through Http2ProtocolOptions.
+		if backend.AppProtocol == ir.DefaultAppProtocol && hasBackendTLSPolicy(backend) {
+			return
+		}
 		logger.Warn("can't apply http2 protocol options to non-http2 backend", "backend", backend.GetName())
 		return
 	}
@@ -155,4 +164,24 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *envoycorev3.Http2ProtocolOp
 	}); err != nil {
 		logger.Error("failed to apply http2 protocol options", "backend", backend.GetName(), "error", err)
 	}
+}
+
+// Http2ProtocolOptions returns the HTTP/2 protocol options of the BackendConfigPolicies attached to
+// backend, or nil when none set them. The BackendTLSPolicy plugin uses them for backends that
+// negotiate HTTP/2 via ALPN, since processBackend only applies them to HTTP/2 backends.
+// The returned value is shared and must not be modified.
+func Http2ProtocolOptions(backend ir.BackendObjectIR) *envoycorev3.Http2ProtocolOptions {
+	pols := backend.AttachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+	if len(pols) == 0 {
+		return nil
+	}
+	merged := mergePolicies(pols)
+	if len(merged.Errors) > 0 {
+		return nil
+	}
+	pol, ok := merged.PolicyIr.(*BackendConfigPolicyIR)
+	if !ok || pol == nil {
+		return nil
+	}
+	return pol.http2ProtocolOptions
 }

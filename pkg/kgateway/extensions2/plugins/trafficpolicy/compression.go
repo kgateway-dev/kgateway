@@ -346,16 +346,44 @@ func addCompressionFiltersIfNeeded(staged []filters.StagedHttpFilter, p *traffic
 		filter.Filter.Disabled = true
 		staged = append(staged, filter)
 	}
-	// One disabled-by-default decompressor filter per codec. Order is not significant (Envoy
-	// selects by Content-Encoding), and same-stage filters sort deterministically by name.
+	// One disabled-by-default decompressor filter per codec. Order among the codecs is not
+	// significant (Envoy selects by Content-Encoding), and same-stage filters sort
+	// deterministically by name.
+	decompressorStage := decompressorStage(p, fcn)
 	for _, entry := range p.decompressorInChain[fcn] {
 		filter := filters.MustNewStagedFilter(
 			entry.filterName,
 			entry.decompressor,
-			filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage)),
+			decompressorStage,
 		)
 		filter.Filter.Disabled = true
 		staged = append(staged, filter)
 	}
 	return staged
+}
+
+// headOfStageWeight is a relative weight below every placement `FilterStageSpec` can express.
+// Before/During/After map to -1/0/+1, so a filter at -2 sorts ahead of everything a user can ask
+// for at the same well-known stage, without relying on the filter-name tiebreak that
+// CompareStagedFilters falls back to for equal stages.
+const headOfStageWeight = -2
+
+// decompressorStage returns the stage the chain's decompressor filters are installed at.
+//
+// Request decompression has to run ahead of the buffer filter, and ahead of every other filter
+// that reads the body at the same stage: buffering the encoded bytes would measure the request
+// against its compressed size, letting a small compressed body satisfy `maxRequestSize` and then
+// expand past it upstream.
+//
+// The default placement, AfterStage(CorsStage), is already ahead of every stage `filterStage` can
+// name except Fault, so in practice this only moves the decompressors when a policy on the chain
+// stages the buffer filter at Fault. Note that it then moves them for every route on the chain,
+// since a filter chain carries one set of decompressors - see the note on Buffer.FilterStage.
+func decompressorStage(p *trafficPolicyPluginGwPass, fcn string) filters.FilterStage[filters.WellKnownFilterStage] {
+	stage := filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage))
+	buffer := p.bufferInChain[fcn]
+	if buffer == nil || filters.FilterStageComparison(buffer.filterStage(), stage) > 0 {
+		return stage
+	}
+	return filters.RelativeToStage(buffer.filterStage().RelativeTo, headOfStageWeight)
 }

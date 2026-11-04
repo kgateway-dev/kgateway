@@ -56,7 +56,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	reports.NewReporter(&routeReport).
 		Route(&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}).
 		ParentRef(&gwv1.ParentReference{Name: "gw"})
-	buildDesired := func(current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+	buildDesired := func(_ Resource, current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 		status := reports.BuildRouteStatus(
 			routeReport.HTTPRoutes[types.NamespacedName{Namespace: "default", Name: "route"}],
 			current,
@@ -80,14 +80,13 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 		Merge: func(current *gwv1.HTTPRoute, d gwv1.RouteStatus) gwv1.RouteStatus {
 			return gwv1.RouteStatus{Parents: MergeRouteParentStatuses(controllerName, current.Status.Parents, d.Parents)}
 		},
-		OnSync: func(res Resource, current *gwv1.HTTPRoute, status gwv1.RouteStatus, took time.Duration, err error) {
-			require.NoError(t, err, "status sync must not error")
-			syncs.Add(1)
-		},
 	}
 
 	pool := NewWorkerPool(ctx, func(ctx context.Context, res Resource) {
-		writer.ApplyStatus(ctx, res)
+		if result, ok := writer.apply(ctx, res); ok {
+			require.NotEqual(t, writeResultError, result, "status write must not fail")
+			syncs.Add(1)
+		}
 	}, 2)
 	var pushes atomic.Int32
 	sc := NewStatusCollections()
@@ -129,7 +128,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	// the same check CheckWriterIdempotent exports for writers outside this package.
 	written := routesClient.Get("route", "default")
 	require.NotNil(t, written)
-	require.NoError(t, CheckWriterIdempotent(writer, written,
+	require.NoError(t, CheckWriterIdempotent(writer, testRoute, written,
 		func(current *gwv1.HTTPRoute, status gwv1.RouteStatus) *gwv1.HTTPRoute {
 			next := current.DeepCopy()
 			next.Status.RouteStatus = *status.DeepCopy()

@@ -10,10 +10,6 @@ on:
           Prereleases are allowed; build metadata (a '+' suffix) is not, because the version
           becomes an image/chart tag and '+' is not a valid OCI tag character.
           Examples: v1.2.3, v2.0.0-alpha.1, v1.0.0-beta.2
-      run_load_tests:
-        type: boolean
-        default: false
-        description: "Run load tests against the staged artifacts before publishing (does not gate the release)"
       allow_missing_previous_version:
         type: boolean
         default: false
@@ -48,6 +44,7 @@ env:
   CGO_ENABLED: '0'
 
 permissions:
+  actions: read
   contents: write
   packages: write
 
@@ -63,7 +60,7 @@ jobs:
       needs_release: ${{ steps.set_vars.outputs.needs_release }}
       previous_tag: ${{ steps.set_vars.outputs.previous_tag }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Set the release related variables
@@ -217,7 +214,7 @@ jobs:
     needs: [setup]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Package kgateway charts
         # Package both the vX.Y.Z and X.Y.Z charts so the publish job can push the exact tested
@@ -235,7 +232,7 @@ jobs:
       # pushes directly, and PR runs consume nothing, so skip the upload off the release path.
       - name: Upload packaged charts
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: helm-charts
           path: _test/*.tgz
@@ -276,7 +273,7 @@ jobs:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
@@ -287,7 +284,7 @@ jobs:
       # floating_version that resolved empty.
       - name: Log into ${{ env.IMAGE_REGISTRY }}
         if: ${{ needs.setup.outputs.floating_version != '' }}
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.repository_owner }}
@@ -295,7 +292,7 @@ jobs:
 
       - name: Setup Buildx
         if: ${{ needs.setup.outputs.floating_version != '' }}
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       # This repackages rather than pushing the helm job's .tgz, so these are not the bytes
       # anything validated. Fine here: a rolling build is not a release.
@@ -351,7 +348,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
         with:
           fetch-depth: 0
@@ -370,7 +367,7 @@ jobs:
 
       - name: Upload release notes
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-notes
           path: _output/RELEASE_NOTES.md
@@ -391,7 +388,7 @@ jobs:
       # JSON object mapping image name -> staged manifest digest; publish iterates its keys.
       digests: ${{ steps.digests.outputs.digests }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Prep Go Runner
@@ -399,13 +396,13 @@ jobs:
 
       - name: Log into ghcr.io
         if: ${{ github.event_name != 'pull_request' }}
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: "docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392" # v3.6.0
+      - uses: "docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1" # v4.4.0
         with:
           # Pin the binfmt/QEMU emulator to a specific version. The action caches
           # the emulator image (`cache-image: true`) under a key derived from the
@@ -418,7 +415,7 @@ jobs:
           # A versioned tag gives a version-specific cache key (sidestepping the
           # poisoned `latest` cache) and a QEMU build that contains the upstream fix.
           image: tonistiigi/binfmt:qemu-v10.2.3
-      - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10.0
+      - uses: "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069" # v4.4.1
 
       - name: Disable Docker cache for releases
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
@@ -485,7 +482,7 @@ jobs:
       # per-release binary tarballs + checksums every prior release carried.
       - name: Upload release binaries
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-binaries
           path: |
@@ -508,7 +505,7 @@ jobs:
       matrix:
         arch: ['amd64', 'arm64']
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 
@@ -542,12 +539,13 @@ jobs:
 
   load_tests:
     name: Load Testing
-    # Advisory: runs against the staged artifact when opted in, but does NOT gate publish.
+    timeout-minutes: 120
+    # Advisory: runs for every release against staged artifacts, but does NOT gate publish.
     needs: [setup, helm, stage]
-    if: ${{ inputs.run_load_tests }}
+    if: ${{ needs.setup.outputs.needs_release == 'true' }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 
@@ -577,6 +575,19 @@ jobs:
           KGATEWAY_RUN_LOAD_TESTS: "true"
           VERSION: ${{ needs.setup.outputs.version }}
 
+      - name: Run xDS benchmarks
+        run: make run-xds-bench-ci
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+          KGW_BENCH_LABEL: ${{ needs.setup.outputs.stage_tag }}
+
+      - name: Upload xDS benchmark results
+        if: ${{ always() }}
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: release-xds-benchmarks
+          path: _output/xds-bench/
+
   publish:
     name: Publish release
     # Gated on the validation jobs that block a release: build + container-structure (in `stage`)
@@ -588,15 +599,15 @@ jobs:
       # This job only copies already-built artifacts (buildx imagetools, helm push, gh); it builds
       # nothing, so it needs neither full history nor the prep-go-runner disk purge. Go is
       # preinstalled for `go tool helm`.
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Log into ghcr.io
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10.0
+      - uses: "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069" # v4.4.1
 
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
@@ -615,19 +626,19 @@ jobs:
       # so pushing first risks re-pushing images and then dying on an expired artifact, leaving a
       # half-published version no re-run can finish. Keep every download ahead of every push.
       - name: Download the validated charts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: helm-charts
           path: _test
 
       - name: Download release notes
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-notes
           path: _output
 
       - name: Download release binaries
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-binaries
           path: dist
@@ -838,7 +849,7 @@ jobs:
     if: ${{ needs.setup.outputs.needs_release == 'true' }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
 

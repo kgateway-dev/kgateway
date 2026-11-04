@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 )
 
 const (
@@ -46,6 +45,17 @@ var (
 			Help:      "Current number of resources in XDS snapshot",
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel},
+	)
+	// snapshotDeferredClients counts connected clients without a current snapshot
+	// row, including clients that have never received a snapshot. Brief increases
+	// occur during convergence; a sustained count indicates deferred configuration.
+	snapshotDeferredClients = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "deferred_clients",
+			Help:      "Connected xDS clients whose snapshot is currently withheld because per-client inputs are not ready",
+		},
+		[]string{gatewayLabel, namespaceLabel},
 	)
 )
 
@@ -130,8 +140,13 @@ func getDetailsFromXDSClientResourceName(resourceName string) resourceNameDetail
 // ResetMetrics resets the metrics from this package.
 // This is provided for testing purposes only.
 func ResetMetrics() {
-	statussync.ResetMetrics()
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
+	snapshotDeferredClients.Reset()
+	snapshotPerClientWithheldClients.Reset()
+	snapshotPerClientDefersTotal.Reset()
+	snapshotPerClientBoundedPublishesTotal.Reset()
+	snapshotPerClientInconsistentTotal.Reset()
+	snapshotPerClientReclaimedTotal.Reset()
 }
