@@ -1,4 +1,4 @@
-# Requires every connection to the mtls-https listener to present a client
+# Requires every connection to the gw-mtls listeners to present a client
 # cert signed by forward-client-cert-ca. Without this, no client cert is
 # validated and Envoy has nothing to write into x-forwarded-client-cert.
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -10,8 +10,28 @@ spec:
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
-      sectionName: mtls-https
+      name: gw-mtls
+      sectionName: mtls-baseline
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      sectionName: mtls-sanitize-set-default
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      sectionName: mtls-sanitize-set-all
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      sectionName: mtls-append-forward
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      sectionName: mtls-sanitize
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      sectionName: mtls-forward-only
   default:
     clientCertificateValidation:
       mode: Require

@@ -66,7 +66,7 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.5.0-main
+ROLLING_MAIN_VERSION ?= v2.6.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.4
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.6
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -423,7 +423,9 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # address. This override is honored only for the base gateway resolved by
 # common.SetupBaseGateway; multi-gateway suites that construct their own
 # common.Gateway values cannot disambiguate multiple gateways with a single env
-# var and are therefore out of scope under k3d.
+# var and are therefore out of scope under k3d. Suites that resolve their
+# Gateways with common.NewGateway can instead set GATEWAY_PORT_FORWARD=true to
+# send through port-forwards (also works for kind on macOS).
 CLUSTER_TYPE ?= kind
 SKIP_EXTPROC_SERVER_SETUP ?= false
 
@@ -1100,7 +1102,7 @@ kind-create: ## Create a KinD cluster. IP_FAMILY=ipv4|ipv6|dual selects the clus
 	$(KIND) export kubeconfig --name $(CLUSTER_NAME)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.7.0-rc.3
+CONFORMANCE_VERSION ?= v1.7.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
