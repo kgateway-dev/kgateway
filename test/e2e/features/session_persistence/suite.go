@@ -26,11 +26,15 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
+// gatewayService is the Service of the Gateway that every test's route attaches to.
+var gatewayService = metav1.ObjectMeta{Name: "gw-session-persistence", Namespace: "default"}
+
 var (
 	setup = base.TestCase{
 		Manifests: []string{
 			testdefaults.CurlPodManifest,
 			echoServiceManifest,
+			gatewayManifest,
 		},
 	}
 
@@ -72,28 +76,28 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestCookieSessionPersistence() {
-	s.assertSessionPersistence("gw-cookie", "cookie")
+	s.assertSessionPersistence("cookie.echo.local", "cookie")
 }
 
 func (s *testingSuite) TestHeaderSessionPersistence() {
-	s.assertSessionPersistence("gw-header", "header")
+	s.assertSessionPersistence("header.echo.local", "header")
 }
 
 func (s *testingSuite) TestBackendConfigPolicyCookieSessionPersistence() {
-	s.assertSessionPersistence("gw-bcp-cookie", "cookie")
+	s.assertSessionPersistence("bcp-cookie.echo.local", "cookie")
 }
 
 func (s *testingSuite) TestBackendConfigPolicyHeaderSessionPersistence() {
-	s.assertSessionPersistence("gw-bcp-header", "header")
+	s.assertSessionPersistence("bcp-header.echo.local", "header")
 }
 
 // TestBackendConfigPolicySessionPersistenceDynamicUpdate verifies that adding and removing a
 // BackendConfigPolicy on a Service that an existing route already uses updates the route config.
 func (s *testingSuite) TestBackendConfigPolicySessionPersistenceDynamicUpdate() {
-	const gatewayName = "gw-bcp-dynamic"
+	const host = "bcp-dynamic.echo.local"
 
 	s.T().Log("Phase 1: route without a policy does not set a session cookie")
-	s.eventuallySessionCookie(gatewayName, false)
+	s.eventuallySessionCookie(host, false)
 
 	s.T().Log("Phase 2: adding the policy enables session persistence on the existing route")
 	policyApplied := true
@@ -103,13 +107,13 @@ func (s *testingSuite) TestBackendConfigPolicySessionPersistenceDynamicUpdate() 
 		}
 	})
 	s.ApplyManifests(&base.TestCase{Manifests: []string{bcpDynamicPolicyManifest}})
-	s.eventuallySessionCookie(gatewayName, true)
-	s.assertSessionPersistence(gatewayName, "cookie")
+	s.eventuallySessionCookie(host, true)
+	s.assertSessionPersistence(host, "cookie")
 
 	s.T().Log("Phase 3: removing the policy disables session persistence again")
 	s.DeleteManifests(&base.TestCase{Manifests: []string{bcpDynamicPolicyManifest}})
 	policyApplied = false
-	s.eventuallySessionCookie(gatewayName, false)
+	s.eventuallySessionCookie(host, false)
 }
 
 // TestBackendConfigPolicyOverridesRouteSessionPersistence verifies that a BackendConfigPolicy created for the
@@ -117,15 +121,15 @@ func (s *testingSuite) TestBackendConfigPolicySessionPersistenceDynamicUpdate() 
 // route status, and that the route rule applies again once the policy is removed.
 func (s *testingSuite) TestBackendConfigPolicyOverridesRouteSessionPersistence() {
 	const (
-		gatewayName  = "gw-bcp-override"
+		host         = "bcp-override.echo.local"
 		routeName    = "echo-bcp-override"
 		routeCookie  = "route-cookie"
 		policyCookie = "policy-cookie"
 	)
 
 	s.T().Log("Phase 1: the route rule session persistence works")
-	s.eventuallyCookies(gatewayName, routeCookie, policyCookie)
-	s.assertSessionPersistenceWithCookie(gatewayName, "cookie", routeCookie)
+	s.eventuallyCookies(host, routeCookie, policyCookie)
+	s.assertSessionPersistenceWithCookie(host, "cookie", routeCookie)
 	s.eventuallyRouteProgrammedReason(routeName, apiconditions.KgatewayReasonProgrammed)
 
 	s.T().Log("Phase 2: a BackendConfigPolicy on the backend overrides the route rule")
@@ -136,24 +140,23 @@ func (s *testingSuite) TestBackendConfigPolicyOverridesRouteSessionPersistence()
 		}
 	})
 	s.ApplyManifests(&base.TestCase{Manifests: []string{bcpOverridePolicyManifest}})
-	s.eventuallyCookies(gatewayName, policyCookie, routeCookie)
-	s.assertSessionPersistenceWithCookie(gatewayName, "cookie", policyCookie)
+	s.eventuallyCookies(host, policyCookie, routeCookie)
+	s.assertSessionPersistenceWithCookie(host, "cookie", policyCookie)
 	s.eventuallyRouteProgrammedReason(routeName, apiconditions.KgatewayReasonSessionPersistenceOverridden)
 
 	s.T().Log("Phase 3: removing the policy restores the route rule session persistence")
 	s.DeleteManifests(&base.TestCase{Manifests: []string{bcpOverridePolicyManifest}})
 	policyApplied = false
-	s.eventuallyCookies(gatewayName, routeCookie, policyCookie)
+	s.eventuallyCookies(host, routeCookie, policyCookie)
 	s.eventuallyRouteProgrammedReason(routeName, apiconditions.KgatewayReasonProgrammed)
 }
 
-// eventuallyCookies waits until responses from the gateway set the present cookie and not the absent one.
-func (s *testingSuite) eventuallyCookies(gatewayName, present, absent string) {
-	gatewayService := metav1.ObjectMeta{Name: gatewayName, Namespace: "default"}
+// eventuallyCookies waits until responses for the host set the present cookie and not the absent one.
+func (s *testingSuite) eventuallyCookies(host, present, absent string) {
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		resp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt,
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-			curl.WithHostHeader("echo.local"),
+			curl.WithHostHeader(host),
 			curl.WithPort(8080),
 			curl.Silent(),
 			curl.WithArgs([]string{"-i"}),
@@ -180,13 +183,12 @@ func (s *testingSuite) eventuallyRouteProgrammedReason(routeName, reason string)
 	}).WithTimeout(60 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
 }
 
-// eventuallySessionCookie waits until responses from the gateway do (or do not) set the session cookie.
-func (s *testingSuite) eventuallySessionCookie(gatewayName string, want bool) {
-	gatewayService := metav1.ObjectMeta{Name: gatewayName, Namespace: "default"}
+// eventuallySessionCookie waits until responses for the host do (or do not) set the session cookie.
+func (s *testingSuite) eventuallySessionCookie(host string, want bool) {
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		resp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt,
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-			curl.WithHostHeader("echo.local"),
+			curl.WithHostHeader(host),
 			curl.WithPort(8080),
 			curl.Silent(),
 			curl.WithArgs([]string{"-i"}),
@@ -202,21 +204,16 @@ func (s *testingSuite) eventuallySessionCookie(gatewayName string, want bool) {
 	}).WithTimeout(60 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
 }
 
-// assertSessionPersistence makes multiple requests through the given gateway and verifies they go to the same backend pod
-func (s *testingSuite) assertSessionPersistence(gatewayName, persistenceType string) {
-	s.assertSessionPersistenceWithCookie(gatewayName, persistenceType, "Session-A")
+// assertSessionPersistence makes multiple requests for the given host and verifies they go to the same backend pod
+func (s *testingSuite) assertSessionPersistence(host, persistenceType string) {
+	s.assertSessionPersistenceWithCookie(host, persistenceType, "Session-A")
 }
 
 // assertSessionPersistenceWithCookie is assertSessionPersistence with the given session cookie name.
-func (s *testingSuite) assertSessionPersistenceWithCookie(gatewayName, persistenceType, cookieName string) {
-	gatewayService := metav1.ObjectMeta{
-		Name:      gatewayName,
-		Namespace: "default",
-	}
-
+func (s *testingSuite) assertSessionPersistenceWithCookie(host, persistenceType, cookieName string) {
 	firstCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-		curl.WithHostHeader("echo.local"),
+		curl.WithHostHeader(host),
 		curl.WithPort(8080),
 		curl.Silent(),
 		curl.WithArgs([]string{"-i"}),
@@ -225,35 +222,44 @@ func (s *testingSuite) assertSessionPersistenceWithCookie(gatewayName, persisten
 		curl.WithRetryConnectionRefused(true),
 	}
 
-	firstResp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
-	s.Require().NoError(err, "first request should succeed")
+	// The Gateway is shared, so the test's route and policy reach the running proxy
+	// some time after they are applied. Retry the first request until both have.
+	var firstPodName, sessionValue string
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		firstResp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "first request should succeed")
 
-	firstPodName := s.extractPodNameFromResponse(firstResp.StdOut)
-	s.Require().NotEmpty(firstPodName, "should be able to extract pod name from first response")
+		firstPodName = s.extractPodNameFromResponse(firstResp.StdOut)
+		g.Expect(firstPodName).NotTo(gomega.BeEmpty(), "should be able to extract pod name from first response")
+
+		if persistenceType == "cookie" {
+			sessionValue = extractCookie(firstResp.StdOut, cookieName)
+			g.Expect(sessionValue).NotTo(gomega.BeEmpty(), "should have received a session cookie")
+		} else {
+			sessionValue = s.extractSessionHeaderFromResponse(firstResp.StdOut)
+			g.Expect(sessionValue).NotTo(gomega.BeEmpty(), "should have received a session header")
+		}
+	}).WithTimeout(60 * time.Second).WithPolling(200 * time.Millisecond).Should(gomega.Succeed())
 
 	var subsequentCurlOpts []curl.Option
 	if persistenceType == "cookie" {
-		cookie := extractCookie(firstResp.StdOut, cookieName)
-		s.Require().NotEmpty(cookie, "should have received a session cookie")
 		subsequentCurlOpts = []curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-			curl.WithHostHeader("echo.local"),
+			curl.WithHostHeader(host),
 			curl.WithPort(8080),
 			curl.Silent(),
-			curl.WithHeader("Cookie", cookie),
+			curl.WithHeader("Cookie", sessionValue),
 			curl.WithConnectionTimeout(10),
 			curl.WithRetries(5, 0, 10),
 			curl.WithRetryConnectionRefused(true),
 		}
 	} else {
-		headerValue := s.extractSessionHeaderFromResponse(firstResp.StdOut)
-		s.Require().NotEmpty(headerValue, "should have received a session header")
 		subsequentCurlOpts = []curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
-			curl.WithHostHeader("echo.local"),
+			curl.WithHostHeader(host),
 			curl.WithPort(8080),
 			curl.Silent(),
-			curl.WithHeader("session-a", headerValue),
+			curl.WithHeader("session-a", sessionValue),
 			curl.WithConnectionTimeout(10),
 			curl.WithRetries(3, 0, 10),
 			curl.WithRetryConnectionRefused(true),
