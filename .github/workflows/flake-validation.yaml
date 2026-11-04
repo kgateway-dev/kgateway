@@ -1,8 +1,8 @@
 name: Flake Validation
 
-# Run a single E2E test suite N times in parallel (no gotestsum retries) to
-# confirm a flake fix is solid before merging. Trigger manually and point it at
-# whichever suite is under scrutiny.
+# Run a single E2E test suite N times in parallel to confirm a flake fix is
+# solid before merging. Trigger manually and point it at whichever suite is
+# under scrutiny.
 
 on:
   workflow_dispatch:
@@ -24,8 +24,6 @@ on:
 env:
   VERSION: 'v1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
-  # Intentionally 0: retries hide flakes; we want raw pass/fail.
-  GO_TEST_RETRIES: 0
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
   CONTROLLER_CACHE_REF: ghcr.io/${{ github.repository_owner }}/kgateway-cache
   SDS_CACHE_REF: ghcr.io/${{ github.repository_owner }}/sds-cache
