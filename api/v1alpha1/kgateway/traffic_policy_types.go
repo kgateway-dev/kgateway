@@ -824,7 +824,7 @@ type Buffer struct {
 	//
 	// filterStage.weight must be 0.
 	// +optional
-	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
+	FilterStage *shared.FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 // Compression configures HTTP response compression and request decompression behavior.

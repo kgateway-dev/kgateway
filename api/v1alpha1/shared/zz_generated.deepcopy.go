@@ -252,8 +252,7 @@ func (in *HeaderModifiers) DeepCopyInto(out *HeaderModifiers) {
 	}
 	if in.FilterStage != nil {
 		in, out := &in.FilterStage, &out.FilterStage
-		*out = new(FilterStageSpec)
-		**out = **in
+		*out = (*in).DeepCopy()
 	}
 }
 

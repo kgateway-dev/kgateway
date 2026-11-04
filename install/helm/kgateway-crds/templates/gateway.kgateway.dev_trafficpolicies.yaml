@@ -1239,6 +1239,44 @@ spec:
                 description: HeaderModifiers defines the policy to modify request
                   and response headers.
                 properties:
+                  filterStage:
+                    description: |-
+                      FilterStage specifies where in the HTTP filter chain the header
+                      mutation should be placed. If not specified, defaults to During Route
+                      (the current, fixed behavior).
+                    properties:
+                      predicate:
+                        default: During
+                        description: |-
+                          Predicate specifies placement relative to the stage: Before, During,
+                          or After.
+                        enum:
+                        - Before
+                        - During
+                        - After
+                        type: string
+                      stage:
+                        description: Stage selects the well-known position in the
+                          filter chain.
+                        enum:
+                        - Fault
+                        - AuthN
+                        - AuthZ
+                        - RateLimit
+                        - Route
+                        type: string
+                      weight:
+                        default: 0
+                        description: |-
+                          Weight controls ordering among multiple filters at the same
+                          stage and predicate. Higher weight places the filter earlier in the
+                          chain. Defaults to 0. Filters with the same stage, predicate, and
+                          weight are sorted alphabetically by filter name for consistency.
+                        format: int32
+                        type: integer
+                    required:
+                    - stage
+                    type: object
                   request:
                     description: Request modifies request headers.
                     properties:

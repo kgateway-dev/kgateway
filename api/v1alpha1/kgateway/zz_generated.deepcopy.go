@@ -816,8 +816,7 @@ func (in *Buffer) DeepCopyInto(out *Buffer) {
 	}
 	if in.FilterStage != nil {
 		in, out := &in.FilterStage, &out.FilterStage
-		*out = new(FilterStageSpec)
-		**out = **in
+		*out = (*in).DeepCopy()
 	}
 }
 
@@ -1888,8 +1887,7 @@ func (in *ExtProcProvider) DeepCopyInto(out *ExtProcProvider) {
 	}
 	if in.FilterStage != nil {
 		in, out := &in.FilterStage, &out.FilterStage
-		*out = new(shared.FilterStageSpec)
-		**out = **in
+		*out = (*in).DeepCopy()
 	}
 }
 
