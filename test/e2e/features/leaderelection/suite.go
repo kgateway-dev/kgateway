@@ -57,10 +57,10 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 	// - It should be translated by the follower
 	// - It should not have a status set since the leader is deleted but the lease has not expired
 	// - Once a leader is elected, it should be accepted
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(routeManifest)
 	s.NoError(err)
 	defer func() {
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, routeManifest)
 		s.NoError(err)
 	}()
 
@@ -90,10 +90,10 @@ func (s *testingSuite) TestLeaderWritesBackendStatus() {
 
 	// The backend status is written in an event handler and not part of translation per-se.
 	// This verifies that the status of resources not parsed through translation is also written by the leader.
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, backendManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(backendManifest)
 	s.NoError(err)
 	defer func() {
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, backendManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, backendManifest)
 		s.NoError(err)
 	}()
 
@@ -125,10 +125,10 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 	s.killLeader(leader)
 
 	// Create a gateway. It should not be deployed until a new leader is elected
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, gatewayManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(gatewayManifest)
 	s.NoError(err)
 	defer func() {
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, gatewayManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, gatewayManifest)
 		s.NoError(err)
 	}()
 

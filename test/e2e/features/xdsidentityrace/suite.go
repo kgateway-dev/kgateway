@@ -120,7 +120,7 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	// leaving it to fire mid-way through whichever suite next pushes config on
 	// this cluster.
 	defer func() {
-		if err := s.TestInstallation.Actions.Kubectl().DeleteFile(ctx, route2Manifest); err != nil {
+		if err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(ctx, route2Manifest); err != nil {
 			s.T().Logf("cleanup: deleting route2: %v", err)
 		}
 	}()
@@ -152,9 +152,9 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	toggleRoute2 := func() error {
 		var terr error
 		if route2Applied {
-			terr = s.TestInstallation.Actions.Kubectl().DeleteFile(ctx, route2Manifest)
+			terr = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(ctx, route2Manifest)
 		} else {
-			terr = s.TestInstallation.Actions.Kubectl().ApplyFile(ctx, route2Manifest)
+			terr = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(route2Manifest)
 		}
 		if terr != nil {
 			return terr
@@ -178,7 +178,7 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	// Ensure route2 exists at teardown so the deferred deletion really produces
 	// the heal-driving push described on the cleanup defers above.
 	if !route2Applied {
-		s.Require().NoError(s.TestInstallation.Actions.Kubectl().ApplyFile(ctx, route2Manifest))
+		s.Require().NoError(s.TestInstallation.ClusterContext.Manifests().ApplyFiles(route2Manifest))
 		route2Applied = true
 	}
 

@@ -322,15 +322,15 @@ func (s *testingSuite) TestAPIKeyAuthWithSecretUpdate() {
 	)
 
 	// Step 2: Update the secret with new keys (k-789, k-999) and remove old ones
-	// Note: kubectl apply with stringData merges with existing data, so we need to delete and recreate
+	// Note: applying with stringData merges with existing data, so we need to delete and recreate
 	// to properly replace the secret content
 	s.T().Log("Step 2: Updating secret with new API keys (k-789, k-999)")
-	err := s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, []byte(`apiVersion: v1
+	err := s.TestInstallation.ClusterContext.Manifests().Delete(s.Ctx, `apiVersion: v1
 kind: Secret
 metadata:
   name: api-keys-secret-update
   namespace: kgateway-base
-`))
+`)
 	s.Require().NoError(err, "failed to delete old secret")
 
 	updatedSecretYAML := `apiVersion: v1
@@ -343,7 +343,7 @@ stringData:
   client3: k-789
   client4: k-999
 ` //gosec:disable G101
-	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(updatedSecretYAML))
+	err = s.TestInstallation.ClusterContext.Manifests().Apply(updatedSecretYAML)
 	s.Require().NoError(err, "failed to apply updated secret")
 
 	// Wait for secret update to propagate through KRT and Envoy config regeneration
@@ -387,7 +387,7 @@ stringData:
 	)
 
 	// Step 5: Update secret again to add back an old key and add a new one
-	// Note: kubectl apply with stringData merges with existing data
+	// Note: applying with stringData merges with existing data
 	// The secret will now have: client1 (k-123), client3 (k-789), client4 (k-999), client5 (k-111)
 	s.T().Log("Step 5: Updating secret again to add back k-123 and add k-111")
 	finalSecretYAML := `apiVersion: v1
@@ -400,7 +400,7 @@ stringData:
   client1: k-123
   client5: k-111
 ` //gosec:disable G101
-	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(finalSecretYAML))
+	err = s.TestInstallation.ClusterContext.Manifests().Apply(finalSecretYAML)
 	s.Require().NoError(err, "failed to apply final secret update")
 
 	// Step 6: Verify the final set of keys work
@@ -668,7 +668,7 @@ func (s *testingSuite) TestAPIKeyAuthDuplicateKeyValues() {
 	// Step 2: the differential. A brand new credential has to land while the duplicate pair is
 	// still in place. On a frozen listener it never would, and step 1 would still have passed.
 	s.T().Log("Step 2: a new credential still lands while the duplicate pair is in place")
-	newClientSecret := []byte(`apiVersion: v1
+	newClientSecret := `apiVersion: v1
 kind: Secret
 metadata:
   name: api-keys-duplicate-new-client
@@ -678,11 +678,11 @@ metadata:
 type: Opaque
 stringData:
   client2: k-dup-222
-`) //gosec:disable G101
+` //gosec:disable G101
 	testutils.Cleanup(s.T(), func() {
-		_ = s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, newClientSecret)
+		_ = s.TestInstallation.ClusterContext.Manifests().Delete(s.Ctx, newClientSecret)
 	})
-	err := s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, newClientSecret)
+	err := s.TestInstallation.ClusterContext.Manifests().Apply(newClientSecret)
 	s.Require().NoError(err, "failed to apply the new client secret")
 
 	common.BaseGateway.Send(
@@ -697,7 +697,7 @@ stringData:
 	// resolved, so translation fails: the policy reports Invalid and the route is replaced with a
 	// 500 rather than left on stale config that claims to enforce.
 	s.T().Log("Step 3: two clients sharing a key value fail translation and replace the route")
-	conflictingSecret := []byte(`apiVersion: v1
+	conflictingSecret := `apiVersion: v1
 kind: Secret
 metadata:
   name: api-keys-duplicate-conflict
@@ -707,11 +707,11 @@ metadata:
 type: Opaque
 stringData:
   client3: k-dup-111
-`) //gosec:disable G101
+` //gosec:disable G101
 	testutils.Cleanup(s.T(), func() {
-		_ = s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, conflictingSecret)
+		_ = s.TestInstallation.ClusterContext.Manifests().Delete(s.Ctx, conflictingSecret)
 	})
-	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, conflictingSecret)
+	err = s.TestInstallation.ClusterContext.Manifests().Apply(conflictingSecret)
 	s.Require().NoError(err, "failed to apply the conflicting secret")
 
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
@@ -746,7 +746,7 @@ stringData:
 
 	// Step 4: removing the conflict recovers the route.
 	s.T().Log("Step 4: removing the conflicting Secret recovers the route")
-	err = s.TestInstallation.Actions.Kubectl().Delete(s.Ctx, conflictingSecret)
+	err = s.TestInstallation.ClusterContext.Manifests().Delete(s.Ctx, conflictingSecret)
 	s.Require().NoError(err, "failed to delete the conflicting secret")
 
 	common.BaseGateway.Send(
