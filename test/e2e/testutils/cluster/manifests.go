@@ -31,6 +31,9 @@ const (
 // the two can be mixed on the same objects. Delete ignores objects that are already gone and, unless
 // WithoutWait is set, blocks until every deleted object has disappeared (as `kubectl delete` does).
 //
+// Apply and ApplyFiles take no context: the underlying client applies with context.Background(), so a
+// test context does not cancel or bound an apply. Delete and DeleteFiles honor their context.
+//
 // A resource without metadata.namespace lands in the namespace set by InNamespace, or the client's
 // default apply namespace ("default") when none is set; the kubeconfig's namespace is never used.
 //
@@ -72,7 +75,7 @@ func (m Manifests) WithoutWait() Manifests {
 func (m Manifests) ApplyFiles(files ...string) error {
 	for _, f := range files {
 		if err := m.client.ApplyYAMLFiles(m.namespace, f); err != nil {
-			return fmt.Errorf("apply %s: %w", f, err)
+			return fmt.Errorf("%s: %w", f, err)
 		}
 	}
 	return nil

@@ -135,16 +135,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		// Replace the endpointURL and STS service IP placeholders with the actual values
 		newContent := strings.Replace(string(content), "http://172.18.0.2:31566", s.endpointURL, -1)
 		newContent = strings.Replace(newContent, stsServiceIPPlaceholder, s.stsServiceIP, -1)
-		tmpFile, err := os.CreateTemp("", "lambda-manifest-*.yaml")
-		s.Assert().NoError(err, "can create temp file")
-		defer os.Remove(tmpFile.Name())
-
-		_, err = tmpFile.WriteString(newContent)
-		s.Assert().NoError(err, "can write to temp file")
-		err = tmpFile.Close()
-		s.Assert().NoError(err, "can close temp file")
-
-		err = s.ti.ClusterContext.Manifests().ApplyFiles(tmpFile.Name())
+		err = s.ti.ClusterContext.Manifests().Apply(newContent)
 		s.Require().NoError(err, "can apply manifest "+manifest)
 	}
 
