@@ -378,10 +378,7 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing service target
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
-		s.Ctx,
-		missingTargetManifest,
-	)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(missingTargetManifest)
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains

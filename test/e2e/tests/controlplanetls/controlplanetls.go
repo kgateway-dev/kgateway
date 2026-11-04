@@ -49,11 +49,11 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	// the TLS secret in it before kgateway starts.
 	nsYAML := nsManifest(installNs)
 	testutils.Cleanup(t, func() {
-		if err := testInstallation.ActionsProvider().Kubectl().Delete(cleanupCtx, []byte(nsYAML)); err != nil {
+		if err := testInstallation.Cluster().Manifests().Delete(cleanupCtx, nsYAML); err != nil {
 			t.Fatalf("failed to delete namespace: %v", err)
 		}
 	})
-	err := testInstallation.ActionsProvider().Kubectl().Apply(t.Context(), []byte(nsYAML))
+	err := testInstallation.Cluster().Manifests().Apply(nsYAML)
 	if err != nil {
 		t.Fatalf("failed to create namespace: %v", err)
 	}
@@ -67,7 +67,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	if err != nil {
 		t.Fatalf("failed to create TLS secret: %v", err)
 	}
-	if err := testInstallation.ActionsProvider().Kubectl().Apply(t.Context(), []byte(secretYAML)); err != nil {
+	if err := testInstallation.Cluster().Manifests().Apply(secretYAML); err != nil {
 		t.Fatalf("failed to create TLS secret: %v", err)
 	}
 

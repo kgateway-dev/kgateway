@@ -89,7 +89,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
-	err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, postrestartRouteManifest)
+	err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, postrestartRouteManifest)
 	s.Require().NoError(err, "can clean up %s", postrestartRouteManifest)
 }
 
@@ -137,7 +137,7 @@ func (s *testingSuite) TestControllerRestartDoesNotStrandClients() {
 	s.assertEventuallyServesNginx(validHost)
 
 	// A route created after the restart must reach the (reconnected, warm) proxy.
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, postrestartRouteManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(postrestartRouteManifest)
 	s.Require().NoError(err, "can create a route after the controller restart")
 	s.assertEventuallyServesNginx(postrestartHost)
 }
