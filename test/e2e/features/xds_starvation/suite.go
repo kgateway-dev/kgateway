@@ -75,19 +75,16 @@ var proxyObjectMeta = metav1.ObjectMeta{
 type testingSuite struct {
 	*base.BaseTestingSuite
 
-	// gw is resolved on first use; the Gateway lives for the whole suite.
-	gw *common.Gateway
+	// gw is the suite's Gateway, resolved once in SetupSuite so it lives as long as the suite.
+	gw common.Gateway
 }
 
-func (s *testingSuite) gateway() *common.Gateway {
-	if s.gw == nil {
-		gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
-			Name:      proxyObjectMeta.Name,
-			Namespace: proxyObjectMeta.Namespace,
-		})
-		s.gw = &gw
-	}
-	return s.gw
+func (s *testingSuite) SetupSuite() {
+	s.BaseTestingSuite.SetupSuite()
+	s.gw = common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -176,7 +173,7 @@ func (s *testingSuite) assertEventuallyStatusAtLeast(host string, status int, ti
 }
 
 func (s *testingSuite) gatewayResponse(host string) (int, string, error) {
-	response, err := s.gateway().Do(
+	response, err := s.gw.Do(
 		s.Ctx,
 		curl.WithHostHeader(host),
 		curl.WithPort(8080),

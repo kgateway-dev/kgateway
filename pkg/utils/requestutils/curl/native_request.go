@@ -156,8 +156,11 @@ func (c *requestConfig) buildURL() string {
 }
 
 func (c *requestConfig) buildHTTPClient() *http.Client {
+	// Each request gets its own transport that is never reused, so a kept-alive connection
+	// would only sit idle in its pool until the server closed it.
 	transport := &http.Transport{
-		DialContext: c.buildDialer(),
+		DialContext:       c.buildDialer(),
+		DisableKeepAlives: true,
 	}
 
 	// Configure TLS
