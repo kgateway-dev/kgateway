@@ -1,7 +1,8 @@
 name: Cache Setup
 
 on:
-  # Seed the shared GitHub Actions Go caches from main, and only from main.
+  # Seed the shared GitHub Actions Go and Rust module caches from main, and
+  # only from main.
   # (A previous 'v1.**.x' filter here referred to branches that have never
   # existed in this repo, so it never fired.)
   #
@@ -86,3 +87,30 @@ jobs:
         with:
           path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
           key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
+
+  # Builds the Envoy dynamic module (librust_module.so) once per change to its
+  # sources, so the e2e image builds restore it instead of spending ~3 minutes
+  # on an uncached Rust build. Caches saved from main are readable by every PR
+  # and by the merge queue; caches saved from a PR are not.
+  setup-rust-module-cache:
+    name: Setup Rust Module Cache
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Restore Rust module
+        id: rust-module
+        uses: ./.github/actions/restore-rust-module
+      - name: Setup Buildx
+        if: steps.rust-module.outputs.cache-hit != 'true'
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build Rust module
+        if: steps.rust-module.outputs.cache-hit != 'true'
+        run: make "$GITHUB_WORKSPACE/_output/internal/envoy_modules/librust_module.so"
+      - name: Save Rust module
+        if: success() && steps.rust-module.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: _output/internal/envoy_modules/librust_module.so
+          key: ${{ steps.rust-module.outputs.key }}

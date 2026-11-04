@@ -41,29 +41,17 @@ jobs:
         uses: ./.github/actions/prep-go-runner
       - name: Setup Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Restore envoyinit BuildKit cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/.buildx-cache-envoyinit
-          key: ${{ runner.os }}-buildx-envoyinit-v1-${{ hashFiles('internal/envoy_modules/Cargo.lock', 'internal/envoy_modules/**/Cargo.toml', 'cmd/envoyinit/Dockerfile.tmpl', 'cmd/envoyinit/generate-dockerfile.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-envoyinit-v1-
+      - name: Restore Rust module
+        id: rust-module
+        uses: ./.github/actions/restore-rust-module
       - name: Build shared e2e images
         env:
-          ENVOYINIT_LOCAL_CACHE_FROM: /tmp/.buildx-cache-envoyinit
-          ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
+          MAKE_ARGS: ${{ steps.rust-module.outputs.make-args }}
         run: |
-          mkdir -p /tmp/.buildx-cache-envoyinit
           # Build the images in parallel. --output-sync keeps each target's log
           # together, so a target's output only appears once it finishes.
-          make -j --output-sync=target save-e2e-shared-images
-      - name: Rotate envoyinit BuildKit cache
-        if: always()
-        run: |
-          if [ -d /tmp/.buildx-cache-envoyinit-new ]; then
-            rm -rf /tmp/.buildx-cache-envoyinit
-            mv /tmp/.buildx-cache-envoyinit-new /tmp/.buildx-cache-envoyinit
-          fi
+          # shellcheck disable=SC2086 # MAKE_ARGS is a word list
+          make -j --output-sync=target $MAKE_ARGS save-e2e-shared-images
       - name: Upload shared e2e images
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

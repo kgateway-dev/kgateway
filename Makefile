@@ -861,16 +861,6 @@ export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 ENVOYINIT_CACHE_REF ?=
 ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF):$(GOARCH),)
 
-# Optional local BuildKit cache paths, typically wired to actions/cache in CI
-# so PR runs can read AND write layer cache without needing registry push auth.
-# Requires the docker-container buildx driver (docker/setup-buildx-action).
-# mode=max exports intermediate stages, which is what lets rust_build_deps and
-# rust_builder stay cached across runs even when the registry cache has gaps.
-ENVOYINIT_LOCAL_CACHE_FROM ?=
-ENVOYINIT_LOCAL_CACHE_TO ?=
-ENVOYINIT_LOCAL_CACHE_FROM_ARG := $(if $(ENVOYINIT_LOCAL_CACHE_FROM),--cache-from type=local$(comma)src=$(ENVOYINIT_LOCAL_CACHE_FROM),)
-ENVOYINIT_LOCAL_CACHE_TO_ARG := $(if $(ENVOYINIT_LOCAL_CACHE_TO),--cache-to type=local$(comma)dest=$(ENVOYINIT_LOCAL_CACHE_TO)$(comma)mode=max,)
-
 ENVOY_MODULES_DIR := internal/envoy_modules/
 # find all the files under the envoy modules directory but exclude the target, vendor and pkg directory
 ENVOY_MODULES_SRC_FILES := $(shell find $(ENVOY_MODULES_DIR) \( -type d -name target -o -type d -name pkg -o -type d -name vendor \) -prune -o -type f -print)
@@ -909,8 +899,6 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(ENVOYINIT_CACHE_FROM) \
-		$(ENVOYINIT_LOCAL_CACHE_FROM_ARG) \
-		$(ENVOYINIT_LOCAL_CACHE_TO_ARG) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 	@touch $@
 
