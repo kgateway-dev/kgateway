@@ -88,7 +88,7 @@ func multipleInstallsSuiteRunner(namespace string) e2e.SuiteRunner {
 func applyPerInstall(ctx context.Context, ti e2e.Installation, t *testing.T) {
 	namespace := ti.InstallContext().InstallNamespace
 
-	err := ti.ActionsProvider().Kubectl().ApplyFile(ctx, multiinstall.BasicManifest, "-n", namespace)
+	err := ti.Cluster().Manifests().InNamespace(namespace).ApplyFiles(multiinstall.BasicManifest)
 	ti.Assertions(t).Require.NoError(err)
 	for _, obj := range getPerInstallObjects(namespace) {
 		ti.Assertions(t).EventuallyObjectsExist(ctx, obj)
@@ -98,7 +98,7 @@ func applyPerInstall(ctx context.Context, ti e2e.Installation, t *testing.T) {
 func cleanupPerInstall(ctx context.Context, ti e2e.Installation, t *testing.T) {
 	namespace := ti.InstallContext().InstallNamespace
 
-	err := ti.ActionsProvider().Kubectl().DeleteFileSafe(ctx, multiinstall.BasicManifest, "-n", namespace)
+	err := ti.Cluster().Manifests().InNamespace(namespace).DeleteFiles(ctx, multiinstall.BasicManifest)
 	ti.Assertions(t).Require.NoError(err)
 	for _, obj := range getPerInstallObjects(namespace) {
 		ti.Assertions(t).EventuallyObjectsNotExist(ctx, obj)

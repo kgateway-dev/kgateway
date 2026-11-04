@@ -164,7 +164,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 			// start while these namespaces finish terminating.
 			testutils.Cleanup(s.T(), func() {
 				for _, manifest := range tc.namespaceManifests {
-					err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest, "--wait=false")
+					err := s.TestInstallation.ClusterContext.Manifests().WithoutWait().DeleteFiles(s.Ctx, manifest)
 					s.Require().NoError(err, "Failed to delete manifest "+manifest)
 				}
 			})
@@ -227,7 +227,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 
 func (s *testingSuite) applyManifests(manifests ...string) {
 	for _, manifest := range manifests {
-		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
+		err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(manifest)
 		s.Require().NoError(err, "Failed to apply manifest "+manifest)
 	}
 }

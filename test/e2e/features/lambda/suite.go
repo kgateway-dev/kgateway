@@ -84,9 +84,9 @@ func (s *testingSuite) gateway(proxy metav1.ObjectMeta) *common.Gateway {
 }
 
 func (s *testingSuite) SetupSuite() {
-	err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	err := s.ti.ClusterContext.Manifests().ApplyFiles(setupManifest)
 	s.NoError(err, "can apply "+setupManifest)
-	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, awsCliPodManifest)
+	err = s.ti.ClusterContext.Manifests().ApplyFiles(awsCliPodManifest)
 	s.NoError(err, "can apply aws-cli pod manifest")
 
 	s.ti.AssertionsT(s.T()).EventuallyPodReady(s.ctx, "lambda-test", "aws-cli", 30*time.Second)
@@ -98,7 +98,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestLambdaBackendAssumeRole":   {lambdaAssumeRoleManifest},
 	}
 
-	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, stsServiceManifest)
+	err = s.ti.ClusterContext.Manifests().ApplyFiles(stsServiceManifest)
 	s.NoError(err, "can apply "+stsServiceManifest)
 
 	s.extractLocalstackEndpoint()
@@ -110,9 +110,9 @@ func (s *testingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
-	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err := s.ti.ClusterContext.Manifests().DeleteFiles(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
-	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, stsServiceManifest)
+	err = s.ti.ClusterContext.Manifests().DeleteFiles(s.ctx, stsServiceManifest)
 	s.NoError(err, "can delete sts service manifest")
 }
 
@@ -144,7 +144,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		err = tmpFile.Close()
 		s.Assert().NoError(err, "can close temp file")
 
-		err = s.ti.Actions.Kubectl().WithReceiver(os.Stdout).ApplyFile(s.ctx, tmpFile.Name())
+		err = s.ti.ClusterContext.Manifests().ApplyFiles(tmpFile.Name())
 		s.Require().NoError(err, "can apply manifest "+manifest)
 	}
 
@@ -161,7 +161,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
 	for _, manifest := range manifests {
-		err := s.ti.Actions.Kubectl().DeleteFile(s.ctx, manifest, "--grace-period", "0")
+		err := s.ti.ClusterContext.Manifests().WithGracePeriod(0).DeleteFiles(s.ctx, manifest)
 		s.NoError(err, "can delete manifest "+manifest)
 	}
 }
