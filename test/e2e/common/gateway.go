@@ -8,12 +8,16 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 
+	avastretry "github.com/avast/retry-go/v4"
 	"istio.io/istio/pkg/test/util/retry"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -25,6 +29,10 @@ import (
 type Gateway struct {
 	types.NamespacedName
 	Address string
+
+	// forwards, when set, sends requests through port-forwards to the Gateway's Service instead
+	// of Address. Set by NewGateway under GATEWAY_PORT_FORWARD.
+	forwards *portForwards
 }
 
 // Defaults for SendEventuallyConsistent — mirror values in assertions.AssertEventuallyConsistentCurlResponse.
@@ -140,5 +148,87 @@ func (g *Gateway) curlOpts(opts []curl.Option) []curl.Option {
 	} else {
 		hostOpt = curl.WithHost(g.Address)
 	}
-	return curl.Extend([]curl.Option{hostOpt}, opts...)
+	base := []curl.Option{hostOpt}
+	if g.forwards != nil {
+		base = append(base, curl.WithDialContext(g.forwards.dial))
+	}
+	return curl.Extend(base, opts...)
+}
+
+// portForwards opens one port-forward per destination port of a Gateway's Service on first use.
+// The Service shares the Gateway's name and maps each listener port to the same container port.
+type portForwards struct {
+	kubeContext string
+	service     types.NamespacedName
+
+	mu     sync.Mutex
+	byPort map[string]portforward.PortForwarder
+}
+
+func newPortForwards(kubeContext string, service types.NamespacedName) *portForwards {
+	return &portForwards{
+		kubeContext: kubeContext,
+		service:     service,
+		byPort:      map[string]portforward.PortForwarder{},
+	}
+}
+
+// dial ignores the host in addr and connects to the port-forward for its port.
+func (p *portForwards) dial(ctx context.Context, network, addr string) (net.Conn, error) {
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, err
+	}
+	fwd, err := p.get(ctx, port)
+	if err != nil {
+		return nil, err
+	}
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, network, fwd.Address())
+	if err != nil {
+		// The forward may point at a pod that is gone; reopen it on the next attempt.
+		p.drop(port, fwd)
+	}
+	return conn, err
+}
+
+func (p *portForwards) get(ctx context.Context, port string) (portforward.PortForwarder, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if fwd, ok := p.byPort[port]; ok {
+		return fwd, nil
+	}
+	remotePort, err := strconv.Atoi(port)
+	if err != nil {
+		return nil, err
+	}
+	fwd := portforward.NewApiPortForwarder(
+		portforward.WithKubeContext(p.kubeContext),
+		portforward.WithService(p.service.Name, p.service.Namespace),
+		portforward.WithRemotePort(remotePort),
+	)
+	// One attempt: the caller's retry loop retries the whole request.
+	if err := fwd.Start(ctx, avastretry.Attempts(1)); err != nil {
+		return nil, fmt.Errorf("port-forward to service %s port %d: %w", p.service, remotePort, err)
+	}
+	p.byPort[port] = fwd
+	return fwd, nil
+}
+
+func (p *portForwards) drop(port string, fwd portforward.PortForwarder) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.byPort[port] == fwd {
+		delete(p.byPort, port)
+		fwd.Close()
+	}
+}
+
+func (p *portForwards) close() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for port, fwd := range p.byPort {
+		fwd.Close()
+		delete(p.byPort, port)
+	}
 }

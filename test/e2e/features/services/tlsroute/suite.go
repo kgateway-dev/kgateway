@@ -4,11 +4,8 @@ package tlsroute
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -29,7 +26,11 @@ type testingSuite struct {
 }
 
 var (
-	setup = base.TestCase{}
+	// setup holds the Gateway and curl client shared by every subtest. Each subtest
+	// attaches to its own listener, so it only creates and deletes routes and backends.
+	setup = base.TestCase{
+		Manifests: []string{setupManifest},
+	}
 
 	// No testCases since we handle everything manually in the test method
 	testCases = map[string]*base.TestCase{}
@@ -56,16 +57,14 @@ func (s *testingSuite) SetupSuite() {
 }
 
 type tlsRouteTestCase struct {
-	name                string
-	nsManifest          string
-	gtwName             string
-	gtwNs               string
-	gtwManifest         string
-	svcManifest         string
-	tlsRouteManifest    string
-	tlsSecretManifest   string
-	proxyService        *corev1.Service
-	proxyDeployment     *appsv1.Deployment
+	name string
+	// namespaceManifests create the namespaces the subtest owns. Deleting them
+	// removes everything else the subtest applied.
+	namespaceManifests []string
+	manifests          []string
+	routeNs            string
+	// backendNs gets the TLS secret the backends serve with.
+	backendNs           string
 	expectedResponses   []*matchers.HttpResponse
 	expectedErrorCode   int
 	ports               []int
@@ -77,64 +76,49 @@ type tlsRouteTestCase struct {
 func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 	testCases := []tlsRouteTestCase{
 		{
-			name:              "SingleServiceTLSRoute",
-			nsManifest:        singleSvcNsManifest,
-			gtwName:           singleSvcGatewayName,
-			gtwNs:             singleSvcNsName,
-			gtwManifest:       singleSvcGatewayAndClientManifest,
-			svcManifest:       singleSvcBackendManifest,
-			tlsRouteManifest:  singleSvcTLSRouteManifest,
-			tlsSecretManifest: singleSecretManifest,
-			proxyService:      singleSvcProxyService,
-			proxyDeployment:   singleSvcProxyDeployment,
+			name:               "SingleServiceTLSRoute",
+			namespaceManifests: []string{singleSvcNsManifest},
+			manifests:          []string{singleSvcBackendManifest, singleSvcTLSRouteManifest},
+			routeNs:            singleSvcNsName,
+			backendNs:          singleSvcNsName,
 			expectedResponses: []*matchers.HttpResponse{
 				expectedSingleSvcResp,
 			},
 			ports: []int{6443},
 			listenerNames: []gwv1.SectionName{
-				gwv1.SectionName(singleSvcListenerName443),
+				gwv1.SectionName(singleSvcListenerName6443),
 			},
 			expectedRouteCounts: []int32{1},
 			tlsRouteNames:       []string{singleSvcTLSRouteName},
 		},
 		{
-			name:              "MultiServicesTLSRoute",
-			nsManifest:        multiSvcNsManifest,
-			gtwName:           multiSvcGatewayName,
-			gtwNs:             multiSvcNsName,
-			gtwManifest:       multiSvcGatewayAndClientManifest,
-			svcManifest:       multiSvcBackendManifest,
-			tlsRouteManifest:  multiSvcTlsRouteManifest,
-			tlsSecretManifest: singleSecretManifest,
-			proxyService:      multiProxyService,
-			proxyDeployment:   multiProxyDeployment,
+			name:               "MultiServicesTLSRoute",
+			namespaceManifests: []string{multiSvcNsManifest},
+			manifests:          []string{multiSvcBackendManifest, multiSvcTlsRouteManifest},
+			routeNs:            multiSvcNsName,
+			backendNs:          multiSvcNsName,
 			expectedResponses: []*matchers.HttpResponse{
 				expectedMultiSvc1Resp,
 				expectedMultiSvc2Resp,
 			},
-			ports: []int{6443, 8443},
+			ports: []int{6444, 8443},
 			listenerNames: []gwv1.SectionName{
-				gwv1.SectionName(multiSvcListenerName6443),
+				gwv1.SectionName(multiSvcListenerName6444),
 				gwv1.SectionName(multiSvcListenerName8443),
 			},
 			expectedRouteCounts: []int32{1, 1},
 			tlsRouteNames:       []string{multiSvcTLSRouteName1, multiSvcTLSRouteName2},
 		},
 		{
-			name:              crossNsTestName,
-			nsManifest:        crossNsClientNsManifest,
-			gtwName:           crossNsGatewayName,
-			gtwNs:             crossNsClientName,
-			gtwManifest:       crossNsGatewayManifest,
-			svcManifest:       crossNsBackendSvcManifest,
-			tlsRouteManifest:  crossNsTLSRouteManifest,
-			tlsSecretManifest: singleSecretManifest,
-			proxyService:      crossNsProxyService,
-			proxyDeployment:   crossNsProxyDeployment,
+			name:               crossNsTestName,
+			namespaceManifests: []string{crossNsClientNsManifest, crossNsBackendNsManifest},
+			manifests:          []string{crossNsBackendSvcManifest, crossNsRefGrantManifest, crossNsTLSRouteManifest},
+			routeNs:            crossNsClientName,
+			backendNs:          crossNsBackendNsName,
 			expectedResponses: []*matchers.HttpResponse{
 				expectedCrossNsResp,
 			},
-			ports: []int{8443},
+			ports: []int{8444},
 			listenerNames: []gwv1.SectionName{
 				gwv1.SectionName(crossNsListenerName),
 			},
@@ -142,18 +126,14 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 			tlsRouteNames:       []string{crossNsTLSRouteName},
 		},
 		{
-			name:              crossNsNoRefGrantTestName,
-			nsManifest:        crossNsNoRefGrantClientNsManifest,
-			gtwName:           crossNsNoRefGrantGatewayName,
-			gtwNs:             crossNsNoRefGrantClientNsName,
-			gtwManifest:       crossNsNoRefGrantGatewayManifest,
-			svcManifest:       crossNsNoRefGrantBackendSvcManifest,
-			tlsRouteManifest:  crossNsNoRefGrantTLSRouteManifest,
-			tlsSecretManifest: singleSecretManifest,
-			proxyService:      crossNsNoRefGrantProxyService,
-			proxyDeployment:   crossNsNoRefGrantProxyDeployment,
+			name:               crossNsNoRefGrantTestName,
+			namespaceManifests: []string{crossNsNoRefGrantClientNsManifest, crossNsNoRefGrantBackendNsManifest},
+			// ReferenceGrant not applied
+			manifests:         []string{crossNsNoRefGrantBackendSvcManifest, crossNsNoRefGrantTLSRouteManifest},
+			routeNs:           crossNsNoRefGrantClientNsName,
+			backendNs:         crossNsNoRefGrantBackendNsName,
 			expectedErrorCode: 56,
-			ports:             []int{8443},
+			ports:             []int{8445},
 			listenerNames: []gwv1.SectionName{
 				gwv1.SectionName(crossNsNoRefGrantListenerName),
 			},
@@ -164,54 +144,18 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			// Cleanup function
+			// No subtest shares a namespace or listener with another, so the next one can
+			// start while these namespaces finish terminating.
 			testutils.Cleanup(s.T(), func() {
-				s.deleteManifests(tc.nsManifest)
-
-				// Delete additional namespaces if any
-				if tc.name == "CrossNamespaceTLSRouteWithReferenceGrant" {
-					s.deleteManifests(crossNsBackendNsManifest)
+				for _, manifest := range tc.namespaceManifests {
+					err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest, "--wait=false")
+					s.Require().NoError(err, "Failed to delete manifest "+manifest)
 				}
-
-				if tc.name == crossNsNoRefGrantTestName {
-					s.deleteManifests(crossNsNoRefGrantBackendNsManifest)
-				}
-
-				s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tc.gtwNs}})
 			})
 
-			// Setup environment for ReferenceGrant test cases
-			if tc.name == crossNsTestName {
-				s.applyManifests(crossNsBackendNsName, crossNsBackendNsManifest)
-				s.applyManifests(crossNsBackendNsName, crossNsBackendSvcManifest)
-				s.applyManifests(crossNsBackendNsName, crossNsRefGrantManifest)
-				s.applyManifests(crossNsBackendNsName, singleSecretManifest)
-			}
-
-			if tc.name == crossNsNoRefGrantTestName {
-				s.applyManifests(crossNsNoRefGrantBackendNsName, crossNsNoRefGrantBackendNsManifest)
-				s.applyManifests(crossNsNoRefGrantBackendNsName, crossNsNoRefGrantBackendSvcManifest)
-				s.applyManifests(crossNsNoRefGrantBackendNsName, singleSecretManifest)
-				// ReferenceGrant not applied
-			}
-
-			// Setup environment
-			s.setupTestEnvironment(
-				tc.nsManifest,
-				tc.gtwName,
-				tc.gtwNs,
-				tc.gtwManifest,
-				tc.svcManifest,
-				tc.proxyService,
-				tc.proxyDeployment,
-			)
-
-			fmt.Println("Applying TLS Secret manifest")
-			fmt.Println(tc.tlsSecretManifest)
-			s.applyManifests(tc.gtwNs, tc.tlsSecretManifest)
-
-			// Apply TLSRoute manifest
-			s.applyManifests(tc.gtwNs, tc.tlsRouteManifest)
+			s.applyManifests("", tc.namespaceManifests...)
+			s.applyManifests(tc.backendNs, singleSecretManifest)
+			s.applyManifests("", tc.manifests...)
 
 			// Set the expected status conditions based on the test case
 			expected := metav1.ConditionTrue
@@ -221,32 +165,27 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 
 			// Assert TLSRoute conditions
 			for _, tlsRouteName := range tc.tlsRouteNames {
-				s.TestInstallation.AssertionsT(s.T()).EventuallyTLSRouteCondition(s.Ctx, tlsRouteName, tc.gtwNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
-				s.TestInstallation.AssertionsT(s.T()).EventuallyTLSRouteCondition(s.Ctx, tlsRouteName, tc.gtwNs, gwv1.RouteConditionResolvedRefs, expected, timeout)
+				s.TestInstallation.AssertionsT(s.T()).EventuallyTLSRouteCondition(s.Ctx, tlsRouteName, tc.routeNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+				s.TestInstallation.AssertionsT(s.T()).EventuallyTLSRouteCondition(s.Ctx, tlsRouteName, tc.routeNs, gwv1.RouteConditionResolvedRefs, expected, timeout)
 			}
 
 			// Assert gateway programmed condition
-			s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, tc.gtwName, tc.gtwNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+			s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, gatewayName, gatewayNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
 
 			// Assert listener attached routes
 			for i, listenerName := range tc.listenerNames {
 				expectedRouteCount := tc.expectedRouteCounts[i]
-				s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayListenerAttachedRoutes(s.Ctx, tc.gtwName, tc.gtwNs, listenerName, expectedRouteCount, timeout)
+				s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayListenerAttachedRoutes(s.Ctx, gatewayName, gatewayNs, listenerName, expectedRouteCount, timeout)
 			}
-
-			// Assert curl pod is running
-			s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, tc.gtwNs, metav1.ListOptions{
-				LabelSelector: "app=curl",
-			})
 
 			// Assert expected responses
 			for i, port := range tc.ports {
 				if tc.expectedErrorCode != 0 {
 					s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
 						s.Ctx,
-						s.execOpts(tc.gtwNs),
+						s.execOpts(gatewayNs),
 						[]curl.Option{
-							curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
@@ -254,9 +193,9 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 				} else {
 					s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 						s.Ctx,
-						s.execOpts(tc.gtwNs),
+						s.execOpts(gatewayNs),
 						[]curl.Option{
-							curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
+							curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 							curl.WithPort(port),
 							curl.WithCaFile("/etc/server-certs/tls.crt"),
 							curl.WithScheme("https"),
@@ -270,31 +209,15 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 	}
 }
 
-func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment) {
-	s.applyManifests(gtwNs, nsManifest)
-
-	s.applyManifests(gtwNs, gtwManifest)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, gwv1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
-
-	s.applyManifests(gtwNs, svcManifest)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, proxySvc, proxyDeploy)
-
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, proxyDeploy.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyDeploy.GetName()),
-	})
-}
-
+// applyManifests applies the manifests into ns, or into the namespaces they declare when ns is empty.
 func (s *testingSuite) applyManifests(ns string, manifests ...string) {
-	for _, manifest := range manifests {
-		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest, "-n", ns)
-		s.Require().NoError(err, "Failed to apply manifest "+manifest)
+	var args []string
+	if ns != "" {
+		args = []string{"-n", ns}
 	}
-}
-
-func (s *testingSuite) deleteManifests(manifests ...string) {
 	for _, manifest := range manifests {
-		err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
-		s.Require().NoError(err, "Failed to delete manifest "+manifest)
+		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest, args...)
+		s.Require().NoError(err, "Failed to apply manifest "+manifest)
 	}
 }
 
