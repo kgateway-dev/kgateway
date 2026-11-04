@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
@@ -103,33 +104,38 @@ func NewTestingSuite(
 	}
 }
 
+// gateway resolves the address of the gw Gateway, which most tests recreate.
+func (s *testingSuite) gateway() *common.Gateway {
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
+	return &gw
+}
+
 func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 	// Test that the ListenerPolicy with all additional fields is applied correctly
 	// The test verifies that the gateway is working and all policy fields are applied
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
-		})
+		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+	)
 
 	// Check the health check path is working
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithPath("/health_check"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.BeEmpty(),
-		})
+		},
+		curl.WithPort(8080),
+		curl.WithPath("/health_check"),
+	)
 }
 
 func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
@@ -137,35 +143,29 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 	// The test verifies that the server header is transformed as expected
 	// With PassThrough, the server header should be the backend server's header (nginx/1.28.0)
 	// instead of Envoy's default (envoy)
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 			Headers: map[string]any{
 				"server": "nginx/1.28.0", // Should be the backend server header, not "envoy"
 			},
-		})
+		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+	)
 }
 
 func (s *testingSuite) TestListenerPolicyHTTP2ProtocolOptions() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPort(8080),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 		},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(8080),
 	)
 
 	s.assertListenerHTTP2ProtocolOptions("listener~8080")
@@ -216,11 +216,12 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// The unmatched host gets a 404 whether or not the access log is on the
 	// listener yet, so a single request can be served before it is live. Send
 	// inside the poll loop until the 404 access log JSON fields are present.
+	gw := s.gateway()
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		_, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
+		err := gw.SendOnce(
 			s.Ctx,
-			testdefaults.CurlPodExecOpt,
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			&matchers.HttpResponse{StatusCode: http.StatusNotFound},
+			curl.WithPort(8080),
 			curl.WithHostHeader("not.example.com"), // not matched by HTTPRoute hostnames
 			curl.WithPath("/does-not-exist"),
 		)
@@ -240,15 +241,12 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	}, 30*time.Second, 1*time.Second)
 
 	// Second: trigger a 200 that SHOULD NOT be logged due to filter GE 400
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPath("/"),
-		},
+	gw.Send(
+		s.T(),
 		&matchers.HttpResponse{StatusCode: http.StatusOK},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+		curl.WithPath("/"),
 	)
 
 	// Confirm 200 logs do not appear over a stability window as it isn't being immediately emitted
@@ -355,18 +353,15 @@ func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedContr
 
 func (s *testingSuite) TestEarlyRequestHeaderModifier() {
 	// Route matches only when a specific header is present. The policy adds it early.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			// No manual header provided; listener policy adds it early so route matches
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+		// No manual header provided; listener policy adds it early so route matches
 	)
 }
 
@@ -407,18 +402,16 @@ func (s *testingSuite) TestListenerPolicyRequestId() {
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify
 	// that Envoy properly generates the x-request-id header
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
-		})
+		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+	)
 }
 
 // TestListenerPolicyRequestIdPackTraceReason tests the RequestID configuration feature when
@@ -431,35 +424,30 @@ func (s *testingSuite) TestListenerPolicyRequestIdPackTraceReason() {
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify
 	// that Envoy properly generates the x-request-id header
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			// Verify x-request-id header was generated with valid UUID format
 			Body: gomega.MatchRegexp(`(?i)x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`),
-		})
+		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+	)
 }
 
 // TestListenerPolicyMaxRequestsPerConnection checks that setting maxRequestsPerConnection
 // in a ListenerPolicy lands in Envoy's HCM config and doesn't break traffic.
 func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
 	// A NACK from Envoy would surface here as a connection error, so this also serves as an acceptance check.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
 	)
 
 	// Verify the setting appears in the Envoy config dump via the admin API.
@@ -502,8 +490,8 @@ func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
 }
 
 // TestListenerPolicyMaxHeadersCount verifies that maxHeadersCount in a ListenerPolicy is
-// enforced by Envoy. The policy sets the limit to 5. A standard curl request sends 3 headers
-// (Host, User-Agent, Accept), which is under the limit and succeeds. Adding 3 more custom
+// enforced by Envoy. The policy sets the limit to 5. A standard request sends 3 headers
+// (Host, User-Agent, Accept-Encoding), which is under the limit and succeeds. Adding 3 more custom
 // headers brings the total to 6, exceeding the limit and triggering a 431.
 func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 	// Verify the setting appears in the Envoy config dump via the admin API.
@@ -542,116 +530,95 @@ func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 		},
 	)
 
-	// A standard curl request (Host, User-Agent, Accept = 3 headers) is under the limit of 5
+	// A standard request (Host, User-Agent, Accept-Encoding = 3 headers) is under the limit of 5
 	// and should succeed. This also confirms the policy was accepted without a NACK.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
 	)
 
 	// Adding 3 extra headers brings the total to 6, which exceeds the limit of 5.
 	// Envoy should reject the request with 431 Request Header Fields Too Large.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithHeader("x-custom-1", "a"),
-			curl.WithHeader("x-custom-2", "b"),
-			curl.WithHeader("x-custom-3", "c"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusRequestHeaderFieldsTooLarge,
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+		curl.WithHeader("x-custom-1", "a"),
+		curl.WithHeader("x-custom-2", "b"),
+		curl.WithHeader("x-custom-3", "c"),
 	)
 }
 
 // Verifies that AnyPort strips the port from the Host header regardless of its value.
 func (s *testingSuite) TestStripHostPortAnyPort() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com:443"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.Not(gomega.ContainSubstring("example.com:443")),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com:443"),
 	)
 }
 
 // Verifies that MatchingPort strips the port from the Host header when it matches the listener port.
 func (s *testingSuite) TestStripHostPortMatchingPort() {
 	// Port matches listener port (8080) - should be stripped.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com:8080"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.Not(gomega.ContainSubstring("example.com:8080")),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com:8080"),
 	)
 	// Port does not match listener port - should be preserved.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com:9999"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("example.com:9999"),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com:9999"),
 	)
 }
 
 // Verifies that the default body format for local replies wraps a direct response.
 func (s *testingSuite) TestLocalReplyConfigDefaultFormat() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPath("/direct-response"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring("<p>custom body</p>"),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+		curl.WithPath("/direct-response"),
 	)
 }
 
 // Verifies that a filtering mapper for a local reply adjusts the body.
 func (s *testingSuite) TestLocalReplyConfigMapper() {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			curl.WithHostHeader("example.com"),
-			curl.WithPath("/not-found"),
-		},
+	s.gateway().Send(
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(`{"customValue":42,"originalBody":""}`),
 		},
+		curl.WithPort(8080),
+		curl.WithHostHeader("example.com"),
+		curl.WithPath("/not-found"),
 	)
 }
 
