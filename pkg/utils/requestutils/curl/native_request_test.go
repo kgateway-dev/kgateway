@@ -60,3 +60,26 @@ func TestExecuteRequestWithConnectionTimeoutReadsWholeBody(t *testing.T) {
 	require.NoError(t, err, "reading the body should not be cut off by the timeout")
 	assert.Len(t, got, len(body))
 }
+
+// WithFormBody sends the body with a form Content-Type, as `curl -d` does.
+func TestExecuteRequestWithFormBody(t *testing.T) {
+	var gotContentType, gotBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotContentType = r.Header.Get("Content-Type")
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+	}))
+	defer server.Close()
+
+	host, port, err := net.SplitHostPort(server.Listener.Addr().String())
+	require.NoError(t, err)
+	portNum, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	resp, err := ExecuteRequest(WithHost(host), WithPort(portNum), WithFormBody("hello"))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, "application/x-www-form-urlencoded", gotContentType)
+	assert.Equal(t, "hello", gotBody)
+}
