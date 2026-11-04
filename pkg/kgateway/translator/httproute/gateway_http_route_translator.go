@@ -104,6 +104,10 @@ func translateGatewayHTTPRouteRule(
 ) []ir.HttpRouteRuleMatchIR {
 	routes := make([]ir.HttpRouteRuleMatchIR, 0, len(rule.Matches))
 
+	if rule.ResolvedRefsErr != nil {
+		query.ProcessBackendError(rule.ResolvedRefsErr, reporter)
+	}
+
 	for idx, match := range rule.Matches {
 		// HTTPRoute names are being introduced to upstream as part of https://github.com/kubernetes-sigs/gateway-api/issues/995
 		// For now, the HTTPRoute needs a unique name for each Route to support features that require the route name

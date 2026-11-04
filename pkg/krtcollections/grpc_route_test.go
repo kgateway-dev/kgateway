@@ -629,6 +629,11 @@ func TestGRPCRouteMirrorReferenceGrant(t *testing.T) {
 			} else {
 				assert.Empty(t, cluster, "mirror should be denied without a GRPCRoute ReferenceGrant")
 			}
+			if tc.expectMirror {
+				assert.NoError(t, httpRouteIR.Rules[0].ResolvedRefsErr)
+			} else {
+				assert.ErrorIs(t, httpRouteIR.Rules[0].ResolvedRefsErr, krtcollections.ErrMissingReferenceGrant)
+			}
 		})
 	}
 }

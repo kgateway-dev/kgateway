@@ -755,3 +755,31 @@ func TestHTTPRouteIREquals(t *testing.T) {
 		})
 	}
 }
+
+func TestHttpRouteIREqualsResolvedRefsErr(t *testing.T) {
+	route := makeTCPRoute("route1", "test-ns", "1", 1, types.UID("uid1"))
+	withErr := func(err error) HttpRouteIR {
+		return HttpRouteIR{
+			ObjectSource: ObjectSource{Namespace: "test-ns", Name: "route1"},
+			SourceObject: route,
+			Rules:        []HttpRouteRuleIR{{ResolvedRefsErr: err}},
+		}
+	}
+
+	tests := []struct {
+		name string
+		a, b error
+		want bool
+	}{
+		{name: "both_nil", want: true},
+		{name: "nil_vs_err", a: nil, b: errors.New("missing reference grant"), want: false},
+		{name: "err_vs_nil", a: errors.New("missing reference grant"), b: nil, want: false},
+		{name: "same_message", a: errors.New("missing reference grant"), b: errors.New("missing reference grant"), want: true},
+		{name: "diff_message", a: errors.New("missing reference grant"), b: errors.New("service not found"), want: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, withErr(tc.a).Equals(withErr(tc.b)))
+		})
+	}
+}
