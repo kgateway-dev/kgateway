@@ -1,0 +1,146 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8000
+  - name: tcp-2
+    protocol: TCP
+    port: 8001
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tcp
+  rules:
+  - backendRefs:
+    - name: tcp-svc
+      port: 8000
+---
+# TrafficPolicy has no effect on a TCP listener, so it must not be reported as attached to it.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: http-only-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tcp
+  timeouts:
+    request: 5s
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: tcp-listener-access-log
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tcp
+  default:
+    tcpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: "%DOWNSTREAM_REMOTE_ADDRESS%\n"
+---
+# Listener-level fields of a sectionName-targeted ListenerPolicy are not applied, so a policy
+# that sets nothing else must not be reported as attached to the TCP listener.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: buffer-limit-only
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tcp
+  default:
+    perConnectionBufferLimitBytes: 4096
+---
+# httpSettings has no effect on a TCP listener.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: http-settings-only
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tcp
+  default:
+    httpSettings:
+      serverName: example
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route-2
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tcp-2
+  rules:
+  - backendRefs:
+    - name: tcp-svc
+      port: 8000
+---
+# Applied on port 8001 but overridden on port 8000, yet reported Overridden; this golden should change to Merged once https://github.com/kgateway-dev/kgateway/issues/14861 is fixed.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: gateway-wide-access-log
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  default:
+    tcpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: "gateway-wide %DOWNSTREAM_REMOTE_ADDRESS%\n"
+---
+# A perPort entry is used instead of default, not on top of it. This policy only sets a buffer
+# limit for port 8001, which has no effect on the TCP filter chain, so it must not hide the
+# gateway-wide access log on the tcp-2 listener.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: per-port-buffer-limit-only
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tcp-2
+  perPort:
+  - port: 8001
+    listener:
+      perConnectionBufferLimitBytes: 4096
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcp-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 8000

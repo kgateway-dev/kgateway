@@ -3,9 +3,28 @@ package curl
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
+	"strings"
 )
+
+// urlHost renders a host for use in a URL or in curl's --connect-to argument.
+// A bare IPv6 literal has to be bracketed, or the colons in the address are read
+// as the port separator; hostnames and IPv4 literals pass through unchanged.
+//
+// Any colon means brackets are needed, including in a v4-mapped literal such as
+// "::ffff:10.0.0.1": net.ParseIP reports that as IPv4, but it is still written
+// with colons and so still breaks the URL without them.
+func urlHost(host string) string {
+	if strings.HasPrefix(host, "[") {
+		return host
+	}
+	if strings.Contains(host, ":") {
+		return "[" + host + "]"
+	}
+	return host
+}
 
 // BuildArgs accepts a set of curl.Option and generates the list of arguments
 // that can be used to execute a curl request
@@ -105,6 +124,8 @@ type requestConfig struct {
 	// ctx is used by ExecuteRequest to build the http.Request and aborts the
 	// in-flight call when ctx cancels. Set via WithContext.
 	ctx context.Context
+	// dialContext, when set, replaces the dialer ExecuteRequest uses. Set via WithDialContext.
+	dialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
 func (c *requestConfig) generateArgs() []string {
@@ -198,11 +219,11 @@ func (c *requestConfig) generateArgs() []string {
 	var fullAddress string
 
 	if c.sni != "" {
-		sniResolution := fmt.Sprintf("%s:%d:%s:%d", c.sni, c.port, c.host, c.port)
-		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
+		sniResolution := fmt.Sprintf("%s:%d:%s:%d", urlHost(c.sni), c.port, urlHost(c.host), c.port)
+		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, urlHost(c.sni), c.port)
 		args = append(args, "--connect-to", sniResolution)
 	} else {
-		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.host, c.port, c.path)
+		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, urlHost(c.host), c.port, c.path)
 		if len(c.queryParameters) > 0 {
 			values := url.Values{}
 			for k, v := range c.queryParameters {

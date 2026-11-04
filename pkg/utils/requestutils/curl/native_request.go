@@ -145,7 +145,7 @@ func (c *requestConfig) buildURL() string {
 		path = "/" + path
 	}
 
-	baseURL := fmt.Sprintf("%s://%s:%d%s", c.scheme, c.host, c.port, path)
+	baseURL := fmt.Sprintf("%s://%s:%d%s", c.scheme, urlHost(c.host), c.port, path)
 
 	if len(c.queryParameters) > 0 {
 		values := url.Values{}
@@ -211,6 +211,10 @@ func (c *requestConfig) buildHTTPClient() *http.Client {
 }
 
 func (c *requestConfig) buildDialer() func(context.Context, string, string) (net.Conn, error) {
+	if c.dialContext != nil {
+		return c.dialContext
+	}
+
 	dialer := &net.Dialer{
 		Timeout: 30 * time.Second,
 	}

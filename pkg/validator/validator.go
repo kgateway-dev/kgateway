@@ -97,8 +97,7 @@ func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	cmd.Stderr = &e
 	if err := cmd.Run(); err != nil {
 		rawErr := normalizeEnvoyError(e.String())
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
+		if _, ok := errors.AsType[*exec.ExitError](err); ok {
 			if rawErr == "" {
 				rawErr = err.Error()
 			}
@@ -110,9 +109,10 @@ func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 }
 
 type dockerValidator struct {
-	img      string
-	etcEnvoy string
-	pull     string
+	img            string
+	etcEnvoy       string
+	pull           string
+	failOnWarnings bool
 }
 
 type DockerValidatorOptions func(*dockerValidator)
@@ -132,6 +132,16 @@ func EtcEnvoyVolume(etcEnvoy string) func(*dockerValidator) {
 func PullPolicy(policy string) func(*dockerValidator) {
 	return func(d *dockerValidator) {
 		d.pull = policy
+	}
+}
+
+// FailOnWarnings makes validation fail when Envoy accepts the config but logs a
+// warning, error, or envoy_bug while loading it (e.g. a removed runtime guard or
+// a deprecated field). Envoy exits 0 in those cases, so they only show up in logs.
+// Intended for tests that pin configs to the bundled Envoy version.
+func FailOnWarnings() func(*dockerValidator) {
+	return func(d *dockerValidator) {
+		d.failOnWarnings = true
 	}
 }
 
@@ -163,6 +173,10 @@ func (d *dockerValidator) args() []string {
 	if d.etcEnvoy != "" {
 		args = append(args, "-v", d.etcEnvoy+":/etc/envoy/:ro")
 	}
+	logLevel, logFormat := "critical", "%v"
+	if d.failOnWarnings {
+		logLevel, logFormat = "warning", "[%l] %v"
+	}
 	args = append(args,
 		"--entrypoint", "/usr/local/bin/envoy",
 		d.img,
@@ -170,10 +184,31 @@ func (d *dockerValidator) args() []string {
 		"validate",
 		"--service-node", "dummy-node",
 		"--config-path", "/dev/fd/0",
-		"-l", "critical",
-		"--log-format", "%v",
+		"-l", logLevel,
+		"--log-format", logFormat,
 	)
 	return args
+}
+
+// envoyWarningLineRe matches log lines at warning level or above, as emitted with
+// the "[%l] %v" log format. Envoy prints some info output (e.g. the runtime layer
+// dump) regardless of -l, so filtering by level is required.
+var envoyWarningLineRe = regexp.MustCompile(`^\[(warning|error|critical)\] `)
+
+// envoyStacktraceLineRe matches the stack trace Envoy logs after an envoy_bug.
+var envoyStacktraceLineRe = regexp.MustCompile(`^\[error\] (stacktrace for envoy bug|#\d+ )`)
+
+// extractEnvoyWarnings returns the warning-or-worse log lines from Envoy's stderr,
+// without stack traces.
+func extractEnvoyWarnings(stderr string) []string {
+	var warnings []string
+	for line := range strings.SplitSeq(stderr, "\n") {
+		line = strings.TrimSpace(line)
+		if envoyWarningLineRe.MatchString(line) && !envoyStacktraceLineRe.MatchString(line) {
+			warnings = append(warnings, line)
+		}
+	}
+	return warnings
 }
 
 func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
@@ -192,12 +227,17 @@ func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 
 	err = cmd.Run()
 	if err == nil {
+		if d.failOnWarnings {
+			if warnings := extractEnvoyWarnings(stderr.String()); len(warnings) > 0 {
+				return fmt.Errorf("%w: envoy accepted the config but logged: %s",
+					ErrInvalidXDS, normalizeEnvoyError(strings.Join(warnings, "; ")))
+			}
+		}
 		return nil
 	}
 
 	rawErr := strings.TrimSpace(stderr.String())
-	var exitError *exec.ExitError
-	if errors.As(err, &exitError) {
+	if _, ok := errors.AsType[*exec.ExitError](err); ok {
 		// Extract just the envoy error message, ignoring Docker pull output
 		if envoyErr := extractEnvoyError(rawErr); envoyErr != "" {
 			return fmt.Errorf("%w: %s", ErrInvalidXDS, normalizeEnvoyError(envoyErr))

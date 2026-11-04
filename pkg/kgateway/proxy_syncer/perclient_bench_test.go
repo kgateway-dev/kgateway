@@ -84,13 +84,13 @@ func benchDrainScenario(b *testing.B, v validator.Validator) {
 	for i := range benchClients {
 		clients = append(clients, benchClient(fmt.Sprintf("role-%d", i), fmt.Sprintf("p%d", i)))
 	}
-	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
+	uccs := krt.NewMutableCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
 	backends := make([]*ir.BackendObjectIR, 0, benchBackends)
 	for i := range benchBackends {
 		backends = append(backends, benchBackend(fmt.Sprintf("b%d", i)))
 	}
 	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, benchTranslator(v), finalBackends, uccs)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, benchTranslator(v), finalBackends, uccs.AsCollection())
 
 	// Observe the stored per-client row, not a recomputation: connect is done
 	// when the client's payload has propagated, and drain when its row is gone.

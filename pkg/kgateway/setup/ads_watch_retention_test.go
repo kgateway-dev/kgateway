@@ -143,8 +143,10 @@ func TestADSCacheRetainsNamedWatchItCannotAnswer(t *testing.T) {
 // snapshot is misaligned — the window around a rejected or not-yet-applied
 // cluster update — can be left waiting on a request that is never answered.
 //
-// This test documents the residual gap. If it starts failing, upstream has
-// closed it and any local mitigation can be dropped.
+// This test documents the request-retention gap only. Keeping this watch would
+// permit recovery after the blocker is removed, but not updates while it remains.
+// Removing perTypeCache requires all six rejected-resource delivery scenarios
+// to pass with the upstream cache alone, including those with the blocker present.
 func TestADSCacheDropsNewNamedRequestItCannotAnswer(t *testing.T) {
 	ctx := context.Background()
 	cache := envoycache.NewSnapshotCache(true, retentionHash{}, nil)

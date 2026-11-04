@@ -30,6 +30,8 @@ Clusters:
   outlierDetection:
     baseEjectionTime: 14400s
     consecutive5xx: 1
+    consecutiveGatewayFailure: 3
+    enforcingConsecutiveGatewayFailure: 100
     interval: 2s
     maxEjectionPercent: 55
   type: EDS

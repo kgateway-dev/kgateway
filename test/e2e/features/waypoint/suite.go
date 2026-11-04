@@ -6,9 +6,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	"istio.io/api/label"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,9 +62,9 @@ func NewIngressTestingSuite(ctx context.Context, testInst *e2e.TestInstallation)
 
 // SetupSuite provides common objects used by all tests:
 // * Create an ambient captured Namespace - `testNamespace`
-// * Deploy a kgateway-waypoint using a Gateway resource - `gwName`
+// * Deploy an Istio waypoint using a Gateway resource - `gwName`
 // * Deploy server (Services, Pods) - `svc-a`, `svc-b`
-// * Deploy client (Pods) - `client-a`
+// * Deploy client (Pods) - `curl`
 func (s *testingSuite) SetupSuite() {
 	// must apply the ns first
 	err := s.testInstallation.ClusterContext.Cli.ApplyFilePath(s.ctx, nsYAML)
@@ -91,7 +93,6 @@ func (s *testingSuite) SetupSuite() {
 		{"app", "svc-a"},
 		{"app", "svc-b"},
 		{"app", "curl"},
-		{"app", "notcurl"},
 		{"gateway.networking.k8s.io/gateway-name", gwName},
 	}
 	for _, app := range wantApps {
@@ -116,11 +117,11 @@ func (s *testingSuite) SetupSuite() {
 		}
 	}
 
-	// Waypoint tests require Istio integration to watch ServiceEntry resources
+	// The ServiceEntry test requires Istio integration to watch ServiceEntry resources
 	s.setDeploymentEnvVariable("KGW_ENABLE_ISTIO_INTEGRATION", "true")
 
-	// If it's a suite testing with KGW_INGRESS_USE_WAYPOINTS disabled (enabled by default),
-	// we set the env var in the controller deployment for the tests
+	// If it's a suite testing with KGW_INGRESS_USE_WAYPOINTS disabled (the Helm value
+	// waypoint.enabled turns it on), we set the env var in the controller deployment for the tests
 	if !s.ingressUseWaypoint {
 		s.setDeploymentEnvVariable("KGW_INGRESS_USE_WAYPOINTS", "false")
 	}
@@ -150,16 +151,23 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 	}, controllerDeploymentOriginal)
 	s.Assert().NoError(err, "has controller deployment")
 
-	// add the environment variable to the modified controller deployment
+	// set the environment variable on the modified controller deployment, replacing
+	// the entry the chart may already render (e.g. KGW_INGRESS_USE_WAYPOINTS)
 	envVarToAdd := corev1.EnvVar{
 		Name:  name,
 		Value: value,
 	}
 	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
-	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
-		controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
-		envVarToAdd,
-	)
+	env := controllerDeployModified.Spec.Template.Spec.Containers[0].Env
+	idx := slices.IndexFunc(env, func(e corev1.EnvVar) bool { return e.Name == name })
+	var originalEnvVar *corev1.EnvVar
+	if idx >= 0 {
+		originalEnvVar = env[idx].DeepCopy()
+		env[idx] = envVarToAdd
+	} else {
+		env = append(env, envVarToAdd)
+	}
+	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = env
 
 	// patch the deployment
 	controllerDeployModified.ResourceVersion = ""
@@ -183,16 +191,27 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 		err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
 		s.Require().NoError(err)
 
-		// make sure the env var is removed
-		s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerDoesNotContainEnvVar(
-			s.ctx,
-			controllerNamespace,
-			metav1.ListOptions{
-				LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
-			},
-			helpers.KgatewayContainerName,
-			envVarToAdd.Name,
-		)
+		// make sure the env var is back to its original value, or removed if it wasn't set
+		listOpts := metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
+		}
+		if originalEnvVar != nil {
+			s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerContainsEnvVar(
+				s.ctx,
+				controllerNamespace,
+				listOpts,
+				helpers.KgatewayContainerName,
+				*originalEnvVar,
+			)
+		} else {
+			s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerDoesNotContainEnvVar(
+				s.ctx,
+				controllerNamespace,
+				listOpts,
+				helpers.KgatewayContainerName,
+				envVarToAdd.Name,
+			)
+		}
 	})
 
 	// wait for pods to be running again, since controller deployment was patched
@@ -216,5 +235,15 @@ func (s *testingSuite) applyOrFail(fileName string, namespace string) {
 }
 
 func (s *testingSuite) setNamespaceWaypointOrFail(ns string) {
-	s.useWaypointLabelForTest("ns", ns, "")
+	testutils.Cleanup(s.T(), func() {
+		err := s.testInstallation.ClusterContext.Cli.UnsetLabel(s.ctx, "ns", ns, "", label.IoIstioUseWaypoint.Name)
+		if err != nil {
+			// this could break other tests, so fail here
+			s.FailNow("failed removing label", err)
+		}
+	})
+	err := s.testInstallation.ClusterContext.Cli.SetLabel(s.ctx, "ns", ns, "", label.IoIstioUseWaypoint.Name, gwName)
+	if err != nil {
+		s.FailNow("failed applying label", err)
+	}
 }

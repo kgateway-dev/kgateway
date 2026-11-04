@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tls-listener-svc
+  namespace: tcp-route-tls
   labels:
     app: tls-listener-svc
 spec:
@@ -16,6 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tls-listener-backend
+  namespace: tcp-route-tls
 spec:
   replicas: 1
   selector:

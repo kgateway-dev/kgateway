@@ -62,6 +62,10 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 		// again for any policy that also has a Gateway ancestor.
 		reportBackendTLSPolicies(reporter, targetRef, obj.GetAttachedPolicies().Policies[btpGK])
 
+		// BackendConfigPolicy settings that are accepted but have no effect, judged on the merged config
+		// applied to this backend and keyed by the policy that supplies the session persistence.
+		bcpPartiallyValid := backendconfigpolicyplugin.PartiallyValidMessages(obj.GetAttachedPolicies().Policies[bcpGK], *obj)
+
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
 			if gk == btpGK {
 				continue
@@ -97,12 +101,21 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 					continue
 				}
 
-				r.SetCondition(reportssdk.PolicyCondition{
+				accepted := reportssdk.PolicyCondition{
 					Type:    string(shared.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
 					Reason:  string(shared.PolicyReasonValid),
 					Message: reportssdk.PolicyAcceptedMsg,
-				})
+				}
+				if gk == bcpGK {
+					// Some BackendConfigPolicy settings are accepted but have no effect, in general or
+					// for this backend. Report them with the PartiallyValid reason on this ancestor.
+					if msg, ok := bcpPartiallyValid[polAtt.PolicyRef.ID()]; ok {
+						accepted.Reason = string(shared.PolicyReasonPartiallyValid)
+						accepted.Message = msg
+					}
+				}
+				r.SetCondition(accepted)
 				r.SetCondition(reportssdk.PolicyCondition{
 					Type:    string(shared.PolicyConditionAttached),
 					Status:  metav1.ConditionTrue,

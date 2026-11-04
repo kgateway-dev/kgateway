@@ -3,6 +3,8 @@ package backendconfigpolicy
 import (
 	"errors"
 	"fmt"
+	"net/netip"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -115,18 +117,19 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 		return errors.New("invalid TLS config: for if providing a client certificate, both certChain and privateKey must be provided")
 	}
 
-	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
-	cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
-	if err != nil {
-		return fmt.Errorf("invalid certificate and key pair: %w", err)
-	}
-
 	var certChainData, privateKeyData *envoycorev3.DataSource
 	if tlsData.inlineDataSource {
+		// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
+		cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
+		if err != nil {
+			return fmt.Errorf("invalid certificate and key pair: %w", err)
+		}
 		certChainData = pluginutils.InlineStringDataSource(cleanedCertChain)
 		privateKeyData = pluginutils.InlineStringDataSource(tlsData.privateKey)
 	} else {
-		certChainData = pluginutils.FileDataSource(cleanedCertChain)
+		// Files are paths inside the Envoy container, so the controller cannot
+		// read them; Envoy loads and validates them.
+		certChainData = pluginutils.FileDataSource(tlsData.certChain)
 		privateKeyData = pluginutils.FileDataSource(tlsData.privateKey)
 	}
 
@@ -275,13 +278,41 @@ func parseTLSVersion(tlsVersion *kgateway.TLSVersion) (envoytlsv3.TlsParameters_
 func verifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAltNameMatcher {
 	var matchSanList []*envoytlsv3.SubjectAltNameMatcher
 	for _, san := range sanList {
-		matchSan := &envoytlsv3.SubjectAltNameMatcher{
-			SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-			Matcher: &envoymatcher.StringMatcher{
-				MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
-			},
+		if ip, err := netip.ParseAddr(san); err == nil {
+			// A certificate can carry an IP address as an IP SAN or as a DNS SAN. Match both, so
+			// certificates that matched the DNS-only matcher before still match. The IP matcher
+			// uses the canonical form of the address, which is the form Envoy compares IP SANs in.
+			matchSanList = append(matchSanList,
+				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS, ip.String()),
+				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_DNS, san),
+			)
+			continue
 		}
-		matchSanList = append(matchSanList, matchSan)
+		matchSanList = append(matchSanList, exactSanMatcher(sanTypeOf(san), san))
 	}
 	return matchSanList
+}
+
+func exactSanMatcher(sanType envoytlsv3.SubjectAltNameMatcher_SanType, san string) *envoytlsv3.SubjectAltNameMatcher {
+	return &envoytlsv3.SubjectAltNameMatcher{
+		SanType: sanType,
+		Matcher: &envoymatcher.StringMatcher{
+			MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
+		},
+	}
+}
+
+// sanTypeOf picks the SAN type to match a verifySubjectAltNames entry that is not an IP address
+// against. Typed matchers only compare against a single SAN type, so a DNS-only matcher never
+// matches a certificate that carries its identity as a URI (such as a SPIFFE ID) or an email
+// address.
+func sanTypeOf(san string) envoytlsv3.SubjectAltNameMatcher_SanType {
+	switch {
+	case strings.Contains(san, ":"):
+		return envoytlsv3.SubjectAltNameMatcher_URI
+	case strings.Contains(san, "@"):
+		return envoytlsv3.SubjectAltNameMatcher_EMAIL
+	default:
+		return envoytlsv3.SubjectAltNameMatcher_DNS
+	}
 }

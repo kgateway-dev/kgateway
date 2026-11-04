@@ -92,8 +92,8 @@ runs:
       id: go-cache-keys
       shell: bash
       run: |
-        echo "go-build=${{ runner.os }}-go-build-v3-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
-        echo "go-build-restore=${{ runner.os }}-go-build-v3-${{ steps.setup-go.outputs.go-version }}-" >> $GITHUB_OUTPUT
+        echo "go-build=${{ runner.os }}-go-build-v4-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
+        echo "go-build-restore=${{ runner.os }}-go-build-v4-${{ steps.setup-go.outputs.go-version }}-" >> $GITHUB_OUTPUT
         echo "go-build-race=${{ runner.os }}-go-build-race-v3-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
         echo "go-build-race-restore=${{ runner.os }}-go-build-race-v3-${{ steps.setup-go.outputs.go-version }}-" >> $GITHUB_OUTPUT
     - name: Restore Go Build Cache
@@ -102,13 +102,12 @@ runs:
       with:
         path: ${{ steps.go-cache-paths.outputs.go-build }}
         key: ${{ steps.go-cache-keys.outputs.go-build }}
-        # A go.sum change makes the exact key miss; without a fallback that
-        # means recompiling the world and saving a fresh ~0.8GB cache
-        # generation into the repo's 10GB budget. Fall back to the most recent
-        # same-Go-version cache so only the delta is rebuilt. Go trims GOCACHE
-        # entries unused for 5 days, so generations built on top of a fallback
-        # don't grow without bound. cache-hit stays 'false' on a fallback
-        # match, so Cache Setup still re-primes and saves under the new key.
+        # A go.sum change makes the exact key miss. Fall back to the most recent
+        # same-Go-version cache so a job whose go.sum differs from main's
+        # (e.g. a dependency bump PR) still starts warm and rebuilds only the
+        # delta. cache-hit stays 'false' on a fallback match, so Cache Setup
+        # re-primes and saves under the new key; it clears the cache first, so
+        # saved generations don't accumulate the entries of older ones.
         restore-keys: |
           ${{ steps.go-cache-keys.outputs.go-build-restore }}
     - name: Cache Go Modules

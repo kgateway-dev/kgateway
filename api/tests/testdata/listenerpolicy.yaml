@@ -1,0 +1,88 @@
+# ListenerPolicy: valid target references
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-valid-targets
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      app: myapp
+---
+# ListenerPolicy: invalid target reference - HTTPRoute not allowed
+_err: targetRefs may only reference Gateway resource
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-invalid-target-httproute
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+---
+# ListenerPolicy: invalid target reference - wrong resource type
+_err: targetRefs may only reference Gateway resource
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: ListenerSet
+    name: test-listener
+---
+# ListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist
+_err: exactly one of statsForAllMethods or methodAllowlist must be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpcstats-both
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      grpcStats:
+        statsForAllMethods: true
+        methodAllowlist:
+        - /pkg.Service/Method
+---
+# ListenerPolicy: grpcStats accepts statsForAllMethods only
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpcstats-all
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      grpcStats:
+        statsForAllMethods: true
+---
+# ListenerPolicy: grpcStats accepts methodAllowlist only
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpcstats-allowlist
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      grpcStats:
+        methodAllowlist:
+        - /pkg.Service/Method

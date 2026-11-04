@@ -76,12 +76,18 @@ type ConnectedClient struct {
 	// already-augmented) one, or augmentation compounds and every ACK looks
 	// like an identity change.
 	originalRole string
+	// connectedAt is when the stream was admitted.
+	connectedAt time.Time
+	// priorXDSVersion marks a stream that reported config held from an earlier
+	// stream (a reconnect, or a proxy that outlived a controller restart).
+	priorXDSVersion bool
 }
 
 func newConnectedClient(uniqueClientName, originalRole string) ConnectedClient {
 	return ConnectedClient{
 		uniqueClientName: uniqueClientName,
 		originalRole:     originalRole,
+		connectedAt:      time.Now(),
 	}
 }
 
@@ -113,13 +119,26 @@ type callbacksCollection struct {
 	// cluster once every stream currently in that bucket has confirmed it, or the same
 	// full-EDS-withholding this file exists to prevent reappears for the still-old siblings.
 	knownLocalClusterBySid map[int64]bool
-	stateLock              sync.RWMutex
+	// priorXDSVersions counts warm streams per resource name. A count, not a
+	// flag, so a shared name (pod locality off) stops being warm when its last
+	// warm stream closes, even with cold streams left.
+	priorXDSVersions map[string]int
+	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
+	// hooks are start hooks registered on the owning callbacks; nil without an owner.
+	hooks *atomic.Pointer[connectionStartHooks]
+}
+
+// connectionStartHooks stores hooks for admission of a key's first stream.
+type connectionStartHooks struct {
+	admitting func(resourceName string)
+	admitted  func(resourceName string)
 }
 
 type callbacks struct {
 	collection         atomic.Pointer[callbacksCollection]
+	hooks              atomic.Pointer[connectionStartHooks]
 	streamIDToPeerInfo sync.Map
 	xdsAuth            bool
 }
@@ -162,14 +181,47 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
 type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient]
 
+// XDSClientState exposes connection state derived from the xDS callbacks.
+//
+// HasPriorXDSVersion reports whether a stream of the client opened its
+// listener subscription with a held version and an empty nonce: the proxy may
+// serve config from an earlier stream or controller. The mark is per resource
+// name and lasts until its last held-version stream closes.
+//
+// RunIfDisconnected runs fn only if no stream is connected under resourceName,
+// and reports whether it ran. Admission is excluded until fn returns, and
+// go-control-plane creates watches only after admission, so no stream or
+// watch of the key starts during fn.
+type XDSClientState interface {
+	HasPriorXDSVersion(resourceName string) bool
+	RunIfDisconnected(resourceName string, fn func()) bool
+}
+
+// ConnectionStartHooks is implemented by NewUniquelyConnectedClients' state.
+// A key's connection starts when its stream count goes from zero to one.
+//
+// SetConnectionStartHooks registers two hooks; call it before streams connect.
+// A later call replaces them. admitting runs under admission exclusion, with
+// no other stream of the key connected and before any watch exists. It must be
+// quick and must not take locks held by callers of this state. admitted runs
+// after that exclusion but before the first request is answered.
+type ConnectionStartHooks interface {
+	SetConnectionStartHooks(admitting, admitted func(resourceName string))
+}
+
+// SetConnectionStartHooks implements ConnectionStartHooks.
+func (x *callbacks) SetConnectionStartHooks(admitting, admitted func(resourceName string)) {
+	x.hooks.Store(&connectionStartHooks{admitting: admitting, admitted: admitted})
+}
+
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
 
-// NewUniquelyConnectedClients returns kgateway's client-tracking callbacks and the
-// builder for the collection they feed. Extra callbacks are not passed here:
-// chain them ahead of these with setup.ChainCallbacks, which delivers every hook
-// to each.
-func NewUniquelyConnectedClients(xdsAuth bool) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder) {
+// NewUniquelyConnectedClients returns kgateway's client-tracking callbacks, the
+// builder for the collection they feed, and the per-client xDS state the
+// callbacks record. Extra callbacks are not passed here: chain them ahead of
+// these with setup.ChainCallbacks, which delivers every hook to each.
+func NewUniquelyConnectedClients(xdsAuth bool) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder, XDSClientState) {
 	cb := &callbacks{xdsAuth: xdsAuth}
 
 	envoycb := xdsserver.CallbackFuncs{
@@ -178,7 +230,7 @@ func NewUniquelyConnectedClients(xdsAuth bool) (xdsserver.Callbacks, UniquelyCon
 		StreamRequestFunc: cb.OnStreamRequest,
 		FetchRequestFunc:  cb.OnFetchRequest,
 	}
-	return envoycb, buildCollection(cb)
+	return envoycb, buildCollection(cb), cb
 }
 
 func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
@@ -191,7 +243,9 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 			uniqClientsCount:       make(map[string]uint64),
 			uniqClients:            make(map[string]ir.UniquelyConnectedClient),
 			knownLocalClusterBySid: make(map[int64]bool),
+			priorXDSVersions:       make(map[string]int),
 			trigger:                trigger,
+			hooks:                  &callbacks.hooks,
 		}
 
 		callbacks.collection.Store(col)
@@ -248,12 +302,20 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 	delete(x.knownLocalClusterBySid, sid)
 	if ok {
 		resourceName := c.uniqueClientName
+		if c.priorXDSVersion {
+			if n := x.priorXDSVersions[resourceName] - 1; n > 0 {
+				x.priorXDSVersions[resourceName] = n
+			} else {
+				delete(x.priorXDSVersions, resourceName)
+			}
+		}
 		current := x.uniqClientsCount[resourceName]
 		x.uniqClientsCount[resourceName] = current - 1
 		if current == 1 {
 			ucc := x.uniqClients[resourceName]
 			delete(x.uniqClientsCount, resourceName)
 			delete(x.uniqClients, resourceName)
+			delete(x.priorXDSVersions, resourceName)
 			return &ucc
 		}
 	}
@@ -306,7 +368,7 @@ func (x *callbacksCollection) deriveClientIdentity(r *envoy_service_discovery_v3
 	return &ucc, nil
 }
 
-func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream bool, err error) {
+func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream, connectionStarted bool, err error) {
 	// Identity is re-derived from current pod state on EVERY request, not just
 	// the first. A stream's first request can race the pod/node informers
 	// (controller start is exactly when every Envoy reconnects), freezing an
@@ -375,14 +437,14 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 			// change) is indistinguishable from a healthy request.
 			x.logger.Debug("xds client identity re-derivation failed; keeping established identity",
 				"client", c.uniqueClientName, "error", derr)
-			return c.uniqueClientName, false, nil
+			return c.uniqueClientName, false, false, nil
 		}
 		if c.uniqueClientName != ucc.ResourceName() {
 			x.logger.Info("xds client identity changed; closing stream so the client re-identifies",
 				"old", c.uniqueClientName, "new", ucc.ResourceName())
-			return "", false, fmt.Errorf("xds client identity changed from %q to %q", c.uniqueClientName, ucc.ResourceName())
+			return "", false, false, fmt.Errorf("xds client identity changed from %q to %q", c.uniqueClientName, ucc.ResourceName())
 		}
-		return c.uniqueClientName, false, nil
+		return c.uniqueClientName, false, false, nil
 	}
 
 	// The version gate runs before derivation errors are surfaced: during
@@ -391,10 +453,10 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	// connected" log — must not be masked behind generic "pod not found"
 	// rejections.
 	if err := logAndCheckEnvoyVersion(x.logger, r.GetNode()); err != nil {
-		return "", false, err
+		return "", false, false, err
 	}
 	if derr != nil {
-		return "", false, derr
+		return "", false, false, derr
 	}
 	x.logger.Debug("adding xds client", "locality", ucc.Locality, "ns", ucc.Namespace, "labels", ucc.Labels, "role", ucc.Role)
 	// TODO: modify request to include the label that are relevant for the client?
@@ -413,8 +475,13 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 	if currentUnique == 0 {
 		x.uniqClients[ucc.ResourceName()] = *ucc
+		// The key's connection starts. The admission lock keeps other streams of
+		// the key out while the hook runs.
+		if h := x.connectionStartHooks(); h != nil && h.admitting != nil {
+			h.admitting(ucc.ResourceName())
+		}
 	}
-	return c.uniqueClientName, true, nil
+	return c.uniqueClientName, true, currentUnique == 0, nil
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -437,8 +504,15 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 	return c.newStream(sid, r, peerInfo)
 }
 
+func (x *callbacksCollection) connectionStartHooks() *connectionStartHooks {
+	if x.hooks == nil {
+		return nil
+	}
+	return x.hooks.Load()
+}
+
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNewStream, err := x.add(sid, r, peer)
+	ucc, isNewStream, connectionStarted, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -447,6 +521,9 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		return fmt.Errorf("got empty unique client name for sid %d", sid)
 	}
 	x.observeLocalClusterRequest(sid, ucc, r)
+	if hasPriorXDSVersion(r) {
+		x.markPriorXDSVersion(sid, ucc)
+	}
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -468,12 +545,98 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		// recompute on every new stream, not only isNewUCC.
 		x.trigger.TriggerRecomputation()
 	}
+	if h := x.connectionStartHooks(); connectionStarted && h != nil && h.admitted != nil {
+		h.admitted(ucc)
+	}
 	if delay := xdsFirstConnectDelay(); isNewStream && delay > 0 {
 		// See xdsFirstConnectDelay: give per-client translation a head start
 		// before go-control-plane creates this stream's first watch.
 		time.Sleep(delay)
 	}
 	return nil
+}
+
+// hasPriorXDSVersion reports whether r is an initial listener request carrying
+// a previously accepted version. Only listeners count: warmth protects served
+// config, and a proxy whose stream broke during CDS warming serves none, so it
+// starts within the first-publish budget.
+func hasPriorXDSVersion(r *envoy_service_discovery_v3.DiscoveryRequest) bool {
+	return r.GetTypeUrl() == resource.ListenerType && r.GetResponseNonce() == "" && r.GetVersionInfo() != ""
+}
+
+// markPriorXDSVersion marks stream sid warm. Each stream counts once toward
+// its resource name.
+func (x *callbacksCollection) markPriorXDSVersion(sid int64, resourceName string) {
+	x.stateLock.Lock()
+	defer x.stateLock.Unlock()
+	c, ok := x.clients[sid]
+	if !ok || c.priorXDSVersion {
+		return
+	}
+	c.priorXDSVersion = true
+	x.clients[sid] = c
+	x.priorXDSVersions[resourceName]++
+}
+
+func (x *callbacks) HasPriorXDSVersion(resourceName string) bool {
+	c := x.collection.Load()
+	if c == nil {
+		return false
+	}
+	return c.hasPriorXDSVersion(resourceName)
+}
+
+func (x *callbacksCollection) hasPriorXDSVersion(resourceName string) bool {
+	x.stateLock.RLock()
+	defer x.stateLock.RUnlock()
+	return x.priorXDSVersions[resourceName] > 0
+}
+
+// HasColdStreamSince reports whether a cold stream has been connected under
+// resourceName for at least d. A cold proxy sharing a warm name has no
+// listeners until the shared snapshot publishes, so the gate uses this to lift
+// the warm withhold. It scans all streams: call it only at publication
+// deadlines.
+func (x *callbacks) HasColdStreamSince(resourceName string, d time.Duration) bool {
+	c := x.collection.Load()
+	if c == nil {
+		return false
+	}
+	return c.hasColdStreamSince(resourceName, d)
+}
+
+func (x *callbacksCollection) hasColdStreamSince(resourceName string, d time.Duration) bool {
+	x.stateLock.RLock()
+	defer x.stateLock.RUnlock()
+	cutoff := time.Now().Add(-d)
+	for _, c := range x.clients {
+		if c.uniqueClientName == resourceName && !c.priorXDSVersion && !c.connectedAt.After(cutoff) {
+			return true
+		}
+	}
+	return false
+}
+
+// RunIfDisconnected implements XDSClientState. Before collection construction,
+// no stream has been admitted, so fn runs.
+func (x *callbacks) RunIfDisconnected(resourceName string, fn func()) bool {
+	c := x.collection.Load()
+	if c == nil {
+		fn()
+		return true
+	}
+	return c.runIfDisconnected(resourceName, fn)
+}
+
+// runIfDisconnected uses add's admission write lock.
+func (x *callbacksCollection) runIfDisconnected(resourceName string, fn func()) bool {
+	x.stateLock.Lock()
+	defer x.stateLock.Unlock()
+	if x.uniqClientsCount[resourceName] > 0 {
+		return false
+	}
+	fn()
+	return true
 }
 
 func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
