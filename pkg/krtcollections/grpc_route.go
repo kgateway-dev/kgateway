@@ -60,6 +60,7 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(
 
 			AttachedPolicies: policies,
 			ExtensionRefs:    extensionRefs,
+			ResolvedRefsErr:  filterRefErr(extensionRefs),
 		})
 	}
 	return httpRules

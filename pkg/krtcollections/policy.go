@@ -1526,6 +1526,7 @@ func (h *RoutesIndex) transformRules(
 			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
+			ResolvedRefsErr:  filterRefErr(extensionRefs),
 		}
 		if err != nil {
 			ruleOut.Err = err
@@ -1560,6 +1561,17 @@ func (h *RoutesIndex) getExtensionRefs(
 		}
 	}
 	return ret, errors.Join(errs...)
+}
+
+// filterRefErr joins the reference errors of the built-in filters in extensionRefs.
+func filterRefErr(extensionRefs ir.AttachedPolicies) error {
+	var errs []error
+	for _, att := range extensionRefs.Policies[ir.VirtualBuiltInGK] {
+		if b, ok := att.PolicyIr.(*builtinPlugin); ok && b.filter != nil && b.filter.refErr != nil {
+			errs = append(errs, b.filter.refErr)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (h *RoutesIndex) getBuiltInRulePolicies(
