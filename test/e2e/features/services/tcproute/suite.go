@@ -41,7 +41,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // GwApiRequireTcpRoutes, and testify only registers its TearDownSuite deferral
 // after SetupSuite returns — so a skip would leave the timeout context alive.
 func (s *testingSuite) SetupSuite() {
-	testutils.Cleanup(s.T(), s.cancel)
+	testutils.Cleanup(s.T(), func() { s.cancel() })
 	s.BaseTestingSuite.SetupSuite()
 }
 
