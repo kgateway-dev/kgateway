@@ -42,6 +42,9 @@ const (
 	defaultConsistencyPoll   = 1 * time.Second
 )
 
+// defaultAttemptTimeoutSeconds bounds a single request attempt.
+const defaultAttemptTimeoutSeconds = 8
+
 // Send curls the gateway and waits until the response matches using Istio default retry options (10s timeout, 100ms delay).
 func (g *Gateway) Send(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
 	t.Helper()
@@ -188,7 +191,9 @@ func (g *Gateway) curlOpts(opts []curl.Option) []curl.Option {
 	} else {
 		hostOpt = curl.WithHost(g.Address)
 	}
-	base := []curl.Option{hostOpt}
+	// Bound each attempt well below the retry budget, so one hung request (e.g. a cold
+	// upstream connection) cannot use it all up. Callers may override it with their own.
+	base := []curl.Option{hostOpt, curl.WithConnectionTimeout(defaultAttemptTimeoutSeconds)}
 	if g.forwards != nil {
 		base = append(base, curl.WithDialContext(g.forwards.dial))
 	}
