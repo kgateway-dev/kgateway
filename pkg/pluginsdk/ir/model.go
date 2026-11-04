@@ -220,8 +220,8 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// ResourceName and ClusterName here so Gateway-scoped backend clones that
 	// share the same Service and endpoints, but differ in client certificate
 	// identity, do not collapse to the same endpoint hash.
-	// note: we no longer need to add the upstream body hash to the clustername, as we applied `use_eds_cache_for_ads`
-	// to mitigate https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
+	// note: we no longer need to add the upstream body hash to the clustername, as Envoy's EDS cache for ADS
+	// (always on since Envoy 1.37) mitigates https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
 
 	h := fnv.New64a()
 	objSrc := us.GetObjectSource()
@@ -243,7 +243,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte{0})
 	utils.HashUint64(h, utils.HashLabels(labels))
 	h.Write([]byte{0})
-	h.Write([]byte{byte(us.TrafficDistribution)})
+	h.Write([]byte{byte(us.TrafficDistribution)}) //nolint:gosec // G115: TrafficDistribution is a small iota enum
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{

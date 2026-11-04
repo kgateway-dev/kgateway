@@ -1,27 +1,21 @@
 package krtcollections
 
 import (
-	"strings"
 	"testing"
-	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
-	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
-	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -1036,8 +1030,47 @@ func TestRequestRedirectLowerPriorityPolicyDoesNotPostProcessWinningRedirect(t *
 	)
 }
 
+func TestAbsoluteTimeoutIgnored(t *testing.T) {
+	timeout := gwv1.Duration("1h")
+	cookie := gwv1.CookieBasedSessionPersistence
+	header := gwv1.HeaderBasedSessionPersistence
+	permanent := gwv1.PermanentCookieLifetimeType
+	session := gwv1.SessionCookieLifetimeType
+
+	tests := []struct {
+		name string
+		sp   *gwv1.SessionPersistence
+		want bool
+	}{
+		{name: "nil", sp: nil, want: false},
+		{name: "no timeout", sp: &gwv1.SessionPersistence{Type: &cookie, Cookie: &gwv1.CookieConfig{}}, want: false},
+		{
+			name: "permanent cookie",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{LifetimeType: &permanent}},
+			want: false,
+		},
+		{
+			name: "session cookie",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{LifetimeType: &session}},
+			want: true,
+		},
+		{
+			name: "cookie lifetime defaults to session",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{}},
+			want: true,
+		},
+		{name: "type defaults to cookie", sp: &gwv1.SessionPersistence{AbsoluteTimeout: &timeout}, want: true},
+		{name: "header", sp: &gwv1.SessionPersistence{Type: &header, AbsoluteTimeout: &timeout}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, absoluteTimeoutIgnored(tt.sp))
+		})
+	}
+}
+
 func TestSessionPersistenceBackendPolicyTakesPrecedence(t *testing.T) {
-	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{SessionName: new("route-cookie")})
+	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{Cookie: &gwv1.CookieConfig{Name: new(gwv1.CookieName("route-cookie"))}})
 	require.NotNil(t, routeSP)
 	newRoute := func() *envoyroutev3.Route {
 		return &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}}
@@ -1065,62 +1098,6 @@ func TestSessionPersistenceBackendPolicyTakesPrecedence(t *testing.T) {
 	})
 }
 
-// legacyConvertSessionPersistence is the route rule session persistence conversion from before it was
-// moved onto the shared kgateway API conversion. It is the reference for TestConvertSessionPersistenceUnchanged.
-func legacyConvertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *stateful_sessionv3.StatefulSessionPerRoute {
-	if sessionPersistence == nil {
-		return nil
-	}
-	var sessionState proto.Message
-	spType := gwv1.CookieBasedSessionPersistence
-	if sessionPersistence.Type != nil {
-		spType = *sessionPersistence.Type
-	}
-	switch spType {
-	case gwv1.CookieBasedSessionPersistence:
-		var ttl *durationpb.Duration
-		if sessionPersistence.AbsoluteTimeout != nil {
-			if parsed, err := time.ParseDuration(string(*sessionPersistence.AbsoluteTimeout)); err == nil {
-				ttl = durationpb.New(parsed)
-			}
-		}
-		cookie := &httpv3.Cookie{
-			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
-			Ttl:  ttl,
-			Path: "/",
-		}
-		if sessionPersistence.CookieConfig != nil && sessionPersistence.CookieConfig.LifetimeType != nil {
-			switch *sessionPersistence.CookieConfig.LifetimeType {
-			case gwv1.SessionCookieLifetimeType:
-				cookie.Ttl = nil
-			case gwv1.PermanentCookieLifetimeType:
-				if cookie.GetTtl() == nil {
-					cookie.Ttl = durationpb.New(time.Hour * 24 * 365)
-				}
-			}
-		}
-		sessionState = &stateful_cookie.CookieBasedSessionState{Cookie: cookie}
-	case gwv1.HeaderBasedSessionPersistence:
-		sessionState = &stateful_header.HeaderBasedSessionState{
-			Name: utils.SanitizeHeaderName(ptr.Deref(sessionPersistence.SessionName, "x-session-persistence")),
-		}
-	}
-	sessionStateAny, err := utils.MessageToAny(sessionState)
-	if err != nil {
-		return nil
-	}
-	return &stateful_sessionv3.StatefulSessionPerRoute{
-		Override: &stateful_sessionv3.StatefulSessionPerRoute_StatefulSession{
-			StatefulSession: &stateful_sessionv3.StatefulSession{
-				SessionState: &envoycorev3.TypedExtensionConfig{
-					Name:        "envoy.http.stateful_session." + strings.ToLower(string(spType)),
-					TypedConfig: sessionStateAny,
-				},
-			},
-		},
-	}
-}
-
 func unmarshalPerRoute(t *testing.T, a *anypb.Any) *stateful_sessionv3.StatefulSessionPerRoute {
 	t.Helper()
 	if a == nil {
@@ -1131,45 +1108,25 @@ func unmarshalPerRoute(t *testing.T, a *anypb.Any) *stateful_sessionv3.StatefulS
 	return out
 }
 
-// TestConvertSessionPersistenceUnchanged verifies that converting route rule session persistence through the
-// kgateway API produces exactly the Envoy config the route rule conversion produced before.
-func TestConvertSessionPersistenceUnchanged(t *testing.T) {
-	types := []*gwv1.SessionPersistenceType{
-		nil, new(gwv1.CookieBasedSessionPersistence), new(gwv1.HeaderBasedSessionPersistence),
-		// Values the CRD rejects, for objects that bypass validation.
-		new(gwv1.SessionPersistenceType("")), new(gwv1.SessionPersistenceType("cookie")), new(gwv1.SessionPersistenceType("Unknown")),
+func TestConvertSessionPersistenceCookiePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path *string
+		want string
+	}{
+		{name: "unset defaults to root", path: nil, want: "/"},
+		{name: "empty defaults to root", path: new(""), want: "/"},
+		{name: "set is honored", path: new("/app"), want: "/app"},
 	}
-	names := []*string{nil, new(""), new("Session-A"), new("bad name;=")}
-	timeouts := []*gwv1.Duration{
-		nil, new(gwv1.Duration("10s")), new(gwv1.Duration("8760h")), new(gwv1.Duration("bogus")),
-		new(gwv1.Duration("0s")), new(gwv1.Duration("500ms")), new(gwv1.Duration("1h30m")), new(gwv1.Duration("-1h")), new(gwv1.Duration("")),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			perRoute := unmarshalPerRoute(t, convertSessionPersistence(&gwv1.SessionPersistence{Cookie: &gwv1.CookieConfig{Path: tt.path}}))
+			require.NotNil(t, perRoute, "session persistence should be converted")
+			state := &stateful_cookie.CookieBasedSessionState{}
+			require.NoError(t, perRoute.GetStatefulSession().GetSessionState().GetTypedConfig().UnmarshalTo(state))
+			assert.Equal(t, tt.want, state.GetCookie().GetPath())
+		})
 	}
-	cookieConfigs := []*gwv1.CookieConfig{
-		nil,
-		{},
-		{LifetimeType: new(gwv1.SessionCookieLifetimeType)},
-		{LifetimeType: new(gwv1.PermanentCookieLifetimeType)},
-		{LifetimeType: new(gwv1.CookieLifetimeType(""))},
-		{LifetimeType: new(gwv1.CookieLifetimeType("Foo"))},
-	}
-	cases := 0
-	for _, spType := range types {
-		for _, name := range names {
-			for _, timeout := range timeouts {
-				for _, cc := range cookieConfigs {
-					in := &gwv1.SessionPersistence{Type: spType, SessionName: name, AbsoluteTimeout: timeout, CookieConfig: cc}
-					want := legacyConvertSessionPersistence(in)
-					got := unmarshalPerRoute(t, convertSessionPersistence(in))
-					assert.Equal(t, want == nil, got == nil, "nil result changed for type=%v name=%v timeout=%v cookieConfig=%+v",
-						ptr.Deref(spType, "<nil>"), ptr.Deref(name, "<nil>"), ptr.Deref(timeout, "<nil>"), cc)
-					assert.True(t, proto.Equal(want, got), "config changed for type=%v name=%v timeout=%v cookieConfig=%+v\nwant: %v\ngot:  %v",
-						ptr.Deref(spType, "<nil>"), ptr.Deref(name, "<nil>"), ptr.Deref(timeout, "<nil>"), cc, want, got)
-					cases++
-				}
-			}
-		}
-	}
-	assert.Equal(t, 6*4*9*6, cases)
 	assert.Nil(t, convertSessionPersistence(nil), "nil session persistence")
 }
 
@@ -1183,54 +1140,58 @@ func TestSessionPersistenceToAPI(t *testing.T) {
 			name: "defaults",
 			in:   &gwv1.SessionPersistence{},
 			want: &kgateway.SessionPersistence{
-				Type: new(kgateway.CookieBasedSessionPersistence),
-				Cookie: &kgateway.SessionPersistenceCookieConfig{
-					Name: new(kgateway.CookieName("sessionPersistence")), Path: new("/"), LifetimeType: new(kgateway.SessionCookieLifetimeType),
-				},
+				Type:   new(kgateway.CookieBasedSessionPersistence),
+				Cookie: &kgateway.SessionPersistenceCookieConfig{Name: new(kgateway.CookieName("sessionPersistence"))},
 			},
 		},
 		{
-			name: "timeout without lifetime is a permanent cookie",
-			in:   &gwv1.SessionPersistence{SessionName: new("s"), AbsoluteTimeout: new(gwv1.Duration("1h"))},
-			want: &kgateway.SessionPersistence{
-				Type:            new(kgateway.CookieBasedSessionPersistence),
-				AbsoluteTimeout: new(gwv1.Duration("1h")),
-				Cookie: &kgateway.SessionPersistenceCookieConfig{
-					Name: new(kgateway.CookieName("s")), Path: new("/"), LifetimeType: new(kgateway.PermanentCookieLifetimeType),
-				},
-			},
-		},
-		{
-			name: "explicit session lifetime keeps the timeout",
+			name: "cookie fields are copied",
 			in: &gwv1.SessionPersistence{
 				AbsoluteTimeout: new(gwv1.Duration("1h")),
-				CookieConfig:    &gwv1.CookieConfig{LifetimeType: new(gwv1.SessionCookieLifetimeType)},
+				Cookie: &gwv1.CookieConfig{
+					Name: new(gwv1.CookieName("s")), Path: new("/app"), LifetimeType: new(gwv1.PermanentCookieLifetimeType),
+				},
 			},
 			want: &kgateway.SessionPersistence{
 				Type:            new(kgateway.CookieBasedSessionPersistence),
 				AbsoluteTimeout: new(gwv1.Duration("1h")),
 				Cookie: &kgateway.SessionPersistenceCookieConfig{
-					Name: new(kgateway.CookieName("sessionPersistence")), Path: new("/"), LifetimeType: new(kgateway.SessionCookieLifetimeType),
+					Name: new(kgateway.CookieName("s")), Path: new("/app"), LifetimeType: new(kgateway.PermanentCookieLifetimeType),
 				},
+			},
+		},
+		{
+			name: "timeout without lifetime stays a session cookie",
+			in:   &gwv1.SessionPersistence{AbsoluteTimeout: new(gwv1.Duration("1h")), Cookie: &gwv1.CookieConfig{}},
+			want: &kgateway.SessionPersistence{
+				Type:            new(kgateway.CookieBasedSessionPersistence),
+				AbsoluteTimeout: new(gwv1.Duration("1h")),
+				Cookie:          &kgateway.SessionPersistenceCookieConfig{Name: new(kgateway.CookieName("sessionPersistence"))},
 			},
 		},
 		{
 			name: "invalid timeout is dropped",
 			in:   &gwv1.SessionPersistence{AbsoluteTimeout: new(gwv1.Duration("bogus"))},
 			want: &kgateway.SessionPersistence{
-				Type: new(kgateway.CookieBasedSessionPersistence),
-				Cookie: &kgateway.SessionPersistenceCookieConfig{
-					Name: new(kgateway.CookieName("sessionPersistence")), Path: new("/"), LifetimeType: new(kgateway.SessionCookieLifetimeType),
-				},
+				Type:   new(kgateway.CookieBasedSessionPersistence),
+				Cookie: &kgateway.SessionPersistenceCookieConfig{Name: new(kgateway.CookieName("sessionPersistence"))},
 			},
 		},
 		{
-			name: "header",
+			name: "header defaults the name",
 			in:   &gwv1.SessionPersistence{Type: new(gwv1.HeaderBasedSessionPersistence), AbsoluteTimeout: new(gwv1.Duration("1h"))},
 			want: &kgateway.SessionPersistence{
 				Type:            new(kgateway.HeaderBasedSessionPersistence),
 				AbsoluteTimeout: new(gwv1.Duration("1h")),
 				Header:          &kgateway.SessionPersistenceHeaderConfig{Name: "x-session-persistence"},
+			},
+		},
+		{
+			name: "header name is copied",
+			in:   &gwv1.SessionPersistence{Type: new(gwv1.HeaderBasedSessionPersistence), Header: &gwv1.HeaderConfig{Name: "x-s"}},
+			want: &kgateway.SessionPersistence{
+				Type:   new(kgateway.HeaderBasedSessionPersistence),
+				Header: &kgateway.SessionPersistenceHeaderConfig{Name: "x-s"},
 			},
 		},
 	}
@@ -1242,7 +1203,7 @@ func TestSessionPersistenceToAPI(t *testing.T) {
 }
 
 func TestReportSessionPersistenceOverridden(t *testing.T) {
-	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{SessionName: new("route-cookie")})
+	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{Cookie: &gwv1.CookieConfig{Name: new(gwv1.CookieName("route-cookie"))}})
 	backendSP, err := sessionpersistence.Build(sessionpersistence.Config{Type: sessionpersistence.Cookie, Name: "policy-cookie"})
 	require.NoError(t, err)
 	backendSPAny, err := utils.MessageToAny(backendSP)

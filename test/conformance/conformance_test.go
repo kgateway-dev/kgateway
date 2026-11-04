@@ -87,6 +87,9 @@ func TestConformance(t *testing.T) {
 	}
 	options.Debug = true
 	options.TimeoutConfig.MaxTimeToConsistency = 60 * time.Second
+	// Since Gateway API v1.7, base resource cleanup waits for the infra namespace to be
+	// fully deleted. Tearing down all gateway deployments can exceed the 30s default.
+	options.TimeoutConfig.DeleteTimeout = 3 * time.Minute
 
 	t.Logf("Running conformance tests with\nprofiles: %+v\n", profiles)
 	conformance.RunConformanceWithOptions(t, options)

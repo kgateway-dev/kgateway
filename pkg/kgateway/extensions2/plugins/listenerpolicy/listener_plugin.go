@@ -57,6 +57,7 @@ type listenerPolicy struct {
 	clientCertificateValidation *ir.ClientCertificateValidationIR
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
+	tcp  *tcpListenerPolicyIR
 }
 
 func newListenerPolicy(
@@ -75,6 +76,8 @@ func newListenerPolicy(
 		tsct = durationpb.New(i.TransportSocketConnectTimeout.Duration)
 	}
 	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+	tcp, tcpErrs := newTcpListenerPolicy(krtctx, commoncol, i.TCPSettings, objSrc)
+	errs = append(errs, tcpErrs...)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
@@ -82,6 +85,7 @@ func newListenerPolicy(
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		transportSocketConnectTimeout: tsct,
 		http:                          http,
+		tcp:                           tcp,
 	}, errs
 }
 
@@ -133,6 +137,16 @@ func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificat
 	return d.defaultPolicy.clientCertificateValidation
 }
 
+// clone returns a copy of d that can be merged into without changing d. Merging assigns
+// fields, except for httpSettings, whose fields are merged into the struct in place.
+func (d listenerPolicy) clone() listenerPolicy {
+	if d.http != nil {
+		http := *d.http
+		d.http = &http
+	}
+	return d
+}
+
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
 		return false
@@ -161,6 +175,10 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 	if d.http != nil && !d.http.Equals(d2.http) {
+		return false
+	}
+
+	if !d.tcp.Equals(d2.tcp) {
 		return false
 	}
 
@@ -288,6 +306,7 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
+	//nolint:sloglint // keep the existing log key; renaming it would break log queries
 	logger.Debug("applying to listener", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
 	cfg := p.getPolicy(pCtx.Policy, pCtx.Port)
 
@@ -407,6 +426,9 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	}
 	if policy.mergeSlashes != nil {
 		out.MergeSlashes = *policy.mergeSlashes
+	}
+	if policy.pathWithEscapedSlashesAction != nil {
+		out.PathWithEscapedSlashesAction = *policy.pathWithEscapedSlashesAction
 	}
 	if policy.proxy100Continue != nil {
 		out.Proxy_100Continue = *policy.proxy100Continue

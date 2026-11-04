@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	clusterScopingSubsystem = "xds_cluster_scoping"
+	clusterScopingSubsystem = "xds_scoping"
 	transitionLabel         = "transition"
 )
 
@@ -29,9 +29,10 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
-	// clusterScopingDisabledGateways counts gateways whose CDS reverted to
-	// every backend because their configuration, or a kept backend's own
-	// listeners, pick a destination at request time. Alert on it: without the
+	// clusterScopingDisabledGateways counts gateways whose xDS scoping reverted
+	// to every backend's CDS/EDS and backend-owned LDS/SDS resources because
+	// their configuration, or a kept backend's own listeners, pick a destination
+	// at request time. Alert on it: without the
 	// revert the failure is silent, since the selecting plugin falls back
 	// instead of returning 503. A nonzero value means scoping is off for at
 	// least one of the gateway's connected proxy groups.
@@ -39,7 +40,7 @@ var (
 		metrics.GaugeOpts{
 			Subsystem: clusterScopingSubsystem,
 			Name:      "disabled_gateways",
-			Help:      "Gateways with a connected proxy group whose CDS is unscoped because its configuration selects a destination at request time",
+			Help:      "Gateways with a connected proxy group whose CDS, EDS and backend-owned LDS/SDS resources are unscoped because its configuration selects a destination at request time",
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
@@ -153,7 +154,7 @@ func (g *gatewayScopingState) update() (turnedOn bool) {
 	return turnedOn
 }
 
-// reportClusterScopingDisabled records why clientKey's CDS is unscoped (no
+// reportClusterScopingDisabled records why clientKey's xDS is unscoped (no
 // reasons: it is scoped), sets its gateway's disabled gauge, and warns when the
 // gateway turns unscoped rather than on every build. Recording 0 keeps the
 // series present, so an alert fires on a change to 1 rather than on a new
@@ -165,7 +166,7 @@ func reportClusterScopingDisabled(log *slog.Logger, clientKey string, reasons []
 	state := gatewayScopingStateLocked(cd)
 	state.clients[clientKey] = len(reasons) > 0
 	if state.update() {
-		log.Warn("cluster scoping disabled for this gateway: its configuration or a kept backend's listeners select a destination at request time that no claim accounts for",
+		log.Warn("xDS scoping disabled for this gateway: its configuration or a kept backend's listeners select a destination at request time that no claim accounts for",
 			"client", clientKey,
 			"reasons", reasons)
 	}

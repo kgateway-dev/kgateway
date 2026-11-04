@@ -25,7 +25,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 
 	// Set Istio version if not already set
 	if os.Getenv(testruntime.IstioVersionEnv) == "" {
-		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion) // Using minimum required version that supports multiple TargetRef types for Istio Authz policies.
+		os.Setenv(testruntime.IstioVersionEnv, testruntime.DefaultIstioVersion)
 	}
 
 	if testruntime.ShouldSkipIstioVersion(t, minWaypointIstioVersion) {

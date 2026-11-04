@@ -243,7 +243,7 @@ func TestSessionPersistenceBackendNote(t *testing.T) {
 		"AWS EC2 has instances to pin to":                                {Aws: &kgateway.AwsBackend{Ec2: &kgateway.AwsEc2{}}},
 		"single IP static has a single host":                             {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{ipHost}}},
 		"single hostname static may resolve to several addresses":        {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host}}},
-		"multi host static":                                              {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host, host}}},
+		"multi host static": {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host, host}}},
 	} {
 		n, report := note(spec)
 		assert.Empty(t, n, name)

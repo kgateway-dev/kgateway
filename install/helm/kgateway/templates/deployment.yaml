@@ -135,6 +135,20 @@ spec:
               value: {{ .Values.controller.logLevel | quote }}
             - name: KGW_ADMIN_BIND_ADDRESS
               value: {{ .Values.controller.admin.bindAddress | quote }}
+            {{- if .Values.controller.leaderElection }}
+            {{- with .Values.controller.leaderElection.leaseDuration }}
+            - name: KGW_LEADER_ELECTION_LEASE_DURATION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.controller.leaderElection.renewDeadline }}
+            - name: KGW_LEADER_ELECTION_RENEW_DEADLINE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.controller.leaderElection.retryPeriod }}
+            - name: KGW_LEADER_ELECTION_RETRY_PERIOD
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             - name: KGW_XDS_SERVICE_NAME
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
@@ -161,6 +175,27 @@ spec:
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
+            {{- $extraEnv := .Values.controller.extraEnv | default dict }}
+            {{- $xdsScoping := .Values.controller.xds.scoping | default dict }}
+            {{- /* Each entry: controller.xds.scoping key, variable, validator. A set value
+              is validated even when extraEnv overrides it, and an extraEnv value is
+              validated but rendered by the extraEnv loop below, as written. */}}
+            {{- range $setting := list (list "mode" "KGW_XDS_SCOPING_MODE" "kgateway.xdsScopingMode") (list "referenceAhead" "KGW_XDS_SCOPING_REFERENCE_AHEAD" "kgateway.xdsScopingDuration") (list "dereferenceGrace" "KGW_XDS_SCOPING_DEREFERENCE_GRACE" "kgateway.xdsScopingDuration") }}
+            {{- $key := index $setting 0 }}
+            {{- $env := index $setting 1 }}
+            {{- $validator := index $setting 2 }}
+            {{- if hasKey $extraEnv $env }}
+            {{- $_ := include $validator (dict "value" (get $extraEnv $env) "path" (printf "controller.extraEnv.%s" $env)) }}
+            {{- end }}
+            {{- $value := index $xdsScoping $key }}
+            {{- if and (not (kindIs "invalid" $value)) (ne (toString $value) "") }}
+            {{- $validated := include $validator (dict "value" $value "path" (printf "controller.xds.scoping.%s" $key)) }}
+            {{- if not (hasKey $extraEnv $env) }}
+            - name: {{ $env }}
+              value: {{ $validated | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
@@ -169,8 +204,8 @@ spec:
             {{- end }}
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
-            {{- if .Values.waypoint.enabled }}
-            - name: KGW_ENABLE_WAYPOINT
+            {{- if and .Values.waypoint.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_INGRESS_USE_WAYPOINTS"))) }}
+            - name: KGW_INGRESS_USE_WAYPOINTS
               value: "true"
             {{- end }}
             {{- if and .Values.controller.xds.tls.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_XDS_TLS"))) }}

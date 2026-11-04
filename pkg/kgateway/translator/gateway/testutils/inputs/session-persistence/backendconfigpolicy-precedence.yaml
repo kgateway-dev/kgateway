@@ -66,8 +66,9 @@ spec:
         - name: backend-a
           port: 3000
       sessionPersistence:
-        sessionName: route-cookie
         type: Cookie
+        cookie:
+          name: route-cookie
     # single backend without a policy: the rule applies
     - matches:
         - path:
@@ -77,8 +78,9 @@ spec:
         - name: backend-b
           port: 3000
       sessionPersistence:
-        sessionName: route-cookie
         type: Cookie
+        cookie:
+          name: route-cookie
     # split: the policy applies to backend-a, the rule to backend-b
     - matches:
         - path:
@@ -92,5 +94,6 @@ spec:
           port: 3000
           weight: 50
       sessionPersistence:
-        sessionName: route-cookie
         type: Cookie
+        cookie:
+          name: route-cookie

@@ -39,6 +39,7 @@ spec:
   healthCheck:
     timeout: 3s
     interval: 2s
+    noTrafficInterval: 60s
     unhealthyThreshold: 3
     healthyThreshold: 2
     http:
