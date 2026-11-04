@@ -113,6 +113,14 @@ func (s *SecretIndex) GetSecretWithoutRefGrant(kctx krt.HandlerContext, secretNa
 	return s.GetSecret(kctx, from, secretRef)
 }
 
+// SelectorNote names the Secret label selector, for appending to an error about a lookup that
+// found nothing, since a Secret it excludes is invisible here. It is "" when the Secret watch is
+// unfiltered. GetSecretsBySelector cannot apply it itself: it returns no error for an empty
+// result, and with the selector set it cannot tell how many matches it never saw.
+func (s *SecretIndex) SelectorNote() string {
+	return s.selector.excludedNote("Secret")
+}
+
 // GetSecretsBySelector retrieves secrets matching the label selector,
 // validating reference grants to ensure the source (from) object is allowed to reference each secret.
 // Processes all matching secrets, skipping those without required ReferenceGrants.

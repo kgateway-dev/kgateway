@@ -272,3 +272,18 @@ func TestBaseEnvoyClusterEquals_UndeclaredInputs(t *testing.T) {
 	other.Backend = &changed
 	require.True(t, base.Equals(other), "declared hooks compare their hash instead of unread IR fields")
 }
+
+// TestReportNoBackendsWarnsOnlyAfterSync pins that an empty backend set is a
+// warning once the base collection has synced, when it freezes the client's
+// xDS, and not during startup, when it is expected.
+func TestReportNoBackendsWarnsOnlyAfterSync(t *testing.T) {
+	log, logged := bufferLogger()
+
+	reportNoBackends(log, "kube-gateway-api~ns~gw", false)
+	require.Empty(t, logged.String(), "an unsynced base is ordinary startup")
+
+	reportNoBackends(log, "kube-gateway-api~ns~gw", true)
+	require.Contains(t, logged.String(), "no backends translated")
+	require.Contains(t, logged.String(), "serviceLabelSelector", "the warning names the likely cause")
+	require.Contains(t, logged.String(), "kube-gateway-api~ns~gw", "the warning names the client")
+}

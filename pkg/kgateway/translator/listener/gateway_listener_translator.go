@@ -1431,16 +1431,16 @@ func translateTLSConfig(
 // caConfigMapFetchError classifies a failed CA certificate ConfigMap lookup. A miss caused by
 // ConfigMapLabelSelector keeps the selector diagnostic, so listener status names the selector;
 // the reason is still InvalidCACertificateRef.
-func caConfigMapFetchError(name, namespace string, err error) error {
+func caConfigMapFetchError(namespace, name string, err error) error {
 	// If its a missing reference grant error, return the CA Certificate specific error
 	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
-		return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", name, namespace, sslutils.ErrMissingCaCertificateRefGrant)
+		return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", namespace, name, sslutils.ErrMissingCaCertificateRefGrant)
 	}
 	if selectorErr, ok := errors.AsType[*krtcollections.SelectorNotFoundError](err); ok {
-		return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w: %w", name, namespace, sslutils.ErrInvalidCACertificateRef, selectorErr)
+		return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w: %w", namespace, name, sslutils.ErrInvalidCACertificateRef, selectorErr)
 	}
 	// If its not a missing reference grant error, return the invalid certificate ref error
-	return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", name, namespace, sslutils.ErrInvalidCACertificateRef)
+	return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", namespace, name, sslutils.ErrInvalidCACertificateRef)
 }
 
 func buildCaCertificateReference(
@@ -1462,7 +1462,11 @@ func buildCaCertificateReference(
 			caCertRef,
 		)
 		if err != nil {
-			return "", caConfigMapFetchError(string(caCertRef.Name), parentNamespace, err)
+			namespace := parentNamespace
+			if caCertRef.Namespace != nil {
+				namespace = string(*caCertRef.Namespace)
+			}
+			return "", caConfigMapFetchError(namespace, string(caCertRef.Name), err)
 		}
 
 		// Extract CA certificate from ConfigMap

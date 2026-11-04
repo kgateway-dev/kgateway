@@ -50,6 +50,19 @@ func (c *ConfigMapIndex) Collection() krt.Collection[*corev1.ConfigMap] {
 	return c.configmaps
 }
 
+// GetConfigMapWithoutRefGrant retrieves a ConfigMap from the given namespace. Like
+// SecretIndex.GetSecretWithoutRefGrant, it is for same-namespace references, which need no
+// ReferenceGrant, and a miss names the ConfigMap label selector when one is set.
+func (c *ConfigMapIndex) GetConfigMapWithoutRefGrant(kctx krt.HandlerContext, name, ns string) (*corev1.ConfigMap, error) {
+	return c.GetConfigMap(kctx, From{Namespace: ns}, gwv1.ObjectReference{Name: gwv1.ObjectName(name)})
+}
+
+// SelectorNote names the ConfigMap label selector, for appending to an error about a lookup that
+// found nothing, or returns "" when the ConfigMap watch is unfiltered.
+func (c *ConfigMapIndex) SelectorNote() string {
+	return c.selector.excludedNote("ConfigMap")
+}
+
 // GetConfigMap retrieves a ConfigMap from the index, validating reference grants to ensure
 // the source object is allowed to reference the target ConfigMap. Returns an error if
 // reference grants are missing, or the ConfigMap is not found.

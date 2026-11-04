@@ -2,6 +2,7 @@ package collections_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -134,8 +135,8 @@ func TestLabelSelectorsNarrowSecretAndConfigMapCollections(t *testing.T) {
 }
 
 // TestSecretLabelSelectorKeepsOAuth2HMACSecretVisible asserts that the OAuth2 HMAC Secret,
-// which kgateway creates and reads back through the Secrets collection, stays visible when the
-// operator's selector does not match it.
+// which kgateway creates, stays visible through its own scoped collection when the operator's
+// selector does not match it, without widening the Secrets collection.
 func TestSecretLabelSelectorKeepsOAuth2HMACSecretVisible(t *testing.T) {
 	ctx := t.Context()
 	hmacNs := wellknown.OAuth2HMACSecret.Namespace
@@ -163,11 +164,14 @@ func TestSecretLabelSelectorKeepsOAuth2HMACSecretVisible(t *testing.T) {
 	require.Empty(t, listSecrets(t, commoncol, []string{"unlabeled-secret"}),
 		"the selector must still exclude other Secrets")
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		hmac, err := commoncol.Secrets.GetSecretWithoutRefGrant(krt.TestingDummyContext{},
-			wellknown.OAuth2HMACSecret.Name, hmacNs)
-		require.NoError(c, err)
-		require.Equal(c, []byte("key"), hmac.Data[wellknown.OAuth2HMACSecretKey])
+		hmac := commoncol.OAuth2HMACSecret.GetKey(wellknown.OAuth2HMACSecret.String())
+		require.NotNil(c, hmac)
+		require.Equal(c, []byte("key"), (*hmac).Data[wellknown.OAuth2HMACSecretKey])
 	}, 10*time.Second, 10*time.Millisecond, "the OAuth2 HMAC Secret must be visible")
+	require.Len(t, commoncol.OAuth2HMACSecret.List(), 1, "the scoped collection holds only the HMAC Secret")
+	_, err = commoncol.Secrets.GetSecretWithoutRefGrant(krt.TestingDummyContext{},
+		wellknown.OAuth2HMACSecret.Name, hmacNs)
+	require.Error(t, err, "the Secrets collection must stay scoped to the operator's selector")
 }
 
 // TestSelectorNotFoundDiagnostics asserts that a lookup miss on a narrowed Secret or ConfigMap
@@ -207,12 +211,21 @@ func TestSelectorNotFoundDiagnostics(t *testing.T) {
 			require.EqualError(t, err, tt.wantMsg)
 			var notFound *krtcollections.NotFoundError
 			require.ErrorAs(t, err, &notFound, "the selector error must still unwrap to NotFoundError")
+			require.Equal(t, strings.TrimPrefix(tt.wantMsg, "Secret default/missing not found"),
+				commoncol.Secrets.SelectorNote(), "a selector lookup that finds nothing names the selector the same way")
 
 			_, err = commoncol.ConfigMaps.GetConfigMap(krt.TestingDummyContext{},
 				krtcollections.From{Namespace: "default"}, gwv1.ObjectReference{Name: "missing"})
 			var selectorErr *krtcollections.SelectorNotFoundError
 			require.Equal(t, tt.settings.ConfigMapLabelSelector != "", errors.As(err, &selectorErr), err.Error())
 			require.ErrorAs(t, err, &notFound)
+
+			// Same-namespace lookups that skip ReferenceGrants, such as a JWT provider's local
+			// JWKS or a BackendTLSPolicy CA, name the selector too.
+			_, sameNsErr := commoncol.ConfigMaps.GetConfigMapWithoutRefGrant(krt.TestingDummyContext{}, "missing", "default")
+			require.EqualError(t, sameNsErr, err.Error())
+			require.Equal(t, tt.settings.ConfigMapLabelSelector != "",
+				strings.Contains(commoncol.ConfigMaps.SelectorNote(), "configMapLabelSelector"))
 		})
 	}
 }

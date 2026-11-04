@@ -47,10 +47,18 @@ type SelectorNotFoundError struct {
 }
 
 func (e *SelectorNotFoundError) Error() string {
-	kind := e.NotFound.NotFoundObj.Kind
+	return e.NotFound.Error() + e.excludedNote(e.NotFound.NotFoundObj.Kind)
+}
+
+// excludedNote is the clause appended to a lookup of kind that came back empty, naming the
+// selector and where it is configured, or "" when the watch is unfiltered.
+func (w WatchSelector) excludedNote(kind string) string {
+	if w.Selector == "" {
+		return ""
+	}
 	return fmt.Sprintf(
-		"%s; kgateway only watches %ss matching label selector %q (Helm value %s, %s); verify the %s labels match the selector",
-		e.NotFound, kind, e.Selector, e.HelmValue, e.EnvVar, kind,
+		"; kgateway only watches %ss matching label selector %q (Helm value %s, %s); verify the %s labels match the selector",
+		kind, w.Selector, w.HelmValue, w.EnvVar, kind,
 	)
 }
 

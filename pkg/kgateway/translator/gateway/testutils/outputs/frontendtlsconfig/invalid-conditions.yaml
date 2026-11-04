@@ -44,8 +44,8 @@ Statuses:
       conditions:
       - lastTransitionTime: null
         message: |-
-          Some listeners are not programmed: https: failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef; listener-bad-certref: failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef; listener-partially-valid: invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind; listener-bad-certkind: failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
-          failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef; listener-missing-refgrant: failed to fetch CA certificate ConfigMap ca-cert-2/default: missing CA certificate reference grant
+          Some listeners are not programmed: https: failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef; listener-bad-certref: failed to fetch CA certificate ConfigMap default/ca-cert-missing: InvalidCACertificateRef; listener-partially-valid: invalid ca.crt kind Service in default/ca-cert-missing: InvalidCACertificateKind; listener-bad-certkind: failed to fetch CA certificate ConfigMap default/ca-cert-missing: InvalidCACertificateRef
+          failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef; listener-missing-refgrant: failed to fetch CA certificate ConfigMap ca-cert-2/ca-cert-2: missing CA certificate reference grant
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -63,17 +63,17 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef'
+          message: 'failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef'
           reason: InvalidCACertificateRef
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef'
+          message: 'failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef'
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef'
+          message: 'failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef'
           reason: NoValidCACertificate
           status: "False"
           type: Accepted
@@ -91,19 +91,19 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+          message: 'failed to fetch CA certificate ConfigMap default/ca-cert-missing:
             InvalidCACertificateRef'
           reason: InvalidCACertificateRef
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+          message: 'failed to fetch CA certificate ConfigMap default/ca-cert-missing:
             InvalidCACertificateRef'
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert-missing/default:
+          message: 'failed to fetch CA certificate ConfigMap default/ca-cert-missing:
             InvalidCACertificateRef'
           reason: NoValidCACertificate
           status: "False"
@@ -179,22 +179,22 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: |-
-            failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
-            failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap default/ca-cert-missing: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef
           reason: InvalidCACertificateRef
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
           message: |-
-            failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
-            failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap default/ca-cert-missing: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
           message: |-
-            failed to fetch CA certificate ConfigMap ca-cert-missing/default: InvalidCACertificateRef
-            failed to fetch CA certificate ConfigMap ca-cert/default: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap default/ca-cert-missing: InvalidCACertificateRef
+            failed to fetch CA certificate ConfigMap default/ca-cert: InvalidCACertificateRef
           reason: NoValidCACertificate
           status: "False"
           type: Accepted
@@ -212,20 +212,20 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/default: missing
-            CA certificate reference grant'
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/ca-cert-2:
+            missing CA certificate reference grant'
           reason: RefNotPermitted
           status: "False"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/default: missing
-            CA certificate reference grant'
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/ca-cert-2:
+            missing CA certificate reference grant'
           reason: Invalid
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/default: missing
-            CA certificate reference grant'
+          message: 'failed to fetch CA certificate ConfigMap ca-cert-2/ca-cert-2:
+            missing CA certificate reference grant'
           reason: NoValidCACertificate
           status: "False"
           type: Accepted

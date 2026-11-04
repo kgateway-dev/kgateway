@@ -31,7 +31,7 @@ const (
 
 var (
 	setupManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	matchingServiceManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "matching-service.yaml")
+	matchingRouteManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "matching-route.yaml")
 	positiveExcludedServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "positive-excluded-service.yaml")
 	negativeExcludedServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "negative-excluded-service.yaml")
 
@@ -40,7 +40,7 @@ var (
 	}
 	testCases = map[string]*base.TestCase{
 		"TestPositiveAndNegativeSelectorsIncludeMatchingService": {
-			Manifests: []string{matchingServiceManifest},
+			Manifests: []string{matchingRouteManifest},
 		},
 		"TestPositiveSelectorExcludesNonMatchingService": {
 			Manifests: []string{positiveExcludedServiceManifest},

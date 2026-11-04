@@ -619,7 +619,7 @@ func TestCAConfigMapFetchErrorStatus(t *testing.T) {
 			name:        "a plain miss keeps the existing message",
 			lookupErr:   missing,
 			wantReason:  sslutils.ListenerReasonInvalidCACertificateRef,
-			wantMessage: "failed to fetch CA certificate ConfigMap ca/default: InvalidCACertificateRef",
+			wantMessage: "failed to fetch CA certificate ConfigMap default/ca: InvalidCACertificateRef",
 		},
 		{
 			name:        "a selector miss names the selector",
@@ -631,13 +631,13 @@ func TestCAConfigMapFetchErrorStatus(t *testing.T) {
 			name:        "a missing reference grant is not relabeled",
 			lookupErr:   krtcollections.ErrMissingReferenceGrant,
 			wantReason:  gwv1.ListenerReasonRefNotPermitted,
-			wantMessage: "failed to fetch CA certificate ConfigMap ca/default: missing CA certificate reference grant",
+			wantMessage: "failed to fetch CA certificate ConfigMap default/ca: missing CA certificate reference grant",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lr := &reports.ListenerReport{}
-			reportTLSConfigError(caConfigMapFetchError("ca", "default", tt.lookupErr), lr, false)
+			reportTLSConfigError(caConfigMapFetchError("default", "ca", tt.lookupErr), lr, false)
 
 			resolvedRefs := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs))
 			require.NotNil(t, resolvedRefs, "ResolvedRefs must be set for a failed CA lookup")

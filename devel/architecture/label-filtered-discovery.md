@@ -95,8 +95,15 @@ While a selector is set, a lookup miss for that kind names the selector and wher
 configured (`krtcollections.SelectorNotFoundError`, which unwraps to `NotFoundError`), so the
 cause shows up in status messages. This covers Service backends resolved through the
 `BackendIndex`, Secrets resolved through the `SecretIndex`, and ConfigMaps resolved through
-the `ConfigMapIndex`. Listener and Gateway status, which rewrite not-found errors into their
+the `ConfigMapIndex`, including the same-namespace lookups for a JWT provider's local JWKS and
+a BackendTLSPolicy CA. Listener and Gateway status, which rewrite not-found errors into their
 own message, keep the selector through `listener.ResourceNotFoundMessage`.
+
+A lookup by label rather than by name is weaker. An API key policy's `secretSelector` sees only
+the Secrets that `SecretLabelSelector` also matches. When it finds none, its error names the
+selector (`SecretIndex.SelectorNote`). When it finds some but not all, the excluded Secrets'
+keys are missing with no error at all, since kgateway never sees them; those clients' requests
+are rejected. Label API key Secrets so they match both selectors.
 
 ## Objects kgateway owns
 
@@ -115,10 +122,11 @@ them is required to. Each is read back through a separate, narrow watch instead:
   number of Gateways. With no selector set, both watches are unfiltered and share one
   informer, as before.
 - **The OAuth2 HMAC Secret** (`wellknown.OAuth2HMACSecret`), created by the bootstrap
-  controller and read by the OAuth2 policy through `CommonCollections.Secrets`. When
-  `SecretLabelSelector` is set, `NewCommonCollections` joins a watch scoped to that Secret by
-  name and namespace into the Secrets collection. Its filter matches the bootstrap
-  controller's, so the two share an informer holding one object.
+  controller. The OAuth2 policy reads it through `CommonCollections.OAuth2HMACSecret`, a watch
+  scoped to that Secret by name and namespace, not through `CommonCollections.Secrets`. Its
+  filter matches the bootstrap controller's, so the two share an informer holding one object.
+  Joining it into the Secrets collection instead would put every Secret event through the
+  join's lock and bookkeeping to make one object visible.
 
 Neither watch is cluster-wide, which is what matters: leaving one unfiltered would keep the
 cluster-wide cache the setting exists to remove. Keeping kgateway's own objects off the
@@ -141,6 +149,24 @@ latter.
 
 - The settings are read once at startup. Changing one requires a controller restart, which a
   Helm upgrade does anyway.
+- The proxy syncer publishes nothing to a proxy while the controller has no backend at all
+  (`newPerClientEnvoyClusters` in `proxy_syncer/backends.go`), a state `kubernetes.default`
+  normally rules out. A `ServiceLabelSelector` that `kubernetes.default` does not match removes
+  that guarantee, and with no matching Service and no `Backend` resource the controller
+  reaches it. What happens then depends on the proxy:
+  - A proxy that has never received configuration stays unready. Its bootstrap waits for CDS
+    and LDS with no `initial_fetch_timeout`, so Envoy never finishes initializing and its
+    readiness probe never passes. New pods hang and rollouts stall, which is visible.
+  - A proxy that is already serving stays Ready and keeps its last configuration, because the
+    syncer deliberately keeps a connected client's last snapshot rather than withdraw it. Every
+    later change then stops reaching it: routes, listeners, policies, and certificate
+    rotation. Route and Gateway status still describe the intended state, so nothing but the
+    proxy's own config dump shows the drift. A controller restart does not clear it.
+
+  Both clear as soon as any backend exists. The controller logs a warning naming the client
+  (`no backends translated`) whenever this state is reached after its caches sync. Until the
+  syncer can tell "synced and empty" from "not synced yet", make sure the selector always
+  matches at least one Service.
 - There is no cluster-wide way to find out which objects kgateway *would* need selected before
   narrowing a live install; references that lose their target surface as status conditions
   after the fact.
@@ -153,7 +179,5 @@ latter.
   the watch is left unfiltered for now.
 - The gateway controller also watches Deployments and ServiceAccounts cluster-wide for the
   same parent-enqueue purpose. They could be narrowed with the same `managed-by` selector.
-- Lookups that bypass the indexes, such as the JWT provider's local JWKS ConfigMap lookup in
-  `trafficpolicy/jwt.go` and the BackendTLSPolicy CA certificate ConfigMap lookup in
-  `backendtlspolicy/plugin.go`, report the plain not-found error without naming the selector.
-  So do policy `targetRefs` to a Service, which report `Service <ns>/<name> not found`.
+- Policy `targetRefs` to a Service report `Service <ns>/<name> not found` without naming the
+  selector.
