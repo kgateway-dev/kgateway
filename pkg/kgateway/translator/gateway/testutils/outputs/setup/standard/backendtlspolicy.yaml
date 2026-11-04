@@ -41,6 +41,13 @@ Clusters:
               -----END CERTIFICATE-----
       sni: example.com
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 Endpoints:
 - clusterName: kube_gwtest_reviews_8080
   endpoints:

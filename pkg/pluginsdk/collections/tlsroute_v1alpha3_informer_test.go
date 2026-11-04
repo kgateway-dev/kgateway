@@ -29,7 +29,7 @@ import (
 
 func TestDelayedTLSRouteV1Alpha3InformerReportsSyncedWithoutCRD_Issue13661(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
@@ -44,7 +44,7 @@ func TestDelayedTLSRouteV1Alpha3InformerReportsSyncedWithoutCRD_Issue13661(t *te
 
 func TestDelayedTLSRouteV1Alpha3InformerBypassesCrdWatcherFilter_Issue13735(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
@@ -97,7 +97,7 @@ func TestDelayedTLSRouteV1Alpha3InformerBypassesCrdWatcherFilter_Issue13735(t *t
 // can reach, so the watch now starts for the right reason instead of on a guess.
 func TestDelayedTLSRouteV1Alpha3InformerRecoversThroughDiscoveryWhenCRDReadIsDenied(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
@@ -126,7 +126,7 @@ func TestDelayedTLSRouteV1Alpha3InformerRecoversThroughDiscoveryWhenCRDReadIsDen
 // that never finishes syncing is not.
 func TestDelayedTLSRouteV1Alpha3InformerParksWhenNoReaderCanAnswer(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
@@ -218,7 +218,7 @@ func createV1Alpha3TLSRoute(t *testing.T, client kube.Client) {
 // keeps startup unblocked.
 func TestDelayedTLSRouteV1InformerDoesNotBlockWhenV1IsNotServed(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()

@@ -129,7 +129,7 @@ func (f *fakeDelayedUnstructuredInformer) Index(name string, _ func(o *unstructu
 
 func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutCRD(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	client := kube.NewFakeClient()
 
 	inf := newDelayedDynamicUnstructuredInformer(context.Background(), client, wellknown.XListenerSetGVR, kclient.Filter{})
@@ -140,7 +140,7 @@ func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutCRD(t *testing.T)
 }
 
 func TestServedVersionGateTracksAbsenceAuthoritatively(t *testing.T) {
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	client := kube.NewFakeClient()
 
 	start, resolved := servedVersionGate(newRouteVersionSource(client), wellknown.TLSRouteV1Alpha3GVR)(context.Background())
@@ -149,7 +149,7 @@ func TestServedVersionGateTracksAbsenceAuthoritatively(t *testing.T) {
 }
 
 func TestServedVersionGateStartsWhenVersionIsServed(t *testing.T) {
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	client := kube.NewFakeClient()
 	makeServedCRD(t, client, wellknown.TLSRouteV1Alpha3GVR, "v1.4.1")
 

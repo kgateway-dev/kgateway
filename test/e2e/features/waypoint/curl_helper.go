@@ -14,8 +14,7 @@ import (
 var (
 	testAppPort = 8080
 
-	fromCurl    = kubectl.PodExecOptions{Name: "curl", Namespace: testNamespace, Container: "curl"}
-	fromNotCurl = kubectl.PodExecOptions{Name: "notcurl", Namespace: testNamespace, Container: "notcurl"}
+	fromCurl = kubectl.PodExecOptions{Name: "curl", Namespace: testNamespace, Container: "curl"}
 )
 
 func (s *testingSuite) assertCurlService(
@@ -27,37 +26,8 @@ func (s *testingSuite) assertCurlService(
 	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "GET", path...)
 }
 
-// assertCurlServicePost is a helper function to assert a POST request to a service
-func (s *testingSuite) assertCurlServicePost(
-	from kubectl.PodExecOptions,
-	svcName, svcNs string,
-	matchers matchers.HttpResponse,
-	path ...string, //nolint:unparam // The variadic params might cause false positive
-) {
-	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "POST", path...)
-}
-
 func fqdn(name, ns string) string {
 	return kubeutils.GetServiceHostname(name, ns)
-}
-
-func (s *testingSuite) assertCurlHost(
-	from kubectl.PodExecOptions,
-	targetHost string,
-	matchers matchers.HttpResponse,
-	path ...string, //nolint:unparam // The variadic params might cause false positive
-) {
-	s.assertCurlInner(from, targetHost, "", matchers, "GET", path...)
-}
-
-// assertCurlHostPost is a helper function to assert a POST request to a host
-func (s *testingSuite) assertCurlHostPost(
-	from kubectl.PodExecOptions,
-	targetHost string,
-	matchers matchers.HttpResponse,
-	path ...string, //nolint:unparam // The variadic params might cause false positive
-) {
-	s.assertCurlInner(from, targetHost, "", matchers, "POST", path...)
 }
 
 func (s *testingSuite) assertCurlInner(
@@ -102,13 +72,4 @@ func (s *testingSuite) assertCurlInner(
 		curlOpts,
 		&matchers,
 	)
-}
-
-// assertCurlGeneric is added to unify testing of mutlivalued iterating tests
-func (s *testingSuite) assertCurlGeneric(
-	from kubectl.PodExecOptions,
-	svc, method, path string,
-	expected matchers.HttpResponse,
-) {
-	s.assertCurlInner(from, fqdn(svc, testNamespace), "", expected, method, path)
 }

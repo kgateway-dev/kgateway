@@ -47,15 +47,15 @@ func TestSnapshotPerClientScaleToZeroPublishesEmptyCLA(t *testing.T) {
 	})
 	endpointReady := endpointsForClient(ucc, "cluster-old", 2)
 	endpointScaledToZero := emptyEndpointsForClient(ucc, "cluster-old", 3)
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointReady})
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointReady})
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
@@ -116,26 +116,26 @@ func TestSnapshotPerClientWarmingClusterHoldsOnlyRouteFlip(t *testing.T) {
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{
 		edsClusterForClient(ucc, "cluster-old", 1),
 	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		endpointsForClient(ucc, "cluster-old", 2),
 	})
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -198,15 +198,15 @@ func TestSnapshotPerClientFlipReleasesOnByteIdenticalDerivedEmptyCLA(t *testing.
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	erroredCluster := edsClusterForClient(ucc, "cluster-err", 0)
 	erroredCluster.Error = errors.New("translation failed")
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{
 		edsClusterForClient(ucc, "cluster-old", 1),
 		erroredCluster,
 	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		endpointsForClient(ucc, "cluster-old", 2),
 		// The errored cluster's CLA is dropped every build, pinning the
 		// recomputed-version branch.
@@ -216,14 +216,14 @@ func TestSnapshotPerClientFlipReleasesOnByteIdenticalDerivedEmptyCLA(t *testing.
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -282,10 +282,10 @@ func TestSnapshotPerClientErroredClusterIsNotCarriedDuringHeldFlip(t *testing.T)
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterOld := edsClusterForClient(ucc, "cluster-old", 1)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		endpointsForClient(ucc, "cluster-old", 2),
 	})
@@ -293,14 +293,14 @@ func TestSnapshotPerClientErroredClusterIsNotCarriedDuringHeldFlip(t *testing.T)
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
 			endpoints: endpointCol,
 			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 

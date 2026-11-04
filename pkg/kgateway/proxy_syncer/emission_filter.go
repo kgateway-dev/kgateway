@@ -51,7 +51,7 @@ func filterClustersToEmitted(
 // emits reports whether the filter keeps a cluster: one the configuration
 // names, or one a claimed use keeps though nothing names it, including the
 // plugin's placeholder, which stops being named once the feature is doing its
-// job. DecideClusterScoping reports the same decision.
+// job. DecideXdsScoping reports the same decision.
 func (e emittedClusters) emits(kept claimedSet, cluster string) bool {
 	if _, referenced := e.Names[cluster]; referenced {
 		return true

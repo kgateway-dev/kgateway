@@ -53,7 +53,8 @@ jobs:
             refs='[
               {"checkout_ref":"main","display_ref":"main"},
               {"checkout_ref":"v2.3.x","display_ref":"v2.3.x"},
-              {"checkout_ref":"v2.4.x","display_ref":"v2.4.x"}
+              {"checkout_ref":"v2.4.x","display_ref":"v2.4.x"},
+              {"checkout_ref":"v2.5.x","display_ref":"v2.5.x"}
             ]'
           else
             checkout_ref="${INPUT_TARGET_REF:-}"
@@ -172,6 +173,10 @@ jobs:
           - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
             label: min
         gateway-api-version:
+          - version: 'v1.7.0'
+            channel: experimental
+          - version: 'v1.7.0'
+            channel: standard
           - version: 'v1.6.2'
             channel: experimental
           - version: 'v1.6.2'
@@ -183,10 +188,6 @@ jobs:
           - version: 'v1.4.1'
             channel: experimental
           - version: 'v1.4.1'
-            channel: standard
-          - version: 'v1.3.0'
-            channel: experimental
-          - version: 'v1.3.0'
             channel: standard
         controllers:
           - regex: "^TestKgateway|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"

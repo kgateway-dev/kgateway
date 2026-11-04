@@ -225,7 +225,7 @@ func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass, contr
 }
 
 func isOurGatewayClass(gwc *gwv1.GatewayClass, ourControllers sets.Set[string]) bool {
-	return ourControllers.Has(string(gwc.Spec.ControllerName))
+	return ourControllers.Has(string(gwc.Spec.ControllerName)) && !wellknown.IsRetiredWaypointClass(gwc)
 }
 
 func (r *gatewayClassReconciler) getControllerName(gwc string) string {

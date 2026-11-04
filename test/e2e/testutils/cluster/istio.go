@@ -203,7 +203,11 @@ func UninstallIstio(istioctlBinary, kubeContext string) error {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context '%s'", istioctlBinary, kubeContext)) //nolint:gosec // G204: controlled istioctl uninstall command in tests
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	err := cmd.Run()
+	// istioctl ends with "✔ Uninstall complete" and no trailing newline. Terminate it so the
+	// next "--- PASS"/"--- FAIL" line starts its own line; otherwise test2json drops the results.
+	fmt.Fprintln(os.Stdout)
+	if err != nil {
 		return fmt.Errorf("istioctl uninstall failed: %w", err)
 	}
 	return nil

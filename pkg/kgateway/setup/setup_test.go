@@ -608,7 +608,10 @@ func (x xdsDumper) Close() {
 }
 
 func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string) xdsDumper {
-	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort),
+	// Dial the IP the xDS server listens on (envtestutil.RunController). A
+	// hostname goes through gRPC's DNS resolver, whose service-config TXT
+	// lookup can stall a new connection for a 5s DNS timeout.
+	conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", xdsPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithIdleTimeout(time.Second*10),
 	)

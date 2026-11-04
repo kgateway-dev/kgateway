@@ -103,7 +103,7 @@ func constructHttpACL(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) erro
 				Name: httpACLModuleName,
 			},
 			FilterName:         httpACLFilterName,
-			PerRouteConfigName: httpACLFilterName,
+			PerRouteConfigName: httpACLFilterName, //nolint:staticcheck // SA1019: PerRouteConfigName is kept for legacy migration purposes
 			FilterConfig:       filterCfg,
 		},
 	}

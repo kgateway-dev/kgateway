@@ -458,13 +458,13 @@ func TestUniqueClientsFollowUpWithReusedAugmentedNode(t *testing.T) {
 	labels := map[string]string{"a": "b"} // deliberately no gateway-name label
 	driftedLabels := map[string]string{"a": "b", corev1.LabelTopologyZone: "zone-1"}
 
-	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
+	pods := krt.NewMutableCollection[LocalityPod](nil, []LocalityPod{{
 		Named:           krt.Named{Name: "podname", Namespace: "ns"},
 		AugmentedLabels: labels,
 	}})
 
 	cb, uccBuilder, _ := NewUniquelyConnectedClients(false)
-	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods.AsCollection())
 	ucc.WaitUntilSynced(ctx.Done())
 
 	req := &envoy_service_discovery_v3.DiscoveryRequest{
@@ -511,13 +511,13 @@ func TestUniqueClientsReidentifyOnPodChange(t *testing.T) {
 	staleLabels := map[string]string{"a": "b"}
 	freshLabels := map[string]string{"a": "b", corev1.LabelTopologyZone: "zone-1"}
 
-	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
+	pods := krt.NewMutableCollection[LocalityPod](nil, []LocalityPod{{
 		Named:           krt.Named{Name: "podname", Namespace: "ns"},
 		AugmentedLabels: staleLabels,
 	}})
 
 	cb, uccBuilder, _ := NewUniquelyConnectedClients(false)
-	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods.AsCollection())
 	ucc.WaitUntilSynced(ctx.Done())
 
 	req := &envoy_service_discovery_v3.DiscoveryRequest{
@@ -580,13 +580,13 @@ func TestUniqueClientsKeepIdentityWhenPodLookupFails(t *testing.T) {
 	role := wellknown.GatewayApiProxyValue + "~best-proxy-role"
 	labels := map[string]string{"a": "b"}
 
-	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
+	pods := krt.NewMutableCollection[LocalityPod](nil, []LocalityPod{{
 		Named:           krt.Named{Name: "podname", Namespace: "ns"},
 		AugmentedLabels: labels,
 	}})
 
 	cb, uccBuilder, _ := NewUniquelyConnectedClients(false)
-	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods.AsCollection())
 	ucc.WaitUntilSynced(ctx.Done())
 
 	req := &envoy_service_discovery_v3.DiscoveryRequest{
@@ -642,13 +642,13 @@ func TestUniqueClientsLocalClusterGatingSurvivesIdentityReDerivation(t *testing.
 	labels := map[string]string{wellknown.GatewayNameLabel: "gw"}
 	driftedLabels := map[string]string{wellknown.GatewayNameLabel: "gw", corev1.LabelTopologyZone: "zone-1"}
 
-	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
+	pods := krt.NewMutableCollection[LocalityPod](nil, []LocalityPod{{
 		Named:           krt.Named{Name: "podname", Namespace: "ns"},
 		AugmentedLabels: labels,
 	}})
 
 	cb, uccBuilder, _ := NewUniquelyConnectedClients(false)
-	uccCol := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
+	uccCol := uccBuilder(ctx, krtutil.KrtOptions{}, pods.AsCollection())
 	uccCol.WaitUntilSynced(ctx.Done())
 
 	edsReq := func() *envoy_service_discovery_v3.DiscoveryRequest {
