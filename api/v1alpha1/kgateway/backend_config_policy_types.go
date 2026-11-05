@@ -55,7 +55,7 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend') || (r.group == 'networking.istio.io' && r.kind == 'Hostname'))",message="TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
-	// The timeout for new network connections to hosts in the cluster.
+	// The timeout for new network connections to hosts in the cluster. Must be at least 1ms.
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
@@ -461,7 +461,7 @@ type CommonHttpProtocolOptions struct {
 	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
 
 	// Specifies the maximum number of response headers that the upstream connection will accept
-	// from the backend. If not specified, the default of 100 is used.
+	// from the backend. Must be at least 1. If not specified, the default of 100 is used.
 	// To configure the maximum number of headers accepted in downstream requests, use
 	// ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
 	// +optional
@@ -768,6 +768,7 @@ type LoadBalancerRoundRobinConfig struct {
 }
 
 // LoadBalancerRingHashConfig configures the ring hash load balancer type.
+// +kubebuilder:validation:XValidation:rule="(has(self.minimumRingSize) ? self.minimumRingSize : 1024) <= (has(self.maximumRingSize) ? self.maximumRingSize : 8388608)",message="minimumRingSize (default 1024) must be less than or equal to maximumRingSize (default 8388608)"
 type LoadBalancerRingHashConfig struct {
 	// MinimumRingSize is the minimum size of the ring. Must be between 1 and 8388608.
 	// +optional
@@ -775,7 +776,8 @@ type LoadBalancerRingHashConfig struct {
 	// +kubebuilder:validation:Maximum=8388608
 	MinimumRingSize *int64 `json:"minimumRingSize,omitempty"`
 
-	// MaximumRingSize is the maximum size of the ring. Must be at most 8388608.
+	// MaximumRingSize is the maximum size of the ring. Must be at most 8388608, and at least
+	// minimumRingSize (default 1024).
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=8388608
@@ -922,7 +924,7 @@ type ZoneAwareForce struct {
 // +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
-	// health check attempt will be considered a failure.
+	// health check attempt will be considered a failure. Must be at least 1ms.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
@@ -931,6 +933,7 @@ type HealthCheck struct {
 	Timeout metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks after the backend receives its first request.
+	// Must be at least 1ms.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32

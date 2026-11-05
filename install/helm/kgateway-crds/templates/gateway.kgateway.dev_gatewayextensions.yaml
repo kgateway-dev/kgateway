@@ -849,7 +849,7 @@ spec:
                   maxMessageTimeout:
                     description: |-
                       MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
-                      The default value 0, which effectively disables the override_message_timeout API.
+                      Must be between 1ms and 1h. If unset, the override_message_timeout API is disabled.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
@@ -860,8 +860,9 @@ spec:
                     - message: timeout must be at most 1h.
                       rule: duration(self) <= duration('1h')
                   messageTimeout:
-                    description: MessageTimeout is the timeout for each message sent
-                      to the external processing server.
+                    description: |-
+                      MessageTimeout is the timeout for each message sent to the external processing server.
+                      Must be between 1ms and 1h.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:

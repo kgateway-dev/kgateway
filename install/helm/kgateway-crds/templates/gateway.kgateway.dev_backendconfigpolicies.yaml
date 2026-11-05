@@ -139,7 +139,7 @@ spec:
                   maxHeadersCount:
                     description: |-
                       Specifies the maximum number of response headers that the upstream connection will accept
-                      from the backend. If not specified, the default of 100 is used.
+                      from the backend. Must be at least 1. If not specified, the default of 100 is used.
                       To configure the maximum number of headers accepted in downstream requests, use
                       ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
                     format: int32
@@ -166,7 +166,7 @@ spec:
                 type: object
               connectTimeout:
                 description: The timeout for new network connections to hosts in the
-                  cluster.
+                  cluster. Must be at least 1ms.
                 maxLength: 32
                 type: string
                 x-kubernetes-validations:
@@ -304,8 +304,9 @@ spec:
                     - path
                     type: object
                   interval:
-                    description: Interval is the time between health checks after
-                      the backend receives its first request.
+                    description: |-
+                      Interval is the time between health checks after the backend receives its first request.
+                      Must be at least 1ms.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
@@ -328,7 +329,7 @@ spec:
                   timeout:
                     description: |-
                       Timeout is time to wait for a health check response. If the timeout is reached the
-                      health check attempt will be considered a failure.
+                      health check attempt will be considered a failure. Must be at least 1ms.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
@@ -739,8 +740,9 @@ spec:
                         minItems: 1
                         type: array
                       maximumRingSize:
-                        description: MaximumRingSize is the maximum size of the ring.
-                          Must be at most 8388608.
+                        description: |-
+                          MaximumRingSize is the maximum size of the ring. Must be at most 8388608, and at least
+                          minimumRingSize (default 1024).
                         format: int64
                         maximum: 8388608
                         minimum: 0
@@ -758,6 +760,11 @@ spec:
                           Defaults to false.
                         type: boolean
                     type: object
+                    x-kubernetes-validations:
+                    - message: minimumRingSize (default 1024) must be less than or
+                        equal to maximumRingSize (default 8388608)
+                      rule: '(has(self.minimumRingSize) ? self.minimumRingSize : 1024)
+                        <= (has(self.maximumRingSize) ? self.maximumRingSize : 8388608)'
                   roundRobin:
                     description: RoundRobin configures the round robin load balancer
                       type.

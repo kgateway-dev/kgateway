@@ -103,3 +103,15 @@ spec:
     hosts:
     - host: example.com
       port: 70000
+---
+# Backend: ec2 port 0 is allowed and means the default of 80
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-port-zero
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    ec2:
+      port: 0

@@ -28,7 +28,7 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *kgateway.Comm
 	}
 
 	if commonHttpProtocolOptions.MaxHeadersCount != nil {
-		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
+		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)} //nolint:gosec // G115: kubebuilder validation ensures 1 <= value <= 2147483647, safe for uint32
 	}
 
 	if commonHttpProtocolOptions.MaxStreamDuration != nil {

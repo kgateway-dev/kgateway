@@ -196,14 +196,14 @@ spec:
                         default: 80
                         description: |-
                           Port is the port to use for discovered instances.
-                          Defaults to 80.
+                          Defaults to 80. A value of 0 also uses 80.
                         format: int32
                         maximum: 2147483647
                         minimum: -2147483648
                         type: integer
                         x-kubernetes-validations:
-                        - message: port must be between 1 and 65535
-                          rule: self >= 1 && self <= 65535
+                        - message: port must be between 0 and 65535
+                          rule: self >= 0 && self <= 65535
                     type: object
                   lambda:
                     description: Lambda configures the AWS Lambda service.
@@ -378,7 +378,8 @@ spec:
                           minLength: 1
                           type: string
                         port:
-                          description: Port is the port to use for the backend.
+                          description: Port is the port to use for the backend. Must
+                            be between 1 and 65535.
                           format: int32
                           maximum: 2147483647
                           minimum: -2147483648

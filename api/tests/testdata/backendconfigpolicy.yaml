@@ -465,3 +465,49 @@ spec:
   loadBalancer:
     ringHash:
       maximumRingSize: 8388609
+---
+# BackendConfigPolicy: ringHash minimumRingSize must not exceed maximumRingSize
+_err: 'minimumRingSize (default 1024) must be less than or equal to maximumRingSize'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-ring-min-above-max
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 2048
+      maximumRingSize: 1024
+---
+# BackendConfigPolicy: ringHash maximumRingSize below the default minimum of 1024
+_err: 'minimumRingSize (default 1024) must be less than or equal to maximumRingSize'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-ring-max-below-default-min
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    ringHash:
+      maximumRingSize: 512
+---
+# BackendConfigPolicy: ringHash maximumRingSize equal to minimumRingSize is valid
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-ring-min-equals-max
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 16
+      maximumRingSize: 16
