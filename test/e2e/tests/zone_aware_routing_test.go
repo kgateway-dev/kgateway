@@ -64,7 +64,7 @@ func TestZoneAwareRouting(t *testing.T) {
 			testInstallation.PreFailHandler(cleanupCtx, t)
 		}
 		_ = deleteZoneAwarePolicies(cleanupCtx, testInstallation)
-		_ = testInstallation.Actions.Kubectl().DeleteFileSafe(cleanupCtx, zoneAwareTestData("base.yaml"))
+		_ = testInstallation.ClusterContext.Manifests().DeleteFiles(cleanupCtx, zoneAwareTestData("base.yaml"))
 	})
 
 	assertions := testInstallation.AssertionsT(t)
@@ -560,14 +560,14 @@ func expectSomeCrossZone(counts zoneCounts) error {
 
 func applyZoneAwareManifest(t *testing.T, ctx context.Context, ti *e2e.TestInstallation, manifest string) {
 	t.Helper()
-	require.NoError(t, ti.Actions.Kubectl().ApplyFile(ctx, manifest), "apply %s", manifest)
+	require.NoError(t, ti.ClusterContext.Manifests().ApplyFiles(manifest), "apply %s", manifest)
 }
 
 func deleteZoneAwarePolicies(ctx context.Context, ti *e2e.TestInstallation) error {
-	if err := ti.Actions.Kubectl().DeleteFileSafe(ctx, zoneAwareTestData("force-local.yaml")); err != nil {
+	if err := ti.ClusterContext.Manifests().DeleteFiles(ctx, zoneAwareTestData("force-local.yaml")); err != nil {
 		return err
 	}
-	return ti.Actions.Kubectl().DeleteFileSafe(ctx, zoneAwareTestData("prefer-local.yaml"))
+	return ti.ClusterContext.Manifests().DeleteFiles(ctx, zoneAwareTestData("prefer-local.yaml"))
 }
 
 func zoneAwareTestData(name string) string {

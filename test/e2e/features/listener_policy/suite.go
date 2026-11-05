@@ -275,10 +275,7 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing gateway target
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
-		s.Ctx,
-		httpListenerPolicyMissingTargetManifest,
-	)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(httpListenerPolicyMissingTargetManifest)
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains

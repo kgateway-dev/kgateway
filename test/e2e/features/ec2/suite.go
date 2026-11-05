@@ -40,10 +40,10 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) SetupSuite() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	err := s.testInstallation.ClusterContext.Manifests().ApplyFiles(setupManifest)
 	s.Require().NoError(err, "can apply "+setupManifest)
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, awsCliPodManifest)
+	err = s.testInstallation.ClusterContext.Manifests().ApplyFiles(awsCliPodManifest)
 	s.Require().NoError(err, "can apply "+awsCliPodManifest)
 
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodReady(s.ctx, testNamespace, awsCliPodName, 30*time.Second)
@@ -56,15 +56,15 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) TearDownSuite() {
 	if !testutils.ShouldSkipCleanup(s.T()) {
 		s.cleanupEc2Instances()
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, awsCliPodManifest)
+		err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, awsCliPodManifest)
 		s.NoError(err, "can delete aws cli pod manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+		err = s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, setupManifest)
 		s.NoError(err, "can delete setup manifest")
 	}
 }
 
 func (s *testingSuite) BeforeTest(_, _ string) {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, ec2BackendManifest)
+	err := s.testInstallation.ClusterContext.Manifests().ApplyFiles(ec2BackendManifest)
 	s.Require().NoError(err, "can apply "+ec2BackendManifest)
 }
 
@@ -72,7 +72,7 @@ func (s *testingSuite) AfterTest(_, _ string) {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, ec2BackendManifest)
+	err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, ec2BackendManifest)
 	s.NoError(err, "can delete "+ec2BackendManifest)
 }
 
