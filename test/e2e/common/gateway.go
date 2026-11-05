@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 	"testing"
@@ -41,6 +42,9 @@ const (
 	defaultConsistencyPoll   = 1 * time.Second
 )
 
+// defaultAttemptTimeoutSeconds bounds a single request attempt.
+const defaultAttemptTimeoutSeconds = 8
+
 // Send curls the gateway and waits until the response matches using Istio default retry options (10s timeout, 100ms delay).
 func (g *Gateway) Send(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) {
 	t.Helper()
@@ -59,6 +63,34 @@ func (g *Gateway) SendWithRetry(ctx context.Context, t *testing.T, match *matche
 		}
 		return g.matchOnce(ctx, fullOpts, match)
 	}, retryOpts...)
+}
+
+// SendWithResponse is Send plus access to the matching response. Its body is buffered,
+// so it can be read even though the matcher already did; the caller must close it.
+func (g *Gateway) SendWithResponse(t *testing.T, match *matchers.HttpResponse, opts ...curl.Option) *http.Response {
+	t.Helper()
+	ctx := t.Context()
+	fullOpts := g.curlOpts(opts)
+	var resp *http.Response
+	retry.UntilSuccessOrFail(t, func() error {
+		if err := ctx.Err(); err != nil {
+			t.Fatalf("send retry interrupted by ctx: %v", err)
+		}
+		//nolint:bodyclose // returned to the caller, who closes it
+		r, err := g.matchResponse(ctx, fullOpts, match)
+		if err != nil {
+			return err
+		}
+		resp = r
+		return nil
+	})
+	return resp
+}
+
+// Do sends one request to the gateway and returns the response unchecked, for callers that
+// inspect it with their own logic. The caller must close the body.
+func (g *Gateway) Do(ctx context.Context, opts ...curl.Option) (*http.Response, error) {
+	return curl.ExecuteRequest(curl.Extend(g.curlOpts(opts), curl.WithContext(ctx))...)
 }
 
 // SendOnce curls the gateway once and returns an error if the response does not match,
@@ -118,27 +150,38 @@ func (g *Gateway) SendConsistentlyFor(ctx context.Context, t *testing.T, match *
 // (the underlying gomega HaveHttpResponse matcher does not print the actual body —
 // see test/gomega/matchers/have_http_response.go).
 func (g *Gateway) matchOnce(ctx context.Context, fullOpts []curl.Option, match *matchers.HttpResponse) error {
-	r, err := curl.ExecuteRequest(curl.Extend(fullOpts, curl.WithContext(ctx))...)
+	r, err := g.matchResponse(ctx, fullOpts, match)
 	if err != nil {
 		return err
 	}
-	defer r.Body.Close()
+	return r.Body.Close()
+}
 
-	body, err := io.ReadAll(r.Body)
+// matchResponse is matchOnce, returning the matching response with its body buffered so it
+// can be read again.
+func (g *Gateway) matchResponse(ctx context.Context, fullOpts []curl.Option, match *matchers.HttpResponse) (*http.Response, error) {
+	r, err := curl.ExecuteRequest(curl.Extend(fullOpts, curl.WithContext(ctx))...)
 	if err != nil {
-		return fmt.Errorf("reading response body: %w", err)
+		return nil, err
+	}
+	body, err := io.ReadAll(r.Body)
+	r.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("reading response body: %w", err)
 	}
 	r.Body = io.NopCloser(bytes.NewReader(body))
 
 	mm := matchers.HaveHttpResponse(match)
 	success, matchErr := mm.Match(r)
 	if matchErr != nil {
-		return matchErr
+		return nil, matchErr
 	}
 	if !success {
-		return fmt.Errorf("%s\nactual: status=%d body=%q", mm.FailureMessage(r), r.StatusCode, string(body))
+		return nil, fmt.Errorf("%s\nactual: status=%d body=%q", mm.FailureMessage(r), r.StatusCode, string(body))
 	}
-	return nil
+	// The matcher may have read the body; hand back a fresh reader.
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	return r, nil
 }
 
 func (g *Gateway) curlOpts(opts []curl.Option) []curl.Option {
@@ -148,7 +191,9 @@ func (g *Gateway) curlOpts(opts []curl.Option) []curl.Option {
 	} else {
 		hostOpt = curl.WithHost(g.Address)
 	}
-	base := []curl.Option{hostOpt}
+	// Bound each attempt well below the retry budget, so one hung request (e.g. a cold
+	// upstream connection) cannot use it all up. Callers may override it with their own.
+	base := []curl.Option{hostOpt, curl.WithConnectionTimeout(defaultAttemptTimeoutSeconds)}
 	if g.forwards != nil {
 		base = append(base, curl.WithDialContext(g.forwards.dial))
 	}

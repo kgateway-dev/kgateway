@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
@@ -452,14 +453,13 @@ func (s *testingSuite) assertActiveClusterIsPresent(clusterName string) {
 }
 
 func (s *testingSuite) assertGatewayEventuallyServes(host, bodySubstring string) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		s.gatewayCurlOptions(host),
+	common.BaseGateway.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(bodySubstring),
 		},
+		s.gatewayCurlOptions(host)...,
 	)
 }
 
@@ -513,16 +513,10 @@ func (s *testingSuite) assertGatewayEventuallyServesAll(host string, bodySubstri
 }
 
 func (s *testingSuite) gatewayResponse(host string) (int, string, error) {
-	curlResponse, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		s.gatewayCurlOptions(host)...,
-	)
+	response, err := common.BaseGateway.Do(s.Ctx, s.gatewayCurlOptions(host)...)
 	if err != nil {
 		return 0, "", err
 	}
-
-	response := transforms.WithCurlResponse(curlResponse)
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
@@ -534,7 +528,6 @@ func (s *testingSuite) gatewayResponse(host string) (int, string, error) {
 
 func (s *testingSuite) gatewayCurlOptions(host string) []curl.Option {
 	return []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 		curl.WithHostHeader(host),
 		curl.WithPort(80),
 		curl.WithPath("/"),

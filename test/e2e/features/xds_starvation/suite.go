@@ -29,14 +29,14 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -48,7 +48,6 @@ var (
 
 	setup = base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
 			setupManifest,
 		},
 	}
@@ -75,6 +74,17 @@ var proxyObjectMeta = metav1.ObjectMeta{
 
 type testingSuite struct {
 	*base.BaseTestingSuite
+
+	// gw is the suite's Gateway, resolved once in SetupSuite so it lives as long as the suite.
+	gw common.Gateway
+}
+
+func (s *testingSuite) SetupSuite() {
+	s.BaseTestingSuite.SetupSuite()
+	s.gw = common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -163,10 +173,8 @@ func (s *testingSuite) assertEventuallyStatusAtLeast(host string, status int, ti
 }
 
 func (s *testingSuite) gatewayResponse(host string) (int, string, error) {
-	curlResponse, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
+	response, err := s.gw.Do(
 		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 		curl.WithHostHeader(host),
 		curl.WithPort(8080),
 		curl.WithPath("/"),
@@ -175,8 +183,6 @@ func (s *testingSuite) gatewayResponse(host string) (int, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-
-	response := transforms.WithCurlResponse(curlResponse)
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)

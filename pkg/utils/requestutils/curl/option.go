@@ -216,6 +216,15 @@ func WithPostBody(body string) Option {
 	}
 }
 
+// WithFormBody returns the Option to send body with a form Content-Type, the way `curl -d` does.
+// ExecuteRequest sends no Content-Type for a plain WithBody, which some servers treat as binary.
+func WithFormBody(body string) Option {
+	return func(config *requestConfig) {
+		WithBody(body)(config)
+		WithContentType("application/x-www-form-urlencoded")(config)
+	}
+}
+
 // WithBody returns the Option to configure the body for a curl request
 // https://curl.se/docs/manpage.html#-d
 func WithBody(body string) Option {
