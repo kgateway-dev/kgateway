@@ -176,8 +176,6 @@ data:
                   sds_config:
                     path_config_source:
                       path: /etc/envoy/xds_ca_sds.json
-                      watched_directory:
-                        path: /etc/envoy
                     resource_api_version: V3
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -250,8 +248,7 @@ data:
       "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
       "name":"xds-ca",
       "validation_context": {
-        "trusted_ca":{"filename":"/etc/envoy/ca.crt"},
-        "watched_directory":{"path":"/etc/envoy"}
+        "trusted_ca":{"filename":"/etc/envoy/ca.crt"}
       }
     }]}
   xds_service_account_token.json: |
