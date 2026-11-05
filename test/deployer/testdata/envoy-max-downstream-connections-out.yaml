@@ -28,7 +28,7 @@ data:
         - name: envoy.resource_monitors.global_downstream_max_connections
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
-            max_active_downstream_connections: 5000
+            max_active_downstream_connections: 1000000
     node:
       cluster: "gw.default"
       metadata:

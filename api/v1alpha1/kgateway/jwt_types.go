@@ -92,6 +92,8 @@ type JWTCache struct {
 	// If unspecified, the Envoy default of 100 is used.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	Size *uint32 `json:"size,omitempty"`
 
 	// MaxTokenSize is the maximum size of a single cached token in bytes.
@@ -99,6 +101,8 @@ type JWTCache struct {
 	// bytes is used. The maximum value for a token is inclusive.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	MaxTokenSize *uint32 `json:"maxTokenSize,omitempty"`
 }
 

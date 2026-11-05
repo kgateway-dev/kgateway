@@ -973,6 +973,8 @@ type FaultInjectionPolicy struct {
 	// If not specified, defaults to unlimited.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	MaxActiveFaults *uint32 `json:"maxActiveFaults,omitempty"`
 
 	// Disable the fault injection filter.

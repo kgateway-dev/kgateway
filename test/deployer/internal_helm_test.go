@@ -278,8 +278,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 				t.Helper()
 				assert.Contains(t, outputYaml, "envoy.resource_monitors.global_downstream_max_connections",
 					"bootstrap should configure the global downstream max connections resource monitor")
-				assert.Contains(t, outputYaml, "max_active_downstream_connections: 5000",
-					"maxDownstreamConnections from GatewayParameters should be rendered")
+				// Helm values hold numbers as float64, which a bare {{ . }} prints in
+				// exponent form (1e+06) from one million up.
+				assert.Contains(t, outputYaml, "max_active_downstream_connections: 1000000",
+					"maxDownstreamConnections from GatewayParameters should be rendered as an integer")
 			},
 		},
 		{
