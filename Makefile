@@ -863,10 +863,19 @@ ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(
 
 ENVOY_MODULES_DIR := internal/envoy_modules/
 
-# Registry cache for the Rust module build (set to enable, e.g., ghcr.io/kgateway-dev/envoy-modules-cache).
-# goreleaser writes it on main/release; the arch tag is appended as :$(GOARCH) to match.
-ENVOY_MODULES_CACHE_REF ?=
-ENVOY_MODULES_CACHE_FROM := $(if $(ENVOY_MODULES_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOY_MODULES_CACHE_REF):$(GOARCH),)
+# Registry cache for the Rust module build, written by goreleaser on main and release
+# runs. Defaults to the repository owner's cache in GitHub Actions; unset elsewhere.
+ENVOY_MODULES_CACHE_REF ?= $(if $(GITHUB_REPOSITORY_OWNER),ghcr.io/$(GITHUB_REPOSITORY_OWNER)/envoy-modules-cache)
+# The tag is <arch>-<checksum of the files that define the dependency stage>, so
+# release lines with the same Rust dependencies share a cache and lines whose
+# dependencies differ don't overwrite each other's.
+ENVOY_MODULES_CACHE_KEY_FILES = $(ENVOY_MODULE_DOCKERFILE) \
+	$(addprefix $(ENVOY_MODULE_DIR)/,rust-toolchain.toml Cargo.toml Cargo.lock) \
+	$(sort $(filter-out %/target/%,$(wildcard $(ENVOY_MODULE_DIR)/*/Cargo.toml $(ENVOY_MODULE_DIR)/*/*/Cargo.toml)))
+ENVOY_MODULES_CACHE_KEY ?= $(shell cat $(ENVOY_MODULES_CACHE_KEY_FILES) | cksum | cut -d' ' -f1)
+# goreleaser builds both arches on an amd64 host, and the Dockerfile pins its build
+# stages to the target platform, so builds on arm64 hosts never match this cache.
+ENVOY_MODULES_CACHE_FROM := $(if $(ENVOY_MODULES_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOY_MODULES_CACHE_REF):$(GOARCH)-$(ENVOY_MODULES_CACHE_KEY),)
 # find all the files under the envoy modules directory but exclude the target, vendor and pkg directory
 ENVOY_MODULES_SRC_FILES := $(shell find $(ENVOY_MODULES_DIR) \( -type d -name target -o -type d -name pkg -o -type d -name vendor \) -prune -o -type f -print)
 
@@ -1051,7 +1060,7 @@ GORELEASER_CURRENT_TAG ?= $(VERSION)
 
 .PHONY: release
 release: ## Create a release using goreleaser
-	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
+	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) ENVOY_MODULES_CACHE_KEY=$(ENVOY_MODULES_CACHE_KEY) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
 	./hack/generate-release-notes.sh -p "$${PREVIOUS_TAG:-}" -c "$${CURRENT_TAG:-HEAD}"

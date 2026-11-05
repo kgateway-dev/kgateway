@@ -6,11 +6,12 @@ before:
     # Build the Rust dynamic module for amd64 and arm64 before any Docker images are built.
     # cargo zigbuild cross-compiles without needing QEMU; the container runs on the host
     # platform and targets the specified RUST_BUILD_ARCH.
-    # The registry cache lets the e2e image builds (ENVOY_MODULES_CACHE_REF) skip the
-    # Rust build when its sources are unchanged; writing it needs registry auth, so
-    # ignore-error keeps unauthenticated pull_request runs working.
-    - docker buildx build --output=type=local,dest=_output/rust/amd64 --target=export --build-arg=RUST_BUILD_ARCH=x86_64 --cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:amd64 --cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:amd64,mode=max,ignore-error=true {{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ end }} -f internal/envoy_modules/Dockerfile internal/envoy_modules/
-    - docker buildx build --output=type=local,dest=_output/rust/arm64 --target=export --build-arg=RUST_BUILD_ARCH=aarch64 --cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:arm64 --cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:arm64,mode=max,ignore-error=true {{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ end }} -f internal/envoy_modules/Dockerfile internal/envoy_modules/
+    # The registry cache lets the e2e image builds skip the Rust build when its sources
+    # are unchanged. `make release` sets ENVOY_MODULES_CACHE_KEY (see the Makefile).
+    # Writing the cache needs registry auth, so ignore-error keeps unauthenticated
+    # pull_request runs working.
+    - docker buildx build --output=type=local,dest=_output/rust/amd64 --target=export --build-arg=RUST_BUILD_ARCH=x86_64 --cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:amd64-{{ .Env.ENVOY_MODULES_CACHE_KEY }} --cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:amd64-{{ .Env.ENVOY_MODULES_CACHE_KEY }},mode=max,ignore-error=true {{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ end }} -f internal/envoy_modules/Dockerfile internal/envoy_modules/
+    - docker buildx build --output=type=local,dest=_output/rust/arm64 --target=export --build-arg=RUST_BUILD_ARCH=aarch64 --cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:arm64-{{ .Env.ENVOY_MODULES_CACHE_KEY }} --cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-modules-cache:arm64-{{ .Env.ENVOY_MODULES_CACHE_KEY }},mode=max,ignore-error=true {{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ end }} -f internal/envoy_modules/Dockerfile internal/envoy_modules/
 builds:
   - id: controller
     main: ./cmd/kgateway
