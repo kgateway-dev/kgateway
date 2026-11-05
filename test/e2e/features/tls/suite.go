@@ -88,7 +88,7 @@ func (s *testingSuite) TestTLSCertificateRotation() {
 	rotatedSecretYAML, rotatedCertPEM, err := secretManifestWithCert(installNs, DefaultExpiration)
 	s.Require().NoError(err, "failed to generate rotated certificate")
 
-	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(rotatedSecretYAML))
+	err = s.TestInstallation.ClusterContext.Manifests().Apply(rotatedSecretYAML)
 	s.Require().NoError(err, "failed to apply rotated TLS secret")
 
 	// The kubelet rewrites a mounted Secret only when it next syncs the Pod, which can

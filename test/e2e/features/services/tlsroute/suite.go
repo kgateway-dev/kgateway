@@ -52,7 +52,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // GwApiRequireTlsRoutes, and testify only registers its TearDownSuite deferral
 // after SetupSuite returns — so a skip would leave the timeout context alive.
 func (s *testingSuite) SetupSuite() {
-	testutils.Cleanup(s.T(), s.cancel)
+	testutils.Cleanup(s.T(), func() { s.cancel() })
 	s.BaseTestingSuite.SetupSuite()
 }
 
@@ -148,7 +148,7 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 			// start while these namespaces finish terminating.
 			testutils.Cleanup(s.T(), func() {
 				for _, manifest := range tc.namespaceManifests {
-					err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest, "--wait=false")
+					err := s.TestInstallation.ClusterContext.Manifests().WithoutWait().DeleteFiles(s.Ctx, manifest)
 					s.Require().NoError(err, "Failed to delete manifest "+manifest)
 				}
 			})
@@ -211,12 +211,8 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 
 // applyManifests applies the manifests into ns, or into the namespaces they declare when ns is empty.
 func (s *testingSuite) applyManifests(ns string, manifests ...string) {
-	var args []string
-	if ns != "" {
-		args = []string{"-n", ns}
-	}
 	for _, manifest := range manifests {
-		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest, args...)
+		err := s.TestInstallation.ClusterContext.Manifests().InNamespace(ns).ApplyFiles(manifest)
 		s.Require().NoError(err, "Failed to apply manifest "+manifest)
 	}
 }
