@@ -1,0 +1,8 @@
+{"resources":[{
+  "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
+  "name":"xds-ca",
+  "validation_context": {
+    "trusted_ca":{"filename":"/etc/envoy/ca.crt"},
+    "watched_directory":{"path":"/etc/envoy"}
+  }
+}]}
