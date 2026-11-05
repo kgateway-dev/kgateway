@@ -310,7 +310,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 38557149b8ad7bd26310c9c78bbce29a16f32d521b8e81f4cbecd522b3b466ae
+        checksum/config: c2cde09af2620ceb82451d4488bb0128761852859faef5530a52d11ea28a1dc9
         extra-annotation: v1
         gateway.kgateway.dev/gateway-full-name: gw
         infra-and-params: infra

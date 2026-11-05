@@ -47,4 +47,15 @@ func TestEnvoyDeploymentConfigChecksum(t *testing.T) {
 		"checksum should be stable for identical input")
 	require.NotEqual(t, base, checksum(withLogFormat("%v")),
 		"checksum should change when the bootstrap changes")
+
+	// Envoy reloads the xDS CA live, so rotating it must not roll the pods.
+	withCA := func(caCert string) map[string]any {
+		vals := withLogFormat("%v")
+		vals["gateway"].(map[string]any)["xds"] = map[string]any{
+			"tls": map[string]any{"enabled": true, "caCert": caCert},
+		}
+		return vals
+	}
+	require.Equal(t, checksum(withCA("old-ca")), checksum(withCA("new-ca")),
+		"checksum should not change when only the xDS CA changes")
 }
