@@ -10,6 +10,41 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+func TestInitializeHCMStatPrefix(t *testing.T) {
+	tests := []struct {
+		name string
+		fcc  ir.FilterChainCommon
+		want string
+	}{
+		{
+			name: "uses StatPrefix, not FilterChainName",
+			fcc:  ir.FilterChainCommon{FilterChainName: "listener~443-ignored", StatPrefix: "https_443_web"},
+			want: "https_443_web",
+		},
+		{
+			name: "replaces dots",
+			fcc:  ir.FilterChainCommon{StatPrefix: "https_443_team-a_shop.v2_web"},
+			want: "https_443_team-a_shop_v2_web",
+		},
+		{
+			name: "defaults to http when unset",
+			fcc:  ir.FilterChainCommon{FilterChainName: "listener~8080"},
+			want: DefaultHttpStatPrefix,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &hcmNetworkFilterTranslator{listener: ir.HttpFilterChainIR{FilterChainCommon: tt.fcc}}
+			require.Equal(t, tt.want, h.initializeHCM().GetStatPrefix())
+		})
+	}
+}
+
+func TestStatPrefixOrDefault(t *testing.T) {
+	require.Equal(t, "tcp_8080_default_example", statPrefixOrDefault(ir.FilterChainCommon{StatPrefix: "tcp_8080_default_example"}, "unused"))
+	require.Equal(t, "listener~8080-default_example-rule-0", statPrefixOrDefault(ir.FilterChainCommon{}, "listener~8080-default.example-rule-0"), "unset falls back to the default, also sanitized")
+}
+
 func TestFilterChainInfoDefaultAlpn(t *testing.T) {
 	info := &FilterChainInfo{
 		TLS: &ir.TLSConfig{

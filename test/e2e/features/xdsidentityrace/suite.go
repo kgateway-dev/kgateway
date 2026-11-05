@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -85,6 +84,21 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 		Namespace: controllerNamespace,
 	}
 
+	// Locate the single proxy pod whose labels feed the identity hash. An earlier
+	// suite's rollout restart can leave the old pod draining for a while after the
+	// rollout reports done, and a Terminating pod still reports phase Running, so
+	// wait for it to go rather than filtering on phase.
+	var proxyPod string
+	a.Gomega.Eventually(func(g gomega.Gomega) {
+		pods, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods(gwNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: "gateway.networking.k8s.io/gateway-name=" + gwName,
+		})
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "list gateway proxy pods")
+		g.Expect(pods.Items).To(gomega.HaveLen(1), "expected exactly one gateway proxy pod")
+		g.Expect(pods.Items[0].DeletionTimestamp).To(gomega.BeNil(), "the gateway proxy pod should not be terminating")
+		proxyPod = pods.Items[0].Name
+	}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(gomega.Succeed())
+
 	// The stream is established when the proxy connects to xDS and a snapshot is
 	// published under its identity. Capture the identities present now, so we can
 	// later require one that is genuinely new.
@@ -97,19 +111,6 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 			}).WithContext(ctx).WithTimeout(60 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
 		})
 
-	// Locate the single Running proxy pod whose labels feed the identity hash.
-	// The field selector keeps a Terminating pod from an earlier rollout from
-	// tripping the exactly-one check.
-	podsOut, _, err := s.TestInstallation.Actions.Kubectl().Execute(ctx,
-		"get", "pod", "-n", gwNamespace,
-		"--selector", "gateway.networking.k8s.io/gateway-name="+gwName,
-		"--field-selector", "status.phase=Running",
-		"-o", "jsonpath={.items[*].metadata.name}")
-	s.Require().NoError(err, "list running gateway proxy pods")
-	proxyPods := strings.Fields(strings.TrimSpace(podsOut))
-	s.Require().Len(proxyPods, 1, "expected exactly one running gateway proxy pod")
-	proxyPod := proxyPods[0]
-
 	controllerPod := s.controllerPod(ctx, controllerNamespace)
 
 	// Cleanup defers, LIFO. The unlabel (registered second) runs FIRST and is
@@ -119,7 +120,7 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	// leaving it to fire mid-way through whichever suite next pushes config on
 	// this cluster.
 	defer func() {
-		if err := s.TestInstallation.Actions.Kubectl().DeleteFile(ctx, route2Manifest); err != nil {
+		if err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(ctx, route2Manifest); err != nil {
 			s.T().Logf("cleanup: deleting route2: %v", err)
 		}
 	}()
@@ -139,7 +140,7 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	// proxy in that window.
 	driftStart := kubectl.FormatSinceTime(time.Now().Add(-5 * time.Second).UTC())
 	labelValue := fmt.Sprintf("r%d", time.Now().UnixNano())
-	err = s.TestInstallation.Actions.Kubectl().SetLabel(ctx, "pod", proxyPod, gwNamespace, "xdsracetest", labelValue)
+	err := s.TestInstallation.Actions.Kubectl().SetLabel(ctx, "pod", proxyPod, gwNamespace, "xdsracetest", labelValue)
 	s.Require().NoError(err, "label the proxy pod")
 
 	// A bare pod-label change does not push (the UCC collection reads pods
@@ -151,9 +152,9 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	toggleRoute2 := func() error {
 		var terr error
 		if route2Applied {
-			terr = s.TestInstallation.Actions.Kubectl().DeleteFile(ctx, route2Manifest)
+			terr = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(ctx, route2Manifest)
 		} else {
-			terr = s.TestInstallation.Actions.Kubectl().ApplyFile(ctx, route2Manifest)
+			terr = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(route2Manifest)
 		}
 		if terr != nil {
 			return terr
@@ -177,7 +178,7 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 	// Ensure route2 exists at teardown so the deferred deletion really produces
 	// the heal-driving push described on the cleanup defers above.
 	if !route2Applied {
-		s.Require().NoError(s.TestInstallation.Actions.Kubectl().ApplyFile(ctx, route2Manifest))
+		s.Require().NoError(s.TestInstallation.ClusterContext.Manifests().ApplyFiles(route2Manifest))
 		route2Applied = true
 	}
 

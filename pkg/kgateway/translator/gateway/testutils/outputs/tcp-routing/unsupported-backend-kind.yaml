@@ -8,8 +8,6 @@ Clusters:
   connectTimeout: 5s
   lbPolicy: CLUSTER_PROVIDED
   name: backend_default_dfp-backend_0
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -22,7 +20,7 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: blackhole-cluster
-        statPrefix: listener~8080-default.example-tcp-route-rule-0
+        statPrefix: tcp_8080_default_example-tcp-route
     name: listener~8080-default.example-tcp-route-rule-0
   name: listener~8080
 Statuses:

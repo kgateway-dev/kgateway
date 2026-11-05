@@ -66,7 +66,7 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.5.0-main
+ROLLING_MAIN_VERSION ?= v2.6.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.6
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -127,9 +127,6 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Static base image for dummy-idp, which is built with CGO_ENABLED=0.
-export DUMMY_IDP_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
-
 # Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
 # to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
@@ -137,11 +134,12 @@ export DUMMY_IDP_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
 # release picks up the freshly patched image.
 export DISTROLESS_BASE_IMAGE ?= cgr.dev/chainguard/glibc-dynamic:latest
 
-GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
+# Build with the toolchain directive of go.mod, falling back to the go directive.
+GO_VERSION := $(shell (grep -E '^toolchain go' go.mod | sed 's/^toolchain go//'; grep -E '^go ' go.mod | awk '{print $$2}') | head -n1)
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
 DEPSGOBIN ?= $(OUTPUT_DIR)
-GOLANGCI_LINT ?= go tool golangci-lint
+GOLANGCI_LINT ?= go tool -modfile tools/go.mod golangci-lint
 ANALYZE_ARGS ?= --fix --verbose --max-issues-per-linter 0 --max-same-issues 0
 CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
 CUSTOM_GOLANGCI_LINT_RUN ?= $(CUSTOM_GOLANGCI_LINT_BIN) run --build-tags e2e
@@ -207,7 +205,7 @@ analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override go
 	$(MAKE) --no-print-directory fmt-yaml
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
-$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
+$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum tools/go.mod tools/go.sum .custom-gcl.yml
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom
 
 ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
@@ -425,7 +423,9 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # address. This override is honored only for the base gateway resolved by
 # common.SetupBaseGateway; multi-gateway suites that construct their own
 # common.Gateway values cannot disambiguate multiple gateways with a single env
-# var and are therefore out of scope under k3d.
+# var and are therefore out of scope under k3d. Suites that resolve their
+# Gateways with common.NewGateway can instead set GATEWAY_PORT_FORWARD=true to
+# send through port-forwards (also works for kind on macOS).
 CLUSTER_TYPE ?= kind
 SKIP_EXTPROC_SERVER_SETUP ?= false
 
@@ -449,6 +449,15 @@ e2e-test: maybe-setup-extproc-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+
+# Compiles the e2e test binary with the same build flags as e2e-test, but runs
+# nothing (-exec=true), so a later e2e-test starts from a warm build cache. CI
+# runs this in the background while the cluster is being set up.
+.PHONY: warm-e2e-test
+warm-e2e-test: go-test
+warm-e2e-test: TEST_TAG = e2e
+warm-e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+warm-e2e-test: GO_TEST_USER_ARGS = -exec=true
 
 .PHONY: e2e-shared-images-docker
 e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
@@ -784,6 +793,7 @@ $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
@@ -820,6 +830,7 @@ $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
 
 $(SDS_OUTPUT_DIR)/Dockerfile.sds: cmd/sds/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
@@ -884,9 +895,11 @@ $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY
 		$(ENVOY_MODULES_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
@@ -912,6 +925,10 @@ DUMMY_IDP_DIR=hack/dummy-idp
 DUMMY_IDP_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_IDP_DIR)
 export DUMMY_IDP_IMAGE_REPO ?= dummy-idp
 DUMMY_IDP_VERSION=0.0.1
+# dummy-idp.go embeds the cert and key, so they are sources too. The directory
+# itself is listed so that adding or deleting a file, which $(wildcard) alone
+# cannot see, also triggers a rebuild.
+DUMMY_IDP_SOURCES=$(DUMMY_IDP_DIR) $(wildcard $(DUMMY_IDP_DIR)/*.go $(DUMMY_IDP_DIR)/*.cert $(DUMMY_IDP_DIR)/*.key) go.mod go.sum
 
 $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./hack/dummy-idp...
@@ -920,12 +937,12 @@ $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 dummy-idp: $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH)
 
 $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
 	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(DUMMY_IDP_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
 	@touch $@
 
@@ -1057,17 +1074,35 @@ INSTALL_NAMESPACE ?= kgateway-system
 
 # The version of the Node Docker image to use for booting the kind cluster: https://hub.docker.com/r/kindest/node/tags
 # This version should stay in sync with `hack/kind/setup-kind.sh`.
-CLUSTER_NODE_VERSION ?= v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
+CLUSTER_NODE_VERSION ?= v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
 
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND ?= false
 
+# The IP family of the kind cluster: ipv4, ipv6, or dual. ipv6 and dual require
+# IPv6 to be enabled on the docker daemon.
+IP_FAMILY ?= ipv4
+
+# Optional MetalLB address-pool prefixes, needed only when running two kind
+# clusters at once: both derive their pool from the shared docker network and
+# would otherwise advertise the same addresses. CLUSTER_SUBNET is a /24 prefix
+# (e.g. 172.18.101) and CLUSTER_SUBNET_V6 a /64 prefix (e.g.
+# fc00:f853:ccd:e793:f001); both must sit inside the docker network's subnet.
+CLUSTER_SUBNET ?=
+CLUSTER_SUBNET_V6 ?=
+
 .PHONY: kind-create
-kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+# The export is unconditional on purpose: `kind create cluster` selects the new
+# cluster's context itself, but when creation is skipped nothing does, and the
+# targets that follow would run against whatever context happens to be current.
+kind-create: ## Create a KinD cluster. IP_FAMILY=ipv4|ipv6|dual selects the cluster's IP family.
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || \
+		printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nnetworking:\n  ipFamily: $(IP_FAMILY)\n' | \
+		$(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION) --config -
+	$(KIND) export kubeconfig --name $(CLUSTER_NAME)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.6.2
+CONFORMANCE_VERSION ?= v1.7.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
@@ -1082,7 +1117,9 @@ endif
 
 .PHONY: metallb
 metallb: ## Install the MetalLB load balancer
-	./hack/kind/setup-metalllb-on-kind.sh
+	IP_FAMILY=$(IP_FAMILY) \
+		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
+		./hack/kind/setup-metalllb-on-kind.sh
 
 .PHONY: cloud-provider-kind
 cloud-provider-kind:
@@ -1127,7 +1164,9 @@ undeploy-kgateway-crds: ## Undeploy the CRD chart from the cluster
 #----------------------------------------------------------------------------------
 
 kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
-	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
+	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} IP_FAMILY=$(IP_FAMILY) \
+		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
+		./hack/kind/setup-kind.sh
 
 kind-load-%:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)
@@ -1143,9 +1182,11 @@ kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image an
 #	I explored using a special format of the wildcard to pass deployment:image,
 # 	but ran into some challenges with that pattern, while calling this target from another one.
 #	It could be a cool extension to support, but didn't feel pressing so I stopped
+# Container name for deployments whose container is not named after the deployment
+KIND_SET_IMAGE_CONTAINER_kgateway := controller
 kind-set-image-%:
 	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
-	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl set image deployment/$* $(or $(KIND_SET_IMAGE_CONTAINER_$*),$*)=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
 	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
 
@@ -1373,6 +1414,13 @@ conformance-%:  ## Run only the specified Gateway API conformance test by ShortN
 .PHONY: all-conformance
 all-conformance: conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
+
+# Fail if the controller recorded a client NACK or an inconsistent snapshot.
+# Consistency needs KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true; the script warns
+# otherwise. Example: make conformance xds-consistency-check
+.PHONY: xds-consistency-check
+xds-consistency-check: ## Fail on recorded client NACKs or inconsistent snapshots
+	INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) ./hack/xds-consistency-check.sh
 
 #----------------------------------------------------------------------------------
 # Dependency Bumping

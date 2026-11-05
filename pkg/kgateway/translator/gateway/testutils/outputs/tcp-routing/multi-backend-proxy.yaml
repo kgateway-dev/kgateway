@@ -19,8 +19,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_example-tcp-svc-2_8081
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -32,7 +30,7 @@ Listeners:
     - name: envoy.filters.network.tcp_proxy
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        statPrefix: listener~8080-default.example-tcp-route-rule-0
+        statPrefix: tcp_8080_default_example-tcp-route
         weightedClusters:
           clusters:
           - name: kube_default_example-tcp-svc-1_8080

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -22,9 +23,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/helper"
@@ -70,7 +71,6 @@ var (
 	// test cases
 	setup = base.TestCase{
 		Manifests: []string{
-			defaults.CurlPodManifest,
 			simpleServiceManifest,
 			gatewayManifest,
 			transformForCustomFunctionsManifest,
@@ -156,7 +156,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "basic",
 			routeName: "headers",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 				curl.WithHeader("cookie", "foo=bar"),
 				curl.WithHeader("User-Agent", "curl/8.18.0"),
 			},
@@ -207,7 +207,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "remove headers",
 			routeName: "headers",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 				curl.WithHeader("x-remove-me", "test"),
 				curl.WithHeader("x-dont-remove-me", "in request"),
 			},
@@ -236,7 +236,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "set headers with headers already exists multiple times",
 			routeName: "headers",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 				// The 2 x-foo-bar headers will be replaced with a single one when we set the header
 				// to a value using transformation
 				curl.WithMultiHeader("x-foo-bar", []string{"original_1", "original_2"}),
@@ -272,7 +272,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "conditional set by request header", // inja and the request_header function in use
 			routeName: "headers",
 			opts: []curl.Option{
-				curl.WithBody("hello-world"),
+				curl.WithFormBody("hello-world"),
 				curl.WithHeader("x-add-bar", "super"),
 			},
 			resp: &testmatchers.HttpResponse{
@@ -374,7 +374,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "match-header-and-query",
 			routeName: "match",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 				curl.WithHeader("foo", "bar"),
 				curl.WithQueryParameters(map[string]string{"test": "123"}),
 			},
@@ -409,7 +409,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "match-query",
 			routeName: "match",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 				curl.WithQueryParameters(map[string]string{"test": "123"}),
 			},
 			resp: &testmatchers.HttpResponse{
@@ -445,7 +445,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "match-none",
 			routeName: "match",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusNotFound,
@@ -482,7 +482,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "custom-functions",
 			routeName: "custom-functions",
 			opts: []curl.Option{
-				curl.WithBody(`{"foo":"\"bar\""}`),
+				curl.WithFormBody(`{"foo":"\"bar\""}`),
 				curl.WithHeader("x-nested-call", "my name is andy"),
 			},
 			resp: &testmatchers.HttpResponse{
@@ -537,7 +537,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "pull-json-info", // shows we parse the body as json
 			routeName: "route-for-body-json",
 			opts: []curl.Option{
-				curl.WithBody(`{"mykey": {"myinnerkey": "myinnervalue"}}`),
+				curl.WithFormBody(`{"mykey": {"myinnerkey": "myinnervalue"}}`),
 				curl.WithHeader("X-Incoming-Stuff", "super"),
 			},
 			resp: &testmatchers.HttpResponse{
@@ -566,7 +566,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "dont pull info if we dont parse json",
 			routeName: "route-for-body",
 			opts: []curl.Option{
-				curl.WithBody(`{"mykey": {"myinnerkey": "myinnervalue"}}`),
+				curl.WithFormBody(`{"mykey": {"myinnerkey": "myinnervalue"}}`),
 				curl.WithHeader("X-Incoming-Stuff", "super"),
 			},
 			resp: &testmatchers.HttpResponse{
@@ -581,7 +581,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "dont pull json info if not json", // shows we parse the body as json
 			routeName: "route-for-body-json",
 			opts: []curl.Option{
-				curl.WithBody("hello"),
+				curl.WithFormBody("hello"),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusBadRequest, // transformation should choke
@@ -592,7 +592,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "header to body with json parsing",
 			routeName: "route-for-header-to-body-json",
 			opts: []curl.Option{
-				curl.WithBody(`[3,2,1]`),
+				curl.WithFormBody(`[3,2,1]`),
 				curl.WithHeader("X-my-name", "andy"),
 			},
 			resp: &testmatchers.HttpResponse{
@@ -644,7 +644,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			name:      "body transform for local reply",
 			routeName: "route-for-body-local-reply",
 			opts: []curl.Option{
-				curl.WithBody(strings.Repeat("x", 1500)),
+				curl.WithFormBody(strings.Repeat("x", 1500)),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusRequestEntityTooLarge,
@@ -661,7 +661,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 			routeName: "route-for-body-local-reply",
 			url:       "/foobar",
 			opts: []curl.Option{
-				curl.WithBody(strings.Repeat("x", 1500)),
+				curl.WithFormBody(strings.Repeat("x", 1500)),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusRequestEntityTooLarge,
@@ -880,30 +880,28 @@ func (s *testingSuite) TestGatewayWithTransformation() {
 
 	testCases := []transformationTestCase{}
 	testCases = append(testCases, s.commonTestCases...)
-	s.runTestCases((testCases))
+	s.runTestCases(testCases)
 }
 
 func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 			// make sure to pass in subtest "t" below instead of the parent test s.T()
-			// otherwise, when the test fail the first time, it would call FailNow
-			// on the parent test and prevent retrying even with Eventually()
-			resp := s.TestInstallation.AssertionsT(t).AssertEventualCurlReturnResponse(
-				s.Ctx,
-				defaults.CurlPodExecOpt,
-				append(tc.opts,
-					curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			// so a failure ends only this case
+			resp := gw.SendWithResponse(
+				t,
+				tc.resp,
+				curl.Extend(tc.opts,
 					curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
 					curl.WithPort(8080),
 					curl.WithPath(httpbin_echo_base_path+tc.url), // This is the endpoint for httpbin to return the request in json
-					curl.WithRetries(1, 1, 5),
-					curl.WithRetryConnectionRefused(true),
-				),
-				tc.resp,
-				6, /* timeout */
-				2 /* retry interval */)
+				)...,
+			)
 			if resp.StatusCode == http.StatusOK {
 				req, err := helper.CreateRequestFromHttpBinResponse(resp.Body)
 				g.Expect(err).NotTo(gomega.HaveOccurred())

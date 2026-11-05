@@ -347,7 +347,7 @@ const (
 
 	// AWSLambdaPayloadTransformEnvoy indicates that the payload will be transformed using Envoy's
 	// built-in transformation. Refer to
-	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#configuration-as-a-listener-filter
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter
 	// for more details on how Envoy transforms the payload.
 	AWSLambdaPayloadTransformEnvoy AWSLambdaPayloadTransformMode = "Envoy"
 )

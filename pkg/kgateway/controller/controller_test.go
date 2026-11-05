@@ -390,7 +390,6 @@ func (s *ControllerSuite) TestMetrics() {
 
 		gathered := metricstest.MustGatherMetricsContext(ctx, t,
 			"kgateway_controller_reconciliations_total",
-			"kgateway_controller_reconciliations_running",
 			"kgateway_controller_reconcile_duration_seconds")
 
 		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
@@ -423,33 +422,6 @@ func (s *ControllerSuite) TestMetrics() {
 			},
 		})
 
-		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gateway"},
-					{Name: "name", Value: gw.Name},
-					{Name: "namespace", Value: defaultNamespace},
-				},
-				Test: metricstest.Between(0, 1),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gatewayclass"},
-					{Name: "name", Value: gw.Name},
-					{Name: "namespace", Value: defaultNamespace},
-				},
-				Test: metricstest.Between(0, 1),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gatewayclass-provisioner"},
-					{Name: "name", Value: gw.Name},
-					{Name: "namespace", Value: defaultNamespace},
-				},
-				Test: metricstest.Between(0, 1),
-			},
-		})
-
 		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
 			{Name: "name", Value: gw.Name},
@@ -476,7 +448,6 @@ func (s *ControllerSuite) TestMetrics() {
 
 		gathered := metricstest.MustGatherMetrics(t)
 		gathered.AssertMetricNotExists("kgateway_controller_reconciliations_total")
-		gathered.AssertMetricNotExists("kgateway_controller_reconciliations_running")
 		gathered.AssertMetricNotExists("kgateway_controller_reconcile_duration_seconds")
 	})
 }

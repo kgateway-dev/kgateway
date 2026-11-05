@@ -19,8 +19,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_primary_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -46,7 +44,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https
-        statPrefix: http
+        statPrefix: https_443_https
         useRemoteAddress: true
     name: https
     transportSocket:

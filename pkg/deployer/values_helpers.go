@@ -98,7 +98,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 	// NodePort and LoadBalancer both support explicit node ports; if not set, nil renders nothing.
 	var nodePort *int32 = nil
 	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil {
-		serviceType := *(gwp.Spec.GetKube().GetService().GetType())
+		serviceType := *gwp.Spec.GetKube().GetService().GetType()
 		if serviceType == corev1.ServiceTypeNodePort || serviceType == corev1.ServiceTypeLoadBalancer {
 			if idx := istioslices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 				return p.GetPort() == port
@@ -127,6 +127,8 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	var externalTrafficPolicy *string
 	var loadBalancerClass *string
 	var loadBalancerSourceRanges []string
+	var ipFamilies []string
+	var ipFamilyPolicy *string
 
 	if svcConfig != nil {
 		if svcConfig.GetType() != nil {
@@ -138,6 +140,12 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
 		loadBalancerClass = svcConfig.GetLoadBalancerClass()
 		loadBalancerSourceRanges = svcConfig.GetLoadBalancerSourceRanges()
+		for _, f := range svcConfig.GetIPFamilies() {
+			ipFamilies = append(ipFamilies, string(f))
+		}
+		if p := svcConfig.GetIPFamilyPolicy(); p != nil {
+			ipFamilyPolicy = new(string(*p))
+		}
 	}
 
 	return &HelmService{
@@ -148,6 +156,8 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		ExternalTrafficPolicy:    externalTrafficPolicy,
 		LoadBalancerClass:        loadBalancerClass,
 		LoadBalancerSourceRanges: loadBalancerSourceRanges,
+		IPFamilies:               ipFamilies,
+		IPFamilyPolicy:           ipFamilyPolicy,
 	}
 }
 
@@ -201,6 +211,27 @@ func SetLoadBalancerIPFromGateway(gw *gwv1.Gateway, svc *HelmService) error {
 		svc.LoadBalancerIP = ip
 	}
 	return nil
+}
+
+// SetInfrastructureMetadataFromGateway copies Gateway.spec.infrastructure labels and annotations
+// onto the HelmGateway so they are propagated to the generated resources.
+// Keys with the gateway.networking.k8s.io/ prefix are dropped to avoid conflicting with labels set by the deployer.
+func SetInfrastructureMetadataFromGateway(gw *gwv1.Gateway, gtw *HelmGateway) {
+	if i := gw.Spec.Infrastructure; i != nil {
+		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
+		gtw.GatewayLabels = translateInfraMeta(i.Labels)
+	}
+}
+
+func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
+	infra := make(map[string]string, len(meta))
+	for k, v := range meta {
+		if strings.HasPrefix(string(k), "gateway.networking.k8s.io/") {
+			continue // ignore this prefix to avoid conflicts
+		}
+		infra[string(k)] = string(v)
+	}
+	return infra
 }
 
 // Convert service account values from GatewayParameters into helm values to be used by the deployer.
@@ -395,6 +426,7 @@ func ApplyKubernetesProxyConfigValues(gateway *HelmGateway, cfg *kgateway.Kubern
 	}
 
 	gateway.EnableReadinessProbeProxyProtocol = envoyContainerConfig.GetBootstrap().GetEnableReadinessProbeProxyProtocol()
+	gateway.MaxDownstreamConnections = envoyContainerConfig.GetBootstrap().GetMaxDownstreamConnections()
 
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()

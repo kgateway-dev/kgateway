@@ -96,6 +96,14 @@ r8/mqGkEdNyd5BqGOFWoUi7kDqslOAl359Gd5ndxAoGAK3TVwhuLR9XoicDjmo6b
 -----END PRIVATE KEY-----
 ` // must have this newline at the end
 
+// File paths for tls.files tests. They exist only inside the Envoy container,
+// so translation must pass them through without reading them.
+const (
+	certPath = "/etc/envoy/certs/tls.crt"
+	keyPath  = "/etc/envoy/certs/tls.key"
+	caPath   = "/etc/ssl/certs/ca-certificates.crt"
+)
+
 func TestTranslateTLSConfig(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -150,9 +158,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "file-based TLS config",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				Sni:                new("test.example.com"),
 				AllowRenegotiation: new(true),
@@ -161,12 +169,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: certPath}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: keyPath}},
 					}},
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 						},
 					},
 				},
@@ -178,8 +186,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with parameters",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
 				},
 				Parameters: &kgateway.TLSParameters{
 					MinVersion:          new(kgateway.TLSVersion1_2),
@@ -194,8 +202,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: certPath}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: keyPath}},
 					}},
 					TlsParams: &envoytlsv3.TlsParameters{
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
@@ -258,7 +266,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should not error with only rootca",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					RootCA: new(CACert),
+					RootCA: new(caPath),
 				},
 			},
 			wantErr: false,
@@ -266,7 +274,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 						},
 					},
 				},
@@ -276,8 +284,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with san and no rootca",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
 				},
 				VerifySubjectAltNames: []string{"test.example.com"},
 			},
@@ -287,7 +295,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with only cert and no key",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
+					TLSCertificate: new(certPath),
 				},
 			},
 			wantErr: true,
@@ -296,7 +304,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with only private key provided",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSKey: new(TLSKey),
+					TLSKey: new(keyPath),
 				},
 			},
 			wantErr: true,
@@ -305,9 +313,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "SimpleTLS with SAN verification and root CA",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				SimpleTLS:             new(true),
 				VerifySubjectAltNames: []string{"test.example.com"},
@@ -317,7 +325,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 							MatchTypedSubjectAltNames: []*envoytlsv3.SubjectAltNameMatcher{{
 								SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 								Matcher: &envoymatcher.StringMatcher{MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "test.example.com"}},
@@ -331,9 +339,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should only have validation context if simple tls",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				SimpleTLS: new(true),
 			},
@@ -342,7 +350,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 						},
 					},
 				},
@@ -382,9 +390,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with SAN verification",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				VerifySubjectAltNames: []string{"test.example.com", "api.example.com"},
 				Sni:                   new("test.example.com"),
@@ -393,12 +401,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: certPath}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: keyPath}},
 					}},
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 							MatchTypedSubjectAltNames: []*envoytlsv3.SubjectAltNameMatcher{
 								{SanType: envoytlsv3.SubjectAltNameMatcher_DNS, Matcher: &envoymatcher.StringMatcher{MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "test.example.com"}}},
 								{SanType: envoytlsv3.SubjectAltNameMatcher_DNS, Matcher: &envoymatcher.StringMatcher{MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "api.example.com"}}},
@@ -597,6 +605,96 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 					Matcher: &envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "www.example.com"},
+					},
+				},
+			},
+		},
+		{
+			name:    "SPIFFE ID is matched as a URI SAN",
+			sanList: []string{"spiffe://example.org/ns/default/sa/backend"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_URI,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "spiffe://example.org/ns/default/sa/backend"},
+					},
+				},
+			},
+		},
+		{
+			name:    "IPv4 address is matched as an IP SAN and as a DNS SAN",
+			sanList: []string{"10.0.0.1"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "10.0.0.1"},
+					},
+				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "10.0.0.1"},
+					},
+				},
+			},
+		},
+		{
+			name:    "IPv6 address is matched as an IP SAN and as a DNS SAN",
+			sanList: []string{"fd00::1"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00::1"},
+					},
+				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00::1"},
+					},
+				},
+			},
+		},
+		{
+			name:    "IPv6 address in long form is matched in canonical form as an IP SAN",
+			sanList: []string{"fd00:0:0:0:0:0:0:1"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00::1"},
+					},
+				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00:0:0:0:0:0:0:1"},
+					},
+				},
+			},
+		},
+		{
+			name:    "email address is matched as an email SAN",
+			sanList: []string{"svc@example.org"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_EMAIL,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "svc@example.org"},
+					},
+				},
+			},
+		},
+		{
+			name:    "wildcard hostname stays a DNS SAN",
+			sanList: []string{"*.example.com"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "*.example.com"},
 					},
 				},
 			},

@@ -17,6 +17,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
 // mockValidator implements validator.Validator for testing
@@ -145,8 +146,8 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			},
 			validator: &mockValidator{
 				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-					cluster := config.StaticResources.Clusters[0]
-					if len(config.StaticResources.Clusters) != 1 {
+					cluster := bootstrap.ValidatedClusters(config)[0]
+					if len(bootstrap.ValidatedClusters(config)) != 1 {
 						return errors.New("expected exactly one cluster in bootstrap")
 					}
 					clusterType := cluster.GetClusterType()
@@ -179,10 +180,10 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			},
 			validator: &mockValidator{
 				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-					if len(config.StaticResources.Clusters) != 1 {
+					if len(bootstrap.ValidatedClusters(config)) != 1 {
 						return errors.New("expected exactly one cluster in bootstrap")
 					}
-					cluster := config.StaticResources.Clusters[0]
+					cluster := bootstrap.ValidatedClusters(config)[0]
 					clusterType := cluster.GetClusterType()
 					if clusterType == nil {
 						return errors.New("expected custom dns cluster type")
@@ -251,10 +252,10 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 			validator: &mockValidator{
 				validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
 					// Verify that the cluster uses STATIC when useHostnameForHashing is not enabled
-					if len(config.StaticResources.Clusters) != 1 {
+					if len(bootstrap.ValidatedClusters(config)) != 1 {
 						return errors.New("expected exactly one cluster in bootstrap")
 					}
-					cluster := config.StaticResources.Clusters[0]
+					cluster := bootstrap.ValidatedClusters(config)[0]
 					if cluster.GetType() != envoyclusterv3.Cluster_STATIC {
 						return fmt.Errorf("expected STATIC cluster type, got %v", cluster.GetType())
 					}

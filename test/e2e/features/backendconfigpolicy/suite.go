@@ -68,9 +68,12 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestBackendConfigPolicyUpstreamProxyProtocol": {
 			Manifests: []string{upstreamProxyProtocolManifest},
 		},
+		"TestBackendConfigPolicyTunnel": {
+			Manifests: []string{nginxManifest, tunnelManifest},
+		},
 	}
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{Manifests: []string{backendsManifest}}, testCases),
 	}
 }
 
@@ -327,6 +330,36 @@ func (s *testingSuite) TestBackendConfigPolicyUpstreamProxyProtocol() {
 	)
 }
 
+// TestBackendConfigPolicyTunnel verifies that traffic to a Backend goes through
+// its HTTP CONNECT proxy.
+func (s *testingSuite) TestBackendConfigPolicyTunnel() {
+	for _, path := range []string{"/http", "/https"} {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+			},
+			curl.WithHostHeader("tunnel.example.com"),
+			curl.WithPath(path),
+			curl.WithPort(80),
+		)
+	}
+
+	for _, path := range []string{"/rejected", "/proxy-down"} {
+		common.BaseGateway.SendEventuallyConsistent(
+			s.Ctx,
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusServiceUnavailable,
+			},
+			curl.WithHostHeader("tunnel.example.com"),
+			curl.WithPath(path),
+			curl.WithPort(80),
+		)
+	}
+}
+
 const (
 	kgatewayControllerName = "kgateway.dev/kgateway"
 	otherControllerName    = "other-controller.example.com/controller"
@@ -345,10 +378,7 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing service target
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
-		s.Ctx,
-		missingTargetManifest,
-	)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(missingTargetManifest)
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains

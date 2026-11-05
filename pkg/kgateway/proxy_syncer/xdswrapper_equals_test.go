@@ -1,0 +1,76 @@
+package proxy_syncer
+
+import (
+	"testing"
+
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/stretchr/testify/assert"
+)
+
+// TestXdsSnapWrapperEquals_ComparesGapClassification pins that Equals compares
+// the gap classification. Synthesized and derived empty CLAs are identical
+// protos and publication depends on which one a CLA is, so Equals must not
+// rely on versions alone to see the change.
+func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
+	newSnap := func() *envoycache.Snapshot {
+		snap := &envoycache.Snapshot{}
+		snap.Resources[envoycachetypes.Listener] = envoycache.NewResources("l1", nil)
+		snap.Resources[envoycachetypes.Route] = envoycache.NewResources("r1", nil)
+		snap.Resources[envoycachetypes.Cluster] = envoycache.NewResources("c1", nil)
+		snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResources("e1", nil)
+		return snap
+	}
+
+	deferredWrap := XdsSnapWrapper{
+		snap:                       newSnap(),
+		proxyKey:                   "client",
+		missingEndpointsReferenced: []string{"cluster-underived"},
+	}
+	readyWrap := XdsSnapWrapper{
+		snap:     newSnap(),
+		proxyKey: "client",
+	}
+
+	assert.False(t, deferredWrap.Equals(readyWrap),
+		"identical versions with different gap classification must not be equal")
+	assert.False(t, readyWrap.Equals(deferredWrap),
+		"identical versions with different gap classification must not be equal (symmetric)")
+
+	deferredMissing := deferredWrap
+	deferredMissing.missingEndpointsReferenced = nil
+	deferredMissing.missingReferenced = []string{"cluster-missing"}
+	assert.False(t, deferredWrap.Equals(deferredMissing),
+		"a gap moving between classifications must not be equal")
+
+	same := deferredWrap
+	same.snap = newSnap()
+	assert.True(t, deferredWrap.Equals(same),
+		"identical versions and identical classification are equal")
+
+	// An unreferenced cluster's CLA turning derived changes whether the gate
+	// leaves it out, so the wrappers must differ.
+	synthesizedOnly := readyWrap
+	synthesizedOnly.synthesizedEndpoints = []string{"cluster-unreferenced"}
+	assert.False(t, readyWrap.Equals(synthesizedOnly),
+		"a change in which CLAs are synthesized must not be equal")
+}
+
+// A cluster out of CDS (gone from the build, or filtered out by scoping) moves
+// no version when it errors. The wrapper must still differ so a carry drops the
+// cluster's pre-error config.
+func TestXdsSnapWrapperEquals_ComparesErroredClusters(t *testing.T) {
+	newSnap := func() *envoycache.Snapshot {
+		snap := &envoycache.Snapshot{}
+		snap.Resources[envoycachetypes.Cluster] = envoycache.NewResources("c1", nil)
+		return snap
+	}
+	healthy := XdsSnapWrapper{snap: newSnap(), proxyKey: "client"}
+	errored := XdsSnapWrapper{snap: newSnap(), proxyKey: "client", erroredClusters: []string{"cluster-carried"}}
+
+	assert.False(t, healthy.Equals(errored), "a cluster erroring without a version change must not be equal")
+	assert.False(t, errored.Equals(healthy), "a cluster recovering without a version change must not be equal")
+	same := errored
+	same.snap = newSnap()
+	assert.True(t, errored.Equals(same))
+}

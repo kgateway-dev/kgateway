@@ -6,6 +6,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/types/known/structpb"
+	"istio.io/api/label"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -45,7 +46,10 @@ type EndpointsInputs struct {
 	EndpointSlices          krt.Collection[*discoveryv1.EndpointSlice]
 	EndpointSlicesByService krt.Index[types.NamespacedName, *discoveryv1.EndpointSlice]
 	Pods                    krt.Collection[LocalityPod]
-	EndpointsSettings       EndpointsSettings
+	// SystemNamespaceNetwork is the network of endpoints without a Pod; see
+	// NewSystemNamespaceNetwork.
+	SystemNamespaceNetwork krt.Singleton[string]
+	EndpointsSettings      EndpointsSettings
 
 	KrtOpts krtutil.KrtOptions
 }
@@ -55,6 +59,7 @@ func NewKgatewayK8sEndpointInputs(
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
+	systemNamespaceNetwork krt.Singleton[string],
 	k8sBackends krt.Collection[ir.BackendObjectIR],
 ) EndpointsInputs {
 	endpointSettings := EndpointsSettings{
@@ -78,6 +83,7 @@ func NewKgatewayK8sEndpointInputs(
 		EndpointSlices:          endpointSlices,
 		EndpointSlicesByService: endpointSlicesByService,
 		Pods:                    pods,
+		SystemNamespaceNetwork:  systemNamespaceNetwork,
 		EndpointsSettings:       endpointSettings,
 		KrtOpts:                 krtopts,
 	}
@@ -185,14 +191,24 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 
 					var augmentedLabels map[string]string
 					var l ir.PodLocality
+					var foundPod bool
 					if podName != "" {
 						maybePod := krt.FetchOne(kctx, augmentedPods, krt.FilterObjectName(types.NamespacedName{
 							Namespace: podNamespace,
 							Name:      podName,
 						}))
 						if maybePod != nil {
+							foundPod = true
 							l = maybePod.Locality
 							augmentedLabels = maybePod.AugmentedLabels
+						}
+					}
+					// Like Istio, an endpoint without a Pod (no Pod targetRef, e.g. a
+					// handmade slice for a selectorless Service) is in the system
+					// namespace network.
+					if !foundPod {
+						if nw := FetchSystemNamespaceNetwork(kctx, inputs.SystemNamespaceNetwork); nw != "" {
+							augmentedLabels = map[string]string{label.TopologyNetwork.Name: nw}
 						}
 					}
 					ep := CreateLBEndpoint(addr, port, augmentedLabels, enableAutoMtls)

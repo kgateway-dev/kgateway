@@ -62,11 +62,12 @@ func TestValidationMemoKeyCoversEverythingTheBootstrapReads(t *testing.T) {
 	require.NotEqual(t, build(a), build(b))
 
 	// And the bootstrap carries exactly the cluster under validation as its only
-	// static cluster, so nothing else the validator sees can vary between calls.
+	// static cluster besides the fixed placeholder local cluster, so nothing else
+	// the validator sees can vary between calls.
 	bs := bootstrap.New()
 	bs.AddCluster(a)
 	built, err := bs.Build()
 	require.NoError(t, err)
-	require.Len(t, built.GetStaticResources().GetClusters(), 1)
-	require.True(t, proto.Equal(a, built.GetStaticResources().GetClusters()[0]))
+	require.Len(t, bootstrap.ValidatedClusters(built), 1)
+	require.True(t, proto.Equal(a, bootstrap.ValidatedClusters(built)[0]))
 }

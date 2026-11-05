@@ -69,7 +69,7 @@ func TestAllE2ETestsInShards(t *testing.T) {
 // For test functions whose sub-package registers suites, individual suite
 // paths are returned (e.g., "TestKgateway/JWT"). For test functions with no
 // registered suites, the top-level function name is returned (e.g.,
-// "TestAPIValidation"). Suite runner calls in the wrapper file itself
+// "TestRouteReplacement"). Suite runner calls in the wrapper file itself
 // (e.g., FooSuiteRunner().Run()) are still resolved for tests that haven't
 // been split into a sub-package.
 func discoverE2ETestPaths(t *testing.T) []string {

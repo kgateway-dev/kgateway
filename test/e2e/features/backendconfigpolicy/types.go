@@ -12,6 +12,7 @@ import (
 
 var (
 	// manifests
+	backendsManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backends.yaml")
 	setupManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	nginxManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
 	dnsManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "dns.yaml")
@@ -21,6 +22,7 @@ var (
 	outlierDetectionManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	missingTargetManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
 	upstreamProxyProtocolManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-proxy-protocol.yaml")
+	tunnelManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tunnel.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{

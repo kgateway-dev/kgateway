@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -14,12 +15,15 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
 func TestBinaryValidator_Validate(t *testing.T) {
@@ -274,6 +278,22 @@ func TestDockerValidator_Validate(t *testing.T) {
 			errorMsg:    `error initializing configuration '/dev/fd/0': error adding listener named 'listener_0': address is necessary`,
 		},
 		{
+			name: "TLS files are checked against the validator's filesystem",
+			bootstrap: &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{Id: "test-id", Cluster: "test-cluster"},
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Clusters: []*envoyclusterv3.Cluster{fileTLSCluster()},
+				},
+			},
+			expectError: true,
+			errorMsg:    `error initializing configuration '/dev/fd/0': Invalid path: /proxy/only/ca.crt`,
+		},
+		{
+			name:        "validation bootstrap replaces TLS files that exist only on the proxy",
+			bootstrap:   mustBuildWithCluster(fileTLSCluster()),
+			expectError: false,
+		},
+		{
 			name: "invalid regex in route match",
 			bootstrap: &envoybootstrapv3.Bootstrap{
 				Node: &envoycorev3.Node{
@@ -406,6 +426,34 @@ func TestDockerValidator_Validate(t *testing.T) {
 	}
 }
 
+func TestDockerValidator_FailOnWarnings(t *testing.T) {
+	// Envoy accepts a removed runtime guard but logs an envoy_bug (see #14970).
+	// If a future Envoy rejects this guard outright, the default-validator case
+	// below will fail: switch to a guard or field deprecated in that Envoy version.
+	staticLayer, err := structpb.NewStruct(map[string]any{
+		"envoy.restart_features.use_eds_cache_for_ads": true,
+	})
+	require.NoError(t, err)
+	bootstrap := &envoybootstrapv3.Bootstrap{
+		Node: &envoycorev3.Node{
+			Id:      "test-id",
+			Cluster: "test-cluster",
+		},
+		LayeredRuntime: &envoybootstrapv3.LayeredRuntime{
+			Layers: []*envoybootstrapv3.RuntimeLayer{{
+				Name:           "static_layer",
+				LayerSpecifier: &envoybootstrapv3.RuntimeLayer_StaticLayer{StaticLayer: staticLayer},
+			}},
+		},
+	}
+
+	err = NewDocker(FailOnWarnings()).Validate(t.Context(), bootstrap)
+	require.ErrorIs(t, err, ErrInvalidXDS, "FailOnWarnings should reject a config Envoy accepts with an envoy_bug")
+	assert.Contains(t, err.Error(), "Using a removed guard envoy.restart_features.use_eds_cache_for_ads")
+
+	require.NoError(t, NewDocker().Validate(t.Context(), bootstrap), "default validator should only fail when Envoy rejects the config")
+}
+
 func TestExtractEnvoyError(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -501,6 +549,57 @@ more details`,
 	}
 }
 
+func TestExtractEnvoyWarnings(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name: "info output only",
+			input: `[info] runtime: layers:
+[info]   - name: static_layer
+configuration '/dev/fd/0' OK`,
+			expected: nil,
+		},
+		{
+			name: "removed runtime guard envoy_bug drops stacktrace",
+			input: `[info] runtime: layers:
+[error] envoy bug failure: false. Details: Using a removed guard envoy.restart_features.use_eds_cache_for_ads. In future version of Envoy this will be treated as invalid configuration
+[error] stacktrace for envoy bug
+[error] #0 UNKNOWN [0xaaaae4960eac]
+[error] #1 UNKNOWN [0xaaaae49653d8]
+configuration '/dev/fd/0' OK`,
+			expected: []string{
+				"[error] envoy bug failure: false. Details: Using a removed guard envoy.restart_features.use_eds_cache_for_ads. In future version of Envoy this will be treated as invalid configuration",
+			},
+		},
+		{
+			name: "deprecated field warning with docker noise",
+			input: `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform
+Status: Downloaded newer image for envoyproxy/envoy:v1.39.6
+[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'`,
+			expected: []string{
+				"[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, extractEnvoyWarnings(tt.input))
+		})
+	}
+}
+
+func TestDockerValidator_FailOnWarningsArgs(t *testing.T) {
+	args := NewDocker(FailOnWarnings()).(*dockerValidator).args()
+	assert.Contains(t, strings.Join(args, " "), "-l warning --log-format [%l] %v")
+
+	args = NewDocker().(*dockerValidator).args()
+	assert.Contains(t, strings.Join(args, " "), "-l critical --log-format %v", "default must stay at critical so runtime validation is unchanged")
+}
+
 func TestNormalizeEnvoyError(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -538,4 +637,44 @@ func createMockBinary(t *testing.T, script string) string {
 	require.NoError(t, err)
 
 	return mockPath
+}
+
+// fileTLSCluster returns a cluster that references TLS files that exist only
+// on the proxy.
+func fileTLSCluster() *envoyclusterv3.Cluster {
+	file := func(path string) *envoycorev3.DataSource {
+		return &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: path}}
+	}
+	return &envoyclusterv3.Cluster{
+		Name:                 "file-tls",
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
+		TransportSocket: &envoycorev3.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+				TypedConfig: utils.MustMessageToAny(&envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						TlsCertificates: []*envoytlsv3.TlsCertificate{{
+							CertificateChain: file("/proxy/only/tls.crt"),
+							PrivateKey:       file("/proxy/only/tls.key"),
+						}},
+						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
+							ValidationContext: &envoytlsv3.CertificateValidationContext{
+								TrustedCa: file("/proxy/only/ca.crt"),
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+}
+
+func mustBuildWithCluster(cluster *envoyclusterv3.Cluster) *envoybootstrapv3.Bootstrap {
+	builder := bootstrap.New()
+	builder.AddCluster(cluster)
+	bs, err := builder.Build()
+	if err != nil {
+		panic(err)
+	}
+	return bs
 }

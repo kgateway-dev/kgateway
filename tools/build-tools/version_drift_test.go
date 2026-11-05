@@ -64,24 +64,30 @@ func TestToolsGoModVersionMatchesRoot(t *testing.T) {
 
 	rootDir := repoRoot(t)
 
-	goVersion := func(path string) string {
+	// directive returns the value of the go or toolchain directive, or "" when it is absent.
+	directive := func(path, name string) string {
 		t.Helper()
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("read %s: %v", path, err)
 		}
-		m := regexp.MustCompile(`(?m)^go\s+(\S+)\s*$`).FindSubmatch(data)
+		m := regexp.MustCompile(`(?m)^` + name + `\s+(\S+)\s*$`).FindSubmatch(data)
 		if m == nil {
-			t.Fatalf("no 'go' directive found in %s", path)
+			return ""
 		}
 		return string(m[1])
 	}
 
-	rootVersion := goVersion(filepath.Join(rootDir, "go.mod"))
-	toolsVersion := goVersion(filepath.Join(rootDir, "tools", "go.mod"))
-
-	if rootVersion != toolsVersion {
-		t.Errorf("go version mismatch: go.mod has %q but tools/go.mod has %q; they must be kept in sync", rootVersion, toolsVersion)
+	rootPath := filepath.Join(rootDir, "go.mod")
+	toolsPath := filepath.Join(rootDir, "tools", "go.mod")
+	for _, name := range []string{"go", "toolchain"} {
+		rootVersion, toolsVersion := directive(rootPath, name), directive(toolsPath, name)
+		if name == "go" && rootVersion == "" {
+			t.Fatalf("no 'go' directive found in %s", rootPath)
+		}
+		if rootVersion != toolsVersion {
+			t.Errorf("%s directive mismatch: go.mod has %q but tools/go.mod has %q; they must be kept in sync", name, rootVersion, toolsVersion)
+		}
 	}
 }
 

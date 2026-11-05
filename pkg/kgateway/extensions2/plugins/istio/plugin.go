@@ -69,6 +69,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Name:           "istio",
 				ProcessBackend: p.processBackend,
 				GlobalPolicies: func(_ krt.HandlerContext) ir.PolicyIR {
+					// With auto-mTLS off the policy is a no-op, and attaching it gives every listener and route a policy map.
+					if !istioSettings.EnableAutoMtls {
+						return nil
+					}
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings
 				},
@@ -209,7 +213,7 @@ func createDefaultIstioMatch() *envoyclusterv3.Cluster_TransportSocketMatch {
 }
 
 func buildSni(upstream ir.BackendObjectIR) string {
-	port := upstream.GetPort() //nolint:gosec // G115: port is int32 representing a port number, always in valid range
+	port := uint32(upstream.GetPort()) //nolint:gosec // G115: port is int32 representing a port number, always in valid range
 	switch us := upstream.Obj.(type) {
 	case *corev1.Service:
 		return buildDNSSrvSubsetKey(
@@ -218,13 +222,13 @@ func buildSni(upstream ir.BackendObjectIR) string {
 				us.Namespace,
 				"cluster.local", // TODO we need a setting like Istio has for trustDomain
 			),
-			uint32(port),
+			port,
 		)
 	default:
 		if port != 0 && upstream.CanonicalHostname != "" {
 			return buildDNSSrvSubsetKey(
 				upstream.CanonicalHostname,
-				uint32(port),
+				port,
 			)
 		}
 	}

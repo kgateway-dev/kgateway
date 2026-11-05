@@ -430,5 +430,12 @@ func validateSecretDataKey(data map[string][]byte, key string, required bool) er
 	if !utf8.Valid(value) {
 		return fmt.Errorf("secret data key %q is not a valid UTF-8 string", key)
 	}
+	// Envoy only checks that the credential is non-empty, so a padded or
+	// whitespace-only value is signed as-is and AWS answers with a 403 that does
+	// not point back at the Secret. Reject it here instead of trimming so the
+	// broken Secret gets fixed rather than silently masked.
+	if strings.TrimSpace(string(value)) != string(value) {
+		return fmt.Errorf("secret data key %q has leading or trailing whitespace", key)
+	}
 	return nil
 }

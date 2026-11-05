@@ -18,8 +18,6 @@ Clusters:
             hostname: example.com
           hostname: example.com
   name: backend_default_static-backend_0
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -35,7 +33,7 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: backend_default_static-backend_0
-        statPrefix: listener~8443-default.example-tls-route-rule-0
+        statPrefix: tls_8443_default_example-tls-route
     name: listener~8443-default.example-tls-route-rule-0
   listenerFilters:
   - name: envoy.filters.listener.tls_inspector

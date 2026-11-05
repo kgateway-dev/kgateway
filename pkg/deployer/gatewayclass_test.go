@@ -51,7 +51,8 @@ func TestGetSupportedFeaturesForStandardGatewayIncludesStandardTLSRouteWhenExper
 	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeTerminate)]; !ok {
 		t.Fatalf("expected %q to remain supported when experimental Gateway API features are disabled", features.SupportTLSRouteModeTerminate)
 	}
-	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeMixed)]; ok {
-		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRouteModeMixed)
+	// TLSRouteModeMixed is standard as of Gateway API v1.7.
+	if _, ok := supportedNames[gwv1.FeatureName(features.SupportTLSRouteModeMixed)]; !ok {
+		t.Fatalf("expected %q to remain supported when experimental Gateway API features are disabled", features.SupportTLSRouteModeMixed)
 	}
 }
