@@ -15,12 +15,6 @@ data:
 {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
   ca.crt: |
 {{ $gateway.xds.tls.caCert | indent 4 }}
-  {{- /*
-  The xDS CA is delivered over file-based SDS rather than as a static bootstrap
-  secret: Envoy never reloads static secrets, while an SDS-delivered
-  validation_context with watched_directory is re-read when the kubelet swaps
-  the ConfigMap's ..data symlink, so a rotated CA is picked up without a restart.
-  */}}
   xds_ca_sds.json: |
     {"resources":[{
       "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
