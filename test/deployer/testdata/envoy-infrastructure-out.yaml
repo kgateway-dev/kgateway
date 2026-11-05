@@ -313,7 +313,6 @@ spec:
         extra-annotation: v1
         gateway.kgateway.dev/gateway-full-name: gw
         infra-and-params: infra
-        kgateway.dev/checksum-config: c2cde09af2620ceb82451d4488bb0128761852859faef5530a52d11ea28a1dc9
         my-annotation: my-value
         prometheus.io/path: /something/else
         prometheus.io/port: "9091"

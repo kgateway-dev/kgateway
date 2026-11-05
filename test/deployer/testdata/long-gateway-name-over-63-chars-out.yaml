@@ -287,7 +287,6 @@ spec:
     metadata:
       annotations:
         gateway.kgateway.dev/gateway-full-name: extremely-long-gateway-name-that-exceeds-the-sixty-three-character-limit-imposed-by-kubernetes-dns-naming-requirements
-        kgateway.dev/checksum-config: 5d0ed515e41950a6f06fa044adbb76f96de9bcee0299cbedd91f02e954f9071e
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
