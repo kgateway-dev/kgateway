@@ -46,7 +46,7 @@ func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		err := s.testInstallation.ClusterContext.Manifests().ApplyFiles(manifest)
 		s.NoError(err, "can apply "+manifest)
 	}
 
@@ -63,7 +63,7 @@ func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
+		err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, manifest)
 		s.NoError(err, "can delete "+manifest)
 	}
 
@@ -71,7 +71,7 @@ func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *istioAutoMtlsTestingSuite) SetupSuite() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	err := s.testInstallation.ClusterContext.Manifests().ApplyFiles(setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	// Check that istio injection is successful and httpbin is running
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
@@ -90,7 +90,7 @@ func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }

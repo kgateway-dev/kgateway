@@ -18,7 +18,7 @@ Name|Version|License
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.10.1|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
-[go-jose/v4](https://github.com/go-jose/go-jose)|v4.1.4|Apache License 2.0
+[go-jose/v4](https://github.com/go-jose/go-jose)|v4.1.6|Apache License 2.0
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.4|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [jwt/v5](https://github.com/golang-jwt/jwt)|v5.3.1|MIT License
@@ -51,7 +51,7 @@ Name|Version|License
 [helm/v3](https://helm.sh/helm/v3)|v3.21.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.32.0-alpha.0.0.20261021201554-855754b46d81|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.32.0-alpha.0.0.20261021201855-5a3fa7c63379|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20261026150458-262eedb00987|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20261029165818-11c1ab520145|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.37.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.37.1|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.37.1|Apache License 2.0
@@ -62,8 +62,8 @@ Name|Version|License
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.37.1|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20260626114624-be93311217bd|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.25.2|Apache License 2.0
-[sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.7.0-rc.3|Apache License 2.0
-[gateway-api/conformance](https://sigs.k8s.io/gateway-api/conformance)|v1.7.0-rc.3|Apache License 2.0
+[sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.7.0|Apache License 2.0
+[gateway-api/conformance](https://sigs.k8s.io/gateway-api/conformance)|v1.7.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.6.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License

@@ -363,7 +363,7 @@ func TestTranslationWithExtraPlugins(
 			r.NoErrorf(err, "error creating directory %s", dir)
 		}
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
-		os.WriteFile(outputFile, outputYaml, 0o644) //nolint:gosec // G306: Golden test file can be readable
+		r.NoError(writeGoldenFile(outputFile, outputYaml), "error writing output file")
 	}
 
 	expected := &translationResult{}
@@ -378,6 +378,28 @@ func TestTranslationWithExtraPlugins(
 		"unexpected diff in endpoints output; actual result: %s", outputYaml)
 	r.Emptyf(compareStatuses(expected.Statuses, output.Statuses),
 		"unexpected diff in statuses output; actual result: %s", outputYaml)
+}
+
+// writeGoldenFile replaces path with data by renaming a temp file over it. Callers
+// run as parallel subtests and some share a golden, so a concurrent reader must see
+// either the old file or the new one, never a truncated one.
+func writeGoldenFile(path string, data []byte) error {
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(f.Name(), 0o644); err != nil { //nolint:gosec // G302: Golden test file can be readable
+		return err
+	}
+	return os.Rename(f.Name(), path)
 }
 
 type TestCase struct {
