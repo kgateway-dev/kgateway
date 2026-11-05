@@ -124,8 +124,8 @@ spec:
         aggression: ""
         minWeightPercent: 10
 ---
-# BackendConfigPolicy: refreshRate must be at least 1ms
-_err: 'spec.dns.refreshRate: Invalid value: "0s": refreshRate must be at least 1ms'
+# BackendConfigPolicy: refreshRate must be greater than 1ms
+_err: 'spec.dns.refreshRate: Invalid value: "0s": refreshRate must be greater than 1ms'
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
@@ -345,3 +345,123 @@ spec:
     healthyThreshold: 1
     http:
       path: /healthz
+---
+# BackendConfigPolicy: refreshRate of exactly 1ms is rejected, Envoy requires gt 1ms
+_err: 'refreshRate must be greater than 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-refresh-1ms
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 1ms
+---
+# BackendConfigPolicy: connectTimeout must be at least 1ms
+_err: 'spec.connectTimeout: Invalid value: "0s": must be at least 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-connect-timeout-zero
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  connectTimeout: 0s
+---
+# BackendConfigPolicy: healthCheck timeout and interval must be at least 1ms
+_err: 'spec.healthCheck.timeout: Invalid value: "0s": must be at least 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-hc-timeout-zero
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  healthCheck:
+    timeout: 0s
+    interval: 1s
+    unhealthyThreshold: 1
+    healthyThreshold: 1
+---
+# BackendConfigPolicy: healthCheck interval must be at least 1ms
+_err: 'spec.healthCheck.interval: Invalid value: "0s": must be at least 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-hc-interval-zero
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  healthCheck:
+    timeout: 1s
+    interval: 0s
+    unhealthyThreshold: 1
+    healthyThreshold: 1
+---
+# BackendConfigPolicy: maxHeadersCount must be at least 1
+_err: 'spec.commonHttpProtocolOptions.maxHeadersCount in body should be greater than or equal to 1'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-max-headers-zero
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  commonHttpProtocolOptions:
+    maxHeadersCount: 0
+---
+# BackendConfigPolicy: leastRequest choiceCount must be at least 2
+_err: 'spec.loadBalancer.leastRequest.choiceCount in body should be greater than or equal to 2'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-choice-count-one
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    leastRequest:
+      choiceCount: 1
+---
+# BackendConfigPolicy: ringHash minimumRingSize must be at least 1
+_err: 'spec.loadBalancer.ringHash.minimumRingSize in body should be greater than or equal to 1'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-min-ring-zero
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    ringHash:
+      minimumRingSize: 0
+---
+# BackendConfigPolicy: ringHash maximumRingSize must be at most 8388608
+_err: 'spec.loadBalancer.ringHash.maximumRingSize in body should be less than or equal to 8388608'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-max-ring-too-large
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    ringHash:
+      maximumRingSize: 8388609

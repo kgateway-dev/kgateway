@@ -201,6 +201,9 @@ spec:
                         maximum: 2147483647
                         minimum: -2147483648
                         type: integer
+                        x-kubernetes-validations:
+                        - message: port must be between 1 and 65535
+                          rule: self >= 1 && self <= 65535
                     type: object
                   lambda:
                     description: Lambda configures the AWS Lambda service.
@@ -380,6 +383,9 @@ spec:
                           maximum: 2147483647
                           minimum: -2147483648
                           type: integer
+                          x-kubernetes-validations:
+                          - message: port must be between 1 and 65535
+                            rule: self >= 1 && self <= 65535
                       required:
                       - host
                       - port

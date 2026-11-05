@@ -460,8 +460,66 @@ spec:
                     default: 403
                     description: |-
                       StatusOnError sets the HTTP status response code that is returned to the client when the
-                      auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
+                      auth server returns an error or cannot be reached. Must be a status code that Envoy
+                      defines, in the range of 100-511 inclusive.
                       The default matches the deny response code of 403 Forbidden.
+                    enum:
+                    - 100
+                    - 200
+                    - 201
+                    - 202
+                    - 203
+                    - 204
+                    - 205
+                    - 206
+                    - 207
+                    - 208
+                    - 226
+                    - 300
+                    - 301
+                    - 302
+                    - 303
+                    - 304
+                    - 305
+                    - 307
+                    - 308
+                    - 400
+                    - 401
+                    - 402
+                    - 403
+                    - 404
+                    - 405
+                    - 406
+                    - 407
+                    - 408
+                    - 409
+                    - 410
+                    - 411
+                    - 412
+                    - 413
+                    - 414
+                    - 415
+                    - 416
+                    - 417
+                    - 421
+                    - 422
+                    - 423
+                    - 424
+                    - 426
+                    - 428
+                    - 429
+                    - 431
+                    - 500
+                    - 501
+                    - 502
+                    - 503
+                    - 504
+                    - 505
+                    - 506
+                    - 507
+                    - 508
+                    - 510
+                    - 511
                     format: int32
                     maximum: 511
                     minimum: 100
@@ -799,6 +857,8 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: timeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
+                    - message: timeout must be at most 1h.
+                      rule: duration(self) <= duration('1h')
                   messageTimeout:
                     description: MessageTimeout is the timeout for each message sent
                       to the external processing server.
@@ -809,6 +869,8 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: timeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
+                    - message: timeout must be at most 1h.
+                      rule: duration(self) <= duration('1h')
                   metadataOptions:
                     description: |-
                       MetadataOptions allows configuring metadata namespaces to forwarded or received from the external

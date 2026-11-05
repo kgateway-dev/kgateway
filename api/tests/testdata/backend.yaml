@@ -90,3 +90,16 @@ spec:
         keyValue:
           key: app
           value: payments
+---
+# Backend: static host port must be between 1 and 65535
+_err: 'port must be between 1 and 65535'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-static-port-too-large
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: example.com
+      port: 70000

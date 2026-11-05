@@ -144,7 +144,7 @@ spec:
                       ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
                     format: int32
                     maximum: 2147483647
-                    minimum: 0
+                    minimum: 1
                     type: integer
                   maxRequestsPerConnection:
                     description: |-
@@ -172,6 +172,8 @@ spec:
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                - message: must be at least 1ms
+                  rule: duration(self) >= duration('1ms')
               dns:
                 description: |-
                   DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
@@ -222,7 +224,7 @@ spec:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 
-                      Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+                      Must be greater than 1ms. If unset, Envoy's default of 5s is used.
                       When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
                       so RefreshRate acts as the maximum polling interval.
                       Recommended value for large-scale deployments is 60s or higher.
@@ -231,8 +233,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                    - message: refreshRate must be at least 1ms
-                      rule: duration(self) >= duration('1ms')
+                    - message: refreshRate must be greater than 1ms
+                      rule: duration(self) > duration('1ms')
                   respectTTL:
                     description: |-
                       RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
@@ -309,6 +311,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   noTrafficInterval:
                     description: |-
                       NoTrafficInterval is the time between health checks before the backend receives
@@ -330,6 +334,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   unhealthyThreshold:
                     description: |-
                       UnhealthyThreshold is the number of consecutive failed health checks that will be considered
@@ -504,10 +510,10 @@ spec:
                         default: 2
                         description: |-
                           How many choices to take into account.
-                          Defaults to 2.
+                          Defaults to 2. Must be at least 2.
                         format: int32
                         maximum: 2147483647
-                        minimum: -2147483648
+                        minimum: 2
                         type: integer
                       slowStart:
                         description: SlowStart configures the slow start configuration
@@ -734,15 +740,17 @@ spec:
                         type: array
                       maximumRingSize:
                         description: MaximumRingSize is the maximum size of the ring.
+                          Must be at most 8388608.
                         format: int64
-                        maximum: 9223372036854774784
+                        maximum: 8388608
                         minimum: 0
                         type: integer
                       minimumRingSize:
                         description: MinimumRingSize is the minimum size of the ring.
+                          Must be between 1 and 8388608.
                         format: int64
-                        maximum: 9223372036854774784
-                        minimum: 0
+                        maximum: 8388608
+                        minimum: 1
                         type: integer
                       useHostnameForHashing:
                         description: |-

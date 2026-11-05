@@ -1075,6 +1075,8 @@ spec:
                                           x-kubernetes-validations:
                                           - message: invalid duration value
                                             rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: must be at least 1ms
+                                            rule: duration(self) >= duration('1ms')
                                         maxInterval:
                                           description: Specifies the maximum interval
                                             between retries. This parameter is optional,
@@ -1320,6 +1322,8 @@ spec:
                                               x-kubernetes-validations:
                                               - message: invalid duration value
                                                 rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: must be at least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             maxInterval:
                                               description: Specifies the maximum interval
                                                 between retries. This parameter is
@@ -2734,10 +2738,10 @@ spec:
                                       >= 1'
                                 statusCode:
                                   description: New response status code for the reply
-                                    if specified.
+                                    if specified. Must be between 200 and 599.
                                   format: int32
                                   maximum: 599
-                                  minimum: 100
+                                  minimum: 200
                                   type: integer
                               required:
                               - filter
@@ -3200,6 +3204,8 @@ spec:
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
                                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                - message: must be at least 1ms
+                                                  rule: duration(self) >= duration('1ms')
                                               maxInterval:
                                                 description: Specifies the maximum
                                                   interval between retries. This parameter
@@ -4381,6 +4387,8 @@ spec:
                                           x-kubernetes-validations:
                                           - message: invalid duration value
                                             rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: must be at least 1ms
+                                            rule: duration(self) >= duration('1ms')
                                         maxInterval:
                                           description: Specifies the maximum interval
                                             between retries. This parameter is optional,
@@ -4626,6 +4634,8 @@ spec:
                                               x-kubernetes-validations:
                                               - message: invalid duration value
                                                 rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: must be at least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             maxInterval:
                                               description: Specifies the maximum interval
                                                 between retries. This parameter is
@@ -5668,6 +5678,8 @@ spec:
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
                                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                - message: must be at least 1ms
+                                                  rule: duration(self) >= duration('1ms')
                                               maxInterval:
                                                 description: Specifies the maximum
                                                   interval between retries. This parameter
@@ -5921,6 +5933,8 @@ spec:
                                                     x-kubernetes-validations:
                                                     - message: invalid duration value
                                                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                    - message: must be at least 1ms
+                                                      rule: duration(self) >= duration('1ms')
                                                   maxInterval:
                                                     description: Specifies the maximum
                                                       interval between retries. This
@@ -7353,10 +7367,11 @@ spec:
                                             >= 1'
                                       statusCode:
                                         description: New response status code for
-                                          the reply if specified.
+                                          the reply if specified. Must be between
+                                          200 and 599.
                                         format: int32
                                         maximum: 599
-                                        minimum: 100
+                                        minimum: 200
                                         type: integer
                                     required:
                                     - filter
@@ -7831,6 +7846,9 @@ spec:
                                                       - message: invalid duration
                                                           value
                                                         rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                      - message: must be at least
+                                                          1ms
+                                                        rule: duration(self) >= duration('1ms')
                                                     maxInterval:
                                                       description: Specifies the maximum
                                                         interval between retries.
@@ -9022,6 +9040,8 @@ spec:
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
                                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                - message: must be at least 1ms
+                                                  rule: duration(self) >= duration('1ms')
                                               maxInterval:
                                                 description: Specifies the maximum
                                                   interval between retries. This parameter
@@ -9275,6 +9295,8 @@ spec:
                                                     x-kubernetes-validations:
                                                     - message: invalid duration value
                                                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                    - message: must be at least 1ms
+                                                      rule: duration(self) >= duration('1ms')
                                                   maxInterval:
                                                     description: Specifies the maximum
                                                       interval between retries. This

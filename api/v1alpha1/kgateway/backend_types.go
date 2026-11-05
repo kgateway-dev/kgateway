@@ -286,6 +286,7 @@ type AwsEc2 struct {
 	// Defaults to 80.
 	// +optional
 	// +kubebuilder:default=80
+	// +kubebuilder:validation:XValidation:rule="self >= 1 && self <= 65535",message="port must be between 1 and 65535"
 	Port gwv1.PortNumber `json:"port,omitempty"`
 
 	// AddressType selects whether to route to the instance private or public IP.
@@ -388,6 +389,7 @@ type Host struct {
 	Host string `json:"host"`
 	// Port is the port to use for the backend.
 	// +required
+	// +kubebuilder:validation:XValidation:rule="self >= 1 && self <= 65535",message="port must be between 1 and 65535"
 	Port gwv1.PortNumber `json:"port"`
 }
 

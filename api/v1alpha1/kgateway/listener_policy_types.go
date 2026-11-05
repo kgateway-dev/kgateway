@@ -460,8 +460,8 @@ type LocalReplyMapper struct {
 	// A filter that determines if this mapper should apply.
 	// +required
 	Filter AccessLogFilter `json:"filter"`
-	// New response status code for the reply if specified.
-	// +kubebuilder:validation:Minimum=100
+	// New response status code for the reply if specified. Must be between 200 and 599.
+	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
 	// +optional
 	StatusCode *uint32 `json:"statusCode,omitempty"`
@@ -631,6 +631,7 @@ type BackoffStrategy struct {
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the base_interval if set. The default is 10 times the base_interval.

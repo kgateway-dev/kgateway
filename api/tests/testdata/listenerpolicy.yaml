@@ -86,3 +86,47 @@ spec:
       grpcStats:
         methodAllowlist:
         - /pkg.Service/Method
+---
+# ListenerPolicy: local reply mapper statusCode must be at least 200
+_err: 'mappers[0].statusCode in body should be greater than or equal to 200'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-local-reply-status-too-small
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      localReplies:
+        mappers:
+        - filter:
+            statusCodeFilter:
+              op: EQ
+              value: 404
+          statusCode: 150
+---
+# ListenerPolicy: gRPC retry backoff baseInterval must be at least 1ms
+_err: 'retryBackOff.baseInterval: Invalid value: "0s": must be at least 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpc-backoff-zero
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      accessLog:
+      - grpcService:
+          logName: test
+          backendRef:
+            name: log-service
+            port: 50051
+          retryPolicy:
+            retryBackOff:
+              baseInterval: 0s
