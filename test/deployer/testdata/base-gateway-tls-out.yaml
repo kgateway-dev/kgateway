@@ -45,13 +45,6 @@ data:
     cluster_manager:
       local_cluster_name: "gw.default"
     static_resources:
-      secrets:
-        - name: validation_context_sds
-          validation_context:
-            trusted_ca:
-              filename: /etc/envoy/ca.crt
-            watched_directory:
-              path: /etc/envoy
       listeners:
       - name: readiness_listener
         address:
@@ -179,7 +172,11 @@ data:
               "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
               common_tls_context:
                 validation_context_sds_secret_config:
-                  name: validation_context_sds
+                  name: xds-ca
+                  sds_config:
+                    path_config_source:
+                      path: /etc/envoy/xds_ca_sds.json
+                    resource_api_version: V3
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -246,6 +243,14 @@ data:
         resource_api_version: V3
         initial_fetch_timeout: 0s
         ads: {}
+  xds_ca_sds.json: |
+    {"resources":[{
+      "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
+      "name":"xds-ca",
+      "validation_context": {
+        "trusted_ca":{"filename":"/etc/envoy/ca.crt"}
+      }
+    }]}
   xds_service_account_token.json: |
     {"resources":[{
       "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
