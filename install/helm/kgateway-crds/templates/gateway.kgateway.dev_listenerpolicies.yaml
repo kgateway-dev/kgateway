@@ -386,6 +386,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -762,6 +763,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -850,6 +852,7 @@ spec:
                                           description: Specifies the numerator. Defaults
                                             to 0.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 0
                                           type: integer
                                       required:
@@ -1042,6 +1045,7 @@ spec:
                                     Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                     Defaults to 0, which means unlimited.
                                   format: int32
+                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 retryPolicy:
@@ -1053,6 +1057,7 @@ spec:
                                       description: Specifies the allowed number of
                                         retries. Defaults to 1.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryBackOff:
@@ -1285,6 +1290,7 @@ spec:
                                         Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                         Defaults to 0, which means unlimited.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryPolicy:
@@ -1296,6 +1302,7 @@ spec:
                                           description: Specifies the allowed number
                                             of retries. Defaults to 1.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 1
                                           type: integer
                                         retryBackOff:
@@ -1995,6 +2002,7 @@ spec:
                                                     description: Specifies the numerator.
                                                       Defaults to 0.
                                                     format: int32
+                                                    maximum: 2147483647
                                                     minimum: 0
                                                     type: integer
                                                 required:
@@ -2372,6 +2380,7 @@ spec:
                                                     description: Specifies the numerator.
                                                       Defaults to 0.
                                                     format: int32
+                                                    maximum: 2147483647
                                                     minimum: 0
                                                     type: integer
                                                 required:
@@ -2460,6 +2469,7 @@ spec:
                                               description: Specifies the numerator.
                                                 Defaults to 0.
                                               format: int32
+                                              maximum: 2147483647
                                               minimum: 0
                                               type: integer
                                           required:
@@ -2764,6 +2774,7 @@ spec:
                           stream reset for HTTP/2. If unset, defaults to Envoy's built-in default of 100.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-headers-count
                         format: int32
+                        maximum: 2147483647
                         minimum: 1
                         type: integer
                       maxRequestHeadersKb:
@@ -2784,6 +2795,7 @@ spec:
                           If set to 0 or unspecified, defaults to unlimited.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       mergeSlashes:
@@ -3012,6 +3024,7 @@ spec:
                               request paths to meet the needs of a tracing backend.
                               Default: 256'
                             format: int32
+                            maximum: 2147483647
                             minimum: 1
                             type: integer
                           overallSampling:
@@ -3157,6 +3170,7 @@ spec:
                                           Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                           Defaults to 0, which means unlimited.
                                         format: int32
+                                        maximum: 2147483647
                                         minimum: 1
                                         type: integer
                                       retryPolicy:
@@ -3168,6 +3182,7 @@ spec:
                                             description: Specifies the allowed number
                                               of retries. Defaults to 1.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryBackOff:
@@ -3337,6 +3352,7 @@ spec:
                           This is mutually exclusive with XffTrustedCIDRs.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       xffTrustedCIDRs:
@@ -3377,6 +3393,7 @@ spec:
                       If unspecified, an implementation-defined default is applied (1MiB).
                       See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-per-connection-buffer-limit-bytes
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   proxyProtocol:
@@ -3423,6 +3440,7 @@ spec:
                         description: Maximum number of keep-alive probes to send before
                           dropping the connection.
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       keepAliveTime:
@@ -3674,6 +3692,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -4050,6 +4069,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -4138,6 +4158,7 @@ spec:
                                           description: Specifies the numerator. Defaults
                                             to 0.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 0
                                           type: integer
                                       required:
@@ -4330,6 +4351,7 @@ spec:
                                     Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                     Defaults to 0, which means unlimited.
                                   format: int32
+                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 retryPolicy:
@@ -4341,6 +4363,7 @@ spec:
                                       description: Specifies the allowed number of
                                         retries. Defaults to 1.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryBackOff:
@@ -4573,6 +4596,7 @@ spec:
                                         Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                         Defaults to 0, which means unlimited.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryPolicy:
@@ -4584,6 +4608,7 @@ spec:
                                           description: Specifies the allowed number
                                             of retries. Defaults to 1.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 1
                                           type: integer
                                         retryBackOff:
@@ -4951,6 +4976,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -5329,6 +5355,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -5417,6 +5444,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -5610,6 +5638,7 @@ spec:
                                           Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                           Defaults to 0, which means unlimited.
                                         format: int32
+                                        maximum: 2147483647
                                         minimum: 1
                                         type: integer
                                       retryPolicy:
@@ -5621,6 +5650,7 @@ spec:
                                             description: Specifies the allowed number
                                               of retries. Defaults to 1.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryBackOff:
@@ -5860,6 +5890,7 @@ spec:
                                               Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                               Defaults to 0, which means unlimited.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryPolicy:
@@ -5871,6 +5902,7 @@ spec:
                                                 description: Specifies the allowed
                                                   number of retries. Defaults to 1.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 1
                                                 type: integer
                                               retryBackOff:
@@ -6580,6 +6612,7 @@ spec:
                                                             numerator. Defaults to
                                                             0.
                                                           format: int32
+                                                          maximum: 2147483647
                                                           minimum: 0
                                                           type: integer
                                                       required:
@@ -6963,6 +6996,7 @@ spec:
                                                             numerator. Defaults to
                                                             0.
                                                           format: int32
+                                                          maximum: 2147483647
                                                           minimum: 0
                                                           type: integer
                                                       required:
@@ -7053,6 +7087,7 @@ spec:
                                                     description: Specifies the numerator.
                                                       Defaults to 0.
                                                     format: int32
+                                                    maximum: 2147483647
                                                     minimum: 0
                                                     type: integer
                                                 required:
@@ -7358,6 +7393,7 @@ spec:
                                 stream reset for HTTP/2. If unset, defaults to Envoy's built-in default of 100.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-headers-count
                               format: int32
+                              maximum: 2147483647
                               minimum: 1
                               type: integer
                             maxRequestHeadersKb:
@@ -7378,6 +7414,7 @@ spec:
                                 If set to 0 or unspecified, defaults to unlimited.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
                               format: int32
+                              maximum: 2147483647
                               minimum: 0
                               type: integer
                             mergeSlashes:
@@ -7610,6 +7647,7 @@ spec:
                                     to truncate lengthy request paths to meet the
                                     needs of a tracing backend. Default: 256'
                                   format: int32
+                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 overallSampling:
@@ -7760,6 +7798,7 @@ spec:
                                                 Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                                 Defaults to 0, which means unlimited.
                                               format: int32
+                                              maximum: 2147483647
                                               minimum: 1
                                               type: integer
                                             retryPolicy:
@@ -7772,6 +7811,7 @@ spec:
                                                     number of retries. Defaults to
                                                     1.
                                                   format: int32
+                                                  maximum: 2147483647
                                                   minimum: 1
                                                   type: integer
                                                 retryBackOff:
@@ -7947,6 +7987,7 @@ spec:
                                 This is mutually exclusive with XffTrustedCIDRs.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                               format: int32
+                              maximum: 2147483647
                               minimum: 0
                               type: integer
                             xffTrustedCIDRs:
@@ -7987,6 +8028,7 @@ spec:
                             If unspecified, an implementation-defined default is applied (1MiB).
                             See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-per-connection-buffer-limit-bytes
                           format: int32
+                          maximum: 2147483647
                           minimum: 0
                           type: integer
                         proxyProtocol:
@@ -8035,6 +8077,7 @@ spec:
                               description: Maximum number of keep-alive probes to
                                 send before dropping the connection.
                               format: int32
+                              maximum: 2147483647
                               minimum: 0
                               type: integer
                             keepAliveTime:
@@ -8287,6 +8330,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -8665,6 +8709,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -8753,6 +8798,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -8946,6 +8992,7 @@ spec:
                                           Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                           Defaults to 0, which means unlimited.
                                         format: int32
+                                        maximum: 2147483647
                                         minimum: 1
                                         type: integer
                                       retryPolicy:
@@ -8957,6 +9004,7 @@ spec:
                                             description: Specifies the allowed number
                                               of retries. Defaults to 1.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryBackOff:
@@ -9196,6 +9244,7 @@ spec:
                                               Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                               Defaults to 0, which means unlimited.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryPolicy:
@@ -9207,6 +9256,7 @@ spec:
                                                 description: Specifies the allowed
                                                   number of retries. Defaults to 1.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 1
                                                 type: integer
                                               retryBackOff:
@@ -9706,6 +9756,7 @@ spec:
                               For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                               with respect to the current state of the instance.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 0
                             type: integer
                           reason:

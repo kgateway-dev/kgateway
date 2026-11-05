@@ -46,7 +46,7 @@ data:
         - name: envoy.resource_monitors.global_downstream_max_connections
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
-            max_active_downstream_connections: {{ . }}
+            max_active_downstream_connections: {{ int64 . }}
     {{- end }}
     node:
       cluster: {{ $localClusterName | quote }}

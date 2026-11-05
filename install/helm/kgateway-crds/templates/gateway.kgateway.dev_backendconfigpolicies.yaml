@@ -63,6 +63,7 @@ spec:
                       MaxConnections is the maximum number of connections that will be made to
                       the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxPendingRequests:
@@ -70,6 +71,7 @@ spec:
                       MaxPendingRequests is the maximum number of pending requests that are
                       allowed to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxRequests:
@@ -77,6 +79,7 @@ spec:
                       MaxRequests is the maximum number of parallel requests that are allowed
                       to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxRetries:
@@ -84,6 +87,7 @@ spec:
                       MaxRetries is the maximum number of parallel retries that are allowed
                       to the upstream cluster. If not specified, defaults to 3.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   trackRemaining:
@@ -139,6 +143,7 @@ spec:
                       To configure the maximum number of headers accepted in downstream requests, use
                       ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   maxRequestsPerConnection:
@@ -146,6 +151,7 @@ spec:
                       Maximum requests for a single upstream connection.
                       If set to 0 or unspecified, defaults to unlimited.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   maxStreamDuration:
@@ -262,6 +268,7 @@ spec:
                       healthy. Note that during startup, only a single successful health check is
                       required to mark a host healthy.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   http:
@@ -330,6 +337,7 @@ spec:
                       Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
                       this threshold is ignored and the host is considered immediately unhealthy.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                 required:
@@ -498,6 +506,8 @@ spec:
                           How many choices to take into account.
                           Defaults to 2.
                         format: int32
+                        maximum: 2147483647
+                        minimum: -2147483648
                         type: integer
                       slowStart:
                         description: SlowStart configures the slow start configuration
@@ -725,11 +735,13 @@ spec:
                       maximumRingSize:
                         description: MaximumRingSize is the maximum size of the ring.
                         format: int64
+                        maximum: 9223372036854774784
                         minimum: 0
                         type: integer
                       minimumRingSize:
                         description: MinimumRingSize is the minimum size of the ring.
                         format: int64
+                        maximum: 9223372036854774784
                         minimum: 0
                         type: integer
                       useHostnameForHashing:
@@ -826,7 +838,8 @@ spec:
                                   If the local zone has fewer endpoints than this threshold, the system
                                   falls back to standard zone-aware routing behavior.
                                   Defaults to 1.
-                                format: int32
+                                format: uint32
+                                maximum: 4294967295
                                 minimum: 1
                                 type: integer
                             type: object
@@ -839,6 +852,7 @@ spec:
                               This maps to Envoy's min_cluster_size setting.
                               Defaults to 6.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 1
                             type: integer
                           routingEnabled:
@@ -894,6 +908,7 @@ spec:
                       health checks will be disabled. In the future, other types of passive
                       health checking might be added, but none will be enabled by default.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   consecutiveGatewayFailure:
@@ -902,6 +917,7 @@ spec:
                       codes) before a host is ejected. When set, ejection is always enforced.
                       When unset, consecutive gateway failure ejection is disabled.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   consecutiveLocalOriginFailure:
@@ -911,6 +927,7 @@ spec:
                       splitExternalLocalOriginErrors is true. If this is zero, consecutive local
                       origin failure ejection is disabled.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   enforcingConsecutive5xx:
@@ -967,6 +984,7 @@ spec:
                   Soft limit on the size of the cluster's connections read and write buffers.
                   If unspecified, an implementation-defined default is applied (1MiB).
                 format: int32
+                maximum: 2147483647
                 minimum: 0
                 type: integer
               sessionPersistence:
@@ -1185,6 +1203,7 @@ spec:
                     description: Maximum number of keep-alive probes to send before
                       dropping the connection.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   keepAliveTime:
@@ -1783,6 +1802,7 @@ spec:
                               For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                               with respect to the current state of the instance.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 0
                             type: integer
                           reason:

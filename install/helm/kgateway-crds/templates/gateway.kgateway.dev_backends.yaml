@@ -198,6 +198,8 @@ spec:
                           Port is the port to use for discovered instances.
                           Defaults to 80.
                         format: int32
+                        maximum: 2147483647
+                        minimum: -2147483648
                         type: integer
                     type: object
                   lambda:
@@ -375,6 +377,8 @@ spec:
                         port:
                           description: Port is the port to use for the backend.
                           format: int32
+                          maximum: 2147483647
+                          minimum: -2147483648
                           type: integer
                       required:
                       - host
@@ -444,6 +448,7 @@ spec:
                         For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                         with respect to the current state of the instance.
                       format: int64
+                      maximum: 9223372036854774784
                       minimum: 0
                       type: integer
                     reason:

@@ -187,6 +187,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -409,6 +410,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -481,6 +483,7 @@ spec:
                           MaxRequestBytes sets the maximum size of a message body to buffer.
                           Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
                         format: int32
+                        maximum: 2147483647
                         minimum: 1
                         type: integer
                       packAsBytes:
@@ -620,6 +623,8 @@ spec:
                           chain. Defaults to 0. Filters with the same stage, predicate, and
                           weight are sorted alphabetically by filter name for consistency.
                         format: int32
+                        maximum: 2147483647
+                        minimum: -2147483648
                         type: integer
                     required:
                     - stage
@@ -743,6 +748,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -957,14 +963,16 @@ spec:
                                 MaxTokenSize is the maximum size of a single cached token in bytes.
                                 If this field is not set the default value 4096
                                 bytes is used. The maximum value for a token is inclusive.
-                              format: int32
+                              format: uint32
+                              maximum: 4294967295
                               minimum: 1
                               type: integer
                             size:
                               description: |-
                                 Size is the number of verified tokens to cache, per Envoy worker thread.
                                 If unspecified, the Envoy default of 100 is used.
-                              format: int32
+                              format: uint32
+                              maximum: 4294967295
                               minimum: 1
                               type: integer
                           type: object
@@ -1221,6 +1229,7 @@ spec:
                                         NumRetries is the allowed number of retries when fetching the JWKS fails.
                                         Defaults to 1 if unset.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                   type: object
@@ -1964,6 +1973,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -2108,6 +2118,7 @@ spec:
                         For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                         with respect to the current state of the instance.
                       format: int64
+                      maximum: 9223372036854774784
                       minimum: 0
                       type: integer
                     reason:
