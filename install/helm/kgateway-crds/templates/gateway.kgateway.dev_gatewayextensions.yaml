@@ -460,8 +460,9 @@ spec:
                     default: 403
                     description: |-
                       StatusOnError sets the HTTP status response code that is returned to the client when the
-                      auth server returns an error or cannot be reached. Must be a status code that Envoy
-                      defines, in the range of 100-511 inclusive.
+                      auth server returns an error or cannot be reached. Must be one of the status codes
+                      that Envoy defines (envoy.type.v3.StatusCode): 100, 200-208, 226, 300-305, 307, 308,
+                      400-417, 421-424, 426, 428, 429, 431, 500-508, 510 or 511.
                       The default matches the deny response code of 403 Forbidden.
                     enum:
                     - 100
@@ -521,8 +522,6 @@ spec:
                     - 510
                     - 511
                     format: int32
-                    maximum: 511
-                    minimum: 100
                     type: integer
                   withRequestBody:
                     description: |-

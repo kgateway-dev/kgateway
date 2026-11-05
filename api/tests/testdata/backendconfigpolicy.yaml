@@ -389,6 +389,8 @@ spec:
     interval: 1s
     unhealthyThreshold: 1
     healthyThreshold: 1
+    http:
+      path: /healthz
 ---
 # BackendConfigPolicy: healthCheck interval must be at least 1ms
 _err: 'spec.healthCheck.interval: Invalid value: "0s": must be at least 1ms'
@@ -406,6 +408,8 @@ spec:
     interval: 0s
     unhealthyThreshold: 1
     healthyThreshold: 1
+    http:
+      path: /healthz
 ---
 # BackendConfigPolicy: maxHeadersCount must be at least 1
 _err: 'spec.commonHttpProtocolOptions.maxHeadersCount in body should be greater than or equal to 1'

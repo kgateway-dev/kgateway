@@ -1745,8 +1745,6 @@ spec:
                       - 307
                       - 308
                       format: int32
-                      maximum: 2147483647
-                      minimum: -2147483648
                       type: integer
                     maxItems: 5
                     minItems: 1

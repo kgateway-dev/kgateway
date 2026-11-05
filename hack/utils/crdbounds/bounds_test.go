@@ -111,6 +111,21 @@ other:
   x-kubernetes-int-or-string: true`,
 		},
 		{
+			name: "integer enum is left alone",
+			in: `code:
+  enum:
+  - 301
+  - 302
+  format: int32
+  type: integer`,
+			want: `code:
+  enum:
+  - 301
+  - 302
+  format: int32
+  type: integer`,
+		},
+		{
 			name: "array items",
 			in: `codes:
   items:

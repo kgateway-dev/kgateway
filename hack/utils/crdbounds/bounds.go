@@ -170,6 +170,10 @@ func nodeAt(lines []line, i int) (node, error) {
 
 // required returns the range a mapping must be bounded to, if any.
 func required(lines []line, n node) (intRange, bool) {
+	// An enum already limits the value to a fixed set, so bounds would only repeat it.
+	if _, ok := n.keys["enum"]; ok {
+		return intRange{}, false
+	}
 	if i, ok := n.keys["x-kubernetes-int-or-string"]; ok && lines[i].value == "true" {
 		// resource.Quantity is also int-or-string, but it carries a pattern and
 		// decodes numbers of any size, so it needs no bound. intstr.IntOrString
@@ -224,7 +228,7 @@ func integerNodes(lines []line, fn func(n node, r intRange) error) error {
 }
 
 // Process adds any missing `minimum`/`maximum` to every int32, int64 and
-// int-or-string schema in a CRD manifest. Existing bounds are kept; Check
+// int-or-string schema in a CRD manifest that has no enum. Existing bounds are kept; Check
 // reports any that fall outside the Go type.
 func Process(src string) (string, error) {
 	lines := parseLines(src)
@@ -286,7 +290,7 @@ type Violation struct {
 
 func (v Violation) String() string { return fmt.Sprintf("line %d: %s", v.Line, v.Reason) }
 
-// Check reports every int32, int64 and int-or-string schema that lacks a
+// Check reports every int32, int64 and int-or-string schema without an enum that lacks a
 // bound, or whose bound lies outside the range of its Go type.
 func Check(src string) ([]Violation, error) {
 	lines := parseLines(src)
