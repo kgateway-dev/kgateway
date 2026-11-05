@@ -289,6 +289,7 @@ spec:
   template:
     metadata:
       annotations:
+        checksum/config: 3e1daf2e6d4eedcafda365eb58515efb715c3e991871d9f2823a8ef50bc936b7
         gateway.kgateway.dev/gateway-full-name: gw
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"

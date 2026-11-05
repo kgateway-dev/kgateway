@@ -28,10 +28,13 @@ spec:
       {{- if $statsConfig.enabled }}
         {{- $promAnnotations = dict "prometheus.io/path" "/metrics" "prometheus.io/port" "9091" "prometheus.io/scrape" "true" }}
       {{- end}}
+      {{- /* Roll the pods when the ConfigMap (Envoy bootstrap) changes; Envoy only reads it at startup. */}}
+      {{- $checksumAnnotations := dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
       {{- toYaml (merge
           (deepCopy ($gateway.gatewayAnnotations | default dict))
           ($gateway.extraPodAnnotations | default dict)
           $promAnnotations
+          $checksumAnnotations
           (include "kgateway.gateway.gatewayNameAnnotation" . | fromYaml)
        ) | nindent 8 }}
       labels:
