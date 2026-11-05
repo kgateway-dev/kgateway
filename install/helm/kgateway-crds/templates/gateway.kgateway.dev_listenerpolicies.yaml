@@ -1067,9 +1067,9 @@ spec:
                                       properties:
                                         baseInterval:
                                           description: The base interval to be used
-                                            for the next back off computation. It
-                                            should be greater than zero and less than
-                                            or equal to max_interval.
+                                            for the next back off computation. Must
+                                            be at least 1ms and less than or equal
+                                            to max_interval.
                                           maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
@@ -1315,8 +1315,8 @@ spec:
                                             baseInterval:
                                               description: The base interval to be
                                                 used for the next back off computation.
-                                                It should be greater than zero and
-                                                less than or equal to max_interval.
+                                                Must be at least 1ms and less than
+                                                or equal to max_interval.
                                               maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
@@ -3197,8 +3197,8 @@ spec:
                                               baseInterval:
                                                 description: The base interval to
                                                   be used for the next back off computation.
-                                                  It should be greater than zero and
-                                                  less than or equal to max_interval.
+                                                  Must be at least 1ms and less than
+                                                  or equal to max_interval.
                                                 maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
@@ -4379,9 +4379,9 @@ spec:
                                       properties:
                                         baseInterval:
                                           description: The base interval to be used
-                                            for the next back off computation. It
-                                            should be greater than zero and less than
-                                            or equal to max_interval.
+                                            for the next back off computation. Must
+                                            be at least 1ms and less than or equal
+                                            to max_interval.
                                           maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
@@ -4627,8 +4627,8 @@ spec:
                                             baseInterval:
                                               description: The base interval to be
                                                 used for the next back off computation.
-                                                It should be greater than zero and
-                                                less than or equal to max_interval.
+                                                Must be at least 1ms and less than
+                                                or equal to max_interval.
                                               maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
@@ -5671,8 +5671,8 @@ spec:
                                               baseInterval:
                                                 description: The base interval to
                                                   be used for the next back off computation.
-                                                  It should be greater than zero and
-                                                  less than or equal to max_interval.
+                                                  Must be at least 1ms and less than
+                                                  or equal to max_interval.
                                                 maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
@@ -5925,9 +5925,9 @@ spec:
                                                   baseInterval:
                                                     description: The base interval
                                                       to be used for the next back
-                                                      off computation. It should be
-                                                      greater than zero and less than
-                                                      or equal to max_interval.
+                                                      off computation. Must be at
+                                                      least 1ms and less than or equal
+                                                      to max_interval.
                                                     maxLength: 32
                                                     type: string
                                                     x-kubernetes-validations:
@@ -7837,9 +7837,9 @@ spec:
                                                     baseInterval:
                                                       description: The base interval
                                                         to be used for the next back
-                                                        off computation. It should
-                                                        be greater than zero and less
-                                                        than or equal to max_interval.
+                                                        off computation. Must be at
+                                                        least 1ms and less than or
+                                                        equal to max_interval.
                                                       maxLength: 32
                                                       type: string
                                                       x-kubernetes-validations:
@@ -9033,8 +9033,8 @@ spec:
                                               baseInterval:
                                                 description: The base interval to
                                                   be used for the next back off computation.
-                                                  It should be greater than zero and
-                                                  less than or equal to max_interval.
+                                                  Must be at least 1ms and less than
+                                                  or equal to max_interval.
                                                 maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
@@ -9287,9 +9287,9 @@ spec:
                                                   baseInterval:
                                                     description: The base interval
                                                       to be used for the next back
-                                                      off computation. It should be
-                                                      greater than zero and less than
-                                                      or equal to max_interval.
+                                                      off computation. Must be at
+                                                      least 1ms and less than or equal
+                                                      to max_interval.
                                                     maxLength: 32
                                                     type: string
                                                     x-kubernetes-validations:

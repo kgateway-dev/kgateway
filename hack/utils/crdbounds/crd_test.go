@@ -45,8 +45,10 @@ func TestGeneratedCRDsAreBounded(t *testing.T) {
 
 // TestCRDFieldsDecodeSafely walks each API type next to its CRD schema and
 // fails on fields the schema alone cannot make decode-safe:
-//   - unsigned integers, which controller-gen emits as `format: int32` with no
-//     minimum, so a negative number is admitted and then fails to decode;
+//   - unsigned integers, which controller-gen emits as a signed schema
+//     (`format: int32` for uint32, `format: int64` for uint64, no format for
+//     uint, uint8 and uint16) with no minimum, so a negative number is admitted
+//     and then fails to decode;
 //   - metav1.Duration, which is a plain string in the schema, so any string is
 //     admitted and then fails time.ParseDuration.
 func TestCRDFieldsDecodeSafely(t *testing.T) {
