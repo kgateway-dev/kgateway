@@ -292,8 +292,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 8f66c8d18a1c605b845f683eddf0af8bf64673ed474322932006c20b3be32e1d
         gateway.kgateway.dev/gateway-full-name: gw
+        kgateway.dev/checksum-config: 8f66c8d18a1c605b845f683eddf0af8bf64673ed474322932006c20b3be32e1d
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"

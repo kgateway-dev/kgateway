@@ -428,8 +428,8 @@ func (s *testingSuite) TestBootstrapChangeRollsProxyPods() {
 	}
 
 	dep := getDeployment(s.TestInstallation.AssertionsT(s.T()).Gomega)
-	oldChecksum := dep.Spec.Template.Annotations["checksum/config"]
-	s.Require().NotEmpty(oldChecksum, "pod template should have a checksum/config annotation")
+	oldChecksum := dep.Spec.Template.Annotations["kgateway.dev/checksum-config"]
+	s.Require().NotEmpty(oldChecksum, "pod template should have a kgateway.dev/checksum-config annotation")
 	selector := dep.Spec.Selector.MatchLabels
 	oldPods := listProxyPodUIDs(s.TestInstallation.AssertionsT(s.T()).Gomega, selector)
 	s.Require().NotEmpty(oldPods, "proxy should have running pods before the change")
@@ -456,7 +456,7 @@ func (s *testingSuite) TestBootstrapChangeRollsProxyPods() {
 		g.Expect(cm.Data["envoy.yaml"]).To(gomega.ContainSubstring(logFormat), "bootstrap should have the new log format")
 
 		g.Expect(getDeployment(g).Spec.Template.Annotations).To(
-			gomega.HaveKeyWithValue("checksum/config", gomega.Not(gomega.Equal(oldChecksum))),
+			gomega.HaveKeyWithValue("kgateway.dev/checksum-config", gomega.Not(gomega.Equal(oldChecksum))),
 			"checksum should change when the bootstrap changes",
 		)
 	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())

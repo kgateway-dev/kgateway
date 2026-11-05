@@ -24,8 +24,8 @@ func TestEnvoyDeploymentConfigChecksum(t *testing.T) {
 		require.NoError(t, err)
 		for _, obj := range objs {
 			if dep, ok := obj.(*appsv1.Deployment); ok {
-				sum := dep.Spec.Template.Annotations["checksum/config"]
-				require.NotEmpty(t, sum, "pod template should have a checksum/config annotation")
+				sum := dep.Spec.Template.Annotations["kgateway.dev/checksum-config"]
+				require.NotEmpty(t, sum, "pod template should have a kgateway.dev/checksum-config annotation")
 				return sum
 			}
 		}
