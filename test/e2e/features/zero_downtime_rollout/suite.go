@@ -5,7 +5,6 @@ package zero_downtime_rollout
 import (
 	"context"
 	"path/filepath"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,8 +79,6 @@ func (s *testingSuiteKgateway) TestZeroDowntimeRollout() {
 	// should have readiness probes configured.
 	err := kCli.RestartDeploymentAndWait(s.Ctx, "gw")
 	s.Require().NoError(err)
-
-	time.Sleep(time.Second)
 
 	err = kCli.RestartDeploymentAndWait(s.Ctx, "gw")
 	s.Require().NoError(err)
