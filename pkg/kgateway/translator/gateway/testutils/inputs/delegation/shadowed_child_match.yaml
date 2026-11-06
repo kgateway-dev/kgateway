@@ -1,0 +1,85 @@
+# This test contains a parent route delegating two prefixes to the same label, where an
+# inherit-parent-matcher child matching / is merged under both prefixes and collides
+# with a child that matches /a explicitly.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /infra to routes with the label delegation.kgateway.dev/label=shared in the 'a' namespace
+#   - Delegate /a to routes with the label delegation.kgateway.dev/label=shared in the 'a' namespace
+# - Child a/inherit-root (older; inherit-parent-matcher): / -> a/svc-a
+# - Child a/explicit-a (newer): /a -> a/svc-a
+#
+# Expected output routes:
+# - /infra -> a/svc-a (from a/inherit-root)
+# - /a -> a/svc-a (from a/inherit-root, the older route)
+# - /a -> a/svc-a (from a/explicit-a, unreachable)
+#
+# a/explicit-a reports kgateway.dev/Programmed=True with Reason=RouteRuleShadowed,
+# naming a/inherit-root rule 0.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /infra
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: shared
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: shared
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: inherit-root
+  namespace: a
+  creationTimestamp: "2026-01-01T00:00:00Z"
+  labels:
+    delegation.kgateway.dev/label: shared
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: explicit-a
+  namespace: a
+  creationTimestamp: "2026-01-02T00:00:00Z"
+  labels:
+    delegation.kgateway.dev/label: shared
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - name: svc-a
+      port: 8080
