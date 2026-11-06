@@ -1339,6 +1339,37 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy multi-codec compression preference can be opted out", func(t *testing.T) {
+		// An empty preference opts out of the default server-side ordering (see the negotiation
+		// case), so no compressor sets choose_first and the client's order decides.
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/compression-negotiation-route.yaml"},
+			outputFile: "traffic-policy/compression-preference-optout-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.CompressionLibraryPreference = ""
+		})
+	})
+
+	t.Run("TrafficPolicy compression disable is unaffected by gateway-wide server preference", func(t *testing.T) {
+		// Server preference reorders the shared compressor filters and sets choose_first without
+		// renaming them, so a route on the same listener that disables compression still turns
+		// off every codec.
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/compression-preference-disable-route.yaml"},
+			outputFile: "traffic-policy/compression-preference-disable-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.CompressionLibraryPreference = "zstd,brotli,gzip"
+		})
+	})
+
 	t.Run("TrafficPolicy compression codec conflict resolves by precedence", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/compression-codec-conflict.yaml"},
