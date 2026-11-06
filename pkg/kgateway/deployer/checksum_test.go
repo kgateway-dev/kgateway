@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -58,4 +59,53 @@ func TestEnvoyDeploymentConfigChecksum(t *testing.T) {
 	}
 	require.Equal(t, checksum(withCA("old-ca")), checksum(withCA("new-ca")),
 		"checksum should not change when only the xDS CA changes")
+}
+
+// Envoy reads the SDS files that name other files (xds_ca_sds.json,
+// xds_service_account_token.json) only at startup: a ConfigMap update swaps
+// ..data, not the files Envoy watches for them. So a change to either must roll
+// the pods, even when envoy.yaml is unchanged.
+func TestEnvoyDeploymentConfigChecksumCoversSDSFiles(t *testing.T) {
+	vals := map[string]any{"gateway": map[string]any{
+		"name":             "gw",
+		"fullnameOverride": "gw",
+		"gatewayName":      "gw",
+		"image":            map[string]any{"registry": "cr.kgateway.dev", "repository": "envoy-wrapper", "tag": "test"},
+		"xds":              map[string]any{"tls": map[string]any{"enabled": true, "caCert": "ca"}},
+	}}
+	// checksum renders the chart after replacing old with new in configmap.yaml.
+	checksum := func(old, new string) string {
+		t.Helper()
+		chart, err := loadChart(helm.EnvoyHelmChart)
+		require.NoError(t, err)
+		if old != "" {
+			var patched bool
+			for _, tmpl := range chart.Templates {
+				if tmpl.Name == "templates/configmap.yaml" {
+					require.Contains(t, string(tmpl.Data), old, "configmap.yaml should contain %q", old)
+					tmpl.Data = []byte(strings.Replace(string(tmpl.Data), old, new, 1))
+					patched = true
+				}
+			}
+			require.True(t, patched, "chart should have templates/configmap.yaml")
+		}
+		d := pkgdeployer.NewDeployer("test-controller", schemes.GatewayScheme(), nil, chart, nil, nil)
+		objs, err := d.RenderChartToObjects("default", "gw", vals)
+		require.NoError(t, err)
+		for _, obj := range objs {
+			if dep, ok := obj.(*appsv1.Deployment); ok {
+				sum := dep.Spec.Template.Annotations["kgateway.dev/checksum-config"]
+				require.NotEmpty(t, sum, "pod template should have a kgateway.dev/checksum-config annotation")
+				return sum
+			}
+		}
+		require.FailNow(t, "no Deployment rendered")
+		return ""
+	}
+
+	base := checksum("", "")
+	require.NotEqual(t, base, checksum(`"trusted_ca":{"filename":"/etc/envoy/ca.crt"}`, `"trusted_ca":{"filename":"/etc/envoy/other-ca.crt"}`),
+		"checksum should change when xds_ca_sds.json changes")
+	require.NotEqual(t, base, checksum(`{"filename":"/var/run/secrets/tokens/xds-token"}`, `{"filename":"/var/run/secrets/tokens/other-token"}`),
+		"checksum should change when xds_service_account_token.json changes")
 }
