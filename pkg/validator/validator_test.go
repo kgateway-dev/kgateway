@@ -577,7 +577,7 @@ configuration '/dev/fd/0' OK`,
 		{
 			name: "deprecated field warning with docker noise",
 			input: `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform
-Status: Downloaded newer image for envoyproxy/envoy:v1.39.6
+Status: Downloaded newer image for envoyproxy/envoy:v1.40.2
 [warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'`,
 			expected: []string{
 				"[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'",
