@@ -3,6 +3,7 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"time"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -48,7 +48,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: e2edefaults.WellKnownAppLabel + "=kgateway",
 	})
 }
@@ -74,24 +74,12 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 
 	// Verify the control plane metrics are generating as expected.
 	s.TestInstallation.AssertionsT(s.T()).Assert.EventuallyWithT(func(c *assert.CollectT) {
-		resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
-			s.Ctx,
-			e2edefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
-				curl.WithPort(9092),
-				curl.WithPath("/metrics"),
-			},
-			&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-		)
+		body, err := common.ScrapeControllerMetrics(s.Ctx, s.TestInstallation)
+		if !assert.NoError(c, err, "can scrape controller metrics") {
+			return
+		}
 
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				c.Errorf("unable to close response body: %v", err)
-			}
-		}()
-
-		gathered := metricstest.MustParseGatheredMetrics(c, resp.Body)
+		gathered := metricstest.MustParseGatheredMetrics(c, bytes.NewReader(body))
 
 		// Assert xDS auth metrics
 		var expectedGateways float64 = 2
