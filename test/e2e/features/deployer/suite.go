@@ -74,6 +74,9 @@ var (
 		"TestGatewayParametersUpdateTriggersReconciliation": {
 			Manifests: []string{gatewayWithParameters},
 		},
+		"TestBootstrapChangeRollsProxyPods": {
+			Manifests: []string{gatewayWithParameters},
+		},
 		"TestHPAPDBLifecycle": {
 			Manifests: []string{gatewayWithHPAPDB},
 		},
@@ -393,6 +396,80 @@ func (s *testingSuite) TestGatewayParametersUpdateTriggersReconciliation() {
 			"pod template should have the annotation added via GatewayParameters patch",
 		)
 	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+}
+
+// TestBootstrapChangeRollsProxyPods verifies that a GatewayParameters change that only
+// affects the Envoy bootstrap ConfigMap rolls the proxy pods. Envoy reads the bootstrap
+// only at startup, so the pod template carries a checksum of the ConfigMap.
+func (s *testingSuite) TestBootstrapChangeRollsProxyPods() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	getDeployment := func(g gomega.Gomega) *appsv1.Deployment {
+		dep := &appsv1.Deployment{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, dep)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		return dep
+	}
+	listProxyPodUIDs := func(g gomega.Gomega, selector map[string]string) map[types.UID]bool {
+		pods := &corev1.PodList{}
+		err := s.TestInstallation.ClusterContext.Client.List(s.Ctx, pods,
+			client.InNamespace(proxyObjectMeta.Namespace), client.MatchingLabels(selector))
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		uids := map[types.UID]bool{}
+		for _, p := range pods.Items {
+			if p.DeletionTimestamp == nil {
+				uids[p.UID] = true
+			}
+		}
+		return uids
+	}
+
+	dep := getDeployment(s.TestInstallation.AssertionsT(s.T()).Gomega)
+	oldChecksum := dep.Spec.Template.Annotations["kgateway.dev/checksum-config"]
+	s.Require().NotEmpty(oldChecksum, "pod template should have a kgateway.dev/checksum-config annotation")
+	selector := dep.Spec.Selector.MatchLabels
+	oldPods := listProxyPodUIDs(s.TestInstallation.AssertionsT(s.T()).Gomega, selector)
+	s.Require().NotEmpty(oldPods, "proxy should have running pods before the change")
+
+	// logFormat is rendered only into the bootstrap ConfigMap, not the pod template.
+	const logFormat = "[bootstrap-checksum-e2e] %v"
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
+		if parameters.Spec.Kube.EnvoyContainer == nil {
+			parameters.Spec.Kube.EnvoyContainer = &kgateway.EnvoyContainer{}
+		}
+		if parameters.Spec.Kube.EnvoyContainer.Bootstrap == nil {
+			parameters.Spec.Kube.EnvoyContainer.Bootstrap = &kgateway.EnvoyBootstrap{}
+		}
+		parameters.Spec.Kube.EnvoyContainer.Bootstrap.LogFormat = &kgateway.LogFormat{Text: new(logFormat)}
+	})
+
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		cm := &corev1.ConfigMap{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, cm)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		g.Expect(cm.Data["envoy.yaml"]).To(gomega.ContainSubstring(logFormat), "bootstrap should have the new log format")
+
+		g.Expect(getDeployment(g).Spec.Template.Annotations).To(
+			gomega.HaveKeyWithValue("kgateway.dev/checksum-config", gomega.Not(gomega.Equal(oldChecksum))),
+			"checksum should change when the bootstrap changes",
+		)
+	}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.Succeed())
+
+	// The rollout replaces every old pod with a new one.
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		pods := listProxyPodUIDs(g, selector)
+		g.Expect(pods).NotTo(gomega.BeEmpty())
+		for uid := range pods {
+			g.Expect(oldPods).NotTo(gomega.HaveKey(uid), "old proxy pods should be replaced")
+		}
+	}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(gomega.Succeed())
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 }
 
 // TestHPAPDBLifecycle tests the full lifecycle of HPA, PDB, and VPA resources:
