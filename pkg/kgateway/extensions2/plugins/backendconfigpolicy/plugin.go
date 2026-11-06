@@ -429,7 +429,7 @@ func translate(
 		}
 		ir.respectDnsTtl = pol.Spec.DNS.RespectTTL
 		if pol.Spec.DNS.LookupFamily != nil {
-			family, err := toDnsLookupFamily(*pol.Spec.DNS.LookupFamily)
+			family, err := pluginutils.ToEnvoyDNSLookupFamily(*pol.Spec.DNS.LookupFamily)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -458,26 +458,6 @@ func translate(
 		ir.sessionPersistence = sp
 	}
 	return &ir, errs
-}
-
-// toDnsLookupFamily maps the API enum onto the Envoy one. The API spells the
-// families the way the rest of the Kubernetes API does; the KGW_DNS_LOOKUP_FAMILY
-// setting spells them the way Envoy does.
-func toDnsLookupFamily(family kgateway.DnsLookupFamily) (envoycommondnsv3.DnsLookupFamily, error) {
-	switch family {
-	case kgateway.DnsLookupFamilyIPv4Preferred:
-		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED, nil
-	case kgateway.DnsLookupFamilyIPv4Only:
-		return envoycommondnsv3.DnsLookupFamily_V4_ONLY, nil
-	case kgateway.DnsLookupFamilyIPv6Only:
-		return envoycommondnsv3.DnsLookupFamily_V6_ONLY, nil
-	case kgateway.DnsLookupFamilyIPv6Preferred:
-		return envoycommondnsv3.DnsLookupFamily_AUTO, nil
-	case kgateway.DnsLookupFamilyAll:
-		return envoycommondnsv3.DnsLookupFamily_ALL, nil
-	default:
-		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED, fmt.Errorf("unknown DNS lookup family %q", family)
-	}
 }
 
 func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Cluster) {

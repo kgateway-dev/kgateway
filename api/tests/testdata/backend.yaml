@@ -115,3 +115,22 @@ spec:
     accountId: "000000000000"
     ec2:
       port: 0
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp-ipv4-only
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy:
+    dnsLookupFamily: IPv4Only
+---
+_err: 'spec.dynamicForwardProxy.dnsLookupFamily: Unsupported value'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp-invalid-dns-lookup-family
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy:
+    dnsLookupFamily: V4_ONLY
