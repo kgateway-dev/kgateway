@@ -70,7 +70,7 @@ jobs:
           # Oct 28, 2026: ~6 minutes
           - cluster-name: 'cluster-three'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^EC2$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
+            go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^EC2$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^Buffer$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
             localstack: 'true'
           # Oct 28, 2026: ~7 minutes
           - cluster-name: 'cluster-four'
