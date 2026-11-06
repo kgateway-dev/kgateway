@@ -1663,12 +1663,13 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 	}
 }
 
+// getBackends resolves the backendRefs of a route rule. An error resolving a backendRef's
+// filters (e.g. an ExtensionRef to a missing policy) is set on that backend, so that only
+// its traffic fails closed instead of forwarding without the policy.
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
-		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
-		// see: https://github.com/kgateway-dev/kgateway/issues/11897
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
+		extensionRefs, filtersErr := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
@@ -1676,6 +1677,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			backends = append(backends, ir.HttpBackendOrDelegate{
 				Delegate:         &to,
 				AttachedPolicies: extensionRefs,
+				FiltersErr:       filtersErr,
 			})
 			continue
 		}
@@ -1689,6 +1691,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 				Err:           err,
 			},
 			AttachedPolicies: extensionRefs,
+			FiltersErr:       filtersErr,
 		})
 	}
 	return backends
