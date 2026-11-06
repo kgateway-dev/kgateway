@@ -81,6 +81,21 @@ func TestCRDFieldsDecodeSafely(t *testing.T) {
 	assert.Equal(t, len(schemas), checked, "every CRD should map to a registered Go type")
 }
 
+// TestUnsignedMaximumLimit checks the guard against float64 rounding: 2^64 is
+// out of range for a uint64, so a schema maximum of 2^64 must fail.
+func TestUnsignedMaximumLimit(t *testing.T) {
+	check := func(maximum float64) []string {
+		w := &walker{}
+		w.walk(reflect.TypeFor[uint64](), &apiextensionsv1.JSONSchemaProps{
+			Minimum: new(0.0), Maximum: new(maximum),
+		}, "f", 0)
+		return w.problems
+	}
+	assert.Empty(t, check(maxExactUint64), "largest float64 below 2^64 is in range")
+	assert.Empty(t, check(float64(math.MaxInt64-1023)), "the int64 format bound is in range")
+	assert.NotEmpty(t, check(math.Ldexp(1, 64)), "2^64 is out of range for uint64")
+}
+
 var (
 	durationType = reflect.TypeFor[metav1.Duration]()
 	opaqueTypes  = map[reflect.Type]bool{
@@ -91,9 +106,12 @@ var (
 		reflect.TypeFor[apiextensionsv1.JSON](): true,
 		reflect.TypeFor[runtime.RawExtension](): true,
 	}
-	unsignedMax = map[reflect.Kind]float64{
+	// maxExactUint64 is the largest float64 below 2^64. float64(math.MaxUint64)
+	// rounds up to 2^64, which is out of range, so it cannot be the limit.
+	maxExactUint64 = float64(math.MaxUint64 - 2047)
+	unsignedMax    = map[reflect.Kind]float64{
 		reflect.Uint8: math.MaxUint8, reflect.Uint16: math.MaxUint16,
-		reflect.Uint32: math.MaxUint32, reflect.Uint64: math.MaxUint64, reflect.Uint: math.MaxUint64,
+		reflect.Uint32: math.MaxUint32, reflect.Uint64: maxExactUint64, reflect.Uint: maxExactUint64,
 	}
 )
 
