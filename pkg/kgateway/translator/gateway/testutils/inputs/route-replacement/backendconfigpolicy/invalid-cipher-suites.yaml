@@ -54,6 +54,7 @@ spec:
     name: example-svc
   tls:
     insecureSkipVerify: false
+    sni: backend.example.com
     parameters:
       minVersion: "1.2"
       maxVersion: "1.3"
