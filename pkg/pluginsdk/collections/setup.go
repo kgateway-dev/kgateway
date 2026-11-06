@@ -211,8 +211,19 @@ func (c *CommonCollections) InitCollections(
 
 	tlsRoutes := joinRouteCollections(tlsRouteCollections, c.KrtOpts, "TLSRoute")
 
+	// The UDPRoute watch waits for v1 to be served, like TLSRoute v1. Gateway API v1.5 ships a
+	// UDPRoute CRD that serves only v1alpha2, and a v1 watch against it would never sync and
+	// would block startup.
+	udproutes := krt.WrapClient(
+		newDelayedTypedInformer(ctx, c.Client, wellknown.UDPRouteGVR, func() kclient.Informer[*gwv1.UDPRoute] {
+			return kclient.NewFiltered[*gwv1.UDPRoute](c.Client, filter)
+		}),
+		c.KrtOpts.ToOptions("UDPRoute")...,
+	)
+
 	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
+	metrics.RegisterEvents(udproutes, kmetrics.GetResourceMetricEventHandler[*gwv1.UDPRoute]())
 
 	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](c.Client, wellknown.GRPCRouteGVR, filter), c.KrtOpts.ToOptions("GRPCRoute")...)
 	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
@@ -221,17 +232,26 @@ func (c *CommonCollections) InitCollections(
 	c.RawGRPCRoutes = grpcRoutes
 	c.RawTCPRoutes = tcproutes
 	c.RawTLSRoutes = tlsRoutes
+	c.RawUDPRoutes = udproutes
 
 	// The very lists the watches above were built from: a version we watch is a version we
 	// can write, so the two cannot drift apart.
 	c.tcpRouteWriteGVRs = tcpRouteWriteGVRs
 	c.tlsRouteWriteGVRs = tlsRouteWriteGVRs
+	udpRouteServed := resolveRouteVersions(ctx, versionSource, wellknown.UDPRouteCRDName, []schema.GroupVersionResource{wellknown.UDPRouteGVR})
+	c.udpRouteV1Unserved = servesOnlyOtherVersions(udpRouteServed, wellknown.UDPRouteGVR)
+	if c.udpRouteV1Unserved {
+		logger.Warn("UDPRoute CRD does not serve v1, so UDPRoutes are not reconciled. Install Gateway API v1.6.0 or later and restart kgateway",
+			"served", udpRouteServed.UnsortedList(),
+		)
+	}
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 
-	routes := krtcollections.NewRoutesIndex(c.KrtOpts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, c.RefGrants, globalSettings)
+	routes := krtcollections.NewRoutesIndex(c.KrtOpts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, udproutes, policies, backendIndex, c.RefGrants, globalSettings)
+	c.ResolvedUDPRoutes = routes.UDPRoutes()
 	return gateways, routes, backendIndex, endpointIRs
 }
 

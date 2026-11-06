@@ -65,3 +65,35 @@ func TestSupportedRouteKinds(t *testing.T) {
 		})
 	}
 }
+
+// TestInlineEndpoints pins which Backend types carry their endpoints in their
+// own cluster, so a UDPRoute rule cannot weight them with other backends.
+func TestInlineEndpoints(t *testing.T) {
+	tests := []struct {
+		name   string
+		spec   kgateway.BackendSpec
+		inline bool
+	}{
+		{
+			name:   "static inlines its hosts",
+			spec:   kgateway.BackendSpec{Static: &kgateway.StaticBackend{}},
+			inline: true,
+		},
+		{
+			name:   "priority groups inline their members' hosts",
+			spec:   kgateway.BackendSpec{PriorityGroups: []kgateway.PriorityGroup{{}}},
+			inline: true,
+		},
+		{
+			name:   "ec2 discovery has endpoint rows",
+			spec:   kgateway.BackendSpec{Aws: &kgateway.AwsBackend{Ec2: &kgateway.AwsEc2{}}},
+			inline: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.inline, inlineEndpoints(&kgateway.Backend{Spec: tt.spec}))
+		})
+	}
+}

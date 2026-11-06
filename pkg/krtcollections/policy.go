@@ -70,6 +70,22 @@ func (e *UnsupportedRouteKindError) Error() string {
 		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.RouteKind.Kind, strings.Join(supported, ", "))
 }
 
+// UnweightableBackendError reports a backend with inline endpoints in a UDPRoute
+// rule that has several backendRefs. udp_proxy routes such a rule to one cluster
+// whose endpoints are the weighted union of its backends' endpoint rows, and this
+// backend has none. Like an UnsupportedRouteKindError, the route translator
+// reports it as ResolvedRefs=False/InvalidKind, and the backend's weight is
+// dropped rather than sent to the other backends.
+type UnweightableBackendError struct {
+	Backend   ir.ObjectSource
+	RouteKind schema.GroupKind
+}
+
+func (e *UnweightableBackendError) Error() string {
+	return fmt.Sprintf("%s %s/%s carries its endpoints in its own cluster, so it can only be the sole backendRef of a %s rule",
+		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.RouteKind.Kind)
+}
+
 // BackendPortNotFoundError is returned instead of NotFoundError when the referenced
 // backend exists but does not define the referenced port.
 type BackendPortNotFoundError struct {
@@ -523,6 +539,47 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	return h
 }
 
+// listenerPortProtocol is one listener's port and protocol, used to decide the protocol the
+// deployer renders for a Service port.
+type listenerPortProtocol struct {
+	port     int32
+	protocol gwv1.ProtocolType
+}
+
+// resolveDeployerPorts returns every exposed port and the subset that render as UDP. A port is UDP
+// only when its first (highest-precedence) listener is UDP, matching how the translator keeps that
+// listener and rejects a same-port one of another protocol. Entries must be in precedence order.
+func resolveDeployerPorts(entries []listenerPortProtocol) (ports, udpPorts sets.Set[int32]) {
+	ports = sets.New[int32]()
+	winner := map[int32]gwv1.ProtocolType{}
+	for _, e := range entries {
+		ports.Insert(e.port)
+		if _, seen := winner[e.port]; !seen {
+			winner[e.port] = e.protocol
+		}
+	}
+	udpPorts = sets.New[int32]()
+	for port, protocol := range winner {
+		if protocol == gwv1.UDPProtocolType {
+			udpPorts.Insert(port)
+		}
+	}
+	return ports, udpPorts
+}
+
+// sortListenerSetsByPrecedence orders listener sets by GEP-1713 precedence, oldest creation
+// timestamp then "{namespace}/{name}", so the Envoy and deployer transforms agree on the winner.
+// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
+func sortListenerSetsByPrecedence[T any](listenerSets []T, obj func(T) metav1.Object) {
+	slices.SortFunc(listenerSets, func(a, b T) int {
+		oa, ob := obj(a), obj(b)
+		if cmp := oa.GetCreationTimestamp().Compare(ob.GetCreationTimestamp().Time); cmp != 0 {
+			return cmp
+		}
+		return strings.Compare(oa.GetNamespace()+"/"+oa.GetName(), ob.GetNamespace()+"/"+ob.GetName())
+	})
+}
+
 // gatewaySpec wraps a Gateway so that KRT compares it with ir.VersionEquals rather than by
 // value: a status-only write bumps resourceVersion but leaves generation, labels and
 // annotations alone, so it stops here. The wrapped Gateway is the one from the last change
@@ -556,9 +613,11 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
-		ports := sets.New[int32]()
+		// Feed listeners to resolveDeployerPorts in precedence order. Gateway listeners outrank
+		// listener-set listeners, so list them first.
+		entries := make([]listenerPortProtocol, 0, len(gw.Spec.Listeners))
 		for _, l := range gw.Spec.Listeners {
-			ports.Insert(l.Port)
+			entries = append(entries, listenerPortProtocol{port: l.Port, protocol: l.Protocol})
 		}
 
 		// Only the ListenerSets' spec is read, so ignore status-only writes. Otherwise every
@@ -573,6 +632,8 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
+		// Sort by the same precedence the Envoy transform uses so contended ports agree.
+		sortListenerSetsByPrecedence(listenerSets, func(ls *gwv1.ListenerSet) metav1.Object { return ls })
 
 		for _, ls := range listenerSets {
 			for _, l := range ls.Spec.Listeners {
@@ -581,9 +642,11 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 				if portErr != nil {
 					continue
 				}
-				ports.Insert(port)
+				entries = append(entries, listenerPortProtocol{port: port, protocol: l.Protocol})
 			}
 		}
+
+		ports, udpPorts := resolveDeployerPorts(entries)
 		ir := &ir.GatewayForDeployer{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.GroupVersion.Group,
@@ -593,6 +656,7 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			},
 			ControllerName: string(gwClass.Spec.ControllerName),
 			Ports:          smallset.New(ports.UnsortedList()...),
+			UDPPorts:       smallset.New(udpPorts.UnsortedList()...),
 		}
 		return ir
 	}
@@ -656,21 +720,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 		gwIR.Listeners = append(make([]ir.Listener, 0, numListeners), gwIR.Listeners...)
 
-		// Sort by listener precedence
-		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
-		// - ListenerSet ordered by creation time (oldest first)
-		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int {
-			// primary sort: creation timestamp (oldest first)
-			if cmp := a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time); cmp != 0 {
-				return cmp
-			}
-			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls listenerSetIRRef) string {
-				return ls.Namespace + "/" + ls.Name
-			}
-			return strings.Compare(nnsString(a), nnsString(b))
-		})
+		sortListenerSetsByPrecedence(listenerSets, func(ls listenerSetIRRef) metav1.Object { return ls.Obj })
 
 		for _, ls := range listenerSets {
 			// A copy, since Err is set per Gateway.
@@ -1245,6 +1295,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 		} else {
 			return a.Equals(*bhttp)
 		}
+	case *ir.UdpRouteIR:
+		if bhttp, ok := in.Route.(*ir.UdpRouteIR); !ok {
+			return false
+		} else {
+			return a.Equals(*bhttp)
+		}
 	}
 	panic("unknown route type")
 }
@@ -1254,6 +1310,7 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
+	udpRoutes                            krt.Collection[ir.UdpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[TargetRefIndexKey, RouteWrapper]
 	weightedRoutePrecedence              bool
@@ -1272,12 +1329,18 @@ func (h *RoutesIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
+	return h.httpRoutes.HasSynced() && h.udpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
 }
 
 // HTTPRoutes returns the raw krt collection that contains only the HTTPRouteIR.
 func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 	return r.httpRoutes
+}
+
+// UDPRoutes returns the raw krt collection that contains only the UdpRouteIR, with backends
+// already resolved. Used to build the weighted synthetic clusters for multi-backend UDPRoutes.
+func (r *RoutesIndex) UDPRoutes() krt.Collection[ir.UdpRouteIR] {
+	return r.udpRoutes
 }
 
 func NewRoutesIndex(
@@ -1286,6 +1349,7 @@ func NewRoutesIndex(
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	tlsroutes krt.Collection[*gwv1a2.TLSRoute],
+	udproutes krt.Collection[*gwv1.UDPRoute],
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
@@ -1298,7 +1362,7 @@ func NewRoutesIndex(
 		weightedRoutePrecedence:              globalSettings.WeightedRoutePrecedence,
 		enableExperimentalGatewayAPIFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced, udproutes.HasSynced)
 
 	h.httpRoutes = krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 		return h.transformHttpRoute(kctx, i)
@@ -1308,7 +1372,7 @@ func NewRoutesIndex(
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
 
-	var tcpRoutesCollection, tlsRoutesCollection, grpcRoutesCollection krt.Collection[RouteWrapper]
+	var tcpRoutesCollection, tlsRoutesCollection, udpRoutesCollection, grpcRoutesCollection krt.Collection[RouteWrapper]
 
 	grpcRoutesCollection = krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformGRPCRoute(kctx, i)}
@@ -1322,7 +1386,15 @@ func NewRoutesIndex(
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
 	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
 
-	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
+	h.udpRoutes = krt.NewCollection(udproutes, func(kctx krt.HandlerContext, i *gwv1.UDPRoute) *ir.UdpRouteIR {
+		return h.transformUdpRoute(kctx, i)
+	}, krtopts.ToOptions("udp-routes-with-policy")...)
+
+	udpRoutesCollection = krt.NewCollection(h.udpRoutes, func(kctx krt.HandlerContext, i ir.UdpRouteIR) *RouteWrapper {
+		return &RouteWrapper{Route: &i}
+	}, krtopts.ToOptions("routes-udp-routes-with-policy")...)
+
+	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection, udpRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
 	httpBySelector := krtpkg.UnnamedIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
 		value, ok := i.SourceObject.GetLabels()[apilabels.DelegationLabelSelector]
@@ -1444,6 +1516,48 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
 		AttachedPolicies: ToAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "", i.GetLabels())),
+	}
+}
+
+func (h *RoutesIndex) transformUdpRoute(kctx krt.HandlerContext, i *gwv1.UDPRoute) *ir.UdpRouteIR {
+	src := ir.ObjectSource{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "UDPRoute",
+		Namespace: i.Namespace,
+		Name:      i.Name,
+	}
+	var backends []gwv1.BackendRef
+	if len(i.Spec.Rules) > 0 {
+		backends = i.Spec.Rules[0].BackendRefs
+	}
+
+	resolved := h.getTcpBackends(kctx, src, backends)
+	if len(resolved) > 1 {
+		rejectUnweightableBackends(src, resolved)
+	}
+	return &ir.UdpRouteIR{
+		ObjectSource:     src,
+		SourceObject:     i,
+		ParentRefs:       i.Spec.ParentRefs,
+		Backends:         resolved,
+		AttachedPolicies: ToAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "", i.GetLabels())),
+	}
+}
+
+// rejectUnweightableBackends rejects the backends with inline endpoints in a
+// UDPRoute rule with several backendRefs. Each one routes to the blackhole
+// cluster with an UnweightableBackendError, so its weight is dropped.
+func rejectUnweightableBackends(src ir.ObjectSource, backends []ir.BackendRefIR) {
+	for i, b := range backends {
+		if b.BackendObject == nil || !b.BackendObject.InlineEndpoints {
+			continue
+		}
+		backends[i].Err = &UnweightableBackendError{
+			Backend:   b.BackendObject.GetObjectSource(),
+			RouteKind: src.GetGroupKind(),
+		}
+		backends[i].BackendObject = nil
+		backends[i].ClusterName = wellknown.BlackholeClusterName
 	}
 }
 

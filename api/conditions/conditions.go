@@ -23,4 +23,9 @@ const (
 	// to one or more of the rule's backends. The route is still programmed,
 	// with the BackendConfigPolicy's session persistence for those backends.
 	KgatewayReasonSessionPersistenceOverridden = "SessionPersistenceOverridden"
+	// This reason is used with the "kgateway.dev/Programmed" condition when
+	// the condition is true, but a UDPRoute does not apply some settings of a
+	// policy on one of its backends. The route is still programmed without
+	// those settings.
+	KgatewayReasonBackendPolicyNotApplied = "BackendPolicyNotApplied"
 )

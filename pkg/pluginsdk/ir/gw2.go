@@ -2,6 +2,7 @@ package ir
 
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	udpproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -65,6 +66,7 @@ type ListenerIR struct {
 
 	HttpFilterChain []HttpFilterChainIR
 	TcpFilterChain  []TcpIR
+	UdpFilterChain  []UdpIR
 
 	PolicyAncestorRef gwv1.ParentReference
 
@@ -157,6 +159,51 @@ type TcpIR struct {
 	FilterChainCommon
 	BackendRefs      []BackendRefIR
 	AttachedPolicies AttachedPolicies
+}
+
+// UdpIR is the intermediate representation of a UDPRoute-backed listener.
+// Unlike TCP/HTTP, Envoy models UDP with a udp_proxy listener filter rather
+// than a network filter chain, so there is no SNI/TLS/matcher to carry here.
+type UdpIR struct {
+	// FilterChainName is a logical name for the UDP proxy config, used for
+	// status and metrics. UDP listeners have no Envoy filter chain.
+	FilterChainName string
+	BackendRefs     []BackendRefIR
+	// AggregateClusterName is the route-scoped synthetic cluster a multi-backend
+	// route sends udp_proxy to. udp_proxy cannot weight across clusters, so the
+	// cluster's endpoints are the weighted union of all backends. A single-backend
+	// route leaves it empty and targets BackendRefs[0].ClusterName.
+	AggregateClusterName string
+	// HashPolicy is the udp_proxy hash policy for hash-based load balancers, from the backend's
+	// policies. Only a single-backend route sets it.
+	HashPolicy *udpproxyv3.UdpProxyConfig_HashPolicy
+}
+
+// UdpBackendPolicy is the interface a backend policy IR implements when its settings matter to a
+// UDPRoute.
+// udp_proxy picks the host itself and carries no HTTP, so only part of a policy applies to UDP.
+type UdpBackendPolicy interface {
+	// UdpProxy returns what the policy means for udp_proxy.
+	UdpProxy() UdpProxyPolicy
+}
+
+// UdpProxyPolicy is what a backend policy means for a UDPRoute that targets the backend.
+type UdpProxyPolicy struct {
+	// HashPolicy is the udp_proxy hash policy the policy asks for, or nil.
+	HashPolicy *udpproxyv3.UdpProxyConfig_HashPolicy
+	// Ignored names the policy's settings that have no effect on UDP traffic.
+	Ignored []string
+}
+
+// UdpAggregateClusterPrefix marks the synthetic clusters a multi-backend UDPRoute routes to. The
+// prefix and absence of a port segment keep the name from colliding with real backend cluster names
+// (which are "<gvPrefix>_<ns>_<name>[_<extraKey>]_<port>").
+const UdpAggregateClusterPrefix = "udpagg_"
+
+// UdpAggregateClusterName is the deterministic, route-scoped name of the synthetic
+// cluster used to weight traffic across a multi-backend UDPRoute.
+func UdpAggregateClusterName(namespace, name string) string {
+	return UdpAggregateClusterPrefix + namespace + "_" + name
 }
 
 // this is 1:1 with envoy deployments
