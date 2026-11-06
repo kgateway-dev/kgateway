@@ -272,6 +272,18 @@ func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
 			rule:     nil,
 			wantCode: nil,
 		},
+		{
+			name:     "nil rule with multiple rule-specific values",
+			value:    "rule1=308,rule2=307",
+			rule:     nil,
+			wantCode: nil,
+		},
+		{
+			name:     "space before equals in rule-specific format",
+			value:    "rule1 =301",
+			rule:     sectionName("rule1"),
+			wantCode: new(301),
+		},
 	}
 
 	for _, tc := range tests {
@@ -287,9 +299,7 @@ func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
 			}
 
 			// Check code
-			if tc.wantCode != nil {
-				a.Equal(tc.wantCode, code)
-			}
+			a.Equal(tc.wantCode, code)
 		})
 	}
 }
