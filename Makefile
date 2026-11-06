@@ -672,6 +672,9 @@ $(STAMP_DIR):
 # Source files that trigger API codegen
 API_SOURCE_FILES := $(shell find api/v1alpha1 -name "*.go" ! -name "zz_generated*")
 API_SOURCE_FILES += hack/generate.sh hack/generate.go
+# The crdbounds tool post-processes the CRDs. The directory itself is listed so
+# that adding, deleting or renaming a file there also reruns codegen.
+API_SOURCE_FILES += hack/utils/crdbounds $(filter-out %_test.go,$(wildcard hack/utils/crdbounds/*.go))
 
 # Source files that trigger mockgen
 MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go

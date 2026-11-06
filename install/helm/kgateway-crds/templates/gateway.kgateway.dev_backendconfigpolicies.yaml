@@ -63,6 +63,7 @@ spec:
                       MaxConnections is the maximum number of connections that will be made to
                       the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxPendingRequests:
@@ -70,6 +71,7 @@ spec:
                       MaxPendingRequests is the maximum number of pending requests that are
                       allowed to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxRequests:
@@ -77,6 +79,7 @@ spec:
                       MaxRequests is the maximum number of parallel requests that are allowed
                       to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxRetries:
@@ -84,6 +87,7 @@ spec:
                       MaxRetries is the maximum number of parallel retries that are allowed
                       to the upstream cluster. If not specified, defaults to 3.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   trackRemaining:
@@ -135,17 +139,19 @@ spec:
                   maxHeadersCount:
                     description: |-
                       Specifies the maximum number of response headers that the upstream connection will accept
-                      from the backend. If not specified, the default of 100 is used.
+                      from the backend. Must be at least 1. If not specified, the default of 100 is used.
                       To configure the maximum number of headers accepted in downstream requests, use
                       ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
                     format: int32
-                    minimum: 0
+                    maximum: 2147483647
+                    minimum: 1
                     type: integer
                   maxRequestsPerConnection:
                     description: |-
                       Maximum requests for a single upstream connection.
                       If set to 0 or unspecified, defaults to unlimited.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   maxStreamDuration:
@@ -160,12 +166,14 @@ spec:
                 type: object
               connectTimeout:
                 description: The timeout for new network connections to hosts in the
-                  cluster.
+                  cluster. Must be at least 1ms.
                 maxLength: 32
                 type: string
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                - message: must be at least 1ms
+                  rule: duration(self) >= duration('1ms')
               dns:
                 description: |-
                   DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
@@ -216,7 +224,7 @@ spec:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 
-                      Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+                      Must be greater than 1ms. If unset, Envoy's default of 5s is used.
                       When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
                       so RefreshRate acts as the maximum polling interval.
                       Recommended value for large-scale deployments is 60s or higher.
@@ -225,8 +233,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                    - message: refreshRate must be at least 1ms
-                      rule: duration(self) >= duration('1ms')
+                    - message: refreshRate must be greater than 1ms
+                      rule: duration(self) > duration('1ms')
                   respectTTL:
                     description: |-
                       RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
@@ -262,6 +270,7 @@ spec:
                       healthy. Note that during startup, only a single successful health check is
                       required to mark a host healthy.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   http:
@@ -295,13 +304,16 @@ spec:
                     - path
                     type: object
                   interval:
-                    description: Interval is the time between health checks after
-                      the backend receives its first request.
+                    description: |-
+                      Interval is the time between health checks after the backend receives its first request.
+                      Must be at least 1ms.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   noTrafficInterval:
                     description: |-
                       NoTrafficInterval is the time between health checks before the backend receives
@@ -317,12 +329,14 @@ spec:
                   timeout:
                     description: |-
                       Timeout is time to wait for a health check response. If the timeout is reached the
-                      health check attempt will be considered a failure.
+                      health check attempt will be considered a failure. Must be at least 1ms.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   unhealthyThreshold:
                     description: |-
                       UnhealthyThreshold is the number of consecutive failed health checks that will be considered
@@ -330,6 +344,7 @@ spec:
                       Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
                       this threshold is ignored and the host is considered immediately unhealthy.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                 required:
@@ -496,8 +511,10 @@ spec:
                         default: 2
                         description: |-
                           How many choices to take into account.
-                          Defaults to 2.
+                          Defaults to 2. Must be at least 2.
                         format: int32
+                        maximum: 2147483647
+                        minimum: 2
                         type: integer
                       slowStart:
                         description: SlowStart configures the slow start configuration
@@ -723,14 +740,19 @@ spec:
                         minItems: 1
                         type: array
                       maximumRingSize:
-                        description: MaximumRingSize is the maximum size of the ring.
+                        description: |-
+                          MaximumRingSize is the maximum size of the ring. Must be at most 8388608, and at least
+                          minimumRingSize (default 1024).
                         format: int64
+                        maximum: 8388608
                         minimum: 0
                         type: integer
                       minimumRingSize:
                         description: MinimumRingSize is the minimum size of the ring.
+                          Must be between 1 and 8388608.
                         format: int64
-                        minimum: 0
+                        maximum: 8388608
+                        minimum: 1
                         type: integer
                       useHostnameForHashing:
                         description: |-
@@ -738,6 +760,11 @@ spec:
                           Defaults to false.
                         type: boolean
                     type: object
+                    x-kubernetes-validations:
+                    - message: minimumRingSize (default 1024) must be less than or
+                        equal to maximumRingSize (default 8388608)
+                      rule: '(has(self.minimumRingSize) ? self.minimumRingSize : 1024)
+                        <= (has(self.maximumRingSize) ? self.maximumRingSize : 8388608)'
                   roundRobin:
                     description: RoundRobin configures the round robin load balancer
                       type.
@@ -826,7 +853,8 @@ spec:
                                   If the local zone has fewer endpoints than this threshold, the system
                                   falls back to standard zone-aware routing behavior.
                                   Defaults to 1.
-                                format: int32
+                                format: uint32
+                                maximum: 4294967295
                                 minimum: 1
                                 type: integer
                             type: object
@@ -839,6 +867,7 @@ spec:
                               This maps to Envoy's min_cluster_size setting.
                               Defaults to 6.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 1
                             type: integer
                           routingEnabled:
@@ -894,6 +923,7 @@ spec:
                       health checks will be disabled. In the future, other types of passive
                       health checking might be added, but none will be enabled by default.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   consecutiveGatewayFailure:
@@ -902,6 +932,7 @@ spec:
                       codes) before a host is ejected. When set, ejection is always enforced.
                       When unset, consecutive gateway failure ejection is disabled.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   consecutiveLocalOriginFailure:
@@ -911,6 +942,7 @@ spec:
                       splitExternalLocalOriginErrors is true. If this is zero, consecutive local
                       origin failure ejection is disabled.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   enforcingConsecutive5xx:
@@ -967,6 +999,7 @@ spec:
                   Soft limit on the size of the cluster's connections read and write buffers.
                   If unspecified, an implementation-defined default is applied (1MiB).
                 format: int32
+                maximum: 2147483647
                 minimum: 0
                 type: integer
               sessionPersistence:
@@ -1185,6 +1218,7 @@ spec:
                     description: Maximum number of keep-alive probes to send before
                       dropping the connection.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   keepAliveTime:
@@ -1783,6 +1817,7 @@ spec:
                               For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                               with respect to the current state of the instance.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 0
                             type: integer
                           reason:

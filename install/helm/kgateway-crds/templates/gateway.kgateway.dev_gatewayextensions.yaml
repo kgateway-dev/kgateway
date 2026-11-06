@@ -187,6 +187,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -409,6 +410,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -458,11 +460,68 @@ spec:
                     default: 403
                     description: |-
                       StatusOnError sets the HTTP status response code that is returned to the client when the
-                      auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
+                      auth server returns an error or cannot be reached. Must be one of the status codes
+                      that Envoy defines (envoy.type.v3.StatusCode): 100, 200-208, 226, 300-305, 307, 308,
+                      400-417, 421-424, 426, 428, 429, 431, 500-508, 510 or 511.
                       The default matches the deny response code of 403 Forbidden.
+                    enum:
+                    - 100
+                    - 200
+                    - 201
+                    - 202
+                    - 203
+                    - 204
+                    - 205
+                    - 206
+                    - 207
+                    - 208
+                    - 226
+                    - 300
+                    - 301
+                    - 302
+                    - 303
+                    - 304
+                    - 305
+                    - 307
+                    - 308
+                    - 400
+                    - 401
+                    - 402
+                    - 403
+                    - 404
+                    - 405
+                    - 406
+                    - 407
+                    - 408
+                    - 409
+                    - 410
+                    - 411
+                    - 412
+                    - 413
+                    - 414
+                    - 415
+                    - 416
+                    - 417
+                    - 421
+                    - 422
+                    - 423
+                    - 424
+                    - 426
+                    - 428
+                    - 429
+                    - 431
+                    - 500
+                    - 501
+                    - 502
+                    - 503
+                    - 504
+                    - 505
+                    - 506
+                    - 507
+                    - 508
+                    - 510
+                    - 511
                     format: int32
-                    maximum: 511
-                    minimum: 100
                     type: integer
                   withRequestBody:
                     description: |-
@@ -481,6 +540,7 @@ spec:
                           MaxRequestBytes sets the maximum size of a message body to buffer.
                           Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
                         format: int32
+                        maximum: 2147483647
                         minimum: 1
                         type: integer
                       packAsBytes:
@@ -620,6 +680,8 @@ spec:
                           chain. Defaults to 0. Filters with the same stage, predicate, and
                           weight are sorted alphabetically by filter name for consistency.
                         format: int32
+                        maximum: 2147483647
+                        minimum: -2147483648
                         type: integer
                     required:
                     - stage
@@ -743,6 +805,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -785,7 +848,7 @@ spec:
                   maxMessageTimeout:
                     description: |-
                       MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
-                      The default value 0, which effectively disables the override_message_timeout API.
+                      Must be between 1ms and 1h. If unset, the override_message_timeout API is disabled.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
@@ -793,9 +856,12 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: timeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
+                    - message: timeout must be at most 1h.
+                      rule: duration(self) <= duration('1h')
                   messageTimeout:
-                    description: MessageTimeout is the timeout for each message sent
-                      to the external processing server.
+                    description: |-
+                      MessageTimeout is the timeout for each message sent to the external processing server.
+                      Must be between 1ms and 1h.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
@@ -803,6 +869,8 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: timeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
+                    - message: timeout must be at most 1h.
+                      rule: duration(self) <= duration('1h')
                   metadataOptions:
                     description: |-
                       MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
@@ -957,14 +1025,16 @@ spec:
                                 MaxTokenSize is the maximum size of a single cached token in bytes.
                                 If this field is not set the default value 4096
                                 bytes is used. The maximum value for a token is inclusive.
-                              format: int32
+                              format: uint32
+                              maximum: 4294967295
                               minimum: 1
                               type: integer
                             size:
                               description: |-
                                 Size is the number of verified tokens to cache, per Envoy worker thread.
                                 If unspecified, the Envoy default of 100 is used.
-                              format: int32
+                              format: uint32
+                              maximum: 4294967295
                               minimum: 1
                               type: integer
                           type: object
@@ -1221,6 +1291,7 @@ spec:
                                         NumRetries is the allowed number of retries when fetching the JWKS fails.
                                         Defaults to 1 if unset.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                   type: object
@@ -1964,6 +2035,7 @@ spec:
                               Defaults to 1 attempt if not set.
                               A value of 0 effectively disables retries.
                             format: int32
+                            maximum: 2147483647
                             minimum: 0
                             type: integer
                           backoff:
@@ -2108,6 +2180,7 @@ spec:
                         For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                         with respect to the current state of the instance.
                       format: int64
+                      maximum: 9223372036854774784
                       minimum: 0
                       type: integer
                     reason:

@@ -62,6 +62,10 @@ done
 # Generate kgateway CRDs and RBAC
 go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
     output:crd:artifacts:config=${ROOT_DIR}/${KGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}
+# Bound every int32, int64 and int-or-string schema so the API server rejects
+# numbers the Go types cannot decode (one such object otherwise stops the
+# informer for its whole kind). Runs before the Helm escaping below.
+(cd "${ROOT_DIR}" && go run ./hack/utils/crdbounds "${ROOT_DIR}/${KGATEWAY_CRD_DIR}"/*.yaml)
 # Template the ClusterRole name to include the namespace
 sed_in_place 's|name: kgateway|name: kgateway-{{ .Release.Namespace }}|g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
 # Wrap the ClusterRole in a conditional so it can be disabled via rbac.create

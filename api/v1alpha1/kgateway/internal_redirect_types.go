@@ -42,5 +42,7 @@ type InternalRedirect struct {
 	// +optional
 	//
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	MaxRedirects *uint32 `json:"maxRedirects,omitempty"`
 }
