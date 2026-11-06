@@ -321,3 +321,42 @@ spec:
       stage: AuthN
       predicate: Before
       weight: 1
+---
+# TrafficPolicy extAuth withRequestBody: the body can be buffered per route
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ext-auth-with-request-body
+spec:
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    withRequestBody:
+      maxRequestBytes: 1024
+---
+# TrafficPolicy extAuth withRequestBody: packAsBytes false is the default
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ext-auth-with-request-body-not-packed
+spec:
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    withRequestBody:
+      maxRequestBytes: 1024
+      packAsBytes: false
+---
+# TrafficPolicy extAuth withRequestBody: packAsBytes only takes effect on the GatewayExtension
+_err: packAsBytes only takes effect on GatewayExtension.spec.extAuth.withRequestBody
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ext-auth-with-request-body-packed
+spec:
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    withRequestBody:
+      maxRequestBytes: 1024
+      packAsBytes: true
