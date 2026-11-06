@@ -325,6 +325,27 @@ const (
 	XRateLimitHeaderDraftV03 XRateLimitHeadersStandard = "DraftVersion03"
 )
 
+// GatewayExtensionConditionType is a type of condition for a GatewayExtension. This type
+// should be used with a GatewayExtension resource Status.Conditions field.
+type GatewayExtensionConditionType string
+
+// GatewayExtensionConditionReason is a reason for a GatewayExtension condition.
+type GatewayExtensionConditionReason string
+
+const (
+	// GatewayExtensionConditionAccepted indicates whether the GatewayExtension was accepted,
+	// or rejected because it failed to translate.
+	GatewayExtensionConditionAccepted GatewayExtensionConditionType = "Accepted"
+
+	// GatewayExtensionReasonAccepted is used with Accepted=True when the GatewayExtension
+	// translated successfully.
+	GatewayExtensionReasonAccepted GatewayExtensionConditionReason = "Accepted"
+
+	// GatewayExtensionReasonInvalid is used with Accepted=False when the GatewayExtension
+	// failed to translate.
+	GatewayExtensionReasonInvalid GatewayExtensionConditionReason = "Invalid"
+)
+
 // GatewayExtensionStatus defines the observed state of GatewayExtension.
 type GatewayExtensionStatus struct {
 	// Conditions is the list of conditions for the GatewayExtension.

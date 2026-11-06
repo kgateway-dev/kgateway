@@ -63,6 +63,24 @@ type BackendReport struct {
 	observedGeneration int64
 }
 
+// GatewayExtensionReport is the reduced status facts for one GatewayExtension. Unlike a
+// Backend, a GatewayExtension is not attached to anything; its only condition is the
+// Accepted translation result, so it is a plain condition list rather than a map.
+type GatewayExtensionReport struct {
+	Conditions         []metav1.Condition
+	observedGeneration int64
+}
+
+// NewGatewayExtensionReport builds a GatewayExtension report from its conditions and the
+// generation those conditions were built for. The observedGeneration is stamped onto each
+// condition at build time so status never advertises a generation it did not translate.
+func NewGatewayExtensionReport(observedGeneration int64, conditions []metav1.Condition) *GatewayExtensionReport {
+	return &GatewayExtensionReport{
+		Conditions:         conditions,
+		observedGeneration: observedGeneration,
+	}
+}
+
 type ParentRefKey struct {
 	Group string
 	Kind  string

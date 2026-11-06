@@ -491,6 +491,50 @@ var backendConditionTypesOwnedByKgateway = map[string]struct{}{
 	string(kgateway.BackendConditionEndpointsDiscovered): {},
 }
 
+// BuildGatewayExtensionStatus builds the GatewayExtension's status from its report,
+// preserving the LastTransitionTime of unchanged conditions and any conditions we do not
+// own. Returns nil if the GatewayExtension has no report (i.e. it wasn't translated).
+func BuildGatewayExtensionStatus(
+	report *GatewayExtensionReport,
+	currentStatus kgateway.GatewayExtensionStatus,
+) *kgateway.GatewayExtensionStatus {
+	if report == nil {
+		return nil
+	}
+
+	// Stamp the generation the report was built for, not the live object's, for the same
+	// cross-cache reason as Gateway, Route, and Backend status.
+	observedGeneration := report.observedGeneration
+	finalConditions := make([]metav1.Condition, 0, len(report.Conditions))
+	for _, condition := range report.Conditions {
+		condition.ObservedGeneration = observedGeneration
+		// Copy old condition to preserve LastTransitionTime, if it exists.
+		if cond := meta.FindStatusCondition(currentStatus.Conditions, condition.Type); cond != nil {
+			finalConditions = append(finalConditions, *cond)
+		}
+		meta.SetStatusCondition(&finalConditions, condition)
+	}
+	// Preserve conditions on the current status whose type we do not own. A type we do own
+	// but that the fresh report no longer contains is dropped rather than carried forward.
+	for _, condition := range currentStatus.Conditions {
+		if _, owned := gatewayExtensionConditionTypesOwnedByKgateway[condition.Type]; owned {
+			continue
+		}
+		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+			finalConditions = append(finalConditions, condition)
+		}
+	}
+
+	return &kgateway.GatewayExtensionStatus{Conditions: finalConditions}
+}
+
+// gatewayExtensionConditionTypesOwnedByKgateway is the set of GatewayExtension status
+// condition types kgateway is the authoritative writer for. See
+// backendConditionTypesOwnedByKgateway for why an absent owned type is dropped.
+var gatewayExtensionConditionTypesOwnedByKgateway = map[string]struct{}{
+	string(kgateway.GatewayExtensionConditionAccepted): {},
+}
+
 // BuildRouteStatus returns a newly constructed and fully defined RouteStatus for the supplied route object
 // according to the state of the ReportMap and the current status of the route.
 // The gwv1.RouteStatus returned will contain all non-gateway parents from the provided current route status

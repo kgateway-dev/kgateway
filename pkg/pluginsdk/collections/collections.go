@@ -19,6 +19,7 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -41,8 +42,12 @@ type CommonCollections struct {
 	Endpoints              krt.Collection[ir.EndpointsForBackend]
 	GatewayIndex           *krtcollections.GatewayIndex
 	GatewayExtensions      krt.Collection[ir.GatewayExtension]
-	Services               krt.Collection[*corev1.Service]
-	ServiceEntries         krt.Collection[*networkingclient.ServiceEntry]
+	// RawGatewayExtensions is the informer-backed *kgateway.GatewayExtension collection the
+	// IR collection above is derived from. It is exposed so the status syncer can reconcile
+	// GatewayExtension status against live objects.
+	RawGatewayExtensions krt.Collection[*kgateway.GatewayExtension]
+	Services             krt.Collection[*corev1.Service]
+	ServiceEntries       krt.Collection[*networkingclient.ServiceEntry]
 
 	// ServiceEntriesExclusionLabelSelectors is parsed from Settings.ServiceEntriesExclusionLabelSelectors.
 	// Keep it with CommonCollections so ServiceEntry exclusion config has one validated source of truth.
@@ -216,7 +221,7 @@ func NewCommonCollections(
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
+	rawGwExts, gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
 	systemNamespaceNetwork := krtcollections.NewSystemNamespaceNetwork(namespaces, settings.IstioNamespace, krtOptions)
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, systemNamespaceNetwork, krtOptions)
@@ -236,6 +241,7 @@ func NewCommonCollections(
 		ServiceEntries:                        serviceEntries,
 		ServiceEntriesExclusionLabelSelectors: serviceEntriesExclusionLabelSelectors,
 		GatewayExtensions:                     gwExts,
+		RawGatewayExtensions:                  rawGwExts,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 
