@@ -394,13 +394,13 @@ func tunnelSnapshots(t *testing.T, gateway string, scoping clusterScoping, route
 		if slices.Contains(underived, name) {
 			continue
 		}
-		endpointRows = append(endpointRows, UccWithEndpoints{
+		endpointRows = append(endpointRows, UccWithEndpoints{&uccEndpointsRow{
 			Client:        ucc,
 			endpointsName: name,
 			resourceName:  uccEndpointsResourceName(ucc, name),
 			Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name}),
 			EndpointsHash: version,
-		})
+		}})
 	}
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, clusterRows)
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, endpointRows)
