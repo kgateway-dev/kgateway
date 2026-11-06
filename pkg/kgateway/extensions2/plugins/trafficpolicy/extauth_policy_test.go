@@ -9,6 +9,7 @@ import (
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -129,6 +130,31 @@ func TestExtAuthIREquals(t *testing.T) {
 }
 
 func TestExtAuthForSpec(t *testing.T) {
+	t.Run("configures request body buffering opt-out", func(t *testing.T) {
+		for _, tt := range []struct {
+			name     string
+			disabled *bool
+		}{
+			{name: "omitted"},
+			{name: "false", disabled: new(false)},
+			{name: "true", disabled: new(true)},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				config := buildExtAuthPerRouteFilterConfig(&kgateway.ExtAuthPolicy{
+					DisableRequestBodyBuffering: tt.disabled,
+				})
+				if !ptr.Deref(tt.disabled, false) {
+					require.Nil(t, config, "default buffering must not add a per-route override")
+					return
+				}
+				require.NotNil(t, config)
+				require.NoError(t, config.ValidateAll())
+				require.True(t, config.GetCheckSettings().GetDisableRequestBodyBuffering())
+				require.Nil(t, config.GetCheckSettings().GetWithRequestBody())
+			})
+		}
+	})
+
 	t.Run("configures request body settings", func(t *testing.T) {
 		// Setup
 		spec := &kgateway.TrafficPolicy{Spec: kgateway.TrafficPolicySpec{
@@ -153,7 +179,24 @@ func TestExtAuthForSpec(t *testing.T) {
 		assert.Equal(t, uint32(1024), extauthPerRoute.GetCheckSettings().WithRequestBody.MaxRequestBytes)
 		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.AllowPartialMessage)
 		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.PackAsBytes)
+		assert.False(t, extauthPerRoute.GetCheckSettings().GetDisableRequestBodyBuffering())
 	})
+}
+
+func TestExtAuthIRRequestBodyBufferingEquals(t *testing.T) {
+	makeIR := func(disabled bool) *extAuthIR {
+		return &extAuthIR{
+			perProviderConfig: []*perProviderExtAuthConfig{{
+				perRouteConfig: buildExtAuthPerRouteFilterConfig(&kgateway.ExtAuthPolicy{
+					DisableRequestBodyBuffering: new(disabled),
+				}),
+			}},
+		}
+	}
+
+	assert.True(t, makeIR(true).Equals(makeIR(true)), "identical buffering settings should be equal")
+	assert.False(t, makeIR(true).Equals(makeIR(false)), "buffering changes must trigger translation")
+	assert.False(t, makeIR(false).Equals(makeIR(true)), "equality must be symmetric")
 }
 
 func TestApplyForRoute(t *testing.T) {
