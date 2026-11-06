@@ -18,11 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
-
-var logger = logging.New("pluginsdk/collections")
 
 // joinRouteCollections combines the per-version collections of one route kind into the single
 // normalized collection the rest of the control plane consumes.

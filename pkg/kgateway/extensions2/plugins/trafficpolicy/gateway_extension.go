@@ -25,7 +25,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -231,7 +230,7 @@ func gatewayExtensionBuilder(
 		case gExt.JWT != nil:
 			jwtConfig, err := resolveJwtProviders(
 				krtctx,
-				commoncol.ConfigMaps.Collection(),
+				commoncol.ConfigMaps,
 				commoncol.BackendIndex,
 				gExt.ObjectSource,
 				gExt.JWT,
@@ -243,7 +242,7 @@ func gatewayExtensionBuilder(
 			p.Jwt = buildCompositeJwtFilter(jwtConfig)
 
 		case gExt.OAuth2 != nil:
-			out, err := buildOAuth2ProviderConfig(ctx, krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)
+			out, err := buildOAuth2ProviderConfig(ctx, krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, commoncol.OAuth2HMACSecret, oidcDiscoverer)
 			if err != nil {
 				p.Err = fmt.Errorf("error building OAuth2 config: %w", err)
 				return p
@@ -256,7 +255,7 @@ func gatewayExtensionBuilder(
 
 func resolveJwtProviders(
 	krtctx krt.HandlerContext,
-	configMaps krt.Collection[*corev1.ConfigMap],
+	configMaps *krtcollections.ConfigMapIndex,
 	backendResolver backendResolver,
 	gwExtObj ir.ObjectSource,
 	jwt *kgateway.JWT,
