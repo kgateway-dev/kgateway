@@ -123,11 +123,11 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 	// apply the secret mid-test: it must not exist during the first assertion,
 	// and its unsupported key surfaces a different status update error
 	testutils.Cleanup(s.T(), func() {
-		err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, backendUpdateManifest)
+		err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, backendUpdateManifest)
 		s.Require().NoError(err)
 	})
 
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, backendUpdateManifest)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(backendUpdateManifest)
 	s.Require().NoError(err)
 
 	s.assertStatus(backendWithError, metav1.Condition{
@@ -153,7 +153,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 
 	testutils.Cleanup(s.T(), func() {
 		// restore the shared nginx backend for the suites that run after this one
-		s.Require().NoError(s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, defaults.NginxPodManifest))
+		s.Require().NoError(s.TestInstallation.ClusterContext.Manifests().ApplyFiles(defaults.NginxPodManifest))
 		s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
 			LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 		})
@@ -225,7 +225,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 
 	// restore group 0; one passing health check marks it healthy again and
 	// traffic drains back to the higher priority group
-	s.Require().NoError(s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, defaults.NginxPodManifest))
+	s.Require().NoError(s.TestInstallation.ClusterContext.Manifests().ApplyFiles(defaults.NginxPodManifest))
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})

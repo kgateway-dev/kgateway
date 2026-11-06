@@ -106,12 +106,13 @@ type ExtAuthProvider struct {
 	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
 	// StatusOnError sets the HTTP status response code that is returned to the client when the
-	// auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
+	// auth server returns an error or cannot be reached. Must be one of the status codes
+	// that Envoy defines (envoy.type.v3.StatusCode): 100, 200-208, 226, 300-305, 307, 308,
+	// 400-417, 421-424, 426, 428, 429, 431, 500-508, 510 or 511.
 	// The default matches the deny response code of 403 Forbidden.
 	// +optional
 	// +kubebuilder:default=403
-	// +kubebuilder:validation:Minimum=100
-	// +kubebuilder:validation:Maximum=511
+	// +kubebuilder:validation:Enum=100;200;201;202;203;204;205;206;207;208;226;300;301;302;303;304;305;307;308;400;401;402;403;404;405;406;407;408;409;410;411;412;413;414;415;416;417;421;422;423;424;426;428;429;431;500;501;502;503;504;505;506;507;508;510;511
 	StatusOnError int32 `json:"statusOnError,omitempty"`
 
 	// StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,

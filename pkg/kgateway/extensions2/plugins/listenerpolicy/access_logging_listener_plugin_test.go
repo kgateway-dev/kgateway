@@ -1284,6 +1284,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				configs, err := translateAccessLogs(
 					tc.config,
+					hcmAccessLog,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": func() *ir.BackendObjectIR {
@@ -1511,7 +1512,7 @@ func TestAccessLogFilters(t *testing.T) {
 			cfgs, err := translateAccessLogs([]kgateway.AccessLog{{
 				FileSink: &kgateway.FileSink{Path: "/dev/stdout"},
 				Filter:   tc.alFilter,
-			}}, nil)
+			}}, hcmAccessLog, nil)
 			require.NoError(t, err)
 
 			hcmCtx := &ir.HcmContext{

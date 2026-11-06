@@ -301,8 +301,16 @@ spec:
                     type: object
                   secretSelector:
                     description: |-
-                      secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
-                      behavior is undefined.
+                      secretSelector selects multiple secrets containing API Keys.
+
+                      Each API key value must identify one client. Envoy rejects a configuration that contains the same
+                      key value twice, so kgateway handles duplicates before it sends the configuration:
+                        - If the same entry name and key value appear in more than one selected secret, for example
+                          because you copied a secret to another namespace, kgateway uses the credential once.
+                        - If two different entry names share a key value, kgateway cannot tell which client the key
+                          identifies. The policy reports Accepted=False with the reason Invalid, and the status
+                          message names both entries and their secrets but not the key value. The routes that the
+                          policy applies to return a 500 response.
 
                       Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
                       The value is a string, representing the API Key.
@@ -454,6 +462,8 @@ spec:
                           chain. Defaults to 0. Filters with the same stage, predicate, and
                           weight are sorted alphabetically by filter name for consistency.
                         format: int32
+                        maximum: 2147483647
+                        minimum: -2147483648
                         type: integer
                     required:
                     - stage
@@ -875,6 +885,7 @@ spec:
                       When the `MaxAge` field is unspecified, the gateway sets the response
                       header "Access-Control-Max-Age: 5" by default.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                 type: object
@@ -1009,6 +1020,7 @@ spec:
                           MaxRequestBytes sets the maximum size of a message body to buffer.
                           Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
                         format: int32
+                        maximum: 2147483647
                         minimum: 1
                         type: integer
                       packAsBytes:
@@ -1206,7 +1218,8 @@ spec:
                       MaxActiveFaults limits the number of concurrent active faults.
                       When this limit is reached, new requests will not have faults injected.
                       If not specified, defaults to unlimited.
-                    format: int32
+                    format: uint32
+                    maximum: 4294967295
                     minimum: 0
                     type: integer
                   responseRateLimit:
@@ -1218,6 +1231,7 @@ spec:
                         description: KbitsPerSecond limits the response rate to the
                           specified kilobits per second.
                         format: int64
+                        maximum: 9223372036854774784
                         minimum: 1
                         type: integer
                       percentage:
@@ -1723,7 +1737,8 @@ spec:
                     description: |-
                       MaxRedirects caps followed redirects for a single downstream request.
                       Defaults to 1.
-                    format: int32
+                    format: uint32
+                    maximum: 4294967295
                     minimum: 1
                     type: integer
                   redirectResponseCodes:
@@ -1977,8 +1992,31 @@ spec:
                           Defaults to false.
                         type: boolean
                       tokenBucket:
-                        description: TokenBucket configures the local rate limiter's
-                          token bucket.
+                        description: |-
+                          TokenBucket configures the local rate limiter's token bucket.
+
+                          Each Envoy pod keeps its own token buckets. The number of buckets depends on
+                          the resource that the policy targets:
+                            - HTTPRoute: one bucket for each path match of the route. The maxTokens
+                              value applies to each path match separately, and not to the route as a
+                              whole. Path matches in the same rule also get separate buckets, so adding
+                              a path match to the route increases the total that the route admits. If
+                              the route matches more than one hostname, each hostname also gets its own
+                              bucket for each path match.
+                            - Gateway: one bucket for each generated Envoy route configuration, which
+                              covers one HTTP port or one HTTPS filter chain. All routes and hostnames
+                              on that port or filter chain share the bucket. Listeners on different
+                              ports, and separate HTTPS filter chains, get separate buckets, so the
+                              policy does not enforce a single limit across the whole Gateway.
+                            - HTTP listener (sectionName): one bucket for each hostname on the
+                              listener. Routes that share a hostname share a bucket.
+                            - HTTPS listener (sectionName): one bucket for the listener, which all of
+                              its hostnames share.
+
+                          To enforce one limit across many routes on the same port, target the
+                          Gateway. If the Gateway has more than one port or HTTPS filter chain, each
+                          one enforces the limit separately. To share the bucket across the replicas
+                          of a Gateway, set shareAcrossGateway.
                         properties:
                           fillInterval:
                             description: |-
@@ -1997,6 +2035,7 @@ spec:
                               This value must be greater than or equal to 1.
                               It determines the burst capacity of the rate limiter.
                             format: int32
+                            maximum: 2147483647
                             minimum: 1
                             type: integer
                           tokensPerFill:
@@ -2005,6 +2044,7 @@ spec:
                               TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
                               If not specified, it defaults to 1.
                             format: int32
+                            maximum: 2147483647
                             minimum: 1
                             type: integer
                         required:
@@ -2102,6 +2142,7 @@ spec:
                       Defaults to 1 attempt if not set.
                       A value of 0 effectively disables retries.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   backoffBaseInterval:
@@ -2179,8 +2220,6 @@ spec:
 
                         Implementations MAY support specifying discrete values in the 400-499 range,
                         which are often inadvisable to retry.
-
-                        <gateway:experimental>
                       maximum: 599
                       minimum: 400
                       type: integer
@@ -3086,6 +3125,7 @@ spec:
                               For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                               with respect to the current state of the instance.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 0
                             type: integer
                           reason:

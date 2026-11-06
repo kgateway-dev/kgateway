@@ -12,6 +12,7 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -131,6 +132,12 @@ type HcmContext struct {
 	Gateway      GatewayIR
 }
 
+type TcpProxyContext struct {
+	ListenerPort uint32
+	Policy       PolicyIR
+	Gateway      GatewayIR
+}
+
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
@@ -203,6 +210,11 @@ type ProxyTranslationPass interface {
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
+	// called 1 time per TCP filter chain after listeners and allows tweaking TcpProxy settings.
+	ApplyTcpProxy(
+		pCtx *TcpProxyContext,
+		out *envoytcp.TcpProxy) error
+
 	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
 	// Use this to mutate FilterChain-level fields that depend on the assembled chains.
 	ApplyPostListener(
@@ -227,6 +239,14 @@ type ProxyTranslationPass interface {
 // ApplyForRouteBackend and ApplyForBackendObjectPolicies
 type BackendObjectPolicyApplier interface {
 	ApplyForBackendObjectPolicies(policies []PolicyAtt, pCtx *RouteBackendContext) error
+}
+
+// TcpFilterChainPolicyPass is implemented by a ProxyTranslationPass whose policies can apply to
+// TCP filter chains, through ApplyTcpProxy or ApplyPostListener. A policy targeting a TCP or TLS
+// Gateway listener only gets status for it when AppliesToTcpFilterChain reports that the policy
+// has an effect there; policies of kinds that don't implement this interface never do.
+type TcpFilterChainPolicyPass interface {
+	AppliesToTcpFilterChain(policy PolicyIR, listenerPort uint32) bool
 }
 
 type UnimplementedProxyTranslationPass struct{}
@@ -267,6 +287,10 @@ func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, 
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyTcpProxy(pCtx *TcpProxyContext, out *envoytcp.TcpProxy) error {
 	return nil
 }
 

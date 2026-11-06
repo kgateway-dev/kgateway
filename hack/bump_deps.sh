@@ -193,6 +193,10 @@ if [ $is_pseudo -eq 1 ]; then
   # Concatenate in a stable order and include both x-k8s.io and k8s.io groups.
   for f in $(ls "$srcdir"/*.yaml | sort); do
     base="$(basename "$f")"
+    # The kustomization only lists the other files; it is not a Kubernetes resource.
+    if [ "$base" = "kustomization.yaml" ]; then
+      continue
+    fi
     echo "# Source: ${GATEWAY_CRD_BASE}/${ref}/config/crd/${CONFORMANCE_CHANNEL}/${base}" >> "$tmp_all"
     cat "$f" >> "$tmp_all"
     echo "---" >> "$tmp_all"

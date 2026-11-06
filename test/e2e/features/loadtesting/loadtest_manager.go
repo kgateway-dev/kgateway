@@ -22,6 +22,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 )
 
 type LoadTestManager struct {
@@ -453,29 +454,11 @@ func (ltm *LoadTestManager) fetchKGatewayMetrics() ([]byte, error) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		pods, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
-			Pods(namespace).
-			List(ltm.ctx, metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/instance=kgateway,app.kubernetes.io/name=kgateway,kgateway=kgateway",
-			})
-		if err != nil {
-			lastErr = err
-		} else {
-			lastErr = errors.New("no ready kgateway controller pods found")
-			for _, pod := range pods.Items {
-				if !podReady(&pod) {
-					continue
-				}
-				raw, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
-					Pods(namespace).
-					ProxyGet("http", pod.Name, "9092", "/metrics", nil).
-					DoRaw(ltm.ctx)
-				if err == nil {
-					return raw, nil
-				}
-				lastErr = err
-			}
+		raw, err := common.ScrapeControllerMetrics(ltm.ctx, ltm.testInstallation)
+		if err == nil {
+			return raw, nil
 		}
+		lastErr = err
 		select {
 		case <-ltm.ctx.Done():
 			return nil, fmt.Errorf("fetch kgateway metrics from service %s/%s: %w", namespace, controllerDeploymentName, ltm.ctx.Err())
@@ -484,18 +467,6 @@ func (ltm *LoadTestManager) fetchKGatewayMetrics() ([]byte, error) {
 		case <-ticker.C:
 		}
 	}
-}
-
-func podReady(pod *corev1.Pod) bool {
-	if pod == nil || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
-		return false
-	}
-	for _, condition := range pod.Status.Conditions {
-		if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
-			return true
-		}
-	}
-	return false
 }
 
 func addCounterFamily(

@@ -162,8 +162,8 @@ They do not show when Envoy receives, accepts or applies them.
   * `carry_expired`: a published client stopped being carried a referenced
     cluster that stayed missing from CDS for the warm withhold bound. Routes to it
     fail until it reappears.
-  * `reference_ahead`: with `REFERENCED` cluster discovery, a hold kept only for
-    the reference-ahead window (`KGW_CLUSTER_REFERENCE_AHEAD`), which gives a
+  * `reference_ahead`: with `REFERENCED` xDS scoping, a hold kept only for
+    the reference-ahead window (`KGW_XDS_SCOPING_REFERENCE_AHEAD`), which gives a
     newly published cluster time to reach the client before the configuration
     that names it, was released at the budget before the window closed. A hold
     whose window closes first ends as designed and is not counted.
@@ -191,4 +191,4 @@ They do not show when Envoy receives, accepts or applies them.
   entry and is not counted.
 
 The settings behind these metrics are described in
-[xDS publication and cluster discovery settings](../../docs/guides/xds-publication-settings.md).
+[xDS publication and scoping settings](../../docs/guides/xds-publication-settings.md).

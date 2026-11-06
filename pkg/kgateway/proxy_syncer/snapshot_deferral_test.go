@@ -98,7 +98,7 @@ func TestSnapshotPerClientReportsDeferredClients(t *testing.T) {
 
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
-	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
+	uccs := krt.NewMutableCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
 		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
 		Listeners:      sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
@@ -106,12 +106,12 @@ func TestSnapshotPerClientReportsDeferredClients(t *testing.T) {
 
 	// No base clusters yet: the per-client cluster row does not exist, so the
 	// snapshot transform defers.
-	bases := krt.NewStaticCollection[baseEnvoyCluster](nil, nil, krtopts.ToOptions("Bases")...)
-	pcc := newPerClientEnvoyClusters(ctx, krtopts, nil, bases, uccs)
+	bases := krt.NewMutableCollection[baseEnvoyCluster](nil, nil, krtopts.ToOptions("Bases")...)
+	pcc := newPerClientEnvoyClusters(ctx, krtopts, nil, bases.AsCollection(), uccs.AsCollection())
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil, krtopts.ToOptions("Endpoints")...)
 	snapshots := snapshotPerClient(
 		krtopts,
-		uccs,
+		uccs.AsCollection(),
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
 			endpoints: endpointCol,
