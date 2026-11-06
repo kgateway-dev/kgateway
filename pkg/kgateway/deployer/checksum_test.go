@@ -73,8 +73,8 @@ func TestEnvoyDeploymentConfigChecksumCoversSDSFiles(t *testing.T) {
 		"image":            map[string]any{"registry": "cr.kgateway.dev", "repository": "envoy-wrapper", "tag": "test"},
 		"xds":              map[string]any{"tls": map[string]any{"enabled": true, "caCert": "ca"}},
 	}}
-	// checksum renders the chart after replacing old with new in configmap.yaml.
-	checksum := func(old, new string) string {
+	// checksum renders the chart after replacing old with replacement in configmap.yaml.
+	checksum := func(old, replacement string) string {
 		t.Helper()
 		chart, err := loadChart(helm.EnvoyHelmChart)
 		require.NoError(t, err)
@@ -83,7 +83,7 @@ func TestEnvoyDeploymentConfigChecksumCoversSDSFiles(t *testing.T) {
 			for _, tmpl := range chart.Templates {
 				if tmpl.Name == "templates/configmap.yaml" {
 					require.Contains(t, string(tmpl.Data), old, "configmap.yaml should contain %q", old)
-					tmpl.Data = []byte(strings.Replace(string(tmpl.Data), old, new, 1))
+					tmpl.Data = []byte(strings.Replace(string(tmpl.Data), old, replacement, 1))
 					patched = true
 				}
 			}
