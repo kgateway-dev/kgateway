@@ -153,7 +153,7 @@ func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1al
 	}
 
 	// Create parsed expression
-	env, err := cel.NewEnv()
+	env, err := newCELEnv()
 	if err != nil {
 		logger.Error("failed to create CEL environment", "err", err.Error())
 		return nil, err
@@ -299,6 +299,22 @@ func createDefaultAction(action envoyrbacv3.RBAC_Action) *cncfmatcherv3.Matcher_
 	}
 }
 
+// envoyCELAttributes are the root attributes available to Envoy's CEL matcher.
+var envoyCELAttributes = []string{
+	"request", "response", "connection", "upstream", "source", "destination",
+	"metadata", "filter_state", "xds",
+}
+
+// newCELEnv declares every attribute root Envoy exposes as dyn so that compilation
+// only rejects functions Envoy's CEL runtime does not provide (e.g. split).
+func newCELEnv() (*cel.Env, error) {
+	var opts []cel.EnvOption
+	for _, root := range envoyCELAttributes {
+		opts = append(opts, cel.Variable(root, cel.DynType))
+	}
+	return cel.NewEnv(opts...)
+}
+
 // parseCELExpression takes a CEL expression string and converts it to a parsed expression
 // for use in Envoy matchers. It handles the conversion between different protobuf types.
 func parseCELExpression(env *cel.Env, celExpr sharedv1alpha1.CELExpression) (*expr.ParsedExpr, error) {
@@ -306,9 +322,9 @@ func parseCELExpression(env *cel.Env, celExpr sharedv1alpha1.CELExpression) (*ex
 		return nil, errors.New("CEL environment is nil")
 	}
 
-	ast, iss := env.Parse(string(celExpr))
+	ast, iss := env.Compile(string(celExpr))
 	if iss.Err() != nil {
-		logger.Error("parse error", "err", iss.Err())
+		logger.Error("compile error", "err", iss.Err())
 		return nil, iss.Err()
 	}
 

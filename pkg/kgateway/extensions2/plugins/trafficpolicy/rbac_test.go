@@ -7,7 +7,6 @@ import (
 	cncfmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	envoyauthz "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
-	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -129,7 +128,7 @@ func TestTranslateRBAC(t *testing.T) {
 				require.NotNil(t, got.Rbac.Matcher, "Expected Matcher field in actual result")
 
 				// Create CEL environment for validation
-				env, err := cel.NewEnv()
+				env, err := newCELEnv()
 				require.NoError(t, err, "Failed to create CEL environment")
 
 				// Validate CEL expressions for all expected rules
@@ -193,4 +192,43 @@ func TestTranslateRBACOnNoMatchAction(t *testing.T) {
 				"OnNoMatch action should be the inverse of the policy action")
 		})
 	}
+}
+
+// Envoy's CEL matcher does not register `split`, so such expressions must be rejected
+// at translation time instead of failing later at xDS load.
+func TestTranslateRBACRejectsUnsupportedCELFunctions(t *testing.T) {
+	newRBAC := func(e shared.CELExpression) *shared.Authorization {
+		return &shared.Authorization{
+			Action: shared.AuthorizationPolicyActionAllow,
+			Policy: shared.AuthorizationPolicy{MatchExpressions: []shared.CELExpression{e}},
+		}
+	}
+
+	t.Run("split is rejected with a clear error", func(t *testing.T) {
+		_, err := translateRBAC(newRBAC("'admin' in metadata.filter_metadata['envoy.filters.http.jwt_authn']['payload']['scope'].split(' ')"))
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "split")
+	})
+
+	t.Run("valid expression still translates", func(t *testing.T) {
+		got, err := translateRBAC(newRBAC("source.address.startsWith('10.')"))
+		require.NoError(t, err)
+		require.NotNil(t, got.Rbac.Matcher)
+	})
+}
+
+func TestTranslateRBACCELCompileErrors(t *testing.T) {
+	newRBAC := func(e shared.CELExpression) *shared.Authorization {
+		return &shared.Authorization{
+			Action: shared.AuthorizationPolicyActionAllow,
+			Policy: shared.AuthorizationPolicy{MatchExpressions: []shared.CELExpression{e}},
+		}
+	}
+
+	_, err := translateRBAC(newRBAC("metadata.filter_metadata['a']['scope'].split(' ')"))
+	assert.ErrorContains(t, err, "undeclared reference to 'split'")
+
+	got, err := translateRBAC(newRBAC("filter_state['x'] == 'y'"))
+	require.NoError(t, err)
+	require.NotNil(t, got.Rbac.Matcher)
 }
