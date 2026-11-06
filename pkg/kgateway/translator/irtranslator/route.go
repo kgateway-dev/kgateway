@@ -377,31 +377,31 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	}
 
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
-	var backendPolicyErrs []error
-	var backendPolicyErr error
+	var backendErrs []error
+	var backendErr error
 	if len(in.Backends) == 1 {
 		// If there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
-		out.Action, backendPolicyErrs, backendPolicyErr = h.translateRouteAction(in, out, &backendConfigCtx)
+		out.Action, backendErrs, backendErr = h.translateRouteAction(in, out, &backendConfigCtx)
 	} else if len(in.Backends) > 0 {
 		// If there is more than one backend, we translate the backends as WeightedClusters and each weighted cluster
 		// will have a TypedPerFilterConfig that overrides the parent route-level config.
-		out.Action, backendPolicyErrs, backendPolicyErr = h.translateRouteAction(in, out, nil)
+		out.Action, backendErrs, backendErr = h.translateRouteAction(in, out, nil)
 	}
 
-	if backendPolicyErr == nil && len(backendPolicyErrs) > 0 {
-		partialErr := errors.Join(backendPolicyErrs...)
+	if backendErr == nil && len(backendErrs) > 0 {
+		partialErr := errors.Join(backendErrs...)
 		routeReport.SetCondition(reportssdk.RouteCondition{
 			Type:   gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
 			Status: metav1.ConditionFalse,
 			Reason: reportssdk.BackendRefReplacedReason,
 			Message: fmt.Sprintf("Replaced %d of %d backendRefs of Rule (%d): %s",
-				len(backendPolicyErrs), len(in.Backends), in.MatchIndex, summarizeRuleErrors(partialErr)),
+				len(backendErrs), len(in.Backends), in.MatchIndex, summarizeRuleErrors(partialErr)),
 		})
 		incRouteReplacementMetric(h.gw, partialErr)
 	}
 
 	// Run plugins here that may set action. Handle the routeProcessingErr error later.
-	routeProcessingErr := errors.Join(backendPolicyErr, h.runRoutePlugins(in, out, backendConfigCtx.typedPerFilterConfigRoute))
+	routeProcessingErr := errors.Join(backendErr, h.runRoutePlugins(in, out, backendConfigCtx.typedPerFilterConfigRoute))
 
 	// Apply typed per filter config from translating route action and route plugins
 	typedPerFilterConfig := backendConfigCtx.typedPerFilterConfigRoute.ToAnyMap()
@@ -1002,7 +1002,6 @@ func (h *httpRouteConfigurationTranslator) runBackend(in ir.HttpBackend, pCtx *i
 	if backendPass == nil {
 		return nil
 	}
-	// TODO: check return value, if error returned, log error and report condition
 	return backendPass.ApplyForBackend(pCtx, in, outRoute)
 }
 
@@ -1053,11 +1052,13 @@ func (h *httpRouteConfigurationTranslator) getBackendObjectPolicyAppliers() []ba
 }
 
 // translateRouteAction translates the route's backends to its route action. A backend whose
-// policies fail is routed to the blackhole cluster without its per-backend config and without
-// running its backend plugin, so that only its share of traffic fails closed, as for an invalid
-// backendRef. It returns one error per such backend, and an error for the whole route when it
-// must fail closed instead: when no other backend is left to receive traffic, or when a backend
-// plugin set the route's cluster specifier, which would bypass the blackhole cluster.
+// policies (attached to its backendRef or its backend object) fail is routed to the blackhole
+// cluster without its per-backend config and without running its backend plugin, so that only
+// its share of traffic fails closed, as for an invalid backendRef. It returns one error per such
+// backend, and an error for the whole route when it must fail closed instead: when no other
+// backend is left to receive traffic, when a backend plugin set the route's cluster specifier,
+// which would bypass the blackhole cluster, or when a backend plugin fails, as it may already
+// have changed the route shared with the rule's other backends.
 func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	in ir.HttpRouteRuleMatchIR,
 	outRoute *envoyroutev3.Route,
@@ -1074,7 +1075,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	}
 
 	var clusters []*envoyroutev3.WeightedCluster_ClusterWeight
-	var backendPolicyErrs []error
+	var backendErrs []error
+	var backendPluginErrs []error
 	var attachments []backendPolicyAttachment
 	backendsLeft := 0
 	for _, backend := range in.Backends {
@@ -1105,19 +1107,17 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		// Policies only change the backend's own context, so they run before the backend plugin,
 		// which changes the route shared with the rule's other backends. A backend whose
 		// backendRef policies fail is cut off before its backend plugin runs.
+		var objectPolicyErr error
 		if backend.Backend.BackendObject != nil {
-			if err := h.runBackendObjectPolicies(backend.Backend.BackendObject, &pCtx); err != nil {
-				// TODO: error on status
-				h.logger.Error("error processing backends", "error", err)
-			}
+			objectPolicyErr = h.runBackendObjectPolicies(backend.Backend.BackendObject, &pCtx)
 		}
 		backendAttachments, err := h.runBackendPolicies(
 			backend,
 			ancestorRef,
 			&pCtx,
 		)
-		if err := errors.Join(backend.FiltersErr, err); err != nil {
-			backendPolicyErrs = append(backendPolicyErrs, err)
+		if err := errors.Join(backend.FiltersErr, objectPolicyErr, err); err != nil {
+			backendErrs = append(backendErrs, err)
 			cw.Name = wellknown.BlackholeClusterName
 			clusters = append(clusters, cw)
 			continue
@@ -1129,8 +1129,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			&pCtx,
 			outRoute,
 		); err != nil {
-			// TODO: error on status
-			h.logger.Error("error processing backends", "error", err)
+			backendPluginErrs = append(backendPluginErrs, err)
+			continue
 		}
 		attachments = append(attachments, backendAttachments...)
 		if receivesTraffic(backend.Backend) {
@@ -1157,10 +1157,13 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	}
 
 	var routeErr error
-	if len(backendPolicyErrs) > 0 && (backendsLeft == 0 || action.GetClusterSpecifier() != nil) {
+	if len(backendPluginErrs) > 0 {
+		// A failed backend plugin may have changed the route shared with the other backends.
+		routeErr = errors.Join(append(backendErrs, backendPluginErrs...)...)
+	} else if len(backendErrs) > 0 && (backendsLeft == 0 || action.GetClusterSpecifier() != nil) {
 		// No backend is left to receive traffic, or a backend plugin set the cluster specifier so
 		// the blackhole cluster would not be used: the route fails closed, like route-level policy errors.
-		routeErr = errors.Join(backendPolicyErrs...)
+		routeErr = errors.Join(backendErrs...)
 	} else {
 		// Only the policies of backends that keep their share of traffic are attached; those of
 		// cut off backends, or of a route that fails closed, stay pending.
@@ -1204,7 +1207,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			}
 		}
 	}
-	return routeAction, backendPolicyErrs, routeErr
+	return routeAction, backendErrs, routeErr
 }
 
 // receivesTraffic reports whether a backend that translated without errors receives a share of
