@@ -423,8 +423,11 @@ type EnvoyBootstrap struct {
 	// MaxDownstreamConnections caps active downstream connections across all listeners. Unset by default (no limit).
 	// This is bootstrap configuration, so changing it restarts the proxy.
 	//
+	// Must be at most 9007199254740991 (2^53-1).
+	//
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=9007199254740991
 	MaxDownstreamConnections *int64 `json:"maxDownstreamConnections,omitempty"`
 }
 

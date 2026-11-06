@@ -90,3 +90,28 @@ spec:
         keyValue:
           key: app
           value: payments
+---
+# Backend: static host port must be between 1 and 65535
+_err: 'port must be between 1 and 65535'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-static-port-too-large
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: example.com
+      port: 70000
+---
+# Backend: ec2 port 0 is allowed and means the default of 80
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-port-zero
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    ec2:
+      port: 0

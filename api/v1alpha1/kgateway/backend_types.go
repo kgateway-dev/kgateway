@@ -283,9 +283,10 @@ const (
 // AwsEc2 configures dynamic discovery of EC2 instances.
 type AwsEc2 struct {
 	// Port is the port to use for discovered instances.
-	// Defaults to 80.
+	// Defaults to 80. A value of 0 also uses 80.
 	// +optional
 	// +kubebuilder:default=80
+	// +kubebuilder:validation:XValidation:rule="self >= 0 && self <= 65535",message="port must be between 0 and 65535"
 	Port gwv1.PortNumber `json:"port,omitempty"`
 
 	// AddressType selects whether to route to the instance private or public IP.
@@ -386,8 +387,9 @@ type Host struct {
 	// +kubebuilder:validation:MinLength=1
 	// +required
 	Host string `json:"host"`
-	// Port is the port to use for the backend.
+	// Port is the port to use for the backend. Must be between 1 and 65535.
 	// +required
+	// +kubebuilder:validation:XValidation:rule="self >= 1 && self <= 65535",message="port must be between 1 and 65535"
 	Port gwv1.PortNumber `json:"port"`
 }
 
