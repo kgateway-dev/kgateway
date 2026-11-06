@@ -21,7 +21,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -29,7 +28,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -44,14 +42,8 @@ var (
 	emptyRouteManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "empty-route.yaml")
 	canaryRouteManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "canary-route.yaml")
 	postrestartRouteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "postrestart-route.yaml")
-	metricsServiceManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "metrics-service.yaml")
 
-	setup = base.TestCase{
-		Manifests: []string{
-			testdefaults.CurlPodManifest,
-			metricsServiceManifest,
-		},
-	}
+	setup = base.TestCase{}
 
 	testCases = map[string]*base.TestCase{
 		"TestRouteUpdateToEmptyBackendPublishesTruth":          {},
@@ -303,8 +295,8 @@ type xdsInvariantCounters struct {
 // scrapeXdsInvariantCounters reads controller metrics; absent counters are zero
 // because they appear only on first increment.
 func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
-	// The Service setup creates, or a controller restart, can leave the metrics
-	// endpoint briefly unreachable. Retry; record counters only from a full scrape.
+	// A controller restart can leave the metrics endpoint briefly unreachable.
+	// Retry; record counters only from a full scrape.
 	ctx, cancel := context.WithTimeout(s.Ctx, 30*time.Second)
 	defer cancel()
 	var counters xdsInvariantCounters
@@ -318,31 +310,9 @@ func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
 }
 
 func (s *testingSuite) tryScrapeXdsInvariantCounters(ctx context.Context) (xdsInvariantCounters, error) {
-	metricsService := metav1.ObjectMeta{
-		Name:      "kgateway-metrics",
-		Namespace: s.TestInstallation.Metadata.InstallNamespace,
-	}
-	curlResponse, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
-		ctx,
-		testdefaults.CurlPodExecOpt,
-		curl.WithHost(kubeutils.ServiceFQDN(metricsService)),
-		curl.WithPort(9092),
-		curl.WithPath("/metrics"),
-		curl.WithConnectionTimeout(5),
-	)
+	body, err := common.ScrapeControllerMetrics(ctx, s.TestInstallation)
 	if err != nil {
-		return xdsInvariantCounters{}, fmt.Errorf("scrape controller metrics: %w; stderr: %s", err, curlResponse.StdErr)
-	}
-
-	response := transforms.WithCurlResponse(curlResponse)
-	defer response.Body.Close()
-	// curl exits 0 on an HTTP error, and an error body parses as no samples.
-	if response.StatusCode != http.StatusOK {
-		return xdsInvariantCounters{}, fmt.Errorf("controller metrics returned HTTP %d; stderr: %s", response.StatusCode, curlResponse.StdErr)
-	}
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return xdsInvariantCounters{}, fmt.Errorf("read controller metrics body: %w", err)
+		return xdsInvariantCounters{}, err
 	}
 
 	counters := xdsInvariantCounters{totals: map[string]float64{}, lines: map[string][]string{}}

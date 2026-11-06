@@ -3,6 +3,7 @@
 package routereplacement
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -27,6 +27,7 @@ import (
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -35,11 +36,8 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 var (
 	setup = base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
+			setupManifest,
 			testdefaults.HttpbinManifest,
-		},
-		ManifestsWithTransform: map[string]func(string) string{
-			setupManifest: transformInstallNamespace,
 		},
 	}
 
@@ -367,7 +365,6 @@ const (
 	validationInvalidXDSMetric  = "kgateway_validation_invalid_xds_total"
 	validationDurationMetric    = "kgateway_validation_duration_seconds"
 	validationResultInvalidXDS  = "invalid_xds"
-	metricsPort                 = 9092
 	metricsPollTimeout          = 20 * time.Second
 	metricsPollInterval         = time.Second
 )
@@ -493,16 +490,14 @@ func (s *testingSuite) assertTrafficPolicyValidationMetrics() {
 }
 
 func (s *testingSuite) scrapeMetrics() metricstest.GatheredMetrics {
-	resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
-		s.Ctx, testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
-			curl.WithPort(metricsPort),
-			curl.WithPath("/metrics"),
-		},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-	)
-	defer resp.Body.Close()
+	var body []byte
+	timeout, polling := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func() error {
+		var err error
+		body, err = common.ScrapeControllerMetrics(s.Ctx, s.TestInstallation)
+		return err
+	}).WithContext(s.Ctx).WithTimeout(timeout).WithPolling(polling).Should(gomega.Succeed(),
+		"can scrape controller metrics")
 
-	return metricstest.MustParseGatheredMetrics(s.T(), resp.Body)
+	return metricstest.MustParseGatheredMetrics(s.T(), bytes.NewReader(body))
 }
