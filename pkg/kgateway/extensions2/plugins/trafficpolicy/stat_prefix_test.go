@@ -38,7 +38,8 @@ func TestStatPrefixIREquals(t *testing.T) {
 // statPrefixCRDPattern mirrors the regex in the TrafficPolicy StatPrefix field's
 // `+kubebuilder:validation:Pattern` marker. The Envoy stat prefix syntax is
 // validated at admission by that pattern rather than in Go, so this test guards
-// the pattern against regressions. Keep it in sync with the marker in
+// the pattern against regressions. Keep it in sync with the markers on both
+// TrafficPolicySpec.StatPrefix and LocalRateLimitPolicy.StatPrefix in
 // api/v1alpha1/kgateway/traffic_policy_types.go.
 const statPrefixCRDPattern = `^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$`
 
