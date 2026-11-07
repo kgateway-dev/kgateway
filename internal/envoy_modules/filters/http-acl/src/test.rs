@@ -54,7 +54,7 @@ fn expect_metadata(mock: &mut MockEnvoyHttpFilter, expected_value: &'static str)
 }
 
 fn run(filter_cfg: FilterConfig, mock: &mut MockEnvoyHttpFilter) -> u32 {
-    let mut filter = filter_cfg.new_http_filter(mock);
+    let filter = filter_cfg.new_http_filter(mock);
     let status = filter.on_request_headers(mock, true);
     status as u32
 }

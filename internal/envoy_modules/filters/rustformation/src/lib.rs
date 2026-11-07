@@ -9,6 +9,7 @@ use envoy_proxy_dynamic_modules_rust_sdk::*;
 use minijinja::Environment;
 use once_cell::sync::Lazy;
 use serde_json::Value as JsonValue;
+use std::cell::{Cell, OnceCell};
 use std::collections::HashMap;
 use transformation::{
     jinja::{ProcessFlags, TransformFlags},
@@ -273,18 +274,20 @@ impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     fn new_http_filter(&self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
         Box::new(Filter {
             filter_config: self.clone(),
-            per_route_config: None,
-            request_headers_map: None,
-            is_upgrade_request: false,
+            per_route_config: OnceCell::new(),
+            request_headers_map: OnceCell::new(),
+            is_upgrade_request: Cell::new(false),
         })
     }
 }
 
 pub struct Filter {
     filter_config: FilterConfig,
-    per_route_config: Option<Box<PerRouteConfig>>,
-    request_headers_map: Option<HashMap<String, Vec<String>>>,
-    is_upgrade_request: bool,
+    // Callbacks can be re-entered by Envoy. Cache immutable stream data without
+    // holding a mutable borrow while invoking Envoy callbacks.
+    per_route_config: OnceCell<Box<PerRouteConfig>>,
+    request_headers_map: OnceCell<HashMap<String, Vec<String>>>,
+    is_upgrade_request: Cell<bool>,
 }
 
 impl Filter {
@@ -295,8 +298,8 @@ impl Filter {
         }
     }
 
-    fn set_per_route_config<EHF: EnvoyHttpFilter>(&mut self, envoy_filter: &mut EHF) {
-        if self.per_route_config.is_none() {
+    fn set_per_route_config<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
+        if self.per_route_config.get().is_none() {
             if let Some(per_route_config) = envoy_filter.get_most_specific_route_config().as_ref() {
                 let per_route_config = match per_route_config.downcast_ref::<PerRouteConfig>() {
                     Some(cfg) => cfg,
@@ -308,26 +311,28 @@ impl Filter {
                         return;
                     }
                 };
-                self.per_route_config = Some(Box::new(per_route_config.clone()));
+                let _ = self
+                    .per_route_config
+                    .set(Box::new(per_route_config.clone()));
             }
         }
     }
 
     fn get_per_route_config(&self) -> Option<&PerRouteConfig> {
-        self.per_route_config.as_deref()
+        self.per_route_config.get().map(Box::as_ref)
     }
 
     // This function is used to populate the self.request_headers_map so we only ever
     // do it once while we might need the request headers in either on_request_headers() or
     // on_response_headers().
-    fn populate_request_headers_map(&mut self, headers: Vec<(EnvoyBuffer, EnvoyBuffer)>) {
-        if self.request_headers_map.is_none() {
-            self.request_headers_map = Some(create_headers_map(headers));
+    fn populate_request_headers_map(&self, headers: Vec<(EnvoyBuffer, EnvoyBuffer)>) {
+        if self.request_headers_map.get().is_none() {
+            let _ = self.request_headers_map.set(create_headers_map(headers));
         }
     }
 
     fn get_request_headers_map(&self) -> &HashMap<String, Vec<String>> {
-        self.request_headers_map.as_ref().unwrap_or(&EMPTY_MAP)
+        self.request_headers_map.get().unwrap_or(&EMPTY_MAP)
     }
 
     // set_per_route_config() has to be called before calling this function
@@ -363,7 +368,7 @@ impl Filter {
     // Returns true if buffering should be skipped, either because the transform
     // itself requests it or because the request is an upgrade/tunnel request.
     fn skip_buffering(&self, transform: &LocalTransform) -> bool {
-        self.is_upgrade_request || transform.skip_buffering()
+        self.is_upgrade_request.get() || transform.skip_buffering()
     }
 
     // Handles a transformation error by sending a 400 response for known error
@@ -462,13 +467,14 @@ impl Filter {
 /// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::HttpFilter`] trait.
 impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
     fn on_request_headers(
-        &mut self,
+        &self,
         envoy_filter: &mut EHF,
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {
         self.set_per_route_config(envoy_filter);
         self.populate_request_headers_map(envoy_filter.get_request_headers());
-        self.is_upgrade_request = detect_upgrade_request(self.get_request_headers_map());
+        self.is_upgrade_request
+            .set(detect_upgrade_request(self.get_request_headers_map()));
 
         let Some(transform) = self.get_request_transform() else {
             envoy_log_trace!("on_request_headers skipping");
@@ -513,7 +519,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
     }
 
     fn on_request_body(
-        &mut self,
+        &self,
         envoy_filter: &mut EHF,
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_body_status {
@@ -551,7 +557,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
     }
 
     fn on_response_headers(
-        &mut self,
+        &self,
         envoy_filter: &mut EHF,
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_headers_status {
@@ -600,7 +606,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
     }
 
     fn on_response_body(
-        &mut self,
+        &self,
         envoy_filter: &mut EHF,
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_body_status {
