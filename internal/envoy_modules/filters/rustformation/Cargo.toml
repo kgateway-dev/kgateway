@@ -17,4 +17,5 @@ transformation = { path = "../../lib/transformation" }
 envoy-helpers = { path = "../../lib/envoy-helpers" }
 
 [dev-dependencies]
-mockall = "0.13.1"
+envoy-proxy-dynamic-modules-rust-sdk = { workspace = true, features = ["mock"] }
+mockall = "0.15.0"
