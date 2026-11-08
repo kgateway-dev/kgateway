@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,7 +32,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -577,46 +575,6 @@ func (r *ProxySyncer) NeedLeaderElection() bool {
 // reduces. It may be called before Init, but must not be started before it.
 func (s *ProxySyncer) StatusSyncer() *StatusSyncer {
 	return s.statusSyncer
-}
-
-// StatusCollections returns the registered desired-status collections. The status syncer
-// enables them (attaching handlers that feed the write queue) on the leader.
-//
-// Deprecated: run StatusSyncer instead of assembling one from the pipeline's parts; register
-// a status kind with WithStatusRegistration. It returns nil before Init.
-func (s *ProxySyncer) StatusCollections() *statussync.StatusCollections {
-	return s.status.in.Collections
-}
-
-// StatusWriters returns the per-GVK status writers used to persist desired statuses.
-//
-// Deprecated: run StatusSyncer instead of assembling one from the pipeline's parts; register
-// a writer through RegistrationInputs.RegisterWriter. It returns nil before Init.
-func (s *ProxySyncer) StatusWriters() map[schema.GroupVersionKind]statussync.ResourceStatusSyncer {
-	return s.status.writers
-}
-
-// StatusContributions returns the independently keyed status facts emitted by translation.
-//
-// Deprecated: a status registration receives them as RegistrationInputs.StatusContributions.
-// It returns nil before Init.
-func (s *ProxySyncer) StatusContributions() krt.Collection[reports.StatusContribution] {
-	return s.status.in.StatusContributions
-}
-
-// StatusContributionsByTarget returns the index used to reduce facts per status owner.
-//
-// Deprecated: a status registration receives it as RegistrationInputs.ContributionsByTarget.
-// It returns nil before Init.
-func (s *ProxySyncer) StatusContributionsByTarget() krt.Index[reports.StatusKey, reports.StatusContribution] {
-	return s.status.in.ContributionsByTarget
-}
-
-// WaitForSync returns a list of functions that can be used to determine if all its informers have synced.
-// This is useful for determining if caches have synced.
-// It must be called only after `Init()`.
-func (s *ProxySyncer) CacheSyncs() []cache.InformerSynced {
-	return s.waitForSync
 }
 
 type resourcesStringer envoycache.Resources

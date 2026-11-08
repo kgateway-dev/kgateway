@@ -42,9 +42,15 @@ type RegistrationInputs struct {
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer ResourceStatusSyncer)
 }
 
-// Register wires one status kind into the pipeline described by in: it is RegisterKind with
-// in's collections, contributions and index, and a reducer named after the kind. Prefer it to
-// RegisterKind, whose extra arguments can only ever be these.
+// Register wires one status kind end to end: it derives the report reducer for a raw
+// collection from in's contributions (named "<Kind>StatusReports"), registers that collection
+// as a reconciliation source, and enrolls the reducer as both an event source and a cache-sync
+// dependency.
+//
+// The three belong together. Done separately, each compiles on its own and omitting one is
+// invisible: skip the raw registration and the resource is never swept on leadership, skip
+// the reducer registration and status stops following report changes. Both are silent status
+// outages rather than build or test failures.
 func Register[I controllers.Object](
 	in RegistrationInputs,
 	gvk schema.GroupVersionKind,

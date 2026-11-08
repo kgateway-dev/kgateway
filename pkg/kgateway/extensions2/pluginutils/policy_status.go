@@ -1,8 +1,6 @@
 package pluginutils
 
 import (
-	"cmp"
-
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -26,19 +24,18 @@ type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(report *rep
 // from the latest merged policy report, merging ancestors owned by other controllers at
 // write time.
 //
-// An empty controllerName selects PolicyStatusInputs.ControllerName, the name the status
-// pipeline writes as, so a plugin need not carry its own copy of it.
+// Ancestors are owned as PolicyStatusInputs.ControllerName, the name the status pipeline
+// writes as.
 //
 // Use RegisterPolicyStatusWithBuilder for a policy that builds its own desired status.
 func RegisterPolicyStatus[T controllers.ComparableObject](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[T],
 	cl kclient.Client[T],
-	controllerName string,
 	getStatus func(T) gwv1.PolicyStatus,
 	build func(om metav1.ObjectMeta, st gwv1.PolicyStatus) T,
 ) func(pluginsdk.PolicyStatusInputs) {
-	return RegisterPolicyStatusWithBuilder(gvk, col, cl, controllerName, getStatus, build, nil)
+	return RegisterPolicyStatusWithBuilder(gvk, col, cl, getStatus, build, nil)
 }
 
 // RegisterPolicyStatusWithBuilder is RegisterPolicyStatus for a policy CRD that builds its
@@ -50,13 +47,12 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[T],
 	cl kclient.Client[T],
-	controllerName string,
 	getStatus func(T) gwv1.PolicyStatus,
 	build func(om metav1.ObjectMeta, st gwv1.PolicyStatus) T,
 	buildDesired BuildDesiredPolicyStatusFn[T],
 ) func(pluginsdk.PolicyStatusInputs) {
 	return func(in pluginsdk.PolicyStatusInputs) {
-		controllerName := cmp.Or(controllerName, in.ControllerName)
+		controllerName := in.ControllerName
 		desiredFor := buildDesired
 		if desiredFor == nil {
 			desiredFor = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
