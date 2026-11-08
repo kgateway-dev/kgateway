@@ -1,6 +1,8 @@
 package pluginutils
 
 import (
+	"cmp"
+
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -23,6 +25,9 @@ type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(report *rep
 // builder. It derives a per-object desired-status source and registers a writer that builds
 // from the latest merged policy report, merging ancestors owned by other controllers at
 // write time.
+//
+// An empty controllerName selects PolicyStatusInputs.ControllerName, the name the status
+// pipeline writes as, so a plugin need not carry its own copy of it.
 //
 // Use RegisterPolicyStatusWithBuilder for a policy that builds its own desired status.
 func RegisterPolicyStatus[T controllers.ComparableObject](
@@ -51,6 +56,7 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 	buildDesired BuildDesiredPolicyStatusFn[T],
 ) func(pluginsdk.PolicyStatusInputs) {
 	return func(in pluginsdk.PolicyStatusInputs) {
+		controllerName := cmp.Or(controllerName, in.ControllerName)
 		desiredFor := buildDesired
 		if desiredFor == nil {
 			desiredFor = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
@@ -63,11 +69,7 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 				return reports.BuildPolicyStatus(report, key, controllerName, getStatus(pol))
 			}
 		}
-		statusReports := statussync.RegisterKind(
-			in.Collections, gvk, col,
-			in.StatusContributions, in.ContributionsByTarget,
-			in.KrtOpts.ToOptions(gvk.Kind+"StatusReports")...,
-		)
+		statusReports := statussync.Register(in, gvk, col)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
 			Name: gvk.Kind,
 			// Read from the collection that enqueues this policy, not from cl: cl is a

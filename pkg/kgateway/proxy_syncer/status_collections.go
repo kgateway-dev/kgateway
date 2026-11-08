@@ -15,7 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -34,27 +33,29 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	s.statusContributionsByTarget = krtpkg.UnnamedIndex(s.statusContributions, func(contribution reports.StatusContribution) []reports.StatusKey {
 		return []reports.StatusKey{contribution.Target}
 	})
-	contributionsByTarget := s.statusContributionsByTarget
+	in := statussync.RegistrationInputs{
+		Collections:           s.statusCollections,
+		StatusContributions:   s.statusContributions,
+		ContributionsByTarget: s.statusContributionsByTarget,
+		KrtOpts:               krtopts,
+		ControllerName:        controllerName,
+		RegisterWriter: func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
+			registerStatusWriter(s.statusWriters, gvk, syncer)
+		},
+	}
 
 	// Gateway
-	gatewayReports := statussync.RegisterKind(s.statusCollections, wellknown.GatewayGVK, s.commonCols.RawGateways,
-		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GatewayStatusReports")...)
+	gatewayReports := statussync.Register(in, wellknown.GatewayGVK, s.commonCols.RawGateways)
 	registerStatusWriter(s.statusWriters, wellknown.GatewayGVK, gatewayWriter(cl, f, s.commonCols.RawGateways, gatewayReports))
 
-	httpRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes,
-		s.statusContributions, contributionsByTarget, krtopts.ToOptions("HTTPRouteStatusReports")...)
-	grpcRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes,
-		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GRPCRouteStatusReports")...)
+	httpRouteReports := statussync.Register(in, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes)
+	grpcRouteReports := statussync.Register(in, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes)
 	// TCP and TLS routes are normalized to one Go type but keep the API version they were
 	// served as in TypeMeta, so an enqueued resource already names the version its status
 	// must be written back through. Key the reductions and the queue by that GVK, and give
 	// each served version its own writer.
-	tcpRouteReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.TCPRouteGVK,
-		s.commonCols.RawTCPRoutes, s.statusContributions, contributionsByTarget,
-		krtopts.ToOptions("TCPRouteStatusReports")...)
-	tlsRouteReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.TLSRouteGVK,
-		s.commonCols.RawTLSRoutes, s.statusContributions, contributionsByTarget,
-		krtopts.ToOptions("TLSRouteStatusReports")...)
+	tcpRouteReports := statussync.RegisterByObjectGVK(in, wellknown.TCPRouteGVK, s.commonCols.RawTCPRoutes)
+	tlsRouteReports := statussync.RegisterByObjectGVK(in, wellknown.TLSRouteGVK, s.commonCols.RawTLSRoutes)
 
 	registerStatusWriter(s.statusWriters, wellknown.HTTPRouteGVK,
 		routeWriter(cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, controllerName,
@@ -132,9 +133,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	// object's own GVK, but they are written back through different APIs, so each GVK gets its
 	// own writer. The map dispatches on the enqueued GVK, which is the object's, so a promoted
 	// ListenerSet can never reach the legacy writer or vice versa.
-	listenerSetReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK,
-		s.commonCols.RawListenerSets, s.statusContributions, contributionsByTarget,
-		krtopts.ToOptions("ListenerSetStatusReports")...)
+	listenerSetReports := statussync.RegisterByObjectGVK(in, wellknown.ListenerSetGVK, s.commonCols.RawListenerSets)
 	registerStatusWriter(s.statusWriters, wellknown.ListenerSetGVK,
 		listenerSetWriter(cl, f, s.commonCols.RawListenerSets, listenerSetReports))
 	// ON_EXPERIMENTAL_PROMOTION : Remove this registration together with xlistenerset_status.go.
@@ -145,9 +144,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	backendPlugin, hasBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
 	var backendReports krt.Collection[statussync.ResourceReports]
 	if backendPlugin.RawBackends != nil {
-		backendReports = statussync.RegisterKind(s.statusCollections, wellknown.BackendGVK,
-			backendPlugin.RawBackends, s.statusContributions, contributionsByTarget,
-			krtopts.ToOptions("BackendStatusReports")...)
+		backendReports = statussync.Register(in, wellknown.BackendGVK, backendPlugin.RawBackends)
 	} else if hasBackendPlugin {
 		// A registered Backend plugin that does not expose its informer-backed collection is a
 		// wiring bug. No Backend plugin at all is a legitimate configuration (nothing serves
@@ -177,18 +174,9 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 		GetStatus: func(o *kgateway.Backend) kgateway.BackendStatus { return o.Status },
 	})
 
-	policyStatusInputs := plug.PolicyStatusInputs{
-		Collections:           s.statusCollections,
-		StatusContributions:   s.statusContributions,
-		ContributionsByTarget: contributionsByTarget,
-		KrtOpts:               krtopts,
-		RegisterWriter: func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
-			registerStatusWriter(s.statusWriters, gvk, syncer)
-		},
-	}
 	for _, plugin := range s.plugins.ContributesPolicies {
 		if plugin.RegisterPolicyStatus != nil {
-			plugin.RegisterPolicyStatus(policyStatusInputs)
+			plugin.RegisterPolicyStatus(in)
 		}
 	}
 
