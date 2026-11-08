@@ -93,19 +93,21 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
-						Type:    string(shared.PolicyConditionAccepted),
-						Status:  metav1.ConditionFalse,
-						Reason:  string(shared.PolicyReasonInvalid),
-						Message: polAtt.FormatErrors(),
+						Type:               string(shared.PolicyConditionAccepted),
+						Status:             metav1.ConditionFalse,
+						Reason:             string(shared.PolicyReasonInvalid),
+						Message:            polAtt.FormatErrors(),
+						ObservedGeneration: polAtt.Generation,
 					})
 					continue
 				}
 
 				accepted := reportssdk.PolicyCondition{
-					Type:    string(shared.PolicyConditionAccepted),
-					Status:  metav1.ConditionTrue,
-					Reason:  string(shared.PolicyReasonValid),
-					Message: reportssdk.PolicyAcceptedMsg,
+					Type:               string(shared.PolicyConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(shared.PolicyReasonValid),
+					Message:            reportssdk.PolicyAcceptedMsg,
+					ObservedGeneration: polAtt.Generation,
 				}
 				if gk == bcpGK {
 					// Some BackendConfigPolicy settings are accepted but have no effect, in general or
@@ -117,10 +119,11 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 				}
 				r.SetCondition(accepted)
 				r.SetCondition(reportssdk.PolicyCondition{
-					Type:    string(shared.PolicyConditionAttached),
-					Status:  metav1.ConditionTrue,
-					Reason:  string(shared.PolicyReasonAttached),
-					Message: reportssdk.PolicyAttachedMsg,
+					Type:               string(shared.PolicyConditionAttached),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(shared.PolicyReasonAttached),
+					Message:            reportssdk.PolicyAttachedMsg,
+					ObservedGeneration: polAtt.Generation,
 				})
 
 				if gk == bcpGK {
