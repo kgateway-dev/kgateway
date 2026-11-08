@@ -44,8 +44,8 @@ var _ manager.LeaderElectionRunnable = &ProxySyncer{}
 // and setting the output xDS snapshot in the envoy snapshot cache,
 // resulting in each connected proxy getting the correct configuration.
 // It runs on all pods (leader or follower) as the xDS snapshot must be consistent across pods.
-// It also derives per-object desired-status collections from the translation reports;
-// the StatusSyncer attaches them to a write queue on the leader.
+// It also owns the status pipeline, which reduces the translation reports per object on
+// every replica; StatusSyncer returns the leader-only runnable that writes them.
 type ProxySyncer struct {
 	controllerName string
 
@@ -64,13 +64,12 @@ type ProxySyncer struct {
 	// checks departure through it.
 	clientState krtcollections.XDSClientState
 
-	statusContributions         krt.Collection[reports.StatusContribution]
-	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
-	mostXdsSnapshots            krt.Collection[GatewayXdsResources]
-	perclientSnapCollection     krt.Collection[XdsSnapWrapper]
+	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
+	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
-	statusCollections *statussync.StatusCollections
-	statusWriters     map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
+	// status is built by Init; statusSyncer writes it on the leader.
+	status       *statusPipeline
+	statusSyncer *StatusSyncer
 
 	// extraPolicyTargetResolvers are the resolvers registered with WithPolicyTargetResolver.
 	extraPolicyTargetResolvers policyTargetResolvers
@@ -219,6 +218,7 @@ func NewProxySyncer(
 		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget, a returning proxy is answered from its previous connection's snapshot until the next publish to it, and departed proxies' snapshots are never reclaimed")
 	}
 	scoping := clusterScopingFrom(commonCols.Settings, mergedPlugins.ContributesPolicies)
+	status := &statusPipeline{registrations: optCfg.statusRegistrations}
 	return &ProxySyncer{
 		controllerName: controllerName,
 		commonCols:     commonCols,
@@ -231,6 +231,13 @@ func NewProxySyncer(
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
 		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
+		status:                     status,
+		statusSyncer: &StatusSyncer{
+			istioClient:    client,
+			plugins:        mergedPlugins,
+			controllerName: controllerName,
+			pipeline:       status,
+		},
 	}
 }
 
@@ -432,7 +439,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// ancestors from Gateway translation, Backend translation, and targetRef
 	// resolution naturally reduce under the same policy key without a competing
 	// singleton writer.
-	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+	statusContributions := krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
 		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
 		backendContributions,
@@ -444,7 +451,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		finalBackends.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
-		s.statusContributions.HasSynced,
+		statusContributions.HasSynced,
 		s.plugins.HasSynced,
 		s.translator.HasSynced,
 	}
@@ -454,7 +461,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// check takes a context only because slog.Handler.Enabled does; there is nothing to
 	// propagate, and pkg/kgateway/setup/controlplane.go checks levels the same way. Threading
 	// ctx through four exported statussync registration functions to reach it would be worse.
-	s.initStatusInfra(krtopts) //nolint:contextcheck // only ctx use in the chain is a slog level check
+	s.initStatusInfra(statusContributions, krtopts) //nolint:contextcheck // only ctx use in the chain is a slog level check
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -566,25 +573,43 @@ func (r *ProxySyncer) NeedLeaderElection() bool {
 	return false
 }
 
+// StatusSyncer returns the leader-only runnable that writes the status the status pipeline
+// reduces. It may be called before Init, but must not be started before it.
+func (s *ProxySyncer) StatusSyncer() *StatusSyncer {
+	return s.statusSyncer
+}
+
 // StatusCollections returns the registered desired-status collections. The status syncer
 // enables them (attaching handlers that feed the write queue) on the leader.
+//
+// Deprecated: run StatusSyncer instead of assembling one from the pipeline's parts; register
+// a status kind with WithStatusRegistration. It returns nil before Init.
 func (s *ProxySyncer) StatusCollections() *statussync.StatusCollections {
-	return s.statusCollections
+	return s.status.in.Collections
 }
 
 // StatusWriters returns the per-GVK status writers used to persist desired statuses.
+//
+// Deprecated: run StatusSyncer instead of assembling one from the pipeline's parts; register
+// a writer through RegistrationInputs.RegisterWriter. It returns nil before Init.
 func (s *ProxySyncer) StatusWriters() map[schema.GroupVersionKind]statussync.ResourceStatusSyncer {
-	return s.statusWriters
+	return s.status.writers
 }
 
 // StatusContributions returns the independently keyed status facts emitted by translation.
+//
+// Deprecated: a status registration receives them as RegistrationInputs.StatusContributions.
+// It returns nil before Init.
 func (s *ProxySyncer) StatusContributions() krt.Collection[reports.StatusContribution] {
-	return s.statusContributions
+	return s.status.in.StatusContributions
 }
 
 // StatusContributionsByTarget returns the index used to reduce facts per status owner.
+//
+// Deprecated: a status registration receives it as RegistrationInputs.ContributionsByTarget.
+// It returns nil before Init.
 func (s *ProxySyncer) StatusContributionsByTarget() krt.Index[reports.StatusKey, reports.StatusContribution] {
-	return s.statusContributionsByTarget
+	return s.status.in.ContributionsByTarget
 }
 
 // WaitForSync returns a list of functions that can be used to determine if all its informers have synced.

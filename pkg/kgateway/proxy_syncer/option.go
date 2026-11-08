@@ -11,9 +11,9 @@ type statusSyncerConfig struct {
 	policyTargetResolvers policyTargetResolvers
 }
 
-// StatusSyncerOption configures the status pipeline. The same options are passed to both
-// NewProxySyncer, which produces the status contributions, and NewStatusSyncer, which reduces
-// and writes them; each reads only the settings it owns.
+// StatusSyncerOption configures the status pipeline, which NewProxySyncer owns: the
+// ProxySyncer produces and reduces the status contributions, and the runnable its
+// StatusSyncer method returns writes them.
 type StatusSyncerOption func(*statusSyncerConfig)
 
 // StatusRegistration adds one resource-scoped status pipeline extension. Registrations
@@ -35,8 +35,9 @@ func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig 
 }
 
 // WithStatusRegistration registers a downstream resource type with the keyed status
-// pipeline. The registration runs on every replica during controller construction; actual
-// reconciliation handlers and writes remain leader-gated by StatusCollections.
+// pipeline. The registration runs on every replica during ProxySyncer.Init, after the
+// built-in kinds and the policy plugins; actual reconciliation handlers and writes remain
+// leader-gated by StatusCollections.
 func WithStatusRegistration(registration StatusRegistration) StatusSyncerOption {
 	return func(cfg *statusSyncerConfig) {
 		if registration != nil {
