@@ -8,7 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
@@ -24,17 +23,12 @@ var (
 		Namespace: "default",
 	}
 
-	kgatewayMetricsObjectMeta = metav1.ObjectMeta{
-		Name:      "kgateway-metrics",
-		Namespace: "kgateway-test",
-	}
-
 	setup = base.TestCase{
-		Manifests: []string{setupManifest, setupCommonManifest, e2edefaults.CurlPodManifest},
+		Manifests: []string{setupManifest, setupCommonManifest},
 	}
 
 	setupWithListenerSets = base.TestCase{
-		Manifests: []string{setupCommonManifest, e2edefaults.CurlPodManifest},
+		Manifests: []string{setupCommonManifest},
 		ManifestsWithTransform: map[string]func(string) string{
 			setupWithListenerSetsManifest: base.TransformListenerSetManifest,
 		},

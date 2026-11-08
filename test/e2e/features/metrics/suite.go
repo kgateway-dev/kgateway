@@ -3,6 +3,7 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"time"
@@ -11,12 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -46,7 +48,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: e2edefaults.WellKnownAppLabel + "=kgateway",
 	})
 }
@@ -56,39 +58,28 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 	s.checkPodsRunning()
 
 	// Verify the test services are created and working.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		e2edefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example1.com"),
-			curl.WithPort(8080),
-		},
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
+	gw.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(e2edefaults.NginxResponse),
-		})
+		},
+		curl.WithHostHeader("example1.com"),
+		curl.WithPort(8080),
+	)
 
 	// Verify the control plane metrics are generating as expected.
 	s.TestInstallation.AssertionsT(s.T()).Assert.EventuallyWithT(func(c *assert.CollectT) {
-		resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
-			s.Ctx,
-			e2edefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
-				curl.WithPort(9092),
-				curl.WithPath("/metrics"),
-			},
-			&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-		)
+		body, err := common.ScrapeControllerMetrics(s.Ctx, s.TestInstallation)
+		if !assert.NoError(c, err, "can scrape controller metrics") {
+			return
+		}
 
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				c.Errorf("unable to close response body: %v", err)
-			}
-		}()
-
-		gathered := metricstest.MustParseGatheredMetrics(c, resp.Body)
+		gathered := metricstest.MustParseGatheredMetrics(c, bytes.NewReader(body))
 
 		// Assert xDS auth metrics
 		var expectedGateways float64 = 2

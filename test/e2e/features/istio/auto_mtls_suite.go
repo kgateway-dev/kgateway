@@ -46,7 +46,7 @@ func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		err := s.testInstallation.ClusterContext.Manifests().ApplyFiles(manifest)
 		s.NoError(err, "can apply "+manifest)
 	}
 }
@@ -58,13 +58,13 @@ func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
+		err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, manifest)
 		s.NoError(err, "can delete "+manifest)
 	}
 }
 
 func (s *istioAutoMtlsTestingSuite) SetupSuite() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	err := s.testInstallation.ClusterContext.Manifests().ApplyFiles(setupManifest)
 	s.NoError(err, "can apply setup manifest")
 	// Check that istio injection is successful and httpbin is running
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
@@ -72,7 +72,7 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 		metav1.ListOptions{LabelSelector: "app=httpbin"}, time.Minute*2)
 
 	// Every test routes through the same Gateway, so its proxy starts once for the suite
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayManifest)
+	err = s.testInstallation.ClusterContext.Manifests().ApplyFiles(gatewayManifest)
 	s.NoError(err, "can apply gateway manifest")
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
@@ -91,11 +91,11 @@ func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
 		return
 	}
 	// The next suite creates its own Gateway with the same name, so wait for this proxy to go away
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, gatewayManifest)
+	err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, gatewayManifest)
 	s.NoError(err, "can delete gateway manifest")
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 
-	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err = s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }

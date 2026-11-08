@@ -2857,6 +2857,11 @@ func (in *HealthCheck) DeepCopyInto(out *HealthCheck) {
 	*out = *in
 	out.Timeout = in.Timeout
 	out.Interval = in.Interval
+	if in.NoTrafficInterval != nil {
+		in, out := &in.NoTrafficInterval, &out.NoTrafficInterval
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.Http != nil {
 		in, out := &in.Http, &out.Http
 		*out = new(HealthCheckHttp)

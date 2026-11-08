@@ -21,7 +21,7 @@ metadata:
   namespace: kgateway-base
 spec:
   selector:
-    app.kubernetes.io/name: nginx
+    app.kubernetes.io/name: example-nginx
   ports:
     - protocol: TCP
       port: 8080
@@ -51,21 +51,6 @@ spec:
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-  namespace: kgateway-base
-  labels:
-    app.kubernetes.io/name: nginx
-spec:
-  containers:
-    - name: nginx
-      image: nginx:1.28.0
-      ports:
-        - containerPort: 80
-          name: http-web-svc
 ---
 apiVersion: v1
 kind: Service

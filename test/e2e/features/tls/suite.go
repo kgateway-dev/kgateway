@@ -79,7 +79,7 @@ func (s *testingSuite) TestTLSCertificateRotation() {
 	rotatedSecretYAML, err := SecretManifest(s.TestInstallation.Metadata.InstallNamespace, DefaultExpiration)
 	s.Require().NoError(err, "failed to generate rotated certificate")
 
-	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(rotatedSecretYAML))
+	err = s.TestInstallation.ClusterContext.Manifests().Apply(rotatedSecretYAML)
 	s.Require().NoError(err, "failed to apply rotated TLS secret")
 
 	// wait for certificate rotation to propagate. arbitrary sleep used here to allow
