@@ -213,31 +213,19 @@ func (t *Translator) runListenerPlugins(
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
-	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-		pols := attachedPolicies.Policies[gk]
-		pass := pass[gk]
-		if pass == nil {
-			// TODO: report user error - they attached a non http policy
-			continue
-		}
-		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			pctx := &ir.ListenerContext{
-				Port:   l.BindPort,
-				Policy: pol.PolicyIr,
-				PolicyAncestorRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
-					Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-					Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
-					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
-				},
-			}
-			pass.ApplyListenerPlugin(pctx, out)
-		}
-		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
-	}
+	// TODO: report user error when a policy without an http translation pass is attached
+	applyPolicies(pass, &attachedPolicies, &policyApplyOptions{
+		reporter:    reporter,
+		ancestorRef: l.PolicyAncestorRef,
+		metadata:    &out.Metadata,
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pass.ApplyListenerPlugin(&ir.ListenerContext{
+			Port:              l.BindPort,
+			Policy:            pol.PolicyIr,
+			PolicyAncestorRef: gatewayPolicyAncestorRef(gw),
+		}, out)
+		return nil
+	})
 }
 
 // runPostListenerPlugins is called after a listener's FilterChains are built so that
@@ -272,28 +260,26 @@ func (t *Translator) runPostListenerPlugins(
 	for _, chain := range chains {
 		var attachedPolicies ir.AttachedPolicies
 		attachedPolicies.Append(chain.attachedPolicies, l.AttachedPolicies, gw.AttachedHttpPolicies)
-		for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-			pols := attachedPolicies.Policies[gk]
-			pass := pass[gk]
-			if pass == nil {
-				continue
-			}
-			policies, _ := mergePolicies(pass, pols)
-			for _, pol := range policies {
-				pctx := &ir.ListenerContext{
-					Port:            l.BindPort,
-					Policy:          pol.PolicyIr,
-					FilterChainName: chain.name,
-					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
-						Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
-						Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
-						Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
-					},
-				}
-				pass.ApplyPostListener(pctx, out)
-			}
-		}
+		applyPolicies(pass, &attachedPolicies, &policyApplyOptions{}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+			pass.ApplyPostListener(&ir.ListenerContext{
+				Port:              l.BindPort,
+				Policy:            pol.PolicyIr,
+				FilterChainName:   chain.name,
+				PolicyAncestorRef: gatewayPolicyAncestorRef(gw),
+			}, out)
+			return nil
+		})
+	}
+}
+
+// gatewayPolicyAncestorRef refers to the Gateway itself, as the ancestor a listener-level
+// policy reports against.
+func gatewayPolicyAncestorRef(gw ir.GatewayIR) gwv1.ParentReference {
+	return gwv1.ParentReference{
+		Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+		Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+		Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+		Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
 	}
 }
 
