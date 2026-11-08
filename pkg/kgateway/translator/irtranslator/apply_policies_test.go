@@ -129,20 +129,6 @@ func TestApplyPoliciesReportsStatusAndMergeOrigins(t *testing.T) {
 	}
 }
 
-func TestApplyPoliciesAcceptanceOnly(t *testing.T) {
-	passes := TranslationPassPlugins{applyTestGK: &TranslationPass{}}
-	rm := reports.NewReportMap()
-	applyPolicies(passes, applyTestAttached(applyTestPolicy("a")), &policyApplyOptions{
-		reporter:       reports.NewReporter(&rm),
-		ancestorRef:    applyTestAncestor,
-		acceptanceOnly: true,
-	}, func(*TranslationPass, *ir.PolicyAtt) error { return nil })
-	report := applyTestAncestorReport(rm, "a")
-	require.NotNil(t, report)
-	assert.NotNil(t, meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted)))
-	assert.Equal(t, reporter.PolicyAttachmentStatePending, report.AttachmentState, "acceptanceOnly reports no attachment state")
-}
-
 func TestApplyPoliciesSelectPolicies(t *testing.T) {
 	passes := TranslationPassPlugins{applyTestGK: &TranslationPass{}}
 	rm := reports.NewReportMap()
@@ -162,4 +148,45 @@ func TestApplyPoliciesSelectPolicies(t *testing.T) {
 	applyPolicies(passes, applyTestAttached(applyTestPolicy("a")), opts, appliedNames(t, &applied))
 	assert.Equal(t, []string{"a", "extra"}, applied, "the selected policies replace the attached ones")
 	assert.Nil(t, applyTestAncestorReport(rm, "a"), "the selector can turn status reporting off")
+}
+
+type routeBackendPassFunc struct {
+	ir.UnimplementedProxyTranslationPass
+	err error
+}
+
+func (p routeBackendPassFunc) ApplyForRouteBackend(ir.PolicyIR, *ir.RouteBackendContext) error {
+	return p.err
+}
+
+// A policy on a backendRef filter is attached like one on a rule, unless its plugin says it
+// cannot attach to a backendRef.
+func TestRunBackendPoliciesReportsAttachment(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		err   error
+		state reporter.PolicyAttachmentState
+	}{
+		{name: "attached", state: reporter.PolicyAttachmentStateAttached},
+		{name: "not attachable", err: ir.ErrNotAttachable, state: reporter.PolicyAttachmentStatePending},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := testHTTPRouteTranslator(nil, "")
+			rm := reports.NewReportMap()
+			h.reporter = reports.NewReporter(&rm)
+			h.pluginPass[applyTestGK] = &TranslationPass{ProxyTranslationPass: routeBackendPassFunc{err: tc.err}}
+			backend := ir.HttpBackend{AttachedPolicies: *applyTestAttached(applyTestPolicy("a"))}
+
+			err := h.runBackendPolicies(backend, applyTestAncestor, &ir.RouteBackendContext{})
+			if tc.err != nil {
+				require.ErrorIs(t, err, tc.err)
+			} else {
+				require.NoError(t, err)
+			}
+			report := applyTestAncestorReport(rm, "a")
+			require.NotNil(t, report, "a backendRef policy must be reported")
+			assert.NotNil(t, meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted)))
+			assert.Equal(t, tc.state, report.AttachmentState)
+		})
+	}
 }

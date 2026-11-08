@@ -896,9 +896,8 @@ func routeAncestorRef(in ir.HttpRouteRuleMatchIR, fallbackRef gwv1.ParentReferen
 
 func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, ancestorRef gwv1.ParentReference, pCtx *ir.RouteBackendContext) error {
 	errs := applyPolicies(h.pluginPass, &in.AttachedPolicies, &policyApplyOptions{
-		reporter:       h.reporter,
-		ancestorRef:    ancestorRef,
-		acceptanceOnly: true,
+		reporter:    h.reporter,
+		ancestorRef: ancestorRef,
 	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
 		// Policy on extension ref
 		return pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)

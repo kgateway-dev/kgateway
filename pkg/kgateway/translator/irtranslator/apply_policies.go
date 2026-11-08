@@ -1,6 +1,8 @@
 package irtranslator
 
 import (
+	"errors"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -17,8 +19,6 @@ type policyApplyOptions struct {
 	// attachment state. A nil reporter reports nothing.
 	reporter    reporter.Reporter
 	ancestorRef gwv1.ParentReference
-	// acceptanceOnly reports the Accepted condition but no attachment state.
-	acceptanceOnly bool
 	// skipErrored leaves policies that carry errors unapplied and returns their wrapped
 	// errors instead. Scopes with a fail-closed replacement (route configuration, virtual
 	// host, route) set it; the others apply what the policy could still build.
@@ -37,8 +37,9 @@ type policyApplyOptions struct {
 // applyPolicies drives the translation passes over the policies attached at one point of
 // the config tree. For each group kind, in apply order, that has a translation pass, it
 // reports the policies' Accepted condition, merges them, calls apply with each effective
-// policy, records the merge origins and reports the attachment state. It returns the errors
-// apply returned and, with skipErrored, those of the policies it skipped, in order.
+// policy, records the merge origins and reports the attachment state, unless apply returned
+// ir.ErrNotAttachable. It returns the errors apply returned and, with skipErrored, those of
+// the policies it skipped, in order.
 func applyPolicies(
 	passes TranslationPassPlugins,
 	attached *ir.AttachedPolicies,
@@ -67,6 +68,7 @@ func applyPolicies(
 			}
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
+		attachable := true
 		for i := range policies {
 			pol := &policies[i]
 			if opts.skipErrored && len(pol.Errors) > 0 {
@@ -75,12 +77,16 @@ func applyPolicies(
 			}
 			if err := apply(pass, pol); err != nil {
 				errs = append(errs, err)
+				if errors.Is(err, ir.ErrNotAttachable) {
+					attachable = false
+				}
 			}
 		}
 		if opts.metadata != nil {
 			*opts.metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, *opts.metadata)
 		}
-		if report && !opts.acceptanceOnly {
+		// A policy its plugin cannot attach here stays pending.
+		if report && attachable {
 			reportPolicyAttachmentStatus(opts.reporter, opts.ancestorRef, mergeOrigins, pols...)
 		}
 	}
