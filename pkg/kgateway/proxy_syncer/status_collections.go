@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"fmt"
+	"slices"
 
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
@@ -18,35 +19,23 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-// initStatusInfra reduces keyed translation contributions per status owner and
-// registers both raw-object and reduced-report reconciliation sources. Desired
-// Kubernetes status is still built just in time by the leader's writer.
-func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
-	s.statusCollections = statussync.NewStatusCollections()
-	s.statusWriters = map[schema.GroupVersionKind]statussync.ResourceStatusSyncer{}
+// initStatusInfra registers every status kind with the status pipeline: the built-in Gateway
+// API and Backend kinds, the policy plugins' kinds, then the downstream registrations. Each
+// gets a per-owner reduction of translation's status contributions, raw-object and reduced-
+// report reconciliation sources, and a writer. Desired Kubernetes status is still built just in
+// time by the leader's writer.
+func (s *ProxySyncer) initStatusInfra(contributions krt.Collection[reports.StatusContribution], krtopts krtutil.KrtOptions) {
+	s.status.init(s.controllerName, contributions, krtopts)
+	in := s.status.in
 	cl := s.apiClient
 	f := kclient.Filter{ObjectFilter: cl.ObjectFilter()}
 	controllerName := s.controllerName
-	s.statusContributionsByTarget = krtpkg.UnnamedIndex(s.statusContributions, func(contribution reports.StatusContribution) []reports.StatusKey {
-		return []reports.StatusKey{contribution.Target}
-	})
-	in := statussync.RegistrationInputs{
-		Collections:           s.statusCollections,
-		StatusContributions:   s.statusContributions,
-		ContributionsByTarget: s.statusContributionsByTarget,
-		KrtOpts:               krtopts,
-		ControllerName:        controllerName,
-		RegisterWriter: func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
-			registerStatusWriter(s.statusWriters, gvk, syncer)
-		},
-	}
 
 	// Gateway
 	gatewayReports := statussync.Register(in, wellknown.GatewayGVK, s.commonCols.RawGateways)
-	registerStatusWriter(s.statusWriters, wellknown.GatewayGVK, gatewayWriter(cl, f, s.commonCols.RawGateways, gatewayReports))
+	in.RegisterWriter(wellknown.GatewayGVK, gatewayWriter(cl, f, s.commonCols.RawGateways, gatewayReports))
 
 	httpRouteReports := statussync.Register(in, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes)
 	grpcRouteReports := statussync.Register(in, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes)
@@ -57,14 +46,14 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	tcpRouteReports := statussync.RegisterByObjectGVK(in, wellknown.TCPRouteGVK, s.commonCols.RawTCPRoutes)
 	tlsRouteReports := statussync.RegisterByObjectGVK(in, wellknown.TLSRouteGVK, s.commonCols.RawTLSRoutes)
 
-	registerStatusWriter(s.statusWriters, wellknown.HTTPRouteGVK,
+	in.RegisterWriter(wellknown.HTTPRouteGVK,
 		routeWriter(cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, controllerName,
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 			},
 			func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		))
-	registerStatusWriter(s.statusWriters, wellknown.GRPCRouteGVK,
+	in.RegisterWriter(wellknown.GRPCRouteGVK,
 		routeWriter(cl, f, s.commonCols.RawGRPCRoutes, grpcRouteReports, wellknown.GRPCRouteGVK, wellknown.GRPCRouteGVR, controllerName,
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.GRPCRoute {
 				return &gwv1.GRPCRoute{ObjectMeta: om, Status: gwv1.GRPCRouteStatus{RouteStatus: st}}
@@ -81,7 +70,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	for _, gvr := range s.commonCols.TCPRouteWriteVersions() {
 		switch gvr {
 		case wellknown.TCPRouteV1GVR:
-			registerStatusWriter(s.statusWriters, wellknown.TCPRouteV1GVK,
+			in.RegisterWriter(wellknown.TCPRouteV1GVK,
 				routeWriter(cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteV1GVK, gvr, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
 						return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
@@ -89,7 +78,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					tcpStatus,
 				))
 		default:
-			registerStatusWriter(s.statusWriters, wellknown.TCPRouteGVK,
+			in.RegisterWriter(wellknown.TCPRouteGVK,
 				routeWriter(cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteGVK, gvr, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
 						return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
@@ -103,7 +92,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	for _, gvr := range s.commonCols.TLSRouteWriteVersions() {
 		switch gvr {
 		case wellknown.TLSRouteV1GVR:
-			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1GVK,
+			in.RegisterWriter(wellknown.TLSRouteV1GVK,
 				routeWriter[*gwv1a2.TLSRoute, *gwv1.TLSRoute](cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1GVK, gvr, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
 						return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
@@ -111,7 +100,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					tlsStatus,
 				))
 		case wellknown.TLSRouteV1Alpha3GVR:
-			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1Alpha3GVK,
+			in.RegisterWriter(wellknown.TLSRouteV1Alpha3GVK,
 				routeWriter(cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1Alpha3GVK, gvr, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
 						return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
@@ -119,7 +108,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					tlsStatus,
 				))
 		default:
-			registerStatusWriter(s.statusWriters, wellknown.TLSRouteGVK,
+			in.RegisterWriter(wellknown.TLSRouteGVK,
 				routeWriter(cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteGVK, gvr, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
 						return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
@@ -134,11 +123,11 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	// own writer. The map dispatches on the enqueued GVK, which is the object's, so a promoted
 	// ListenerSet can never reach the legacy writer or vice versa.
 	listenerSetReports := statussync.RegisterByObjectGVK(in, wellknown.ListenerSetGVK, s.commonCols.RawListenerSets)
-	registerStatusWriter(s.statusWriters, wellknown.ListenerSetGVK,
+	in.RegisterWriter(wellknown.ListenerSetGVK,
 		listenerSetWriter(cl, f, s.commonCols.RawListenerSets, listenerSetReports))
 	// ON_EXPERIMENTAL_PROMOTION : Remove this registration together with xlistenerset_status.go.
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
-	registerStatusWriter(s.statusWriters, wellknown.XListenerSetGVK,
+	in.RegisterWriter(wellknown.XListenerSetGVK,
 		xListenerSetWriter(cl, s.commonCols.RawListenerSets, listenerSetReports))
 
 	backendPlugin, hasBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
@@ -152,7 +141,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 		logger.Error("backend plugin is missing RawBackends; Backend status reconciliation is disabled",
 			"group_kind", wellknown.BackendGVK.GroupKind().String())
 	}
-	registerStatusWriter(s.statusWriters, wellknown.BackendGVK, statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
+	in.RegisterWriter(wellknown.BackendGVK, statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
 		Name:    "backend",
 		Current: statussync.CollectionSource(backendPlugin.RawBackends),
 		Desired: func(res statussync.Resource, be *kgateway.Backend) (kgateway.BackendStatus, bool) {
@@ -179,34 +168,14 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 			plugin.RegisterPolicyStatus(in)
 		}
 	}
+	s.status.registerDownstream()
 
-	// The single entry covering every report reducer, here and in any plugin or downstream
-	// registration that runs later: statussync.RegisterResourceReports is what enrolls them,
-	// and HasSynced re-reads that set on each call. StatusSyncer inherits this through
-	// CacheSyncs, so it must not be added there too.
-	s.waitForSync = append(s.waitForSync, s.statusCollections.HasSynced)
-}
-
-// registerStatusWriter records the writer for a GVK. Exactly one writer may own a GVK:
-// a second registration means two plugins both claim to persist that resource's status,
-// and whichever registered last would silently win. Keep the first and report the conflict
-// rather than letting registration order decide who writes status.
-//
-// Every registration goes through here, including the built-in kinds above. A guard that
-// half the entries bypass is worse than no guard: the built-in kinds are exactly the ones a
-// plugin is most likely to collide with, and assigning into the map directly is what made
-// that collision silent.
-func registerStatusWriter(
-	writers map[schema.GroupVersionKind]statussync.ResourceStatusSyncer,
-	gvk schema.GroupVersionKind,
-	syncer statussync.ResourceStatusSyncer,
-) {
-	if _, exists := writers[gvk]; exists {
-		logger.Error("status writer already registered for resource type; ignoring duplicate registration",
-			"gvk", gvk.String())
-		return
-	}
-	writers[gvk] = syncer
+	// The single entry covering every report reducer registered above:
+	// statussync.RegisterResourceReports is what enrolls them, and HasSynced re-reads that
+	// set on each call. The StatusSyncer waits on the same barrier, cloned, so it must not be
+	// added there too.
+	s.waitForSync = append(s.waitForSync, in.Collections.HasSynced)
+	s.status.cacheSyncs = slices.Clone(s.waitForSync)
 }
 
 // gatewayWriter constructs the Gateway status writer, wiring the deployer-owned address
