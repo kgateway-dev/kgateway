@@ -57,8 +57,8 @@ func TestHTTPRouteMirrorReferenceGrantAddedLater(t *testing.T) {
 
 	mock := krttest.NewMock(t, []any{route, svc})
 	services := krttest.GetMockCollection[*corev1.Service](mock)
-	grants := krt.NewStaticCollection[*gwv1b1.ReferenceGrant](nil, nil)
-	refgrants := krtcollections.NewRefGrantIndex(grants, apisettings.ReferenceGrantPermissive)
+	grants := krt.NewMutableCollection[*gwv1b1.ReferenceGrant](nil, nil)
+	refgrants := krtcollections.NewRefGrantIndex(grants.AsCollection(), apisettings.ReferenceGrantPermissive)
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
 	backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	backends.AddBackends(schema.GroupKind{Group: "", Kind: "Service"}, k8sSvcUpstreams(services))
