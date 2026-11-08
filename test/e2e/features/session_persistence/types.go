@@ -13,6 +13,7 @@ var (
 	cookieSessionPersistenceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cookie-session-persistence.yaml")
 	headerSessionPersistenceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "header-session-persistence.yaml")
 	echoServiceManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "echo-service.yaml")
+	gatewayManifest                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
 
 	bcpCookieSessionPersistenceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-cookie-session-persistence.yaml")
 	bcpHeaderSessionPersistenceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-header-session-persistence.yaml")
