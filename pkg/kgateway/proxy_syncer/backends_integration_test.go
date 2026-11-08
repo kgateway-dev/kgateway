@@ -55,17 +55,21 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			overlayGK: {
-				// Self-gating overlay: only clients labeled match=yes get a
-				// mutation; everyone else takes the fast path (nil => share base).
-				PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					if ucc.Labels["match"] != "yes" {
-						return nil
-					}
-					return &sdk.ClusterOverlay{
-						Mutate: func(out *envoyclusterv3.Cluster) {
-							out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						// Self-gating overlay: only clients labeled match=yes get a
+						// mutation; everyone else takes the fast path (nil => share base).
+						Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+							if ucc.Labels["match"] != "yes" {
+								return nil
+							}
+							return &sdk.ClusterOverlay{
+								Mutate: func(out *envoyclusterv3.Cluster) {
+									out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+								},
+							}
 						},
-					}
+					},
 				},
 			},
 		},
@@ -145,15 +149,19 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *tes
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			overlayGK: {
-				PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					if in.Obj.GetLabels()[overlayLabel] != "true" {
-						return nil
-					}
-					return &sdk.ClusterOverlay{
-						Mutate: func(out *envoyclusterv3.Cluster) {
-							out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+							if in.Obj.GetLabels()[overlayLabel] != "true" {
+								return nil
+							}
+							return &sdk.ClusterOverlay{
+								Mutate: func(out *envoyclusterv3.Cluster) {
+									out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+								},
+							}
 						},
-					}
+					},
 				},
 			},
 		},
@@ -311,12 +319,16 @@ func TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration(t *test
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			overlayGK: {
-				// Always applies, so every client materializes a cluster and
-				// strict validation runs on it.
-				PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						// Always applies, so every client materializes a cluster and
+						// strict validation runs on it.
+						Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							}}
+						},
+					},
 				},
 			},
 		},
@@ -464,21 +476,25 @@ func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *te
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					overlayRuns.Add(1)
-					if in.Obj.GetLabels()["overlay"] != "true" {
-						return nil
-					}
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
-					}}
-				},
-				// The one label the overlay branches on, and nothing else. This
-				// declaration is what makes the two assertions below both hold:
-				// the resourceVersion-only write is invisible to it, the label
-				// write moves it.
-				OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-					return utils.HashString(in.Obj.GetLabels()["overlay"])
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+							overlayRuns.Add(1)
+							if in.Obj.GetLabels()["overlay"] != "true" {
+								return nil
+							}
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							}}
+						},
+						// The one label the overlay branches on, and nothing else. This
+						// declaration is what makes the two assertions below both hold:
+						// the resourceVersion-only write is invisible to it, the label
+						// write moves it.
+						InputsHash: func(in ir.BackendObjectIR) uint64 {
+							return utils.HashString(in.Obj.GetLabels()["overlay"])
+						},
+					},
 				},
 			},
 		},
@@ -549,14 +565,18 @@ func TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient(t *testing
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			// No OverlayInputsHash: the case this test exists for.
 			{Group: "test", Kind: "Undeclared"}: {
-				PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					overlayRuns.Add(1)
-					if in.Obj.GetLabels()["overlay"] != "true" {
-						return nil
-					}
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+							overlayRuns.Add(1)
+							if in.Obj.GetLabels()["overlay"] != "true" {
+								return nil
+							}
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							}}
+						},
+					},
 				},
 			},
 		},
@@ -591,8 +611,9 @@ func TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient(t *testing
 func TestUndeclaredOverlayObservesNilObjectBackendUpdates(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "synthetic"}, 80, "", "")
 	backend.CanonicalHostname = "before"
-	plugin := sdk.PolicyPlugin{
-		PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+	plugin := sdk.PolicyPlugin{}
+	plugin.BackendHooks.PerClientCluster = &sdk.PerClientCluster{
+		Overlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 			return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) { out.AltStatName = in.CanonicalHostname }}
 		},
 	}

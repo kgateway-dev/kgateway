@@ -99,21 +99,25 @@ func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validato
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "bench", Kind: "Rule"}: {
-				PerClientClusterOverlay: func(kctx krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					// Cheap client gate first, as the real overlays do.
-					if ucc.Labels["tier"] != "overlay" {
-						return nil
-					}
-					rule := krt.FetchOne(kctx, rules, krt.FilterKey(in.GetName()))
-					if rule == nil {
-						return nil
-					}
-					generation := rule.Generation
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{
-							Interval: durationpb.New(time.Duration(generation) * time.Second),
-						}
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(kctx krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+							// Cheap client gate first, as the real overlays do.
+							if ucc.Labels["tier"] != "overlay" {
+								return nil
+							}
+							rule := krt.FetchOne(kctx, rules, krt.FilterKey(in.GetName()))
+							if rule == nil {
+								return nil
+							}
+							generation := rule.Generation
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{
+									Interval: durationpb.New(time.Duration(generation) * time.Second),
+								}
+							}}
+						},
+					},
 				},
 			},
 		},

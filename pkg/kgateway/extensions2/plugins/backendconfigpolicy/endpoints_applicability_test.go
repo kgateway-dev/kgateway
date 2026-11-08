@@ -13,16 +13,20 @@ import (
 
 // TestEndpointsMayApplyCoversProcessEndpoints checks that processEndpoints
 // contributes nothing, for any client, to a backend the plugin's
-// PerClientEndpointsMayApply rules out. The framework skips the hook for such
+// PerClientEndpoints.MayApply rules out. The framework skips the hook for such
 // backends, so a predicate that rules out too much drops zone-aware endpoints
 // silently. See overlaytest.AssertMayApplyCoversEndpointHook.
 func TestEndpointsMayApplyCoversProcessEndpoints(t *testing.T) {
 	groupKind := wellknown.BackendConfigPolicyGVK.GroupKind()
 	endpointPlugin := &backendConfigEndpointPlugin{}
 	plugin := sdk.PolicyPlugin{
-		Name:                       "BackendConfigPolicy",
-		PerClientEditEndpoints:     endpointPlugin.processEndpoints,
-		PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(groupKind),
+		Name: "BackendConfigPolicy",
+		BackendHooks: sdk.BackendHooks{
+			PerClientEndpoints: &sdk.PerClientEndpoints{
+				Edit:     endpointPlugin.processEndpoints,
+				MayApply: sdk.AttachedPolicyEndpointsMayApply(groupKind),
+			},
+		},
 	}
 
 	backend := func(name string, attached map[schema.GroupKind][]ir.PolicyAtt) ir.BackendObjectIR {

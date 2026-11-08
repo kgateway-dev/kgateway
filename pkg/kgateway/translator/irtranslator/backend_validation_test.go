@@ -158,11 +158,15 @@ func memoTestTranslator(v validator.Validator, memo *validator.Memo) *BackendTra
 	tr.ValidationMemo = memo
 	tr.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test", Kind: "Overlay"}: {
-			PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
-				variant := ucc.Labels["variant"]
-				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-					out.AltStatName = "overlaid" + variant
-				}}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
+						variant := ucc.Labels["variant"]
+						return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+							out.AltStatName = "overlaid" + variant
+						}}
+					},
+				},
 			},
 		},
 	}
@@ -253,11 +257,13 @@ func TestStrictListenerValidationIsAttributedAndMemoized(t *testing.T) {
 	policy := &ir.AttachedPolicyRef{Group: "test.example.io", Kind: "Tunnel", Namespace: "default", Name: "tunnel"}
 	tr.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test.example.io", Kind: "Tunnel"}: {
-			ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
-				return sdk.BaseClusterResources{
-					Listeners: []*envoylistenerv3.Listener{{Name: "generated_" + out.GetName()}},
-					Policy:    policy,
-				}, nil
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+					return sdk.BaseClusterResources{
+						Listeners: []*envoylistenerv3.Listener{{Name: "generated_" + out.GetName()}},
+						Policy:    policy,
+					}, nil
+				},
 			},
 		},
 	}

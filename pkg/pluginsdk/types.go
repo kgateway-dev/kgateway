@@ -78,8 +78,10 @@ type ClusterOverlay struct {
 // redirect cannot use the backend endpoints' locality weights.
 //
 // Fetches through kctx register KRT dependencies. All fields read from in must
-// be covered by the accompanying OverlayInputsHash; otherwise KRT can retain
-// a base row whose backend inputs are stale.
+// be covered by the accompanying PerClientCluster.InputsHash; otherwise KRT can
+// retain a base row whose backend inputs are stale.
+//
+// Register it as BackendHooks.PerClientCluster.Overlay.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -94,10 +96,11 @@ type PerClientClusterOverlay func(
 // Inputs fetched through krt.Fetch are tracked separately. Extra hash inputs
 // are safe but cause unnecessary client recomputation.
 //
-// Register it beside PerClientClusterOverlay. An overlay without this
-// declaration falls back to comparing backend IR and backing-object version,
-// rerunning clients on every object write. Overlays may apply globally, so the
-// framework cannot infer their applicability from policy attachments.
+// Register it as PerClientCluster.InputsHash, beside the hook it describes. Hooks
+// without this declaration fall back to comparing backend IR and backing-object
+// version, rerunning clients on every object write. Hooks may apply globally,
+// so the framework cannot infer their applicability from policy attachments.
+// Declaring inputs avoids that fanout without migrating the mutation hook.
 // Use pkg/pluginsdk/overlaytest to check the declaration against the hook.
 type OverlayInputsHash func(in ir.BackendObjectIR) uint64
 
@@ -257,7 +260,7 @@ type ClaimEmittedClusters func() ClusterEmissionClaim
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
-// AttachedPolicyEndpointsMayApply is a PerClientEndpointsMayApply for plugins
+// AttachedPolicyEndpointsMayApply is a PerClientEndpoints.MayApply for plugins
 // whose endpoint hook reads only policies of gk attached to the backend (via
 // EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
 // to act on for any client.
@@ -271,32 +274,8 @@ type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
-	// Backend processing for envoy proxy
-	ProcessBackend ProcessBackend
-	// ProcessBaseCluster runs for every backend after all ProcessBackend
-	// hooks; see ProcessBaseCluster.
-	ProcessBaseCluster          ProcessBaseCluster
-	ProcessBaseClusterResources ProcessBaseClusterResources
-	PerClientClusterOverlay     PerClientClusterOverlay
-	// OverlayInputsHash declares the backend fields the per-client overlay
-	// reads. Required for efficient change detection; absent a declaration,
-	// consumers compare backend IR and backing-object version.
-	OverlayInputsHash OverlayInputsHash
-	// ClaimEmittedClusters declares destinations the configuration never names;
-	// only plugins that pick a destination at request time need it. See
-	// ClusterEmissionClaim.
-	ClaimEmittedClusters   ClaimEmittedClusters
-	PerClientEditEndpoints EndpointEditorPlugin
-	// PerClientEndpointsMayApply reports whether the endpoint hook can contribute
-	// to this backend for any client. False skips the hook: it must return zero
-	// and leave inputs unchanged for every client. Nil assumes it may apply.
-	//
-	// If all hooks rule the backend out and prioritization is client-independent,
-	// the framework builds its inline CLA on the shared base. Hooks that only
-	// read their own attached policies can use AttachedPolicyEndpointsMayApply.
-	// Fetch through the supplied base-translation HandlerContext to register
-	// dependencies that invalidate this decision.
-	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
+	// BackendHooks are the plugin's backend, cluster and endpoint hooks.
+	BackendHooks BackendHooks
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR

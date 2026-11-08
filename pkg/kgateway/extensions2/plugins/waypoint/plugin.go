@@ -51,9 +51,11 @@ func NewPlugin(commonCols *collections.CommonCollections) sdk.Plugin {
 // overlay against the inputs hash registered beside it, so both come from here.
 func (t *PerClientProcessor) policyPlugin() sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
-		Name:                    "waypoint",
-		PerClientClusterOverlay: t.clusterOverlay,
-		OverlayInputsHash:       t.overlayInputsHash,
+		Name: "waypoint",
+		BackendHooks: sdk.BackendHooks{PerClientCluster: &sdk.PerClientCluster{
+			Overlay:    t.clusterOverlay,
+			InputsHash: t.overlayInputsHash,
+		}},
 	}
 }
 

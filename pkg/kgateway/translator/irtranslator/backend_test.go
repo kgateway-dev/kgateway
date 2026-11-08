@@ -200,12 +200,16 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}: {
 			Name: "BackendConfigPolicy",
-			ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+				},
 			},
 		},
 		{Group: "gateway-api", Kind: "BackendTLSPolicy"}: {
 			Name: "BackendTLSPolicy",
-			ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+				},
 			},
 		},
 	}
@@ -313,20 +317,22 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificate(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "gateway-api", Kind: "BackendTLSPolicy"}: {
-			ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-				typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
-					Sni: "backend.example.com",
-					CommonTlsContext: &envoytlsv3.CommonTlsContext{
-						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
-					},
-				})
-				require.NoError(t, err)
-				out.TransportSocket = &envoycorev3.TransportSocket{
-					Name: envoywellknown.TransportSocketTls,
-					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-						TypedConfig: typedConfig,
-					},
-				}
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+					typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+						Sni: "backend.example.com",
+						CommonTlsContext: &envoytlsv3.CommonTlsContext{
+							ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
+						},
+					})
+					require.NoError(t, err)
+					out.TransportSocket = &envoycorev3.TransportSocket{
+						Name: envoywellknown.TransportSocketTls,
+						ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+							TypedConfig: typedConfig,
+						},
+					}
+				},
 			},
 		},
 	}
@@ -411,41 +417,43 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificateToTransportSocke
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "istio.io", Kind: "Settings"}: {
-			ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-				tlsTypedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
-					Sni: "backend.example.com",
-					CommonTlsContext: &envoytlsv3.CommonTlsContext{
-						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
-						TlsCertificateSdsSecretConfigs: []*envoytlsv3.SdsSecretConfig{
-							{Name: "existing-sds-secret"},
-						},
-					},
-				})
-				require.NoError(t, err)
-
-				rawBufferTypedConfig, err := utils.MessageToAny(&sockets_raw_buffer.RawBuffer{})
-				require.NoError(t, err)
-
-				out.TransportSocketMatches = []*envoyclusterv3.Cluster_TransportSocketMatch{
-					{
-						Name: "tls-mode-istio",
-						TransportSocket: &envoycorev3.TransportSocket{
-							Name: envoywellknown.TransportSocketTls,
-							ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-								TypedConfig: tlsTypedConfig,
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+					tlsTypedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+						Sni: "backend.example.com",
+						CommonTlsContext: &envoytlsv3.CommonTlsContext{
+							ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{},
+							TlsCertificateSdsSecretConfigs: []*envoytlsv3.SdsSecretConfig{
+								{Name: "existing-sds-secret"},
 							},
 						},
-					},
-					{
-						Name: "tls-mode-disabled",
-						TransportSocket: &envoycorev3.TransportSocket{
-							Name: envoywellknown.TransportSocketRawBuffer,
-							ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-								TypedConfig: rawBufferTypedConfig,
+					})
+					require.NoError(t, err)
+
+					rawBufferTypedConfig, err := utils.MessageToAny(&sockets_raw_buffer.RawBuffer{})
+					require.NoError(t, err)
+
+					out.TransportSocketMatches = []*envoyclusterv3.Cluster_TransportSocketMatch{
+						{
+							Name: "tls-mode-istio",
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketTls,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: tlsTypedConfig,
+								},
 							},
 						},
-					},
-				}
+						{
+							Name: "tls-mode-disabled",
+							TransportSocket: &envoycorev3.TransportSocket{
+								Name: envoywellknown.TransportSocketRawBuffer,
+								ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+									TypedConfig: rawBufferTypedConfig,
+								},
+							},
+						},
+					}
+				},
 			},
 		},
 	}
@@ -527,12 +535,16 @@ func TestApplyPerClient_StrictModeRejectsInvalidOverlay(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							},
+						}
 					},
-				}
+				},
 			},
 		},
 	}
@@ -598,12 +610,16 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							},
+						}
 					},
-				}
+				},
 			},
 		},
 	}

@@ -183,15 +183,19 @@ func TestIngressUseWaypointClusterInputsHash_CoversApply(t *testing.T) {
 	overlaytest.AssertInputsHashCoversOverlay(t, overlaytest.Case{
 		Plugin: sdk.PolicyPlugin{
 			Name: "apply-only",
-			PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-					ApplyIngressUseWaypointCluster(in, out, settings)
-				}}
-			},
-			OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-				hasher := fnv.New64a()
-				IngressUseWaypointClusterInputsHash(hasher, in)
-				return hasher.Sum64()
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+							ApplyIngressUseWaypointCluster(in, out, settings)
+						}}
+					},
+					InputsHash: func(in ir.BackendObjectIR) uint64 {
+						hasher := fnv.New64a()
+						IngressUseWaypointClusterInputsHash(hasher, in)
+						return hasher.Sum64()
+					},
+				},
 			},
 		},
 		Backend: backend,

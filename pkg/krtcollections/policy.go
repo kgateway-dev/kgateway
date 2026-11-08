@@ -887,7 +887,7 @@ func NewPolicyIndex(
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
 			policies := plugin.Policies
-			forBackends := plugin.ProcessBackend != nil
+			forBackends := plugin.BackendHooks.ProcessBackend != nil
 			policiesByTargetRef := krt.NewCollection(policies, func(kctx krt.HandlerContext, a ir.PolicyWrapper) *ir.PolicyWrapper {
 				if len(a.TargetRefs) == 0 {
 					return nil

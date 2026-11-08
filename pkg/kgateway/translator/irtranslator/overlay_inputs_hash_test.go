@@ -57,10 +57,14 @@ func TestOverlayInputsHash_ZeroWithoutAnyPerClientHook(t *testing.T) {
 func TestOverlayInputsHash_MovesOnlyForDeclaredInputs(t *testing.T) {
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test", Kind: "Declared"}: {
-			Name:                    "declared",
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-				return utils.HashString(in.CanonicalHostname)
+			Name: "declared",
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: noopOverlay,
+					InputsHash: func(in ir.BackendObjectIR) uint64 {
+						return utils.HashString(in.CanonicalHostname)
+					},
+				},
 			},
 		},
 	})
@@ -83,8 +87,12 @@ func TestOverlayInputsHash_MovesOnlyForDeclaredInputs(t *testing.T) {
 func TestOverlayInputsHash_UndeclaredOverlayFallsBackToWholeObject(t *testing.T) {
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test", Kind: "Undeclared"}: {
-			Name:                    "undeclared",
-			PerClientClusterOverlay: noopOverlay,
+			Name: "undeclared",
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: noopOverlay,
+				},
+			},
 		},
 	})
 	backend := hashBackend()
@@ -102,8 +110,12 @@ func TestOverlayInputsHash_MixesPluginIdentity(t *testing.T) {
 	second := schema.GroupKind{Group: "test", Kind: "Second"}
 	declaring := func(value uint64) sdk.PolicyPlugin {
 		return sdk.PolicyPlugin{
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash:       func(ir.BackendObjectIR) uint64 { return value },
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay:    noopOverlay,
+					InputsHash: func(ir.BackendObjectIR) uint64 { return value },
+				},
+			},
 		}
 	}
 	backend := hashBackend()
@@ -126,8 +138,12 @@ func TestOverlayInputsHash_IsStableAcrossCalls(t *testing.T) {
 	policies := map[schema.GroupKind]sdk.PolicyPlugin{}
 	for _, kind := range []string{"A", "B", "C", "D", "E", "F", "G", "H"} {
 		policies[schema.GroupKind{Group: "test", Kind: kind}] = sdk.PolicyPlugin{
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash:       func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.CanonicalHostname) },
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay:    noopOverlay,
+					InputsHash: func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.CanonicalHostname) },
+				},
+			},
 		}
 	}
 	backend := hashBackend()

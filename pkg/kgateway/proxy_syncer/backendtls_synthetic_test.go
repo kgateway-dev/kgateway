@@ -99,9 +99,11 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {
 				Name:     "BackendTLSPolicy",
 				Policies: policyCol,
-				ProcessBackend: func(ctx context.Context, pol ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-					tlsPolicy := pol.(backendTLSTestPolicyIR)
-					out.TransportSocket = &envoycorev3.TransportSocket{Name: tlsPolicy.transportSNI}
+				BackendHooks: sdk.BackendHooks{
+					ProcessBackend: func(ctx context.Context, pol ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+						tlsPolicy := pol.(backendTLSTestPolicyIR)
+						out.TransportSocket = &envoycorev3.TransportSocket{Name: tlsPolicy.transportSNI}
+					},
 				},
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return pols[0]
@@ -224,9 +226,11 @@ func policiesIndexPlugins(policyCol krt.Collection[ir.PolicyWrapper]) map[schema
 	return map[schema.GroupKind]sdk.PolicyPlugin{
 		wellknown.BackendTLSPolicyGVK.GroupKind(): {
 			Name: "BackendTLSPolicy",
-			ProcessBackend: func(ctx context.Context, pol ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-				tlsPolicy := pol.(backendTLSTestPolicyIR)
-				out.TransportSocket = &envoycorev3.TransportSocket{Name: tlsPolicy.transportSNI}
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(ctx context.Context, pol ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+					tlsPolicy := pol.(backendTLSTestPolicyIR)
+					out.TransportSocket = &envoycorev3.TransportSocket{Name: tlsPolicy.transportSNI}
+				},
 			},
 			MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 				return pols[0]

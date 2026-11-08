@@ -16,12 +16,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// EndpointsCase is one plugin's PerClientEndpointsMayApply checked against the
+// EndpointsCase is one plugin's PerClientEndpoints.MayApply checked against the
 // endpoint hook it gates.
 type EndpointsCase struct {
-	// Plugin is the registration under test. PerClientEndpointsMayApply must be
-	// set, along with PerClientEditEndpoints; checking a predicate without the
-	// hook it gates is meaningless and fails.
+	// Plugin is the registration under test. Its PerClientEndpoints must set
+	// MayApply along with Edit; checking a predicate
+	// without the hook it gates is meaningless and fails.
 	Plugin sdk.PolicyPlugin
 	// Backends are the fixtures checked. At least one must be ruled out by the
 	// predicate, because a backend it admits proves nothing, and at least one
@@ -57,13 +57,15 @@ type EndpointsCase struct {
 // review.
 func AssertMayApplyCoversEndpointHook(t testing.TB, c EndpointsCase) {
 	t.Helper()
-	if c.Plugin.PerClientEndpointsMayApply == nil {
-		t.Fatalf("overlaytest: plugin %q registers no PerClientEndpointsMayApply", c.Plugin.Name)
+	registered := c.Plugin.BackendHooks.PerClientEndpoints
+	if registered == nil || registered.Edit == nil {
+		t.Fatalf("overlaytest: plugin %q registers no PerClientEndpoints hook for a predicate to gate", c.Plugin.Name)
 	}
-	hook := endpointHook(c.Plugin)
-	if hook == nil {
-		t.Fatalf("overlaytest: plugin %q registers PerClientEndpointsMayApply without an endpoint hook for it to gate", c.Plugin.Name)
+	mayApply := registered.MayApply
+	if mayApply == nil {
+		t.Fatalf("overlaytest: plugin %q registers no PerClientEndpoints.MayApply", c.Plugin.Name)
 	}
+	hook := registered.Edit
 	if len(c.Backends) == 0 {
 		t.Fatalf("overlaytest: no backends to check")
 	}
@@ -82,7 +84,7 @@ func AssertMayApplyCoversEndpointHook(t testing.TB, c EndpointsCase) {
 
 	var ruledOut, admitted int
 	for _, backend := range c.Backends {
-		if c.Plugin.PerClientEndpointsMayApply(kctx, backend) {
+		if mayApply(kctx, backend) {
 			admitted++
 			continue
 		}
@@ -97,14 +99,14 @@ func AssertMayApplyCoversEndpointHook(t testing.TB, c EndpointsCase) {
 			after := endpoints.PrioritizeEndpoints(nil, ucc, resolved)
 
 			if contribution != 0 {
-				t.Errorf("overlaytest: PerClientEndpointsMayApply ruled out backend %s, but the hook contributed %d for client %s; the framework skips the hook for such a backend, so that contribution would be lost",
+				t.Errorf("overlaytest: PerClientEndpoints.MayApply ruled out backend %s, but the hook contributed %d for client %s; the framework skips the hook for such a backend, so that contribution would be lost",
 					backend.ResourceName(), contribution, ucc.ResourceName())
 			}
 			// The assignment is the observable, but it cannot see a change that
 			// only matters once the backend has endpoints the fixture lacks, so
 			// the inputs behind it are compared too.
 			if !proto.Equal(before, after) || !inputs.EndpointsForBackend.Equals(resolved.EndpointsForBackend) {
-				t.Errorf("overlaytest: PerClientEndpointsMayApply ruled out backend %s, but the hook changed the endpoints for client %s; a hook that returns 0 still keeps whatever it wrote to the resolver",
+				t.Errorf("overlaytest: PerClientEndpoints.MayApply ruled out backend %s, but the hook changed the endpoints for client %s; a hook that returns 0 still keeps whatever it wrote to the resolver",
 					backend.ResourceName(), ucc.ResourceName())
 			}
 		}
@@ -152,16 +154,4 @@ func BackendEndpointInputs(backend ir.BackendObjectIR) endpoints.EndpointsInputs
 		})
 	}
 	return endpoints.EndpointsInputs{EndpointsForBackend: *eps}
-}
-
-// endpointHook normalizes a plugin's endpoint hook onto the resolver, the way
-// OrderedEndpointPlugins does.
-func endpointHook(plugin sdk.PolicyPlugin) func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, *endpoints.EndpointInputsResolver) uint64 {
-	edit := plugin.PerClientEditEndpoints
-	if edit == nil {
-		return nil
-	}
-	return func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-		return edit(kctx, ctx, ucc, out)
-	}
 }

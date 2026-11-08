@@ -13,8 +13,10 @@ import (
 func claimingPlugins(claim sdk.ClusterEmissionClaim) sdk.ContributesPolicies {
 	return sdk.ContributesPolicies{
 		{Group: "test", Kind: "Picker"}: {
-			Name:                 "picker",
-			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim { return claim },
+			Name: "picker",
+			BackendHooks: sdk.BackendHooks{
+				ClaimEmittedClusters: func() sdk.ClusterEmissionClaim { return claim },
+			},
 		},
 	}
 }
@@ -59,14 +61,18 @@ func TestTwoPluginsClaimingOneNameShareItsDestinations(t *testing.T) {
 	claims := collectEmissionClaims(sdk.ContributesPolicies{
 		{Group: "a.test", Kind: "Picker"}: {
 			Name: "a",
-			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
-				return sdk.ClusterEmissionClaim{Selectors: []string{"shared"}, NamePrefixes: []string{"a_"}}
+			BackendHooks: sdk.BackendHooks{
+				ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
+					return sdk.ClusterEmissionClaim{Selectors: []string{"shared"}, NamePrefixes: []string{"a_"}}
+				},
 			},
 		},
 		{Group: "b.test", Kind: "Picker"}: {
 			Name: "b",
-			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
-				return sdk.ClusterEmissionClaim{Selectors: []string{"shared"}, Names: []string{"b-fallback"}}
+			BackendHooks: sdk.BackendHooks{
+				ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
+					return sdk.ClusterEmissionClaim{Selectors: []string{"shared"}, Names: []string{"b-fallback"}}
+				},
 			},
 		},
 	})

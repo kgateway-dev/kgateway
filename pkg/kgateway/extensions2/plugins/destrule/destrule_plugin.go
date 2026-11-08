@@ -56,11 +56,17 @@ type destrulePlugin struct {
 // overlay against the inputs hash registered beside it, so both come from here.
 func (d *destrulePlugin) policyPlugin() sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
-		Name:                       "destrule",
-		PerClientClusterOverlay:    d.clusterOverlay,
-		OverlayInputsHash:          d.overlayInputsHash,
-		PerClientEditEndpoints:     d.processEndpoints,
-		PerClientEndpointsMayApply: d.endpointsMayApply,
+		Name: "destrule",
+		BackendHooks: sdk.BackendHooks{
+			PerClientCluster: &sdk.PerClientCluster{
+				Overlay:    d.clusterOverlay,
+				InputsHash: d.overlayInputsHash,
+			},
+			PerClientEndpoints: &sdk.PerClientEndpoints{
+				Edit:     d.processEndpoints,
+				MayApply: d.endpointsMayApply,
+			},
+		},
 	}
 }
 

@@ -147,11 +147,13 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:               "BackendTLSPolicy",
-				Policies:           tlsPolicyCol,
-				ProcessBackend:     processBackend,
-				ProcessBaseCluster: processBaseCluster,
-				MergePolicies:      MergePolicies,
+				Name:     "BackendTLSPolicy",
+				Policies: tlsPolicyCol,
+				BackendHooks: sdk.BackendHooks{
+					ProcessBackend:     processBackend,
+					ProcessBaseCluster: processBaseCluster,
+				},
+				MergePolicies: MergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,

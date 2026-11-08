@@ -66,8 +66,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			VirtualIstioGK: {
-				Name:           "istio",
-				ProcessBackend: p.processBackend,
+				Name: "istio",
+				BackendHooks: sdk.BackendHooks{
+					ProcessBackend: p.processBackend,
+				},
 				GlobalPolicies: func(_ krt.HandlerContext) ir.PolicyIR {
 					// With auto-mTLS off the policy is a no-op, and attaching it gives every listener and route a policy map.
 					if !istioSettings.EnableAutoMtls {

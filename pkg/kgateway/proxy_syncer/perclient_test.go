@@ -54,15 +54,19 @@ func TestPerClientEnvoyEndpointsUsesResolvedReplacementHash(t *testing.T) {
 	translator := kgtranslator.NewCombinedTranslator(t.Context(), sdk.Plugin{
 		ContributesPolicies: sdk.ContributesPolicies{
 			pluginGK: {
-				PerClientEditEndpoints: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
-					replacement := out.NewEndpointSet()
-					replacement.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: &envoyendpointv3.LbEndpoint{
-						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{Endpoint: &envoyendpointv3.Endpoint{
-							Address: &envoycorev3.Address{Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: out.Hostname()}}},
-						}},
-					}})
-					out.ReplaceEndpoints(replacement)
-					return 0 // Replacement content is already reflected by LbEpsEqualityHash.
+				BackendHooks: sdk.BackendHooks{
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						Edit: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
+							replacement := out.NewEndpointSet()
+							replacement.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: &envoyendpointv3.LbEndpoint{
+								HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{Endpoint: &envoyendpointv3.Endpoint{
+									Address: &envoycorev3.Address{Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: out.Hostname()}}},
+								}},
+							}})
+							out.ReplaceEndpoints(replacement)
+							return 0 // Replacement content is already reflected by LbEpsEqualityHash.
+						},
+					},
 				},
 			},
 		},

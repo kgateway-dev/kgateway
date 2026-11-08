@@ -215,11 +215,15 @@ func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
 	translator := &irtranslator.BackendTranslator{
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return nil
-				},
-				OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-					return utils.HashString(in.Obj.GetLabels()[overlayLabel])
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return nil
+						},
+						InputsHash: func(in ir.BackendObjectIR) uint64 {
+							return utils.HashString(in.Obj.GetLabels()[overlayLabel])
+						},
+					},
 				},
 			},
 		},

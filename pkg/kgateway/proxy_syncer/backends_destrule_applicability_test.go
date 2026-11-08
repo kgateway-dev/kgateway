@@ -52,15 +52,19 @@ func TestBaseRetranslatesWhenARuleForItsHostAppears(t *testing.T) {
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			policyGK: {
-				PerClientEndpointsMayApply: func(kctx krt.HandlerContext, in ir.BackendObjectIR) bool {
-					return index.HasRulesForHost(kctx, in.CanonicalHostname)
-				},
-				PerClientEditEndpoints: func(kctx krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out sdk.EndpointInputsEditor) uint64 {
-					if !index.HasRulesForHost(kctx, out.Hostname()) {
-						return 0
-					}
-					out.SetPriorityInfo(&endpoints.PriorityInfo{})
-					return 1
+				BackendHooks: sdk.BackendHooks{
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						MayApply: func(kctx krt.HandlerContext, in ir.BackendObjectIR) bool {
+							return index.HasRulesForHost(kctx, in.CanonicalHostname)
+						},
+						Edit: func(kctx krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out sdk.EndpointInputsEditor) uint64 {
+							if !index.HasRulesForHost(kctx, out.Hostname()) {
+								return 0
+							}
+							out.SetPriorityInfo(&endpoints.PriorityInfo{})
+							return 1
+						},
+					},
 				},
 			},
 		},

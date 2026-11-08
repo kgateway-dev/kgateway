@@ -34,20 +34,24 @@ func (r *recordingTB) Errorf(format string, args ...any) {
 func labelOverlay(declared ...string) sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
 		Name: "label-overlay",
-		PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-			labels := in.Obj.GetLabels()
-			if labels["gate"] != "on" {
-				return nil
-			}
-			shape := labels["shape"]
-			return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) { out.AltStatName = shape }}
-		},
-		OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-			var h uint64
-			for _, key := range declared {
-				h = h*31 + utils.HashString(key+"="+in.Obj.GetLabels()[key])
-			}
-			return h
+		BackendHooks: sdk.BackendHooks{
+			PerClientCluster: &sdk.PerClientCluster{
+				Overlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+					labels := in.Obj.GetLabels()
+					if labels["gate"] != "on" {
+						return nil
+					}
+					shape := labels["shape"]
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) { out.AltStatName = shape }}
+				},
+				InputsHash: func(in ir.BackendObjectIR) uint64 {
+					var h uint64
+					for _, key := range declared {
+						h = h*31 + utils.HashString(key+"="+in.Obj.GetLabels()[key])
+					}
+					return h
+				},
+			},
 		},
 	}
 }

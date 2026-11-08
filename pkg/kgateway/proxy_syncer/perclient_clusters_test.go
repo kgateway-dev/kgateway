@@ -272,23 +272,25 @@ func tunnelLifecycleTranslator() *irtranslator.BackendTranslator {
 	translator := clustersTestTranslator()
 	translator.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test.example.io", Kind: "Tunnel"}: {
-			ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
-				switch in.AppProtocol {
-				case "":
-					return sdk.BaseClusterResources{}, nil
-				case "invalid":
-					return sdk.BaseClusterResources{}, errors.New("invalid tunnel")
-				}
-				name := "tunnel_" + out.GetName()
-				return sdk.BaseClusterResources{
-					Listeners: []*envoylistenerv3.Listener{{Name: name}},
-					Secrets: []*envoytlsv3.Secret{{
-						Name: name + "/0",
-						Type: &envoytlsv3.Secret_GenericSecret{GenericSecret: &envoytlsv3.GenericSecret{
-							Secret: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_InlineString{InlineString: string(in.AppProtocol)}},
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+					switch in.AppProtocol {
+					case "":
+						return sdk.BaseClusterResources{}, nil
+					case "invalid":
+						return sdk.BaseClusterResources{}, errors.New("invalid tunnel")
+					}
+					name := "tunnel_" + out.GetName()
+					return sdk.BaseClusterResources{
+						Listeners: []*envoylistenerv3.Listener{{Name: name}},
+						Secrets: []*envoytlsv3.Secret{{
+							Name: name + "/0",
+							Type: &envoytlsv3.Secret_GenericSecret{GenericSecret: &envoytlsv3.GenericSecret{
+								Secret: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_InlineString{InlineString: string(in.AppProtocol)}},
+							}},
 						}},
-					}},
-				}, nil
+					}, nil
+				},
 			},
 		},
 	}

@@ -81,10 +81,11 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 	claimedBy := make(map[string]schema.GroupKind)
 	for _, gk := range slices.SortedFunc(maps.Keys(policies), compareGroupKind) {
 		policyPlugin := policies[gk]
-		if policyPlugin.ClaimEmittedClusters == nil {
+		claimEmitted := policyPlugin.BackendHooks.ClaimEmittedClusters
+		if claimEmitted == nil {
 			continue
 		}
-		claim := policyPlugin.ClaimEmittedClusters()
+		claim := claimEmitted()
 		deriving := claim.DestinationsFor != nil
 		var names, prefixes []string
 		droppedPrefix := false

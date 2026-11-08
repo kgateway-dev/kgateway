@@ -193,17 +193,22 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:                        "BackendConfigPolicy",
-				Policies:                    backendConfigPolicyCol,
-				NewGatewayTranslationPass:   newGatewayTranslationPass,
-				ProcessBackend:              processBackend,
-				ProcessBaseClusterResources: newTunnelHook(commoncol),
-				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
-				// processEndpoints reads only the BackendConfigPolicies attached
-				// to the backend, so a backend with none attached can have its
-				// inline CLA built once on the shared base.
-				PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
-				MergePolicies:              mergePolicies,
+				Name:                      "BackendConfigPolicy",
+				Policies:                  backendConfigPolicyCol,
+				NewGatewayTranslationPass: newGatewayTranslationPass,
+				BackendHooks: sdk.BackendHooks{
+					ProcessBackend:              processBackend,
+					ProcessBaseClusterResources: newTunnelHook(commoncol),
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						Edit: endpointPlugin.processEndpoints,
+						// processEndpoints reads only the BackendConfigPolicies
+						// attached to the backend, so a backend with none
+						// attached can have its inline CLA built once on the
+						// shared base.
+						MayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
+					},
+				},
+				MergePolicies: mergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					wellknown.BackendConfigPolicyGVK,
 					col,

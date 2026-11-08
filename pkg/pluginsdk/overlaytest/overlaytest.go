@@ -3,15 +3,15 @@
 // promises the framework relies on but cannot verify, and breaking either one
 // serves a client configuration built from inputs it no longer matches.
 //
-// [AssertInputsHashCoversOverlay] checks OverlayInputsHash against
-// PerClientClusterOverlay: every field of the backend whose change moves the
+// [AssertInputsHashCoversOverlay] checks PerClientCluster.InputsHash against
+// PerClientCluster.Overlay: every field of the backend whose change moves the
 // overlay's output must move the hash. A field the overlay reads but the hash
 // leaves out is served stale, because the shared base row that carries the
 // backend is kept for as long as its hashes compare equal. Give it a fixture
 // backend, the mutations a backend can undergo, and the clients to evaluate,
 // and it asserts the implication for each.
 //
-// [AssertMayApplyCoversEndpointHook] checks PerClientEndpointsMayApply against
+// [AssertMayApplyCoversEndpointHook] checks PerClientEndpoints.MayApply against
 // the endpoint hook it gates: a backend the predicate rules out must be one the
 // hook would not have touched, for any client. A backend wrongly ruled out gets
 // one inline ClusterLoadAssignment shared by every client, silently missing
@@ -47,8 +47,8 @@ type Mutation struct {
 
 // Case is one plugin checked against one fixture.
 type Case struct {
-	// Plugin is the registration under test. Both PerClientClusterOverlay and
-	// OverlayInputsHash must be set; checking one without the other is
+	// Plugin is the registration under test. Its PerClientCluster must set
+	// both Overlay and InputsHash; checking one without the other is
 	// meaningless and fails the test.
 	Plugin sdk.PolicyPlugin
 	// Backend is the fixture every mutation starts from. Pick one for which the
@@ -75,11 +75,12 @@ type Case struct {
 // under-declared fields reports them all in one run.
 func AssertInputsHashCoversOverlay(t testing.TB, c Case) {
 	t.Helper()
-	if c.Plugin.PerClientClusterOverlay == nil {
-		t.Fatalf("overlaytest: plugin %q registers no PerClientClusterOverlay", c.Plugin.Name)
+	hook := c.Plugin.BackendHooks.PerClientCluster
+	if hook == nil || hook.Overlay == nil {
+		t.Fatalf("overlaytest: plugin %q registers no PerClientCluster.Overlay", c.Plugin.Name)
 	}
-	if c.Plugin.OverlayInputsHash == nil {
-		t.Fatalf("overlaytest: plugin %q registers PerClientClusterOverlay without OverlayInputsHash", c.Plugin.Name)
+	if hook.InputsHash == nil {
+		t.Fatalf("overlaytest: plugin %q registers PerClientCluster.Overlay without InputsHash", c.Plugin.Name)
 	}
 	if len(c.Clients) == 0 {
 		t.Fatalf("overlaytest: no clients to evaluate")
@@ -98,14 +99,14 @@ func AssertInputsHashCoversOverlay(t testing.TB, c Case) {
 	ctx := context.Background()
 
 	hashOf := func(backend ir.BackendObjectIR) uint64 {
-		first := c.Plugin.OverlayInputsHash(backend)
-		if again := c.Plugin.OverlayInputsHash(backend); again != first {
+		first := hook.InputsHash(backend)
+		if again := hook.InputsHash(backend); again != first {
 			t.Fatalf("overlaytest: OverlayInputsHash is not deterministic: %d then %d for the same backend", first, again)
 		}
 		return first
 	}
 	outputOf := func(ucc ir.UniquelyConnectedClient, backend ir.BackendObjectIR) *envoyclusterv3.Cluster {
-		overlay := c.Plugin.PerClientClusterOverlay(kctx, ctx, ucc, backend)
+		overlay := hook.Overlay(kctx, ctx, ucc, backend)
 		if overlay == nil {
 			return nil
 		}
