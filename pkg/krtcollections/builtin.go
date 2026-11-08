@@ -547,38 +547,90 @@ func translateStatusCode(
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
 ) (envoyroutev3.RedirectAction_RedirectResponseCode, error) {
-	var overrideStatusCode *int
 	if value, ok := annotations[apiannotations.HTTPRedirectStatusCode]; ok {
-		var err error
-		overrideStatusCode, err = parseRedirectStatusCodeAnnotation(value, ruleName)
+		overrideStatusCode, err := parseRedirectStatusCodeAnnotation(value, ruleName)
+		if err == nil && overrideStatusCode != nil {
+			// if overrideStatusCode is set, it takes precedence over statusCode
+			code, ok := redirectResponseCode(*overrideStatusCode)
+			if ok {
+				return code, nil
+			}
+			err = fmt.Errorf("invalid redirect status code: %d; %s", *overrideStatusCode, httpRedirectStatusCodesAllowedMsg)
+		}
 		if err != nil {
-			return envoyroutev3.RedirectAction_FOUND, err
+			return envoyroutev3.RedirectAction_FOUND, fmt.Errorf("%s annotation: %w", apiannotations.HTTPRedirectStatusCode, err)
 		}
 	}
 
-	if statusCode == nil && overrideStatusCode == nil {
+	if statusCode == nil {
 		return envoyroutev3.RedirectAction_FOUND, nil
-	} else if overrideStatusCode != nil {
-		// if overrideStatusCode is set, it takes precedence over statusCode
-		statusCode = overrideStatusCode
 	}
-
-	switch *statusCode {
-	case 301:
-		return envoyroutev3.RedirectAction_MOVED_PERMANENTLY, nil
-	case 302:
-		return envoyroutev3.RedirectAction_FOUND, nil
-	case 303:
-		return envoyroutev3.RedirectAction_SEE_OTHER, nil
-	case 307:
-		return envoyroutev3.RedirectAction_TEMPORARY_REDIRECT, nil
-	case 308:
-		return envoyroutev3.RedirectAction_PERMANENT_REDIRECT, nil
-	default:
+	code, ok := redirectResponseCode(*statusCode)
+	if !ok {
 		return envoyroutev3.RedirectAction_FOUND, fmt.Errorf("invalid redirect status code: %d; %s", *statusCode, httpRedirectStatusCodesAllowedMsg)
+	}
+	return code, nil
+}
+
+// redirectResponseCode returns the Envoy redirect response code for an HTTP status code,
+// and false if Envoy has no redirect response code for it.
+func redirectResponseCode(statusCode int) (envoyroutev3.RedirectAction_RedirectResponseCode, bool) {
+	switch statusCode {
+	case 301:
+		return envoyroutev3.RedirectAction_MOVED_PERMANENTLY, true
+	case 302:
+		return envoyroutev3.RedirectAction_FOUND, true
+	case 303:
+		return envoyroutev3.RedirectAction_SEE_OTHER, true
+	case 307:
+		return envoyroutev3.RedirectAction_TEMPORARY_REDIRECT, true
+	case 308:
+		return envoyroutev3.RedirectAction_PERMANENT_REDIRECT, true
+	default:
+		return envoyroutev3.RedirectAction_FOUND, false
 	}
 }
 
+// redirectStatusCodeEntry is one comma-separated entry of the HTTPRedirectStatusCode annotation:
+// either a status code for every rule, or rule=code for the rule with that name.
+type redirectStatusCodeEntry struct {
+	// raw is the entry as written, with surrounding whitespace removed.
+	raw string
+	// rule is the rule name the entry is scoped to, or "" when it applies to every rule.
+	rule string
+	// code is the unparsed status code.
+	code string
+}
+
+func splitRedirectStatusCodeAnnotation(value string) []redirectStatusCodeEntry {
+	var entries []redirectStatusCodeEntry
+	for v := range strings.SplitSeq(value, ",") {
+		e := redirectStatusCodeEntry{raw: strings.TrimSpace(v), code: strings.TrimSpace(v)}
+		if ruleVals := strings.Split(e.raw, "="); len(ruleVals) == 2 {
+			e.rule = strings.TrimSpace(ruleVals[0])
+			e.code = strings.TrimSpace(ruleVals[1])
+		}
+		entries = append(entries, e)
+	}
+	return entries
+}
+
+// appliesTo reports whether the entry applies to the rule. A rule-scoped entry only applies
+// to the rule it names, so it never applies to an unnamed rule.
+func (e redirectStatusCodeEntry) appliesTo(ruleName *gwv1.SectionName) bool {
+	return e.rule == "" || (ruleName != nil && e.rule == string(*ruleName))
+}
+
+func (e redirectStatusCodeEntry) parseCode() (int, error) {
+	code, err := strconv.Atoi(e.code)
+	if err != nil {
+		return 0, fmt.Errorf("invalid redirect status code: %s; %s", e.code, httpRedirectStatusCodesAllowedMsg)
+	}
+	return code, nil
+}
+
+// parseRedirectStatusCodeAnnotation returns the status code of the first annotation entry that
+// applies to the rule, or nil if none applies.
 func parseRedirectStatusCodeAnnotation(
 	value string,
 	ruleName *gwv1.SectionName,
@@ -587,42 +639,82 @@ func parseRedirectStatusCodeAnnotation(
 		return nil, errors.New("missing value")
 	}
 
-	perRuleVal := strings.SplitSeq(value, ",")
-	for v := range perRuleVal {
-		code, err := parseRedirectStatusCode(strings.TrimSpace(v), ruleName)
+	for _, e := range splitRedirectStatusCodeAnnotation(value) {
+		if !e.appliesTo(ruleName) {
+			continue
+		}
+		code, err := e.parseCode()
 		if err != nil {
 			return nil, err
 		}
-		if code != nil {
-			return code, nil
-		}
+		return &code, nil
 	}
 	return nil, nil
 }
 
-func parseRedirectStatusCode(
-	val string,
-	ruleName *gwv1.SectionName,
-) (*int, error) {
-	ruleVals := strings.Split(val, "=")
+// UnusedRedirectStatusCodeEntries describes each entry of the route's HTTPRedirectStatusCode
+// annotation that no rule uses, and why. A rule uses the first entry that applies to it, and
+// only rules with a RequestRedirect filter read the annotation. An entry that a rule uses is
+// not described: an invalid one already fails the rule's translation.
+func UnusedRedirectStatusCodeEntries(route *gwv1.HTTPRoute) []string {
+	value, ok := route.GetAnnotations()[apiannotations.HTTPRedirectStatusCode]
+	if !ok {
+		return nil
+	}
+	entries := splitRedirectStatusCodeAnnotation(value)
 
-	var forRule string
-	if len(ruleVals) == 2 {
-		forRule = strings.TrimSpace(ruleVals[0])
-		val = strings.TrimSpace(ruleVals[1])
+	ruleNames := sets.New[string]()
+	redirectRuleNames := sets.New[string]()
+	used := make([]bool, len(entries))
+	hasRedirectRule := false
+	for _, rule := range route.Spec.Rules {
+		if rule.Name != nil {
+			ruleNames.Insert(string(*rule.Name))
+		}
+		if !slices.ContainsFunc(rule.Filters, func(f gwv1.HTTPRouteFilter) bool {
+			return f.Type == gwv1.HTTPRouteFilterRequestRedirect
+		}) {
+			continue
+		}
+		hasRedirectRule = true
+		if rule.Name != nil {
+			redirectRuleNames.Insert(string(*rule.Name))
+		}
+		if value == "" {
+			// An empty value fails the rule's translation.
+			return nil
+		}
+		if i := slices.IndexFunc(entries, func(e redirectStatusCodeEntry) bool { return e.appliesTo(rule.Name) }); i >= 0 {
+			used[i] = true
+		}
 	}
 
-	// A rule-scoped value only applies to the rule it names, so it can never match an unnamed rule.
-	if forRule != "" && (ruleName == nil || forRule != string(*ruleName)) {
-		return nil, nil
+	var msgs []string
+	for i, e := range entries {
+		if used[i] {
+			continue
+		}
+		var why string
+		switch {
+		case !hasRedirectRule:
+			why = "no rule has a RequestRedirect filter"
+		case e.rule == "":
+			why = "an earlier entry applies to every rule with a RequestRedirect filter"
+		case !ruleNames.Has(e.rule):
+			why = fmt.Sprintf("no rule is named %q; a rule-scoped value only applies to a rule with that name", e.rule)
+		case !redirectRuleNames.Has(e.rule):
+			why = fmt.Sprintf("rule %q has no RequestRedirect filter", e.rule)
+		default:
+			why = fmt.Sprintf("an earlier entry applies to rule %q", e.rule)
+		}
+		if code, err := e.parseCode(); err != nil {
+			why += "; " + err.Error()
+		} else if _, ok := redirectResponseCode(code); !ok {
+			why += fmt.Sprintf("; invalid redirect status code: %d; %s", code, httpRedirectStatusCodesAllowedMsg)
+		}
+		msgs = append(msgs, fmt.Sprintf("entry %q is unused: %s", e.raw, why))
 	}
-
-	code, err := strconv.Atoi(val)
-	if err != nil {
-		return nil, fmt.Errorf("invalid redirect status code: %s; %s", val, httpRedirectStatusCodesAllowedMsg)
-	}
-
-	return &code, nil
+	return msgs
 }
 
 // MIRROR IR

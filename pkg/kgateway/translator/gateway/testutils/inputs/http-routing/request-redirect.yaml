@@ -222,3 +222,26 @@ spec:
           type: ReplaceFullPath
           replaceFullPath: //test/../other?a=1#frag
         statusCode: 302
+---
+# A rule-scoped value only applies to a named rule, so it is unused here and reported
+# on the route status; the rule keeps its own statusCode.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rule-level-override-unnamed-rule
+  annotations:
+    kgateway.dev/http-redirect-status-code: "rule0=307"
+spec:
+  parentRefs:
+    - name: test
+  hostnames:
+    - "rule-level-override-unnamed-rule.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /rule0
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        statusCode: 301
