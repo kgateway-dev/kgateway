@@ -71,44 +71,21 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 				continue
 			}
 			for _, polAtt := range polAtts {
-				if polAtt.PolicyRef == nil {
-					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
-					// since there's no real policy object, we don't need to generate status for it
+				// A nil PolicyRef is a virtual policy (e.g. istio settings): there is no policy
+				// object to report status on.
+				r := polAtt.AncestorReporter(reporter, policyAncestorRef(targetRef, polAtt.PolicyRef))
+				if r == nil {
 					continue
 				}
-
-				key := reportssdk.PolicyKey{
-					Group:     polAtt.PolicyRef.Group,
-					Kind:      polAtt.PolicyRef.Kind,
-					Namespace: polAtt.PolicyRef.Namespace,
-					Name:      polAtt.PolicyRef.Name,
-				}
-				ancestorRef := targetRef
-				if polAtt.PolicyRef.SectionName != "" {
-					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
-				}
-				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
 				if len(polAtt.Errors) == 0 && policyErr != nil && policyErr.Ref != nil && policyErr.Ref.ID() == polAtt.PolicyRef.ID() {
 					polAtt.Errors = []error{policyErr.Err}
 				}
+				accepted := polAtt.AcceptedCondition()
 				if len(polAtt.Errors) > 0 {
-					r.SetCondition(reportssdk.PolicyCondition{
-						Type:               string(shared.PolicyConditionAccepted),
-						Status:             metav1.ConditionFalse,
-						Reason:             string(shared.PolicyReasonInvalid),
-						Message:            polAtt.FormatErrors(),
-						ObservedGeneration: polAtt.Generation,
-					})
+					r.SetCondition(accepted)
 					continue
 				}
 
-				accepted := reportssdk.PolicyCondition{
-					Type:               string(shared.PolicyConditionAccepted),
-					Status:             metav1.ConditionTrue,
-					Reason:             string(shared.PolicyReasonValid),
-					Message:            reportssdk.PolicyAcceptedMsg,
-					ObservedGeneration: polAtt.Generation,
-				}
 				if gk == bcpGK {
 					// Some BackendConfigPolicy settings are accepted but have no effect, in general or
 					// for this backend. Report them with the PartiallyValid reason on this ancestor.
@@ -149,6 +126,15 @@ func backendAncestorRef(src ir.ObjectSource) gwv1.ParentReference {
 	}
 }
 
+// policyAncestorRef returns the ancestor a policy attached by ref to the backend targetRef
+// reports on: the backend, narrowed to ref's section for a port-specific attachment.
+func policyAncestorRef(targetRef gwv1.ParentReference, ref *ir.AttachedPolicyRef) gwv1.ParentReference {
+	if ref != nil && ref.SectionName != "" {
+		targetRef.SectionName = new(gwv1.SectionName(ref.SectionName))
+	}
+	return targetRef
+}
+
 // reportBackendTLSPolicies reports each BackendTLSPolicy in policies against the target it
 // attaches to. The effective policy is chosen by the plugin's MergePolicies on the same
 // unfiltered slice translation hands it, so the target ancestor never disagrees with what is
@@ -161,20 +147,10 @@ func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.Paren
 	}
 	effective := backendtlspolicyplugin.MergePolicies(policies)
 	for _, polAtt := range policies {
-		if polAtt.PolicyRef == nil {
+		r := polAtt.AncestorReporter(reporter, policyAncestorRef(targetRef, polAtt.PolicyRef))
+		if r == nil {
 			continue
 		}
-		key := reportssdk.PolicyKey{
-			Group:     polAtt.PolicyRef.Group,
-			Kind:      polAtt.PolicyRef.Kind,
-			Namespace: polAtt.PolicyRef.Namespace,
-			Name:      polAtt.PolicyRef.Name,
-		}
-		ancestorRef := targetRef
-		if polAtt.PolicyRef.SectionName != "" {
-			ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
-		}
-		r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
 		for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, &effective) {
 			r.SetCondition(cond)
 		}
