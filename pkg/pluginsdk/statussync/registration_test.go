@@ -27,7 +27,7 @@ func testRegistrationInputs(stop chan struct{}) RegistrationInputs {
 	}
 }
 
-// TestRegisterWiresAllThreeHalves checks that Register does everything RegisterKind does from
+// TestRegisterWiresAllThreeHalves checks that Register wires every half from
 // RegistrationInputs alone: the raw collection sweeps on leadership, the reducer feeds the
 // queue and is keyed by the GVK, and the reducer joins the sync barrier.
 func TestRegisterWiresAllThreeHalves(t *testing.T) {

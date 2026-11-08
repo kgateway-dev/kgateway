@@ -42,49 +42,6 @@ func (r ResourceReports) Equals(other ResourceReports) bool {
 		r.Report.Equals(other.Report)
 }
 
-// RegisterKind wires one status kind end to end: it derives the report reducer for a raw
-// collection, registers that collection as a reconciliation source, and enrolls the reducer as
-// both an event source and a cache-sync dependency.
-//
-// The three belong together. Done separately, each compiles on its own and omitting one is
-// invisible: skip the raw registration and the resource is never swept on leadership, skip
-// the reducer registration and status stops following report changes. Both are silent status
-// outages rather than build or test failures.
-//
-// Deprecated: use Register, which takes the collections, contributions and index from
-// RegistrationInputs instead of separately, and names the reducer after the kind.
-func RegisterKind[I controllers.Object](
-	s *StatusCollections,
-	gvk schema.GroupVersionKind,
-	objects krt.Collection[I],
-	contributions krt.Collection[reports.StatusContribution],
-	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
-	opts ...krt.CollectionOption,
-) krt.Collection[ResourceReports] {
-	return registerKind(s, objects, contributions, byTarget,
-		func(I) schema.GroupVersionKind { return gvk },
-		func() { RegisterResource(s, gvk, objects) },
-		opts...)
-}
-
-// RegisterKindByObjectGVK is RegisterKind for a normalized collection whose objects retain
-// distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
-//
-// Deprecated: use RegisterByObjectGVK, which takes its inputs from RegistrationInputs.
-func RegisterKindByObjectGVK[I controllers.Object](
-	s *StatusCollections,
-	fallback schema.GroupVersionKind,
-	objects krt.Collection[I],
-	contributions krt.Collection[reports.StatusContribution],
-	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
-	opts ...krt.CollectionOption,
-) krt.Collection[ResourceReports] {
-	return registerKind(s, objects, contributions, byTarget,
-		func(obj I) schema.GroupVersionKind { return ObjectGVKOrDefault(obj, fallback) },
-		func() { registerResourceByObjectGVK(s, fallback, objects) },
-		opts...)
-}
-
 func registerKind[I controllers.Object](
 	s *StatusCollections,
 	objects krt.Collection[I],
