@@ -50,6 +50,9 @@ func (r ResourceReports) Equals(other ResourceReports) bool {
 // invisible: skip the raw registration and the resource is never swept on leadership, skip
 // the reducer registration and status stops following report changes. Both are silent status
 // outages rather than build or test failures.
+//
+// Deprecated: use Register, which takes the collections, contributions and index from
+// RegistrationInputs instead of separately, and names the reducer after the kind.
 func RegisterKind[I controllers.Object](
 	s *StatusCollections,
 	gvk schema.GroupVersionKind,
@@ -66,6 +69,8 @@ func RegisterKind[I controllers.Object](
 
 // RegisterKindByObjectGVK is RegisterKind for a normalized collection whose objects retain
 // distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
+//
+// Deprecated: use RegisterByObjectGVK, which takes its inputs from RegistrationInputs.
 func RegisterKindByObjectGVK[I controllers.Object](
 	s *StatusCollections,
 	fallback schema.GroupVersionKind,
@@ -221,7 +226,7 @@ func RegisterResource[I controllers.Object](
 
 // registerResourceByObjectGVK registers a normalized collection whose objects retain
 // distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
-// Callers reach it through RegisterKindByObjectGVK, which wires the reducer alongside it.
+// Callers reach it through RegisterByObjectGVK, which wires the reducer alongside it.
 func registerResourceByObjectGVK[I controllers.Object](
 	s *StatusCollections,
 	fallback schema.GroupVersionKind,

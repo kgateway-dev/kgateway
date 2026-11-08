@@ -73,6 +73,7 @@ func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *Status
 			StatusContributions:   cfg.StatusContributions,
 			ContributionsByTarget: cfg.StatusContributionsByTarget,
 			KrtOpts:               cfg.KrtOpts,
+			ControllerName:        cfg.ControllerName,
 			RegisterWriter: func(gvk schema.GroupVersionKind, writer statussync.ResourceStatusSyncer) {
 				registerStatusWriter(syncer.writers, gvk, writer)
 			},
