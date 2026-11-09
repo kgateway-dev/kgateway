@@ -608,12 +608,12 @@ func parseRedirectStatusCode(
 
 	var forRule string
 	if len(ruleVals) == 2 {
-		forRule = ruleVals[0]
+		forRule = strings.TrimSpace(ruleVals[0])
 		val = strings.TrimSpace(ruleVals[1])
 	}
 
-	if ruleName != nil && forRule != "" && forRule != string(*ruleName) {
-		// The annotation does not apply to this rule specified by ruleName
+	// A rule-scoped value only applies to the rule it names, so it can never match an unnamed rule.
+	if forRule != "" && (ruleName == nil || forRule != string(*ruleName)) {
 		return nil, nil
 	}
 

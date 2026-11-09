@@ -4,10 +4,12 @@ package faultinjection
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	"istio.io/istio/pkg/test/util/retry"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -60,21 +62,29 @@ func (s *testingSuite) TestFaultInjectionAbortDoesNotAffectOtherRoutes() {
 // TestFaultInjectionDelayOnRoute verifies that a TrafficPolicy with delay configured
 // still returns a successful response (delay is applied but request is not aborted).
 // It also verifies the response takes at least the configured delay duration.
+//
+// The route can serve 200s before the delay policy reaches Envoy, so the latency is
+// checked per attempt inside the retry loop rather than once across all attempts.
 func (s *testingSuite) TestFaultInjectionDelayOnRoute() {
-	start := time.Now()
-
-	common.BaseGateway.Send(
-		s.T(),
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		},
-		curl.WithPort(80),
-		curl.WithPath("/fault/status/200"),
-		curl.WithHostHeader("example.com"),
-	)
-
-	elapsed := time.Since(start)
-	s.GreaterOrEqual(elapsed, 100*time.Millisecond, "expected response to take at least 100ms due to fault delay injection")
+	match := &testmatchers.HttpResponse{
+		StatusCode: http.StatusOK,
+	}
+	retry.UntilSuccessOrFail(s.T(), func() error {
+		start := time.Now()
+		if err := common.BaseGateway.SendOnce(
+			s.Ctx,
+			match,
+			curl.WithPort(80),
+			curl.WithPath("/fault/status/200"),
+			curl.WithHostHeader("example.com"),
+		); err != nil {
+			return err
+		}
+		if elapsed := time.Since(start); elapsed < 100*time.Millisecond {
+			return fmt.Errorf("expected response to take at least 100ms due to fault delay injection, took %v", elapsed)
+		}
+		return nil
+	})
 }
 
 // TestFaultInjectionAbortOnGateway verifies that a TrafficPolicy with abort attached
