@@ -71,23 +71,17 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 			// Read from the collection that enqueues this policy, not from cl: cl is a
 			// delayed client whose Get returns nil until its own informer loads.
 			Current: statussync.CollectionSource(col),
-			Desired: func(res statussync.Resource, pol T) (gwv1.PolicyStatus, bool) {
-				report, ok := statussync.ReportFor(statusReports, res)
-				if !ok {
-					return gwv1.PolicyStatus{}, false
-				}
-				status := desiredFor(report.Policy, pol, controllerName)
-				if status == nil {
+			Desired: statussync.DesiredFromReport(statusReports,
+				func(_ statussync.Resource, report reports.StatusReport, pol T) *gwv1.PolicyStatus {
+					status := desiredFor(report.Policy, pol, controllerName)
 					// Merge will clear only ancestors owned by this controller, which is worth
 					// a write only if we have ancestors to clear. Every policy of this kind
 					// lands here, including ones no Gateway we translate ever attached.
-					if !statussync.OwnsAnyPolicyAncestor(controllerName, getStatus(pol).Ancestors) {
-						return gwv1.PolicyStatus{}, false
+					if status == nil && statussync.OwnsAnyPolicyAncestor(controllerName, getStatus(pol).Ancestors) {
+						return &gwv1.PolicyStatus{}
 					}
-					return gwv1.PolicyStatus{}, true
-				}
-				return *status, true
-			},
+					return status
+				}),
 			UpdateStatus: statussync.ClientWriter(cl, build),
 			GetStatus:    getStatus,
 			Merge: func(current T, desired gwv1.PolicyStatus) gwv1.PolicyStatus {

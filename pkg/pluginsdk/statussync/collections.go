@@ -115,6 +115,30 @@ func ReportFor(
 	return current.Report, true
 }
 
+// DesiredFromReport builds a Writer.Desired from build. It looks up the reduction res was
+// enqueued under in reportCol (see ReportFor) and hands it to build, suppressing the write
+// when res has no reduction yet or build returns nil. A build that wants to write an empty
+// status returns a pointer to the zero value.
+//
+// report contains pointers into KRT-owned retained state; build must treat it as read-only.
+func DesiredFromReport[O, S any](
+	reportCol krt.Collection[ResourceReports],
+	build func(res Resource, report reports.StatusReport, current O) *S,
+) func(Resource, O) (S, bool) {
+	return func(res Resource, current O) (S, bool) {
+		var zero S
+		report, ok := ReportFor(reportCol, res)
+		if !ok {
+			return zero, false
+		}
+		status := build(res, report, current)
+		if status == nil {
+			return zero, false
+		}
+		return *status, true
+	}
+}
+
 // StatusRegistration attaches a source handler that feeds the given queue. It is invoked
 // when status writing becomes enabled on the leader.
 type StatusRegistration = func(statusWriter WorkerQueue) krt.HandlerRegistration
