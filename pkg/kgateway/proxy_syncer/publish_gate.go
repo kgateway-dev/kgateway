@@ -524,8 +524,8 @@ func (g *publishGate) firePending(
 	if g.pending[proxyKey] != st || st.wrap.snap == nil {
 		return
 	}
-	// Keep the entry so a later deferred wrapper re-arms the timer instead of
-	// restarting the budget.
+	// Until a publish succeeds, keep the entry so a later deferred wrapper
+	// re-arms the timer instead of restarting the budget.
 	wrap := st.wrap
 	st.wrap = XdsSnapWrapper{}
 	st.timer = nil
@@ -588,8 +588,12 @@ func (g *publishGate) firePending(
 		logPublishFailure(proxyKey, err)
 		return
 	}
+	// The episode is over: later builds on this connection resolve against the
+	// published snapshot. A leftover entry would hand its start to the next
+	// connection (withdrawLocked), releasing that one's first publish at once.
 	g.unmarkFirstPublishPendingLocked(proxyKey, st)
 	g.unmarkWarmWithheldLocked(proxyKey, st)
+	delete(g.pending, proxyKey)
 	recordBoundedPublish(proxyKey, mode)
 }
 
