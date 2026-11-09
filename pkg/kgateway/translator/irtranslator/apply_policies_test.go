@@ -129,25 +129,13 @@ func TestApplyPoliciesReportsStatusAndMergeOrigins(t *testing.T) {
 	}
 }
 
-func TestApplyPoliciesSelectPolicies(t *testing.T) {
-	passes := TranslationPassPlugins{applyTestGK: &TranslationPass{}}
-	rm := reports.NewReportMap()
-	opts := &policyApplyOptions{reporter: reports.NewReporter(&rm), ancestorRef: applyTestAncestor}
-
+// Without a reporter a group's policies are still applied; there is nothing to report to.
+func TestApplyPolicyGroupWithoutReporter(t *testing.T) {
 	var applied []string
-	opts.selectPolicies = func(schema.GroupKind, *TranslationPass, []ir.PolicyAtt) ([]ir.PolicyAtt, bool, bool) {
-		return nil, true, false
-	}
-	applyPolicies(passes, applyTestAttached(applyTestPolicy("a")), opts, appliedNames(t, &applied))
-	assert.Empty(t, applied, "a group kind the selector leaves out is not applied")
-	assert.Nil(t, applyTestAncestorReport(rm, "a"), "nor reported")
-
-	opts.selectPolicies = func(_ schema.GroupKind, _ *TranslationPass, pols []ir.PolicyAtt) ([]ir.PolicyAtt, bool, bool) {
-		return append(pols, applyTestPolicy("extra")), false, true
-	}
-	applyPolicies(passes, applyTestAttached(applyTestPolicy("a")), opts, appliedNames(t, &applied))
-	assert.Equal(t, []string{"a", "extra"}, applied, "the selected policies replace the attached ones")
-	assert.Nil(t, applyTestAncestorReport(rm, "a"), "the selector can turn status reporting off")
+	errs := applyPolicyGroup(applyTestGK, &TranslationPass{}, []ir.PolicyAtt{applyTestPolicy("a")},
+		&policyApplyOptions{ancestorRef: applyTestAncestor}, appliedNames(t, &applied))
+	assert.Empty(t, errs)
+	assert.Equal(t, []string{"a"}, applied)
 }
 
 type routeBackendPassFunc struct {

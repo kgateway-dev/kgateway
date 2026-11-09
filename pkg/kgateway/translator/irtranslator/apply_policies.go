@@ -28,18 +28,11 @@ type policyApplyOptions struct {
 	// reportErrored is called with each group kind's attached policies, after their
 	// Accepted condition, to report policy errors beyond the policy's own status.
 	reportErrored func(policies []ir.PolicyAtt)
-	// selectPolicies, when set, replaces the attached policies of a group kind before they
-	// are merged. It returns whether to report their status (overriding the reporter check)
-	// and false in ok to leave the group kind out.
-	selectPolicies func(gk schema.GroupKind, pass *TranslationPass, policies []ir.PolicyAtt) (selected []ir.PolicyAtt, report, ok bool)
 }
 
 // applyPolicies drives the translation passes over the policies attached at one point of
-// the config tree. For each group kind, in apply order, that has a translation pass, it
-// reports the policies' Accepted condition, merges them, calls apply with each effective
-// policy, records the merge origins and reports the attachment state, unless apply returned
-// ir.ErrNotAttachable. It returns the errors apply returned and, with skipErrored, those of
-// the policies it skipped, in order.
+// the config tree: each group kind, in apply order, that has a translation pass goes
+// through applyPolicyGroup. It returns the errors of every group kind, in order.
 func applyPolicies(
 	passes TranslationPassPlugins,
 	attached *ir.AttachedPolicies,
@@ -48,47 +41,55 @@ func applyPolicies(
 ) []error {
 	var errs []error
 	for _, gk := range attached.ApplyOrderedGroupKinds() {
-		pols := attached.Policies[gk]
 		pass := passes[gk]
 		if pass == nil {
 			continue
 		}
-		report := opts.reporter != nil
-		if opts.selectPolicies != nil {
-			var ok bool
-			pols, report, ok = opts.selectPolicies(gk, pass, pols)
-			if !ok {
-				continue
+		errs = append(errs, applyPolicyGroup(gk, pass, attached.Policies[gk], opts, apply)...)
+	}
+	return errs
+}
+
+// applyPolicyGroup applies the policies of one group kind: it reports their Accepted
+// condition, merges them, calls apply with each effective policy, records the merge origins
+// and reports the attachment state, unless apply returned ir.ErrNotAttachable. It returns
+// the errors apply returned and, with skipErrored, those of the policies it skipped.
+func applyPolicyGroup(
+	gk schema.GroupKind,
+	pass *TranslationPass,
+	pols []ir.PolicyAtt,
+	opts *policyApplyOptions,
+	apply func(pass *TranslationPass, pol *ir.PolicyAtt) error,
+) []error {
+	report := opts.reporter != nil
+	if report {
+		reportPolicyAcceptanceStatus(opts.reporter, opts.ancestorRef, pols...)
+		if opts.reportErrored != nil {
+			opts.reportErrored(pols)
+		}
+	}
+	var errs []error
+	policies, mergeOrigins := mergePolicies(pass, pols)
+	attachable := true
+	for i := range policies {
+		pol := &policies[i]
+		if opts.skipErrored && len(pol.Errors) > 0 {
+			errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
+			continue
+		}
+		if err := apply(pass, pol); err != nil {
+			errs = append(errs, err)
+			if errors.Is(err, ir.ErrNotAttachable) {
+				attachable = false
 			}
 		}
-		if report {
-			reportPolicyAcceptanceStatus(opts.reporter, opts.ancestorRef, pols...)
-			if opts.reportErrored != nil {
-				opts.reportErrored(pols)
-			}
-		}
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		attachable := true
-		for i := range policies {
-			pol := &policies[i]
-			if opts.skipErrored && len(pol.Errors) > 0 {
-				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
-				continue
-			}
-			if err := apply(pass, pol); err != nil {
-				errs = append(errs, err)
-				if errors.Is(err, ir.ErrNotAttachable) {
-					attachable = false
-				}
-			}
-		}
-		if opts.metadata != nil {
-			*opts.metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, *opts.metadata)
-		}
-		// A policy its plugin cannot attach here stays pending.
-		if report && attachable {
-			reportPolicyAttachmentStatus(opts.reporter, opts.ancestorRef, mergeOrigins, pols...)
-		}
+	}
+	if opts.metadata != nil {
+		*opts.metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, *opts.metadata)
+	}
+	// A policy its plugin cannot attach here stays pending.
+	if report && attachable {
+		reportPolicyAttachmentStatus(opts.reporter, opts.ancestorRef, mergeOrigins, pols...)
 	}
 	return errs
 }
