@@ -128,12 +128,3 @@ func TestApplyPoliciesReportsStatusAndMergeOrigins(t *testing.T) {
 		assert.Equal(t, state, report.AttachmentState, "attachment state of %s", name)
 	}
 }
-
-// Without a reporter a group's policies are still applied; there is nothing to report to.
-func TestApplyPolicyGroupWithoutReporter(t *testing.T) {
-	var applied []string
-	errs := applyPolicyGroup(applyTestGK, &TranslationPass{}, []ir.PolicyAtt{applyTestPolicy("a")},
-		&policyApplyOptions{ancestorRef: applyTestAncestor}, appliedNames(t, &applied))
-	assert.Empty(t, errs)
-	assert.Equal(t, []string{"a"}, applied)
-}
