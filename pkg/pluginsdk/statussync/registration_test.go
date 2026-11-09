@@ -73,3 +73,35 @@ func TestRegisterByObjectGVKKeysByTypeMeta(t *testing.T) {
 	in.Collections.SetQueue(queue)
 	require.Equal(t, []Resource{want, want}, queue.awaitResources(t, 2))
 }
+
+func TestDesiredFromReport(t *testing.T) {
+	stop := test.NewStop(t)
+	in := testRegistrationInputs(stop)
+	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
+	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
+	reduced := Register(in, gvk, krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route}, krt.WithStop(stop)))
+	require.True(t, reduced.WaitUntilSynced(stop))
+
+	known := Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}}
+	unknown := Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "gone"}}
+	var built []Resource
+	desired := DesiredFromReport(reduced, func(res Resource, _ reports.StatusReport, current *gwv1.HTTPRoute) *string {
+		built = append(built, res)
+		if current == nil {
+			return nil
+		}
+		s := current.Name
+		return &s
+	})
+
+	got, ok := desired(known, route)
+	require.True(t, ok)
+	require.Equal(t, "route", got)
+
+	_, ok = desired(known, nil)
+	require.False(t, ok, "a nil build suppresses the write")
+
+	_, ok = desired(unknown, route)
+	require.False(t, ok, "a resource with no reduction is not built")
+	require.Equal(t, []Resource{known, known}, built)
+}

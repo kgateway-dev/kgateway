@@ -46,75 +46,68 @@ func (s *ProxySyncer) initStatusInfra(contributions krt.Collection[reports.Statu
 	tcpRouteReports := statussync.RegisterByObjectGVK(in, wellknown.TCPRouteGVK, s.commonCols.RawTCPRoutes)
 	tlsRouteReports := statussync.RegisterByObjectGVK(in, wellknown.TLSRouteGVK, s.commonCols.RawTLSRoutes)
 
-	in.RegisterWriter(wellknown.HTTPRouteGVK,
-		routeWriter(cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, controllerName,
-			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
-				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
-			},
-			func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-		))
-	in.RegisterWriter(wellknown.GRPCRouteGVK,
-		routeWriter(cl, f, s.commonCols.RawGRPCRoutes, grpcRouteReports, wellknown.GRPCRouteGVK, wellknown.GRPCRouteGVR, controllerName,
-			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.GRPCRoute {
-				return &gwv1.GRPCRoute{ObjectMeta: om, Status: gwv1.GRPCRouteStatus{RouteStatus: st}}
-			},
-			func(o *gwv1.GRPCRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-		))
+	httpRoutes := routeKind[*gwv1.HTTPRoute]{
+		cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, controllerName,
+		func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+	}
+	in.RegisterWriter(wellknown.HTTPRouteGVK, routeWriter(httpRoutes, wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR,
+		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
+			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
+		}))
+	grpcRoutes := routeKind[*gwv1.GRPCRoute]{
+		cl, f, s.commonCols.RawGRPCRoutes, grpcRouteReports, controllerName,
+		func(o *gwv1.GRPCRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+	}
+	in.RegisterWriter(wellknown.GRPCRouteGVK, routeWriter(grpcRoutes, wellknown.GRPCRouteGVK, wellknown.GRPCRouteGVR,
+		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.GRPCRoute {
+			return &gwv1.GRPCRoute{ObjectMeta: om, Status: gwv1.GRPCRouteStatus{RouteStatus: st}}
+		}))
 
 	// One writer per served version. A version we do not watch produces no objects, so it
 	// never appears as an enqueued GVK and needs no writer; that is why this iterates the
 	// same list the watches were built from rather than every version we understand.
 	// Reads are the same for every version -- they all come from the normalized collection --
 	// so only the object the status is written back as differs.
-	tcpStatus := func(o *gwv1a2.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus }
+	tcpRoutes := routeKind[*gwv1a2.TCPRoute]{
+		cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, controllerName,
+		func(o *gwv1a2.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+	}
 	for _, gvr := range s.commonCols.TCPRouteWriteVersions() {
 		switch gvr {
 		case wellknown.TCPRouteV1GVR:
-			in.RegisterWriter(wellknown.TCPRouteV1GVK,
-				routeWriter(cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteV1GVK, gvr, controllerName,
-					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
-						return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
-					},
-					tcpStatus,
-				))
+			in.RegisterWriter(wellknown.TCPRouteV1GVK, routeWriter(tcpRoutes, wellknown.TCPRouteV1GVK, gvr,
+				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
+					return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
+				}))
 		default:
-			in.RegisterWriter(wellknown.TCPRouteGVK,
-				routeWriter(cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteGVK, gvr, controllerName,
-					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
-						return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
-					},
-					tcpStatus,
-				))
+			in.RegisterWriter(wellknown.TCPRouteGVK, routeWriter(tcpRoutes, wellknown.TCPRouteGVK, gvr,
+				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
+					return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
+				}))
 		}
 	}
 
-	tlsStatus := func(o *gwv1a2.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus }
+	tlsRoutes := routeKind[*gwv1a2.TLSRoute]{
+		cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, controllerName,
+		func(o *gwv1a2.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+	}
 	for _, gvr := range s.commonCols.TLSRouteWriteVersions() {
 		switch gvr {
 		case wellknown.TLSRouteV1GVR:
-			in.RegisterWriter(wellknown.TLSRouteV1GVK,
-				routeWriter[*gwv1a2.TLSRoute, *gwv1.TLSRoute](cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1GVK, gvr, controllerName,
-					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
-						return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
-					},
-					tlsStatus,
-				))
+			in.RegisterWriter(wellknown.TLSRouteV1GVK, routeWriter(tlsRoutes, wellknown.TLSRouteV1GVK, gvr,
+				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
+					return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
+				}))
 		case wellknown.TLSRouteV1Alpha3GVR:
-			in.RegisterWriter(wellknown.TLSRouteV1Alpha3GVK,
-				routeWriter(cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1Alpha3GVK, gvr, controllerName,
-					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
-						return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
-					},
-					tlsStatus,
-				))
+			in.RegisterWriter(wellknown.TLSRouteV1Alpha3GVK, routeWriter(tlsRoutes, wellknown.TLSRouteV1Alpha3GVK, gvr,
+				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
+					return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
+				}))
 		default:
-			in.RegisterWriter(wellknown.TLSRouteGVK,
-				routeWriter(cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteGVK, gvr, controllerName,
-					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
-						return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
-					},
-					tlsStatus,
-				))
+			in.RegisterWriter(wellknown.TLSRouteGVK, routeWriter(tlsRoutes, wellknown.TLSRouteGVK, gvr,
+				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
+					return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
+				}))
 		}
 	}
 
@@ -144,17 +137,10 @@ func (s *ProxySyncer) initStatusInfra(contributions krt.Collection[reports.Statu
 	in.RegisterWriter(wellknown.BackendGVK, statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
 		Name:    "backend",
 		Current: statussync.CollectionSource(backendPlugin.RawBackends),
-		Desired: func(res statussync.Resource, be *kgateway.Backend) (kgateway.BackendStatus, bool) {
-			report, ok := statussync.ReportFor(backendReports, res)
-			if !ok {
-				return kgateway.BackendStatus{}, false
-			}
-			status := reports.BuildBackendStatus(report.Backend, be.Status)
-			if status == nil {
-				return kgateway.BackendStatus{}, false
-			}
-			return *status, true
-		},
+		Desired: statussync.DesiredFromReport(backendReports,
+			func(_ statussync.Resource, report reports.StatusReport, be *kgateway.Backend) *kgateway.BackendStatus {
+				return reports.BuildBackendStatus(report.Backend, be.Status)
+			}),
 		UpdateStatus: statussync.ClientWriter(
 			kclient.NewFilteredDelayed[*kgateway.Backend](cl, wellknown.BackendGVR, f),
 			func(om metav1.ObjectMeta, st kgateway.BackendStatus) *kgateway.Backend {
@@ -192,17 +178,10 @@ func gatewayWriter(
 	return statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
 		Name:    "gateway",
 		Current: statussync.CollectionSource(gateways),
-		Desired: func(res statussync.Resource, gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
-			report, ok := statussync.ReportFor(reportCol, res)
-			if !ok {
-				return gwv1.GatewayStatus{}, false
-			}
-			status := reports.BuildGWStatus(report.Gateway, *gw, nil)
-			if status == nil {
-				return gwv1.GatewayStatus{}, false
-			}
-			return *status, true
-		},
+		Desired: statussync.DesiredFromReport(reportCol,
+			func(_ statussync.Resource, report reports.StatusReport, gw *gwv1.Gateway) *gwv1.GatewayStatus {
+				return reports.BuildGWStatus(report.Gateway, *gw, nil)
+			}),
 		UpdateStatus: statussync.ClientWriter(
 			kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
 			func(om metav1.ObjectMeta, st gwv1.GatewayStatus) *gwv1.Gateway {
@@ -213,8 +192,19 @@ func gatewayWriter(
 	}
 }
 
-// routeWriter constructs the status writer for one route kind, wiring the multi-controller
-// parent merge and the per-parent status sync metrics.
+// routeKind is what every served version of one route kind shares: the normalized
+// collection the routes are read from, their reductions, and where their status lives.
+type routeKind[R controllers.ComparableObject] struct {
+	cl             apiclient.Client
+	f              kclient.Filter
+	routes         krt.Collection[R]
+	reports        krt.Collection[statussync.ResourceReports]
+	controllerName string
+	getStatus      func(R) gwv1.RouteStatus
+}
+
+// routeWriter constructs the status writer for one served version of a route kind, wiring
+// the multi-controller parent merge and the per-parent status sync metrics.
 //
 // R is the type the route collection holds and W the type its status is written back as.
 // They differ for TCP and TLS routes, whose collections are normalized to one Go type while
@@ -224,51 +214,43 @@ func gatewayWriter(
 // it rather than passed alongside it, so a caller cannot spell the same kind two ways in one
 // call.
 func routeWriter[R, W controllers.ComparableObject](
-	cl apiclient.Client,
-	f kclient.Filter,
-	routes krt.Collection[R],
-	reportCol krt.Collection[statussync.ResourceReports],
+	k routeKind[R],
 	gvk schema.GroupVersionKind,
 	gvr schema.GroupVersionResource,
-	controllerName string,
 	build func(om metav1.ObjectMeta, st gwv1.RouteStatus) W,
-	getStatus func(R) gwv1.RouteStatus,
 ) statussync.Writer[R, gwv1.RouteStatus] {
 	return statussync.Writer[R, gwv1.RouteStatus]{
 		Name:    gvk.Kind,
-		Current: statussync.CollectionSource(routes),
+		Current: statussync.CollectionSource(k.routes),
 		UpdateStatus: statussync.ClientWriter(
-			kclient.NewFilteredDelayed[W](cl, gvr, f), build),
-		Desired: func(res statussync.Resource, current R) (gwv1.RouteStatus, bool) {
-			report, ok := statussync.ReportFor(reportCol, res)
-			if !ok {
-				return gwv1.RouteStatus{}, false
-			}
-			if report.Route == nil {
-				// An empty desired status clears only this controller's stale parents in Merge,
-				// so it is worth writing only if we have parents to clear. Every route in the
-				// watched namespaces lands here, most of them ours to translate but many not.
-				if !statussync.OwnsAnyRouteParent(controllerName, getStatus(current).Parents) {
-					return gwv1.RouteStatus{}, false
+			kclient.NewFilteredDelayed[W](k.cl, gvr, k.f), build),
+		Desired: statussync.DesiredFromReport(k.reports,
+			func(res statussync.Resource, report reports.StatusReport, current R) *gwv1.RouteStatus {
+				if report.Route == nil {
+					// An empty desired status clears only this controller's stale parents in
+					// Merge, so it is worth writing only if we have parents to clear. Every route
+					// in the watched namespaces lands here, most of them ours to translate but
+					// many not.
+					if !statussync.OwnsAnyRouteParent(k.controllerName, k.getStatus(current).Parents) {
+						return nil
+					}
+					return &gwv1.RouteStatus{}
 				}
-				return gwv1.RouteStatus{}, true
-			}
-			status := reports.BuildRouteStatus(report.Route, current, controllerName)
-			if status == nil {
-				// The route has a report, so the only way the builder returns nil is that it
-				// does not recognise this Go type. Suppress the write instead of publishing an
-				// empty status, which Merge reads as "clear every parent we own" — a missing
-				// type switch case must not erase good status.
-				logger.Error("route status builder does not support this type; skipping status update",
-					"gvk", res.GroupVersionKind.String(), "resource", res.NamespacedName.String(),
-					"type", fmt.Sprintf("%T", current))
-				return gwv1.RouteStatus{}, false
-			}
-			return *status, true
-		},
-		GetStatus: getStatus,
+				status := reports.BuildRouteStatus(report.Route, current, k.controllerName)
+				if status == nil {
+					// The route has a report, so the only way the builder returns nil is that it
+					// does not recognise this Go type. Suppress the write instead of publishing
+					// an empty status, which Merge reads as "clear every parent we own" — a
+					// missing type switch case must not erase good status.
+					logger.Error("route status builder does not support this type; skipping status update",
+						"gvk", res.GroupVersionKind.String(), "resource", res.NamespacedName.String(),
+						"type", fmt.Sprintf("%T", current))
+				}
+				return status
+			}),
+		GetStatus: k.getStatus,
 		Merge: func(current R, desired gwv1.RouteStatus) gwv1.RouteStatus {
-			desired.Parents = statussync.MergeRouteParentStatuses(controllerName, getStatus(current).Parents, desired.Parents)
+			desired.Parents = statussync.MergeRouteParentStatuses(k.controllerName, k.getStatus(current).Parents, desired.Parents)
 			return desired
 		},
 	}
@@ -328,15 +310,8 @@ func listenerSetWriter(
 func listenerSetDesired(
 	reportCol krt.Collection[statussync.ResourceReports],
 ) func(statussync.Resource, *gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
-	return func(res statussync.Resource, current *gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
-		report, ok := statussync.ReportFor(reportCol, res)
-		if !ok {
-			return gwv1.ListenerSetStatus{}, false
-		}
-		status := reports.BuildListenerSetStatus(report.ListenerSet, *current)
-		if status == nil {
-			return gwv1.ListenerSetStatus{}, false
-		}
-		return *status, true
-	}
+	return statussync.DesiredFromReport(reportCol,
+		func(_ statussync.Resource, report reports.StatusReport, current *gwv1.ListenerSet) *gwv1.ListenerSetStatus {
+			return reports.BuildListenerSetStatus(report.ListenerSet, *current)
+		})
 }
