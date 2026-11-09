@@ -528,7 +528,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 	})
 
-	s.Run("default GatewayClass should not be overwritten when it is updated", func() {
+	s.Run("default GatewayClass managed fields should be restored and user fields kept when it is updated", func() {
 		t := s.T()
 		r := require.New(t)
 		gwc := &gwv1.GatewayClass{}
@@ -539,19 +539,25 @@ func (s *ControllerSuite) TestGatewayClass() {
 			assert.NoError(c, err)
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be created", gatewayClassName)
 
-		// Update it
+		// Update a field the controller manages (description) and one it does not (a user annotation)
 		original := gwc.DeepCopy()
-		updatedDesc := "updated description"
-		gwc.Spec.Description = new(updatedDesc)
+		userAnnotation := "example.com/user-annotation"
+		if gwc.Annotations == nil {
+			gwc.Annotations = map[string]string{}
+		}
+		gwc.Annotations[userAnnotation] = "kept"
+		gwc.Spec.Description = new("updated description")
 		err := s.client.Patch(ctx, gwc, client.MergeFrom(original))
 		r.NoError(err)
 
-		// Verify it is not overwritten
+		// The generation bump makes the controller re-apply its desired spec via SSA, which restores
+		// the description. Waiting for that proves the re-apply ran, so the user annotation must have survived it.
 		r.EventuallyWithTf(func(c *assert.CollectT) {
 			err := s.client.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gwc)
 			assert.NoError(c, err)
 			assert.NotNil(c, gwc.Spec.Description)
-			assert.Equal(c, updatedDesc, *gwc.Spec.Description)
+			assert.Equal(c, "default GatewayClass", *gwc.Spec.Description)
+			assert.Equal(c, "kept", gwc.Annotations[userAnnotation])
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s", gatewayClassName)
 	})
 
