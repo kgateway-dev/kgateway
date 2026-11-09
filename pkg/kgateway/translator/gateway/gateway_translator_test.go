@@ -4407,19 +4407,25 @@ func TestValidation(t *testing.T) {
 			name:      "Header Template Invalid",
 			category:  "policy",
 			inputFile: "policy-header-template-invalid.yaml",
-			minMode:   apisettings.ValidationStrict,
+			minMode:   apisettings.ValidationStandard,
+		},
+		{
+			name:      "Host Header Modifier Invalid",
+			category:  "builtin",
+			inputFile: "host-header-modifier-invalid.yaml",
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Request Header Modifier Invalid",
 			category:  "builtin",
 			inputFile: "request-header-modifier-invalid.yaml",
-			minMode:   apisettings.ValidationStrict,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Response Header Modifier Invalid",
 			category:  "builtin",
 			inputFile: "response-header-modifier-invalid.yaml",
-			minMode:   apisettings.ValidationStrict,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Gateway/Listener/Merge",

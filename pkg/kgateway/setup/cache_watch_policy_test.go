@@ -449,3 +449,55 @@ func TestReconnectWarmedTypeRequestsAreAnsweredWhenSnapshotArrivesAtHeldVersion(
 		}
 	}
 }
+
+// Reproduce the good -> bad -> corrected route sequence from #14264 on one
+// stream. Endpoint updates must continue both during and after the RDS NACK.
+func TestRouteNackRecoveryKeepsEndpointUpdatesFlowing(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
+			h := newPolicyHarness(t, ordered, true)
+			snapshot := func(rds, eds, address string, bad bool) *envoycache.Snapshot {
+				s := clusterEndpointSnapshot("cds-1", eds, []string{adsTestCluster}, map[string]string{adsTestCluster: address})
+				routes := testRouteConfig(adsTestRoute, adsTestCluster)
+				if bad {
+					routes.VirtualHosts[0].Routes[0].RequestHeadersToAdd = []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "Host", Value: "api.example.com"}}}
+				}
+				s.Resources[cachetypes.Route] = envoycache.NewResources(rds, []cachetypes.Resource{routes})
+				return s
+			}
+			endpoints := func(version, address string) {
+				resp := h.receiveType(envoyresource.EndpointType, version)
+				require.Len(t, resp.Resources, 1)
+				var assignment envoyendpointv3.ClusterLoadAssignment
+				require.NoError(t, resp.Resources[0].UnmarshalTo(&assignment))
+				require.Equal(t, address, assignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+				h.ackNamed(resp, adsTestCluster)
+			}
+			h.setSnapshot(snapshot("rds-1", "eds-1", "10.0.0.1", false))
+			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.RouteType, ResourceNames: []string{adsTestRoute}})
+			h.ackNamed(h.receiveType(envoyresource.RouteType, "rds-1"), adsTestRoute)
+			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}})
+			endpoints("eds-1", "10.0.0.1")
+			h.waitForOpenWatches(2)
+
+			h.setSnapshot(snapshot("rds-2", "eds-1", "10.0.0.1", true))
+			h.nack(h.receiveType(envoyresource.RouteType, "rds-2"), "rds-1", adsTestRoute)
+			h.waitForOpenWatches(2)
+			h.setSnapshot(snapshot("rds-2", "eds-2", "10.0.0.2", true))
+			endpoints("eds-2", "10.0.0.2")
+			h.waitForOpenWatches(2)
+
+			// Returning to the last accepted version must still answer the parked NACK.
+			h.setSnapshot(snapshot("rds-1", "eds-2", "10.0.0.2", false))
+			corrected := h.receiveType(envoyresource.RouteType, "rds-1")
+			require.Len(t, corrected.Resources, 1)
+			var routes envoyroutev3.RouteConfiguration
+			require.NoError(t, corrected.Resources[0].UnmarshalTo(&routes))
+			require.Empty(t, routes.VirtualHosts[0].Routes[0].RequestHeadersToAdd)
+			h.ackNamed(corrected, adsTestRoute)
+			h.waitForOpenWatches(2)
+			h.setSnapshot(snapshot("rds-1", "eds-3", "10.0.0.3", false))
+			endpoints("eds-3", "10.0.0.3")
+		})
+	}
+}
