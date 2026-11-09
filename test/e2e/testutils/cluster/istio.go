@@ -178,6 +178,9 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 }
 
 func downloadIstioRelease(ctx context.Context, version, installLocation, goos, goarch string) error {
+	if err := os.MkdirAll(installLocation, 0o755); err != nil {
+		return fmt.Errorf("create Istio install directory: %w", err)
+	}
 	tempDir, err := os.MkdirTemp(installLocation, "istio-download-*")
 	if err != nil {
 		return fmt.Errorf("create Istio download directory: %w", err)
@@ -212,7 +215,11 @@ func downloadIstioRelease(ctx context.Context, version, installLocation, goos, g
 		return fmt.Errorf("change istioctl permissions: %w", err)
 	}
 	// Cache only a successfully extracted binary, so a failed attempt can be retried.
-	if err := os.Rename(binary, filepath.Join(installLocation, member)); err != nil {
+	destination := filepath.Join(installLocation, member)
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return fmt.Errorf("create istioctl cache directory: %w", err)
+	}
+	if err := os.Rename(binary, destination); err != nil {
 		return fmt.Errorf("cache istioctl: %w", err)
 	}
 	return nil

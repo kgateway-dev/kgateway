@@ -8,8 +8,14 @@ version="${2:?Release tag is required}"
 asset_name="${3:?Release asset name is required}"
 destination="${4:?Download destination is required}"
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is required to resolve GitHub release assets; install jq and retry" >&2
+  exit 1
+fi
+
 # Publish only a completed, verified download; leave any existing destination
 # untouched on failure. Creating the temporary file beside it keeps mv atomic.
+mkdir -p "$(dirname "$destination")"
 manifest="$(mktemp "${destination}.XXXXXX")"
 trap 'rm -f "$manifest"' EXIT
 

@@ -10,11 +10,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
 
 func TestDownloadIstioRelease(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the release downloader requires POSIX tools")
+	}
 	for _, tc := range []struct {
 		name, goos, goarch, suffix, failure string
 	}{
@@ -74,7 +79,11 @@ case "$*" in
   *) echo "unexpected URL" >&2; exit 2 ;;
 esac
 `
-			if err := os.WriteFile(filepath.Join(fakeBin, "curl"), []byte(curl), 0o755); err != nil {
+			curlPath := filepath.Join(fakeBin, "curl")
+			if err := os.WriteFile(curlPath, []byte(curl), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(curlPath, 0o700); err != nil {
 				t.Fatal(err)
 			}
 			requestLog := filepath.Join(dir, "requests")
@@ -83,12 +92,10 @@ esac
 			t.Setenv("TEST_DOWNLOAD_LOG", requestLog)
 			t.Setenv("TEST_RELEASE_METADATA", metadataPath)
 			t.Setenv("TEST_RELEASE_ARCHIVE", archive)
-			t.Setenv("TEST_DOWNLOAD_FAILURE", fmt.Sprint(tc.failure == "exit status 22"))
-			installLocation := filepath.Join(dir, "install")
+			t.Setenv("TEST_DOWNLOAD_FAILURE", strconv.FormatBool(tc.failure == "exit status 22"))
+			// Start without either the install root or the binary's parent directory.
+			installLocation := filepath.Join(dir, "new", "install")
 			binary := filepath.Join(installLocation, "istio-"+version, "bin", "istioctl")
-			if err := os.MkdirAll(filepath.Dir(binary), 0o755); err != nil {
-				t.Fatal(err)
-			}
 
 			err = downloadIstioRelease(t.Context(), version, installLocation, tc.goos, tc.goarch)
 			if tc.failure != "" {
