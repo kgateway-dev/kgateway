@@ -94,8 +94,9 @@ type StartConfig struct {
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
-	// StatusSyncerOptions configure the status pipeline. They are passed to both the ProxySyncer,
-	// which produces status contributions, and the StatusSyncer, which writes them.
+	// StatusSyncerOptions configure the status pipeline. They are passed to NewProxySyncer,
+	// which owns the pipeline; the leader-only runnable that writes status comes from its
+	// StatusSyncer method and takes no options of its own.
 	StatusSyncerOptions []proxy_syncer.StatusSyncerOption
 }
 
