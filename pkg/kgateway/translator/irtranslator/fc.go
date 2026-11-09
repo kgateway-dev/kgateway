@@ -17,7 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
@@ -480,31 +479,7 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
-	applyPolicies(h.pluginPass, &attachedPolicies, &policyApplyOptions{
-		reporter:    h.reporter,
-		ancestorRef: h.listener.PolicyAncestorRef,
-		selectPolicies: func(gk schema.GroupKind, pass *TranslationPass, pols []ir.PolicyAtt) ([]ir.PolicyAtt, bool, bool) {
-			// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
-			// this chain's Gateway listener only get it here, and only when they have an effect on
-			// TCP filter chains. The others are left out of the merge as well, so that they do not
-			// show up in the merge origins of the policies that do apply.
-			tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass)
-			if !ok {
-				return pols, false, true
-			}
-			pols = nil
-			for _, pol := range l.AttachedPolicies.Policies[gk] {
-				if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
-					pols = append(pols, pol)
-				}
-			}
-			// Gateway-wide policies are reported again alongside listener policies so that
-			// overriding them is reflected in their attachment state.
-			report := h.reporter != nil && len(pols) > 0
-			pols = append(pols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
-			return pols, report, len(pols) > 0
-		},
-	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+	apply := func(pass *TranslationPass, pol *ir.PolicyAtt) error {
 		pctx := &ir.TcpProxyContext{
 			ListenerPort: h.listener.BindPort,
 			Policy:       pol.PolicyIr,
@@ -519,7 +494,42 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 			})
 		}
 		return nil
-	})
+	}
+	reported := &policyApplyOptions{reporter: h.reporter, ancestorRef: h.listener.PolicyAncestorRef}
+	unreported := &policyApplyOptions{}
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := h.pluginPass[gk]
+		if pass == nil {
+			continue
+		}
+		tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass)
+		if !ok {
+			applyPolicyGroup(gk, pass, pols, unreported, apply)
+			continue
+		}
+		// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
+		// this chain's Gateway listener only get it here, and only when they have an effect on
+		// TCP filter chains. The others are left out of the merge as well, so that they do not
+		// show up in the merge origins of the policies that do apply.
+		pols = nil
+		for _, pol := range l.AttachedPolicies.Policies[gk] {
+			if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
+				pols = append(pols, pol)
+			}
+		}
+		// Gateway-wide policies are reported again alongside listener policies so that
+		// overriding them is reflected in their attachment state.
+		opts := unreported
+		if h.reporter != nil && len(pols) > 0 {
+			opts = reported
+		}
+		pols = append(pols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
+		if len(pols) == 0 {
+			continue
+		}
+		applyPolicyGroup(gk, pass, pols, opts, apply)
+	}
 }
 
 func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistenerv3.Filter, error) {
