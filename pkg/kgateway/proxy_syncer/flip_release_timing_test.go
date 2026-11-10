@@ -15,8 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// slowInstallCache delays SetSnapshot while delay is set, standing in for an
-// install blocked on a stream. It counts installs and keeps the slow ones.
+// slowInstallCache delays the next SetSnapshot by delay, standing in for an
+// install blocked on a stream. It counts installs and keeps the slow ones. The
+// delay applies once: a re-publish the slow install arms (such as an immediate
+// prune) can install before the test goroutine runs again, and must not be
+// slowed too.
 type slowInstallCache struct {
 	envoycache.SnapshotCache
 	delay    atomic.Int64
@@ -28,7 +31,7 @@ type slowInstallCache struct {
 
 func (c *slowInstallCache) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
 	c.installs.Add(1)
-	if delay := time.Duration(c.delay.Load()); delay > 0 {
+	if delay := time.Duration(c.delay.Swap(0)); delay > 0 {
 		c.mu.Lock()
 		c.slow = append(c.slow, snapshot)
 		c.mu.Unlock()
@@ -38,7 +41,7 @@ func (c *slowInstallCache) SetSnapshot(ctx context.Context, node string, snapsho
 }
 
 // firstSlowInstallClusters returns the clusters of the first snapshot installed
-// while delay was set.
+// with a delay.
 func (c *slowInstallCache) firstSlowInstallClusters(t *testing.T) map[string]envoycachetypes.ResourceWithTTL {
 	t.Helper()
 	c.mu.Lock()
@@ -59,7 +62,6 @@ func TestFlipRelease_BudgetStartsAfterTheHeldSnapshotIsInstalled(t *testing.T) {
 
 	cache.delay.Store(int64(2 * budget))
 	pt.syncXds(context.Background(), flipWrap)
-	cache.delay.Store(0)
 
 	require.Never(t, func() bool {
 		return snapshotReferencesCluster(servedSnapshot(t, pt), "cluster-new")
@@ -126,7 +128,6 @@ func TestDereferenceGraceStartsAfterASlowInstall(t *testing.T) {
 	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
 	cache.delay.Store(int64(2 * grace))
 	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new")) // stops naming old, installed slowly
-	cache.delay.Store(0)
 	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new"))
 	assert.Contains(t, publishedClusterNames(t, pt), "old", "old keeps its grace after the slow installation")
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
@@ -152,7 +153,6 @@ func TestDereferenceGraceStartsAfterASlowFlipReleaseInstall(t *testing.T) {
 	cache.delay.Store(int64(2 * grace))
 	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v2" }, 3*time.Second, 5*time.Millisecond,
 		"the budget releases the flip")
-	cache.delay.Store(0)
 	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new"))
 	assert.Contains(t, publishedClusterNames(t, pt), "old", "old keeps its grace after the slow installation")
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
@@ -175,7 +175,6 @@ func TestDereferencePruneQueuedDuringASlowInstallKeepsTheNewerBuild(t *testing.T
 	time.Sleep(grace / 2)
 	cache.delay.Store(int64(grace))
 	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new")) // still keeps old, and installs past its deadline
-	cache.delay.Store(0)
 	require.Contains(t, cache.firstSlowInstallClusters(t), "old", "v3 must begin inside old's window, or its prune runs before v3")
 
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
@@ -199,7 +198,6 @@ func TestDereferenceWindowClosingDuringASlowInstallIsNotExtendedByALaterOne(t *t
 	time.Sleep(grace / 2)
 	cache.delay.Store(int64(grace))
 	pt.syncXds(ctx, routedBuild(t, "v3", "c", "c")) // b's window opens; a's closes during the installation
-	cache.delay.Store(0)
 	require.Contains(t, cache.firstSlowInstallClusters(t), "a", "v3 must begin inside a's window, or a's prune runs before v3")
 
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "a") }, grace/2, 5*time.Millisecond,
@@ -228,7 +226,6 @@ func TestDereferenceWindowClosingDuringASlowHeldInstallIsPrunedOnce(t *testing.T
 	time.Sleep(grace / 2)
 	cache.delay.Store(int64(grace))
 	pt.syncXds(ctx, routedBuild(t, "v3", "n", "c", "n")) // held for n; a's window closes during the installation
-	cache.delay.Store(0)
 	require.Contains(t, cache.firstSlowInstallClusters(t), "a", "v3 must begin inside a's window, or a's prune runs before v3")
 	installed := cache.installs.Load()
 
