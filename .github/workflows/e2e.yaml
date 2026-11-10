@@ -43,9 +43,11 @@ jobs:
           compression-level: 0
   end_to_end_tests:
     name: End-to-End (${{ matrix.test.cluster-name }})
-    needs: build_e2e_images
+    # Prepare runners, compile tests and create clusters alongside the image build.
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    # The image build wait now counts against this budget, so allow for a slow
+    # build on top of the 60 minutes the shard itself used to get.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -168,21 +170,13 @@ jobs:
         with:
           path: ${{ matrix.version-files.file }}
           log-variables: true
-      - name: Download shared e2e images
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: e2e-shared-images
-          path: _output/e2e-images
-      - name: Load shared e2e images
-        shell: bash
-        run: docker load --input _output/e2e-images/shared-images.tar
       - id: setup-kind-cluster
         name: Setup KinD Cluster
         if: ${{ steps.dotenv.outputs.cluster_type != 'k3d' }}
         uses: ./.github/actions/setup-kind-cluster
         env:
           SKIP_DOCKER: "true"
-          LOAD_DOCKER_IMAGES: "true"
+          LOAD_DOCKER_IMAGES: "false"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           kind-node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -197,7 +191,7 @@ jobs:
         uses: ./.github/actions/setup-k3d-cluster
         env:
           SKIP_DOCKER: "true"
-          LOAD_DOCKER_IMAGES: "true"
+          LOAD_DOCKER_IMAGES: "false"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           node-version: ${{ steps.dotenv.outputs.node_version }}
@@ -205,12 +199,34 @@ jobs:
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           localstack: ${{ matrix.test.localstack }}
           github-token: ${{ github.token }}
-      - name: Load shared extproc server
+      # Job-level needs would delay all cluster preparation until images finish.
+      # Wait here instead, checking the latest build execution in this run.
+      - name: Wait for shared e2e image build
+        # Backstop for a hung API call; the script's own 45-minute deadline reports first.
+        timeout-minutes: 50
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Poll faster in the upstream repo, which has a larger API rate limit than forks.
+          IS_FORK: ${{ github.event.repository.fork }}
+          # Keep in sync with the build_e2e_images job and its upload step.
+          BUILD_JOB_NAME: Build End-to-End Images
+          UPLOAD_STEP_NAME: Upload shared e2e images
+        run: bash hack/ci/wait-for-e2e-images.sh
+      - name: Download shared e2e images
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: e2e-shared-images
+          path: _output/e2e-images
+      - name: Load shared e2e images
+        shell: bash
+        run: docker load --input _output/e2e-images/shared-images.tar
+      - name: Load shared images into cluster
         shell: bash
         env:
           CLUSTER_NAME: ${{ matrix.test.cluster-name }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
-        run: make cluster-load-extproc-server
+        run: make cluster-load cluster-load-extproc-server
       - name: Disable ordered ADS escape hatch
         if: ${{ matrix.test.ordered-ads == 'false' }}
         shell: bash

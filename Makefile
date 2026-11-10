@@ -437,6 +437,14 @@ E2E_SHARED_IMAGE_TAGS = \
 	$(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) \
 	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
 
+# Load prebuilt kgateway images into the kind or k3d cluster named by CLUSTER_NAME.
+.PHONY: cluster-load
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load: k3d-load
+else
+cluster-load: kind-load
+endif
+
 .PHONY: cluster-load-extproc-server
 ifeq ($(CLUSTER_TYPE),k3d)
 cluster-load-extproc-server: k3d-load-extproc-server
