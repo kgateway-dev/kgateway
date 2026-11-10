@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
@@ -42,9 +41,6 @@ func noopOverlay(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient
 	return nil
 }
 
-func noopLegacy(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR, *envoyclusterv3.Cluster) {
-}
-
 // TestOverlayInputsHash_ZeroWithoutAnyPerClientHook: with no plugin
 // contributing a per-client cluster hook there is nothing a backend write can
 // reach through an overlay, so the fold carries no information and is zero.
@@ -61,10 +57,14 @@ func TestOverlayInputsHash_ZeroWithoutAnyPerClientHook(t *testing.T) {
 func TestOverlayInputsHash_MovesOnlyForDeclaredInputs(t *testing.T) {
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test", Kind: "Declared"}: {
-			Name:                    "declared",
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-				return utils.HashString(in.CanonicalHostname)
+			Name: "declared",
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: noopOverlay,
+					InputsHash: func(in ir.BackendObjectIR) uint64 {
+						return utils.HashString(in.CanonicalHostname)
+					},
+				},
 			},
 		},
 	})
@@ -87,53 +87,18 @@ func TestOverlayInputsHash_MovesOnlyForDeclaredInputs(t *testing.T) {
 func TestOverlayInputsHash_UndeclaredOverlayFallsBackToWholeObject(t *testing.T) {
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test", Kind: "Undeclared"}: {
-			Name:                    "undeclared",
-			PerClientClusterOverlay: noopOverlay,
+			Name: "undeclared",
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: noopOverlay,
+				},
+			},
 		},
 	})
 	backend := hashBackend()
 
 	assert.NotEqual(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(*withAnnotation(backend, "2")),
 		"without a declaration every write to the backing object must move the fold")
-}
-
-// TestOverlayInputsHash_LegacyHookFallsBackToWholeObject: the deprecated
-// PerClientProcessBackend without an input declaration gets the same whole-object
-// treatment as an undeclared overlay. A plugin that has not migrated is
-// therefore correct at the cost of a walk per write; declaring its inputs buys
-// the saving back.
-func TestOverlayInputsHash_LegacyHookFallsBackToWholeObject(t *testing.T) {
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		{Group: "test", Kind: "Legacy"}: {
-			Name:                    "legacy",
-			PerClientProcessBackend: noopLegacy, //nolint:staticcheck // exercising the deprecated hook's declaration
-		},
-	})
-	backend := hashBackend()
-
-	assert.NotEqual(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(*withAnnotation(backend, "2")),
-		"an undeclared legacy hook must observe every backing-object write")
-}
-
-// TestOverlayInputsHash_MigratedPluginDoesNotPayForItsLegacyHook: a plugin
-// registering both hooks is treated as migrated everywhere else, and the fold
-// must agree. Taking the legacy hook's whole-object declaration here would
-// silently undo the saving the migration was for.
-func TestOverlayInputsHash_MigratedPluginDoesNotPayForItsLegacyHook(t *testing.T) {
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		{Group: "test", Kind: "Migrated"}: {
-			Name:                    "migrated",
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-				return utils.HashString(in.CanonicalHostname)
-			},
-			PerClientProcessBackend: noopLegacy, //nolint:staticcheck // a plugin mid-migration registers both
-		},
-	})
-	backend := hashBackend()
-
-	assert.Equal(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(*withAnnotation(backend, "2")),
-		"the overlay's declaration wins, so the write must not move the fold")
 }
 
 // TestOverlayInputsHash_MixesPluginIdentity: two plugins reporting each other's
@@ -145,8 +110,12 @@ func TestOverlayInputsHash_MixesPluginIdentity(t *testing.T) {
 	second := schema.GroupKind{Group: "test", Kind: "Second"}
 	declaring := func(value uint64) sdk.PolicyPlugin {
 		return sdk.PolicyPlugin{
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash:       func(ir.BackendObjectIR) uint64 { return value },
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay:    noopOverlay,
+					InputsHash: func(ir.BackendObjectIR) uint64 { return value },
+				},
+			},
 		}
 	}
 	backend := hashBackend()
@@ -169,8 +138,12 @@ func TestOverlayInputsHash_IsStableAcrossCalls(t *testing.T) {
 	policies := map[schema.GroupKind]sdk.PolicyPlugin{}
 	for _, kind := range []string{"A", "B", "C", "D", "E", "F", "G", "H"} {
 		policies[schema.GroupKind{Group: "test", Kind: kind}] = sdk.PolicyPlugin{
-			PerClientClusterOverlay: noopOverlay,
-			OverlayInputsHash:       func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.CanonicalHostname) },
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay:    noopOverlay,
+					InputsHash: func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.CanonicalHostname) },
+				},
+			},
 		}
 	}
 	backend := hashBackend()
@@ -181,18 +154,4 @@ func TestOverlayInputsHash_IsStableAcrossCalls(t *testing.T) {
 	for range 20 {
 		assert.Equal(t, want, edsBackendTranslator(policies).OverlayInputsHash(*backend))
 	}
-}
-
-func TestOverlayInputsHash_LegacyHookHonorsDeclaration(t *testing.T) {
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		{Group: "test", Kind: "Legacy"}: {
-			PerClientProcessBackend: noopLegacy, //nolint:staticcheck // exercising legacy compatibility
-			OverlayInputsHash:       func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.CanonicalHostname) },
-		},
-	})
-	backend := hashBackend()
-	assert.Equal(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(*withAnnotation(backend, "2")), "a legacy declaration excludes unread metadata writes")
-	changed := *backend
-	changed.CanonicalHostname = "changed"
-	assert.NotEqual(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(changed))
 }

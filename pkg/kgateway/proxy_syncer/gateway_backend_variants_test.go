@@ -74,28 +74,30 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{
 		policyGK: {
 			Policies: policyCol,
-			ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-				typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
-					Sni: "backend.example.com",
-					CommonTlsContext: &envoytlsv3.CommonTlsContext{
-						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
-							ValidationContext: &envoytlsv3.CertificateValidationContext{
-								TrustedCa: &envoycorev3.DataSource{
-									Specifier: &envoycorev3.DataSource_InlineString{
-										InlineString: "trusted-ca",
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+					typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+						Sni: "backend.example.com",
+						CommonTlsContext: &envoytlsv3.CommonTlsContext{
+							ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
+								ValidationContext: &envoytlsv3.CertificateValidationContext{
+									TrustedCa: &envoycorev3.DataSource{
+										Specifier: &envoycorev3.DataSource_InlineString{
+											InlineString: "trusted-ca",
+										},
 									},
 								},
 							},
 						},
-					},
-				})
-				require.NoError(t, err)
-				out.TransportSocket = &envoycorev3.TransportSocket{
-					Name: envoywellknown.TransportSocketTls,
-					ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-						TypedConfig: typedConfig,
-					},
-				}
+					})
+					require.NoError(t, err)
+					out.TransportSocket = &envoycorev3.TransportSocket{
+						Name: envoywellknown.TransportSocketTls,
+						ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+							TypedConfig: typedConfig,
+						},
+					}
+				},
 			},
 		},
 	}, apisettings.Settings{})
@@ -160,28 +162,30 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			policyGK: {
-				ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-					typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
-						Sni: "backend.example.com",
-						CommonTlsContext: &envoytlsv3.CommonTlsContext{
-							ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
-								ValidationContext: &envoytlsv3.CertificateValidationContext{
-									TrustedCa: &envoycorev3.DataSource{
-										Specifier: &envoycorev3.DataSource_InlineString{
-											InlineString: "trusted-ca",
+				BackendHooks: sdk.BackendHooks{
+					ProcessBackend: func(ctx context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+						typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+							Sni: "backend.example.com",
+							CommonTlsContext: &envoytlsv3.CommonTlsContext{
+								ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
+									ValidationContext: &envoytlsv3.CertificateValidationContext{
+										TrustedCa: &envoycorev3.DataSource{
+											Specifier: &envoycorev3.DataSource_InlineString{
+												InlineString: "trusted-ca",
+											},
 										},
 									},
 								},
 							},
-						},
-					})
-					require.NoError(t, err)
-					out.TransportSocket = &envoycorev3.TransportSocket{
-						Name: envoywellknown.TransportSocketTls,
-						ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-							TypedConfig: typedConfig,
-						},
-					}
+						})
+						require.NoError(t, err)
+						out.TransportSocket = &envoycorev3.TransportSocket{
+							Name: envoywellknown.TransportSocketTls,
+							ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+								TypedConfig: typedConfig,
+							},
+						}
+					},
 				},
 			},
 		},

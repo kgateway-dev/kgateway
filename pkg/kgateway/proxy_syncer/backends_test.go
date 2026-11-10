@@ -127,7 +127,7 @@ func TestBaseClusterVersion_ClusterChangesAreReflected(t *testing.T) {
 }
 
 // TestBaseClusterVersion_InlineCLAReflectsPolicyChanges is a regression test for
-// the stale-AttachedPolicies bug: PerClientProcessEndpoints hooks (e.g. the
+// the stale-AttachedPolicies bug: per-client endpoint hooks (e.g. the
 // backendconfigpolicy zone-aware plugin) read AttachedPolicies from the cached
 // BaseCluster.EndpointInputs, and KRT keeps the OLD stored object when Equals
 // returns true. If a policy-only change (cluster proto and endpoints unchanged)
@@ -215,11 +215,15 @@ func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
 	translator := &irtranslator.BackendTranslator{
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return nil
-				},
-				OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
-					return utils.HashString(in.Obj.GetLabels()[overlayLabel])
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return nil
+						},
+						InputsHash: func(in ir.BackendObjectIR) uint64 {
+							return utils.HashString(in.Obj.GetLabels()[overlayLabel])
+						},
+					},
 				},
 			},
 		},

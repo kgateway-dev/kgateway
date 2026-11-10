@@ -80,15 +80,19 @@ func benchTranslator(istioOn, heavy bool) *BackendTranslator {
 		// (a "destination rule" is present) and self-gates by returning nil for everyone else, so
 		// the translator can skip the per-client clone entirely for non-matching pairs.
 		t.ContributedPolicies[benchGK] = sdk.PolicyPlugin{
-			PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
-				if ucc.Labels["bench-mutate"] != "yes" {
-					return nil
-				}
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
+						if ucc.Labels["bench-mutate"] != "yes" {
+							return nil
+						}
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							},
+						}
 					},
-				}
+				},
 			},
 		}
 	}
@@ -141,10 +145,11 @@ func (t *BackendTranslator) legacyTranslate(ctx context.Context, kctx krt.Handle
 	_ = t.applyBasePolicies(ctx, backend, out)
 	// Per-client overlays applied in place, once per pair — the pre-refactor behavior.
 	for _, policyPlugin := range t.ContributedPolicies {
-		if policyPlugin.PerClientClusterOverlay == nil {
+		hook := policyPlugin.BackendHooks.PerClientCluster
+		if hook == nil {
 			continue
 		}
-		if ov := policyPlugin.PerClientClusterOverlay(kctx, ctx, ucc, *backend); ov != nil && ov.Mutate != nil {
+		if ov := hook.Overlay(kctx, ctx, ucc, *backend); ov != nil && ov.Mutate != nil {
 			ov.Mutate(out)
 		}
 	}

@@ -66,51 +66,49 @@ type BackendTranslator struct {
 	overlayOnce    sync.Once
 	overlayPlugins []overlayPlugin
 
-	// Base hooks are cached in (Group, Kind) order.
-	baseHooksOnce     sync.Once
-	baseClusterHooks  []sdk.ProcessBaseCluster
-	baseResourceHooks []sdk.ProcessBaseClusterResources
+	// Base hooks are cached in (Group, Kind) order. processBackendHooks is
+	// keyed by policy kind because ProcessBackend runs per attached policy.
+	baseHooksOnce       sync.Once
+	baseClusterHooks    []sdk.ProcessBaseCluster
+	baseResourceHooks   []sdk.ProcessBaseClusterResources
+	processBackendHooks map[schema.GroupKind]sdk.ProcessBackend
 }
 
-// overlayPlugin is one policy plugin's per-client cluster hook: either the
-// self-gating overlay or, for plugins not yet migrated, the legacy eager
-// mutator, which is treated as applicable to every client. inputsHash is the
-// plugin's declaration of what that hook reads from the backend, and is never
-// nil: a hook that did not declare gets wholeObjectInputsHash.
+// overlayPlugin is one policy plugin's self-gating per-client cluster overlay.
+// inputsHash is the plugin's declaration of what the overlay reads from the
+// backend, and is never nil: an overlay that did not declare gets
+// wholeObjectInputsHash.
 type overlayPlugin struct {
 	gk               schema.GroupKind
 	overlay          sdk.PerClientClusterOverlay
-	legacy           sdk.PerClientProcessBackend
 	inputsHash       sdk.OverlayInputsHash
 	undeclaredInputs bool
 }
 
 // orderedOverlayPlugins returns the plugins with a per-client cluster hook in
-// (Group, Kind) order. A plugin registering both hooks is treated as migrated:
-// only PerClientClusterOverlay is kept, so its nil (decline) is honored rather
-// than overridden by the always-applicable legacy adapter.
+// (Group, Kind) order.
 func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 	t.overlayOnce.Do(func() {
 		for gk, policyPlugin := range t.ContributedPolicies {
-			switch {
-			case policyPlugin.PerClientClusterOverlay != nil:
-				inputsHash := policyPlugin.OverlayInputsHash
-				if inputsHash == nil {
-					// A plugin bug: the framework cannot know what the overlay
-					// reads, so it must assume everything. Never stale, only
-					// expensive; see sdk.OverlayInputsHash.
-					logger.Error("per-client cluster overlay registered without OverlayInputsHash; every write to a backend will rerun every client for it",
-						"group", gk.Group, "kind", gk.Kind, "plugin", policyPlugin.Name)
-					inputsHash = wholeObjectInputsHash
-				}
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil})
-			case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-				inputsHash := policyPlugin.OverlayInputsHash
-				if inputsHash == nil {
-					inputsHash = wholeObjectInputsHash
-				}
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil}) //nolint:staticcheck // compatibility boundary
+			hook := policyPlugin.BackendHooks.PerClientCluster
+			if hook == nil || hook.Overlay == nil {
+				continue
 			}
+			inputsHash := hook.InputsHash
+			if inputsHash == nil {
+				// A plugin bug: the framework cannot know what the overlay
+				// reads, so it must assume everything. Never stale, only
+				// expensive; see sdk.PerClientCluster.InputsHash.
+				logger.Error("per-client cluster overlay registered without OverlayInputsHash; every write to a backend will rerun every client for it",
+					"group", gk.Group, "kind", gk.Kind, "plugin", policyPlugin.Name)
+				inputsHash = wholeObjectInputsHash
+			}
+			t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{
+				gk:               gk,
+				overlay:          hook.Overlay,
+				inputsHash:       inputsHash,
+				undeclaredInputs: hook.InputsHash == nil,
+			})
 		}
 		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
 			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
@@ -136,12 +134,18 @@ func (t *BackendTranslator) orderBaseHooks() {
 			return cmp.Compare(a.Kind, b.Kind)
 		})
 		for _, gk := range gks {
-			policyPlugin := t.ContributedPolicies[gk]
-			if policyPlugin.ProcessBaseCluster != nil {
-				t.baseClusterHooks = append(t.baseClusterHooks, policyPlugin.ProcessBaseCluster)
+			hooks := t.ContributedPolicies[gk].BackendHooks
+			if hooks.ProcessBackend != nil {
+				if t.processBackendHooks == nil {
+					t.processBackendHooks = make(map[schema.GroupKind]sdk.ProcessBackend)
+				}
+				t.processBackendHooks[gk] = hooks.ProcessBackend
 			}
-			if policyPlugin.ProcessBaseClusterResources != nil {
-				t.baseResourceHooks = append(t.baseResourceHooks, policyPlugin.ProcessBaseClusterResources)
+			if hooks.ProcessBaseCluster != nil {
+				t.baseClusterHooks = append(t.baseClusterHooks, hooks.ProcessBaseCluster)
+			}
+			if hooks.ProcessBaseClusterResources != nil {
+				t.baseResourceHooks = append(t.baseResourceHooks, hooks.ProcessBaseClusterResources)
 			}
 		}
 	})
@@ -301,7 +305,7 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 // left in EDS with no cluster to claim it.
 //
 // kctx is the KRT context of the transform producing the base; endpoint
-// plugins' PerClientEndpointsMayApply predicates fetch through it, so the base
+// plugins' PerClientEndpoints.MayApply predicates fetch through it, so the base
 // is re-translated when what they consulted changes.
 func (t *BackendTranslator) TranslateBackendBase(
 	kctx krt.HandlerContext,
@@ -436,18 +440,8 @@ func (t *BackendTranslator) ApplyPerClient(
 	// across recomputes without a sort per pair.
 	var overlays []*sdk.ClusterOverlay
 	for _, plugin := range t.orderedOverlayPlugins() {
-		switch {
-		case plugin.overlay != nil:
-			if ov := plugin.overlay(kctx, ctx, ucc, *backend); ov != nil {
-				overlays = append(overlays, ov)
-			}
-		case plugin.legacy != nil:
-			legacy := plugin.legacy
-			overlays = append(overlays, &sdk.ClusterOverlay{
-				Mutate: func(out *envoyclusterv3.Cluster) {
-					legacy(kctx, ctx, ucc, *backend, out)
-				},
-			})
+		if ov := plugin.overlay(kctx, ctx, ucc, *backend); ov != nil {
+			overlays = append(overlays, ov)
 		}
 	}
 
@@ -505,9 +499,8 @@ func (t *BackendTranslator) ApplyPerClient(
 		}
 		// Gather endpoint plugins lazily — only inline-CLA clusters consume them,
 		// so the common EDS path (which returns early above) never pays for this.
-		// Resolve through the copy-on-write editor. Modern plugins clone only
-		// endpoint protos they modify; legacy raw mutators receive a one-time
-		// defensive deep copy of the entire nested input graph.
+		// Resolve through the copy-on-write editor, which clones only the
+		// endpoint protos plugins modify.
 		epIn, _ := ResolveEndpointInputs(kctx, ctx, ucc, *base.EndpointInputs, t.orderedEndpointPlugins())
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
 	}
@@ -630,9 +623,11 @@ func (t *BackendTranslator) applyBasePolicies(
 	backend *ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 ) error {
+	t.orderBaseHooks()
 	var errs []error
 	for gk, policyPlugin := range t.ContributedPolicies {
-		if policyPlugin.ProcessBackend == nil {
+		processBackend := t.processBackendHooks[gk]
+		if processBackend == nil {
 			continue
 		}
 		policies := backend.AttachedPolicies.Policies[gk]
@@ -646,7 +641,7 @@ func (t *BackendTranslator) applyBasePolicies(
 				errs = append(errs, polAttachment.Errors...)
 				continue
 			}
-			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
+			processBackend(ctx, polAttachment.PolicyIr, *backend, out)
 		}
 	}
 	return errors.Join(errs...)
@@ -656,7 +651,7 @@ func (t *BackendTranslator) applyBasePolicies(
 // between clients: either prioritization itself reads the client (a traffic
 // distribution or preset priority), or a contributed endpoint hook has not ruled
 // this backend out and might edit its inputs per client. Hooks that declare no
-// PerClientEndpointsMayApply are assumed to apply, so an out-of-tree plugin keeps
+// PerClientEndpoints.MayApply are assumed to apply, so an out-of-tree plugin keeps
 // today's per-client build until it opts in.
 func (t *BackendTranslator) inlineCLADependsOnClient(kctx krt.HandlerContext, backend *ir.BackendObjectIR, inputs *endpoints.EndpointsInputs) bool {
 	if endpoints.DependsOnClient(*inputs) {

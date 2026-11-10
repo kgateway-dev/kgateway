@@ -32,9 +32,11 @@ func TestUnscopedModeRunsNoPluginClaims(t *testing.T) {
 	plugins := sdk.ContributesPolicies{
 		{Group: "test", Kind: "Picker"}: {
 			Name: "picker",
-			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
-				t.Error("a claim was collected while cluster scoping is off")
-				return sdk.ClusterEmissionClaim{}
+			BackendHooks: sdk.BackendHooks{
+				ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
+					t.Error("a claim was collected while cluster scoping is off")
+					return sdk.ClusterEmissionClaim{}
+				},
 			},
 		},
 	}

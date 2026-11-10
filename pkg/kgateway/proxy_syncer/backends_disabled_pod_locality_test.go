@@ -47,13 +47,17 @@ func TestPerClientClustersTrackSharedClientCapability(t *testing.T) {
 		},
 		ContributedPolicies: sdk.ContributesPolicies{
 			overlayGK: {
-				PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
-					if !ucc.KnowsLocalCluster {
-						return nil
-					}
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.AltStatName = "local-cluster-capable"
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
+							if !ucc.KnowsLocalCluster {
+								return nil
+							}
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.AltStatName = "local-cluster-capable"
+							}}
+						},
+					},
 				},
 			},
 		},

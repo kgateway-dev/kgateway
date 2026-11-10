@@ -22,16 +22,20 @@ var endpointsTestGK = schema.GroupKind{Group: "test", Kind: "EndpointPolicy"}
 func zonePreferringPlugin(gate func(krt.HandlerContext, ir.BackendObjectIR) bool, mutate bool) sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
 		Name: "zone-preferring",
-		PerClientEditEndpoints: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
-			if !strings.HasSuffix(out.Hostname(), ".gated") {
-				return 0
-			}
-			if mutate {
-				out.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
-			}
-			return 1
+		BackendHooks: sdk.BackendHooks{
+			PerClientEndpoints: &sdk.PerClientEndpoints{
+				Edit: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
+					if !strings.HasSuffix(out.Hostname(), ".gated") {
+						return 0
+					}
+					if mutate {
+						out.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
+					}
+					return 1
+				},
+				MayApply: gate,
+			},
 		},
-		PerClientEndpointsMayApply: gate,
 	}
 }
 
@@ -93,14 +97,18 @@ func TestAssertMayApplyCoversEndpointHook(t *testing.T) {
 	t.Run("a silent mutation is caught even when the hook returns zero", func(t *testing.T) {
 		plugin := sdk.PolicyPlugin{
 			Name: "silent-mutator",
-			PerClientEditEndpoints: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
-				if strings.HasSuffix(out.Hostname(), ".gated") {
-					return 0
-				}
-				out.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
-				return 0
+			BackendHooks: sdk.BackendHooks{
+				PerClientEndpoints: &sdk.PerClientEndpoints{
+					Edit: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
+						if strings.HasSuffix(out.Hostname(), ".gated") {
+							return 0
+						}
+						out.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
+						return 0
+					},
+					MayApply: hostnameGate,
+				},
 			},
-			PerClientEndpointsMayApply: hostnameGate,
 		}
 		errs := runEndpoints(t, plugin)
 		if len(errs) == 0 {
@@ -144,14 +152,18 @@ func TestAttachedPolicyEndpointsMayApply(t *testing.T) {
 
 	plugin := sdk.PolicyPlugin{
 		Name: "attached-policy-reader",
-		PerClientEditEndpoints: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
-			if len(out.PoliciesFor(endpointsTestGK)) == 0 {
-				return 0
-			}
-			out.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
-			return 1
+		BackendHooks: sdk.BackendHooks{
+			PerClientEndpoints: &sdk.PerClientEndpoints{
+				Edit: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
+					if len(out.PoliciesFor(endpointsTestGK)) == 0 {
+						return 0
+					}
+					out.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
+					return 1
+				},
+				MayApply: sdk.AttachedPolicyEndpointsMayApply(endpointsTestGK),
+			},
 		},
-		PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(endpointsTestGK),
 	}
 
 	rec := &recordingTB{TB: t}

@@ -45,17 +45,6 @@ type (
 		ucc ir.UniquelyConnectedClient,
 		out EndpointInputsEditor,
 	) uint64
-	// EndpointPlugin is the legacy mutable endpoint hook. Its returned hash must
-	// capture every per-client effect not reflected by the resolved endpoint or
-	// load-balancing-context hashes because those hashes key CLA interning.
-	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
-	// mutable nested state before invoking this hook.
-	EndpointPlugin func(
-		kctx krt.HandlerContext,
-		ctx context.Context,
-		ucc ir.UniquelyConnectedClient,
-		out *EndpointsInputs,
-	) uint64
 )
 
 // ClusterOverlay carries per-client cluster mutations. Returning nil from a
@@ -89,8 +78,10 @@ type ClusterOverlay struct {
 // redirect cannot use the backend endpoints' locality weights.
 //
 // Fetches through kctx register KRT dependencies. All fields read from in must
-// be covered by the accompanying OverlayInputsHash; otherwise KRT can retain
-// a base row whose backend inputs are stale.
+// be covered by the accompanying PerClientCluster.InputsHash; otherwise KRT can
+// retain a base row whose backend inputs are stale.
+//
+// Register it as BackendHooks.PerClientCluster.Overlay.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -105,7 +96,7 @@ type PerClientClusterOverlay func(
 // Inputs fetched through krt.Fetch are tracked separately. Extra hash inputs
 // are safe but cause unnecessary client recomputation.
 //
-// Register it beside PerClientClusterOverlay or PerClientProcessBackend. Hooks
+// Register it as PerClientCluster.InputsHash, beside the hook it describes. Hooks
 // without this declaration fall back to comparing backend IR and backing-object
 // version, rerunning clients on every object write. Hooks may apply globally,
 // so the framework cannot infer their applicability from policy attachments.
@@ -265,22 +256,11 @@ type ClaimedDestinations struct {
 // destinations the configuration names.
 type ClaimEmittedClusters func() ClusterEmissionClaim
 
-// PerClientProcessBackend is the legacy eager cluster mutation hook.
-// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
-// applicable to every client because they cannot report a no-op cheaply.
-type PerClientProcessBackend func(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	ucc ir.UniquelyConnectedClient,
-	in ir.BackendObjectIR,
-	out *envoyclusterv3.Cluster,
-)
-
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
-// AttachedPolicyEndpointsMayApply is a PerClientEndpointsMayApply for plugins
+// AttachedPolicyEndpointsMayApply is a PerClientEndpoints.MayApply for plugins
 // whose endpoint hook reads only policies of gk attached to the backend (via
 // EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
 // to act on for any client.
@@ -294,36 +274,8 @@ type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
-	// Backend processing for envoy proxy
-	ProcessBackend ProcessBackend
-	// ProcessBaseCluster runs for every backend after all ProcessBackend
-	// hooks; see ProcessBaseCluster.
-	ProcessBaseCluster          ProcessBaseCluster
-	ProcessBaseClusterResources ProcessBaseClusterResources
-	PerClientClusterOverlay     PerClientClusterOverlay
-	// OverlayInputsHash declares the backend fields the per-client hook reads.
-	// Required for efficient change detection with either hook; absent a
-	// declaration, consumers compare backend IR and backing-object version.
-	OverlayInputsHash OverlayInputsHash
-	// ClaimEmittedClusters declares destinations the configuration never names;
-	// only plugins that pick a destination at request time need it. See
-	// ClusterEmissionClaim.
-	ClaimEmittedClusters ClaimEmittedClusters
-	// Deprecated: use PerClientClusterOverlay.
-	PerClientProcessBackend PerClientProcessBackend
-	PerClientEditEndpoints  EndpointEditorPlugin
-	// Deprecated: use PerClientEditEndpoints.
-	PerClientProcessEndpoints EndpointPlugin
-	// PerClientEndpointsMayApply reports whether the endpoint hook can contribute
-	// to this backend for any client. False skips the hook: it must return zero
-	// and leave inputs unchanged for every client. Nil assumes it may apply.
-	//
-	// If all hooks rule the backend out and prioritization is client-independent,
-	// the framework builds its inline CLA on the shared base. Hooks that only
-	// read their own attached policies can use AttachedPolicyEndpointsMayApply.
-	// Fetch through the supplied base-translation HandlerContext to register
-	// dependencies that invalidate this decision.
-	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
+	// BackendHooks are the plugin's backend, cluster and endpoint hooks.
+	BackendHooks BackendHooks
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR

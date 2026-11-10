@@ -24,19 +24,18 @@ type endpointPluginFunc func(
 
 // EndpointPlugin is a normalized internal endpoint hook together with its
 // stable policy identity. Editor plugins use the resolver's restricted
-// copy-on-write surface. Legacy plugins are adapted by requesting a one-time
-// deep-cloned mutable input graph from the resolver.
+// copy-on-write surface.
 type EndpointPlugin struct {
 	groupKind schema.GroupKind
 	name      string
 	process   endpointPluginFunc
-	// mayApply is the plugin's PerClientEndpointsMayApply; nil means it may
+	// mayApply is the plugin's PerClientEndpoints.MayApply; nil means it may
 	// apply to every backend.
 	mayApply func(krt.HandlerContext, ir.BackendObjectIR) bool
 }
 
 // MayApply reports whether the plugin could contribute to backend for some
-// client. Plugins that did not declare PerClientEndpointsMayApply are assumed
+// client. Plugins that did not declare PerClientEndpoints.MayApply are assumed
 // to apply everywhere. kctx is the base translation's context, so a predicate
 // that fetches registers the base's dependency on what it read.
 func (p EndpointPlugin) MayApply(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool {
@@ -53,26 +52,19 @@ type endpointPluginEntry struct {
 func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
 	entries := make([]endpointPluginEntry, 0, len(policies))
 	for groupKind, policyPlugin := range policies {
-		var plugin endpointPluginFunc
-		switch {
-		case policyPlugin.PerClientEditEndpoints != nil:
-			edit := policyPlugin.PerClientEditEndpoints
-			plugin = func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-				return edit(kctx, ctx, ucc, out)
-			}
-		case policyPlugin.PerClientProcessEndpoints != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-			legacy := policyPlugin.PerClientProcessEndpoints //nolint:staticcheck // isolated below through LegacyMutableInputs
-			plugin = func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-				return legacy(kctx, ctx, ucc, out.LegacyMutableInputs())
-			}
-		default:
+		hook := policyPlugin.BackendHooks.PerClientEndpoints
+		if hook == nil || hook.Edit == nil {
 			continue
+		}
+		edit := hook.Edit
+		plugin := func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
+			return edit(kctx, ctx, ucc, out)
 		}
 		entries = append(entries, endpointPluginEntry{
 			groupKind: groupKind,
 			name:      policyPlugin.Name,
 			plugin:    plugin,
-			mayApply:  policyPlugin.PerClientEndpointsMayApply,
+			mayApply:  hook.MayApply,
 		})
 	}
 

@@ -76,15 +76,19 @@ func TestApplyPerClient_DoesNotMutateBase(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				if ucc.Labels["match"] != "yes" {
-					return nil
-				}
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						if ucc.Labels["match"] != "yes" {
+							return nil
+						}
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							},
+						}
 					},
-				}
+				},
 			},
 		},
 	})
@@ -124,14 +128,18 @@ func TestApplyPerClient_NoOpOverlaySharesBase(t *testing.T) {
 	mutated := 0
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-					mutated++
-					// Work that is only needed when the cluster lacks it.
-					if out.GetConnectTimeout() == nil {
-						out.ConnectTimeout = durationpb.New(time.Second)
-					}
-				}}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+							mutated++
+							// Work that is only needed when the cluster lacks it.
+							if out.GetConnectTimeout() == nil {
+								out.ConnectTimeout = durationpb.New(time.Second)
+							}
+						}}
+					},
+				},
 			},
 		},
 	})
@@ -172,12 +180,22 @@ func TestTranslateBackendBase_BaseClusterHooks(t *testing.T) {
 	}
 	attachedGK := schema.GroupKind{Group: "z", Kind: "Attached"}
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		{Group: "b", Kind: "Hook"}: {ProcessBaseCluster: recorder("b")},
-		{Group: "a", Kind: "Hook"}: {ProcessBaseCluster: recorder("a")},
+		{Group: "b", Kind: "Hook"}: {
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseCluster: recorder("b"),
+			},
+		},
+		{Group: "a", Kind: "Hook"}: {
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseCluster: recorder("a"),
+			},
+		},
 		attachedGK: {
-			ProcessBackend: func(_ context.Context, _ ir.PolicyIR, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-				order = append(order, "attached")
-				out.TransportSocket = &envoycorev3.TransportSocket{Name: "attached"}
+			BackendHooks: sdk.BackendHooks{
+				ProcessBackend: func(_ context.Context, _ ir.PolicyIR, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+					order = append(order, "attached")
+					out.TransportSocket = &envoycorev3.TransportSocket{Name: "attached"}
+				},
 			},
 		},
 	})
@@ -214,11 +232,21 @@ func TestTranslateBackendBase_BaseClusterResources(t *testing.T) {
 		}
 	}
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		{Group: "b", Kind: "Resources"}: {ProcessBaseClusterResources: resources("b")},
-		{Group: "a", Kind: "Resources"}: {ProcessBaseClusterResources: resources("a")},
+		{Group: "b", Kind: "Resources"}: {
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseClusterResources: resources("b"),
+			},
+		},
+		{Group: "a", Kind: "Resources"}: {
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseClusterResources: resources("a"),
+			},
+		},
 		{Group: "z", Kind: "Hook"}: {
-			ProcessBaseCluster: func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, _ *envoyclusterv3.Cluster) {
-				order = append(order, "hook")
+			BackendHooks: sdk.BackendHooks{
+				ProcessBaseCluster: func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, _ *envoyclusterv3.Cluster) {
+					order = append(order, "hook")
+				},
 			},
 		},
 	})
@@ -244,9 +272,13 @@ func TestApplyPerClient_BaseErrorIsNoOp(t *testing.T) {
 	overlayCalls := 0
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				overlayCalls++
-				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {}}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						overlayCalls++
+						return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {}}
+					},
+				},
 			},
 		},
 	})
@@ -283,10 +315,14 @@ func TestApplyPerClient_InlineCLAMaterializesAndIsolatesBaseEndpoints(t *testing
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			endpointGK: {
-				// Mimics destrule: writes PriorityInfo onto the per-client inputs.
-				PerClientEditEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out sdk.EndpointInputsEditor) uint64 {
-					out.SetPriorityInfo(&endpoints.PriorityInfo{})
-					return 1
+				BackendHooks: sdk.BackendHooks{
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						// Mimics destrule: writes PriorityInfo onto the per-client inputs.
+						Edit: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out sdk.EndpointInputsEditor) uint64 {
+							out.SetPriorityInfo(&endpoints.PriorityInfo{})
+							return 1
+						},
+					},
 				},
 			},
 		},
@@ -328,14 +364,20 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		endpointCalls := 0
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
-					}}
-				},
-				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
-					endpointCalls++
-					return 0
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+							}}
+						},
+					},
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						Edit: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+							endpointCalls++
+							return 0
+						},
+					},
 				},
 			},
 		}, nil)
@@ -358,10 +400,14 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		// assignment onto a cluster that no longer reads it.
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+							}}
+						},
+					},
 				},
 			},
 		}, nil)
@@ -383,11 +429,15 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		overlayCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "overlay"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
-						out.LoadAssignment = overlayCLA
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+								out.LoadAssignment = overlayCLA
+							}}
+						},
+					},
 				},
 			},
 		}, nil)
@@ -406,10 +456,14 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		pluginCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "plugin"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+							}}
+						},
+					},
 				},
 			},
 		}, pluginCLA)
@@ -427,10 +481,14 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		original := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "original"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.LoadAssignment = nil
-					}}
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.LoadAssignment = nil
+							}}
+						},
+					},
 				},
 			},
 		}, original)
@@ -451,14 +509,20 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		overlayCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "overlay"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
-				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.LoadAssignment = overlayCLA
-					}}
-				},
-				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
-					endpointCalls++
-					return 0
+				BackendHooks: sdk.BackendHooks{
+					PerClientCluster: &sdk.PerClientCluster{
+						Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+							return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+								out.LoadAssignment = overlayCLA
+							}}
+						},
+					},
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						Edit: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+							endpointCalls++
+							return 0
+						},
+					},
 				},
 			},
 		}, nil)
@@ -478,10 +542,14 @@ func TestApplyPerClient_ReappliesGatewayBackendClientCertificateAfterOverlay(t *
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-					out.TransportSocket = upstreamTLSTransportSocket(t, "overlay.example.com", "overlay-sds-secret")
-				}}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+							out.TransportSocket = upstreamTLSTransportSocket(t, "overlay.example.com", "overlay-sds-secret")
+						}}
+					},
+				},
 			},
 		},
 	})
@@ -543,53 +611,6 @@ func upstreamTLSTransportSocket(t *testing.T, sni, sdsSecret string) *envoycorev
 		Name:       envoywellknown.TransportSocketTls,
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
-}
-
-func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T) {
-	endpointGK := schema.GroupKind{Group: "test", Kind: "LegacyEndpoints"}
-	locality := ir.PodLocality{Region: "r1"}
-	bt := &irtranslator.BackendTranslator{
-		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
-			{Group: "group", Kind: "kind"}: {
-				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
-					eps := ir.NewEndpointsForBackend(in)
-					eps.BackendLabels = map[string]string{"owner": "base"}
-					eps.Add(locality, endpointWithLabels("10.0.0.1", map[string]string{"owner": "base"}))
-					return eps
-				},
-			},
-		},
-		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
-			endpointGK: {
-				PerClientProcessEndpoints: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, out *sdk.EndpointsInputs) uint64 {
-					if ucc.Role != "mutate" {
-						return 0
-					}
-					out.EndpointsForBackend.BackendLabels["owner"] = "mutated"
-					out.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["owner"] = "mutated"
-					out.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().Address = "127.0.0.1"
-					return 1
-				},
-			},
-		},
-	}
-	backend := overlayBackend()
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), backend)
-	require.NotNil(t, base)
-	require.NotNil(t, base.EndpointInputs)
-
-	mutated, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "mutate"}, backend, base)
-	require.NoError(t, err)
-	require.Equal(t, "127.0.0.1", mutated.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
-
-	assert.Equal(t, "base", base.EndpointInputs.EndpointsForBackend.BackendLabels["owner"])
-	assert.Equal(t, "base", base.EndpointInputs.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["owner"])
-	assert.Equal(t, "10.0.0.1", base.EndpointInputs.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
-
-	pristine, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "pristine"}, backend, base)
-	require.NoError(t, err)
-	require.Equal(t, "10.0.0.1", pristine.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
 }
 
 // TestTranslateBackendBase_ErroredBlackholeForUnsupportedBackendKinds pins the
@@ -668,8 +689,12 @@ func edsWithConfigBackendTranslator(policies map[schema.GroupKind]sdk.PolicyPlug
 func inlineRedirectOverlay(gk schema.GroupKind) map[schema.GroupKind]sdk.PolicyPlugin {
 	return map[schema.GroupKind]sdk.PolicyPlugin{
 		gk: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{Mutate: redirectToInlineCLA}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{Mutate: redirectToInlineCLA}
+					},
+				},
 			},
 		},
 	}
@@ -731,12 +756,16 @@ func TestApplyPerClient_KeepsDefaultedLocalityWhenStillEDS(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+							},
+						}
 					},
-				}
+				},
 			},
 		},
 	})
@@ -763,17 +792,21 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						redirectToInlineCLA(out)
-						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
-								ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								redirectToInlineCLA(out)
+								out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
+									LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+										ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+									},
+								}
 							},
 						}
 					},
-				}
+				},
 			},
 		},
 	})
@@ -803,18 +836,22 @@ func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
 	explicitWeightedConfig := &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						redirectToInlineCLA(out)
-						out.LoadAssignment.Endpoints[0].LoadBalancingWeight = wrapperspb.UInt32(1)
-						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-								LocalityWeightedLbConfig: explicitWeightedConfig,
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								redirectToInlineCLA(out)
+								out.LoadAssignment.Endpoints[0].LoadBalancingWeight = wrapperspb.UInt32(1)
+								out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
+									LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+										LocalityWeightedLbConfig: explicitWeightedConfig,
+									},
+								}
 							},
 						}
 					},
-				}
+				},
 			},
 		},
 	})
@@ -848,71 +885,6 @@ func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
 	}
 }
 
-// TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable pins the
-// compatibility adapter for the deprecated PerClientProcessBackend hook. A legacy
-// hook cannot report a no-op, so the framework treats it as applicable to every
-// client: it must not run during base translation, it must force a per-client
-// cluster to materialize, and it must receive a clone rather than the shared base.
-func TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable(t *testing.T) {
-	legacyGK := schema.GroupKind{Group: "test", Kind: "Legacy"}
-	calls := 0
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		legacyGK: {
-			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
-				calls++
-				out.AltStatName = "legacy-" + ucc.Role
-			},
-		},
-	})
-	backend := overlayBackend()
-	ctx := context.Background()
-
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
-	require.NotNil(t, base)
-	require.NoError(t, base.Error)
-	require.Equal(t, 0, calls, "a per-client hook must not run during base translation")
-
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
-	require.NoError(t, err)
-	require.NotNil(t, perClient, "a legacy hook cannot decline, so every client must materialize a cluster")
-	assert.Equal(t, 1, calls, "the legacy hook must run exactly once per client")
-	assert.Equal(t, "legacy-role", perClient.GetAltStatName(), "the legacy hook's mutation must land on the per-client cluster")
-	assert.NotSame(t, base.Cluster, perClient)
-	assert.Empty(t, base.Cluster.GetAltStatName(), "the legacy hook must have mutated a clone, not the shared base")
-}
-
-// TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook: a plugin that
-// registers both hooks is treated as migrated. Only PerClientClusterOverlay runs,
-// so its nil (decline) is honored instead of being overridden by the
-// always-applicable legacy adapter, and the pair keeps the sparse fast path.
-func TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook(t *testing.T) {
-	gk := schema.GroupKind{Group: "test", Kind: "Migrated"}
-	legacyCalls := 0
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		gk: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return nil
-			},
-			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
-				legacyCalls++
-			},
-		},
-	})
-	backend := overlayBackend()
-	ctx := context.Background()
-
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
-	require.NotNil(t, base)
-	require.NoError(t, base.Error)
-
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
-	require.NoError(t, err)
-	assert.Nil(t, perClient, "the migrated hook declined, so the pair must take the fast path")
-	assert.Equal(t, 0, legacyCalls, "the legacy hook must not run when the plugin also registers PerClientClusterOverlay")
-}
-
 // TestApplyPerClient_AppliesOverlaysInGroupKindOrder: ContributedPolicies is a
 // map, so the gather order is random. When more than one overlay applies to a
 // pair they must run in (Group, Kind) order, so the resulting proto — and its
@@ -924,13 +896,17 @@ func TestApplyPerClient_AppliesOverlaysInGroupKindOrder(t *testing.T) {
 	var applied []string
 	writer := func(value string) sdk.PolicyPlugin {
 		return sdk.PolicyPlugin{
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						applied = append(applied, value)
-						out.AltStatName = value
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								applied = append(applied, value)
+								out.AltStatName = value
+							},
+						}
 					},
-				}
+				},
 			},
 		}
 	}
@@ -968,16 +944,20 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						redirectToInlineCLA(out)
-						if out.CommonLbConfig == nil {
-							out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
+			BackendHooks: sdk.BackendHooks{
+				PerClientCluster: &sdk.PerClientCluster{
+					Overlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+						return &sdk.ClusterOverlay{
+							Mutate: func(out *envoyclusterv3.Cluster) {
+								redirectToInlineCLA(out)
+								if out.CommonLbConfig == nil {
+									out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
+								}
+								out.CommonLbConfig.IgnoreNewHostsUntilFirstHc = true
+							},
 						}
-						out.CommonLbConfig.IgnoreNewHostsUntilFirstHc = true
 					},
-				}
+				},
 			},
 		},
 	})
@@ -1005,12 +985,18 @@ func TestApplyPerClient_RejectsMissingInlineEndpointSource(t *testing.T) {
 	for _, discovery := range []envoyclusterv3.Cluster_DiscoveryType{envoyclusterv3.Cluster_STATIC, envoyclusterv3.Cluster_STRICT_DNS, envoyclusterv3.Cluster_LOGICAL_DNS} {
 		t.Run(discovery.String(), func(t *testing.T) {
 			bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-				{Group: "test", Kind: "Redirect"}: {PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: discovery}
-						out.EdsClusterConfig = nil
-					}}
-				}},
+				{Group: "test", Kind: "Redirect"}: {
+					BackendHooks: sdk.BackendHooks{
+						PerClientCluster: &sdk.PerClientCluster{
+							Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+								return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+									out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: discovery}
+									out.EdsClusterConfig = nil
+								}}
+							},
+						},
+					},
+				},
 			})
 			backend := overlayBackend()
 			base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
@@ -1027,20 +1013,26 @@ func TestApplyPerClient_RejectsGatewayClientIdentityDowngrade(t *testing.T) {
 	for _, mode := range []string{"raw socket", "removed socket", "TLS without config", "raw socket match"} {
 		t.Run(mode, func(t *testing.T) {
 			bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-				{Group: "test", Kind: "Downgrade"}: {PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
-						switch mode {
-						case "raw socket":
-							out.TransportSocket = &envoycorev3.TransportSocket{Name: "envoy.transport_sockets.raw_buffer"}
-						case "removed socket":
-							out.TransportSocket = nil
-						case "TLS without config":
-							out.TransportSocket = &envoycorev3.TransportSocket{Name: envoywellknown.TransportSocketTls}
-						case "raw socket match":
-							out.TransportSocketMatches[0].TransportSocket = &envoycorev3.TransportSocket{Name: "envoy.transport_sockets.raw_buffer"}
-						}
-					}}
-				}},
+				{Group: "test", Kind: "Downgrade"}: {
+					BackendHooks: sdk.BackendHooks{
+						PerClientCluster: &sdk.PerClientCluster{
+							Overlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+								return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+									switch mode {
+									case "raw socket":
+										out.TransportSocket = &envoycorev3.TransportSocket{Name: "envoy.transport_sockets.raw_buffer"}
+									case "removed socket":
+										out.TransportSocket = nil
+									case "TLS without config":
+										out.TransportSocket = &envoycorev3.TransportSocket{Name: envoywellknown.TransportSocketTls}
+									case "raw socket match":
+										out.TransportSocketMatches[0].TransportSocket = &envoycorev3.TransportSocket{Name: "envoy.transport_sockets.raw_buffer"}
+									}
+								}}
+							},
+						},
+					},
+				},
 			})
 			backend := overlayBackend()
 			backend.GatewayBackendClientCertificate = &ir.GatewayBackendClientCertificateIR{Certificate: ir.TLSCertificate{CertChain: []byte("cert"), PrivateKey: []byte("key")}}
@@ -1078,11 +1070,15 @@ func TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA(t *testing
 	newTranslator := func(mayApply func(krt.HandlerContext, ir.BackendObjectIR) bool, calls *int) *irtranslator.BackendTranslator {
 		return inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			policyGK: {
-				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
-					*calls++
-					return 0
+				BackendHooks: sdk.BackendHooks{
+					PerClientEndpoints: &sdk.PerClientEndpoints{
+						Edit: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+							*calls++
+							return 0
+						},
+						MayApply: mayApply,
+					},
 				},
-				PerClientEndpointsMayApply: mayApply,
 			},
 		}, nil)
 	}
