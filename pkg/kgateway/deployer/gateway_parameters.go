@@ -112,6 +112,10 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 		return rendered, nil
 	}
 	resolved := gp.kgwParameters.resolveParametersForOverlays(gw)
+	// Validate the same parameters whose overlays are applied below.
+	if err := resolved.validateWorkloadKind(); err != nil {
+		return nil, err
+	}
 
 	// Apply overlays in order: GatewayClass first, then Gateway.
 	if resolved.gatewayClassGWP != nil {
@@ -185,9 +189,6 @@ func (h *kgatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 	// If this is a self-managed Gateway, skip gateway auto provisioning
 	if gwParam != nil && gwParam.Spec.SelfManaged != nil {
 		return nil, nil
-	}
-	if err := h.resolveParametersForOverlays(gw).validateWorkloadKind(); err != nil {
-		return nil, err
 	}
 	vals, err := h.getValues(gw, gwParam)
 	if err != nil {

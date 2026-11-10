@@ -293,7 +293,7 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 			gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw))
 			fakeClient.RunAndWait(ctx.Done())
 
-			_, err := gwp.GetValues(ctx, gw)
+			_, err := gwp.PostProcessObjects(ctx, gw, nil)
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
