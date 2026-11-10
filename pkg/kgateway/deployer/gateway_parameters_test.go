@@ -17,6 +17,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -192,4 +193,94 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 
 	gateways.Gateways.WaitUntilSynced(ctx.Done())
 	return commonCols
+}
+
+func TestWorkloadKindConflictsAreRejected(t *testing.T) {
+	daemonSet := kgateway.WorkloadKindDaemonSet
+	deployment := kgateway.WorkloadKindDeployment
+	overlay := &shared.KubernetesResourceOverlay{}
+
+	tests := []struct {
+		name    string
+		gwcKube *kgateway.KubernetesProxyConfig
+		gwKube  *kgateway.KubernetesProxyConfig
+		wantErr string
+	}{
+		{
+			name:    "DaemonSet from the Gateway with an HPA from the GatewayClass",
+			gwcKube: &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{HorizontalPodAutoscaler: overlay}},
+			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			wantErr: "GatewayClass GatewayParameters default/kgateway sets horizontalPodAutoscaler, which is not valid for workload kind DaemonSet",
+		},
+		{
+			name: "DaemonSet from the Gateway with Deployment settings from the GatewayClass",
+			gwcKube: &kgateway.KubernetesProxyConfig{
+				Deployment:                &kgateway.ProxyDeployment{Replicas: new(int32(2))},
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DeploymentOverlay: overlay},
+			},
+			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			wantErr: "GatewayClass GatewayParameters default/kgateway sets deployment, deploymentOverlay, which is not valid for workload kind DaemonSet",
+		},
+		{
+			name: "Deployment from the Gateway overrides a GatewayClass DaemonSet with its overlay",
+			gwcKube: &kgateway.KubernetesProxyConfig{
+				WorkloadKind:              &daemonSet,
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DaemonSetOverlay: overlay},
+			},
+			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &deployment},
+			wantErr: "GatewayClass GatewayParameters default/kgateway sets daemonSetOverlay, which is not valid for workload kind Deployment",
+		},
+		{
+			name:    "DaemonSet from the GatewayClass with an HPA from the Gateway",
+			gwcKube: &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			gwKube:  &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{HorizontalPodAutoscaler: overlay}},
+			wantErr: "Gateway GatewayParameters default/gw-params sets horizontalPodAutoscaler, which is not valid for workload kind DaemonSet",
+		},
+		{
+			name:    "DaemonSet from the GatewayClass with settings that fit it",
+			gwcKube: &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			gwKube: &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+				PodDisruptionBudget:   overlay,
+				VerticalPodAutoscaler: overlay,
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gwc := defaultGatewayClass()
+			gwcParams := emptyGatewayParameters()
+			gwcParams.Spec.Kube = tt.gwcKube
+			gwParams := &kgateway.GatewayParameters{
+				ObjectMeta: metav1.ObjectMeta{Name: "gw-params", Namespace: defaultNamespace, UID: "1238"},
+				Spec:       kgateway.GatewayParametersSpec{Kube: tt.gwKube},
+			}
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: defaultNamespace, UID: "1235"},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwParams.Name,
+						},
+					},
+					Listeners: []gwv1.Listener{{Protocol: gwv1.HTTPProtocolType, Port: 80, Name: "http"}},
+				},
+			}
+
+			ctx := t.Context()
+			fakeClient := fake.NewClient(t, gwc, gwcParams, gwParams)
+			gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw))
+			fakeClient.RunAndWait(ctx.Done())
+
+			_, err := gwp.GetValues(ctx, gw)
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.EqualError(t, err, tt.wantErr)
+		})
+	}
 }

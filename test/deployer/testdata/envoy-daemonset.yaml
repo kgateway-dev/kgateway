@@ -1,0 +1,69 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: gwc-gwp
+    namespace: default
+---
+# GatewayClass-level GatewayParameters: settings that fit either workload kind.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gwc-gwp
+  namespace: default
+spec:
+  kube:
+    podDisruptionBudget:
+      spec:
+        maxUnavailable: 1
+    verticalPodAutoscaler:
+      spec:
+        updatePolicy:
+          updateMode: "Off"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-gwp
+  namespace: default
+spec:
+  kube:
+    workloadKind: DaemonSet
+    podTemplate:
+      nodeSelector:
+        node-role.kubernetes.io/edge: "true"
+    daemonSetOverlay:
+      metadata:
+        labels:
+          daemonset-overlay: applied
+      spec:
+        updateStrategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 2
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-gwp
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

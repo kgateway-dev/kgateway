@@ -376,7 +376,10 @@ func ApplyKubernetesProxyConfigValues(gateway *HelmGateway, cfg *kgateway.Kubern
 	statsConfig := cfg.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 
-	// deployment values
+	// workload values
+	if kind := cfg.GetWorkloadKind(); kind != nil {
+		gateway.WorkloadKind = new(string(*kind))
+	}
 	if deployConfig.GetReplicas() != nil {
 		gateway.ReplicaCount = new(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}

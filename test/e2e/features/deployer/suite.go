@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,10 +33,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -82,6 +87,9 @@ var (
 		},
 		"TestReadinessProbeProxyProtocol": {
 			Manifests: []string{gatewayReadinessProxyProtocol},
+		},
+		"TestDaemonSetLifecycle": {
+			Manifests: []string{gatewayDaemonSet},
 		},
 	}
 )
@@ -616,6 +624,69 @@ func (s *testingSuite) patchGateway(objectMeta metav1.ObjectMeta, patchFn func(*
 
 // patchGatewayParameters accepts a reference to an object, and a patch function
 // It then queries the object, performs the patch in memory, and writes the object back to the cluster
+// TestDaemonSetLifecycle runs the proxy as a DaemonSet, checks that it serves
+// traffic, that Deployment-only settings are rejected, and that switching back
+// to a Deployment removes the DaemonSet.
+func (s *testingSuite) TestDaemonSetLifecycle() {
+	a := s.TestInstallation.AssertionsT(s.T())
+	key := client.ObjectKey{Namespace: proxyObjectMeta.Namespace, Name: proxyObjectMeta.Name}
+
+	// Step 1: the proxy runs as a DaemonSet with one ready pod per scheduled node,
+	// the overlay is applied, and the PDB selects the DaemonSet pods.
+	ds := &appsv1.DaemonSet{}
+	a.Gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, ds)).To(gomega.Succeed(), "DaemonSet should exist")
+		g.Expect(ds.Status.DesiredNumberScheduled).To(gomega.BeNumerically(">=", 1), "DaemonSet should schedule pods")
+		g.Expect(ds.Status.NumberReady).To(gomega.Equal(ds.Status.DesiredNumberScheduled), "every DaemonSet pod should be ready")
+	}).WithTimeout(2 * time.Minute).WithPolling(time.Second).Should(gomega.Succeed())
+	s.Assert().Equal("applied", ds.GetLabels()["daemonset-overlay"], "daemonSetOverlay labels should be applied")
+	s.Require().NotNil(ds.Spec.UpdateStrategy.RollingUpdate, "daemonSetOverlay updateStrategy should be applied")
+	s.Assert().Equal(1, ds.Spec.UpdateStrategy.RollingUpdate.MaxUnavailable.IntValue())
+
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, &appsv1.Deployment{})
+	s.Require().True(apierrors.IsNotFound(err), "no proxy Deployment should exist, got: %v", err)
+
+	pdb := &policyv1.PodDisruptionBudget{}
+	s.Require().NoError(s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, pdb))
+	s.Assert().Equal(ds.Spec.Selector, pdb.Spec.Selector, "the PDB should select the DaemonSet pods")
+
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName(key))
+	gw.Send(s.T(), &testmatchers.HttpResponse{StatusCode: http.StatusOK},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(8080),
+	)
+
+	// Step 2: an HPA cannot scale a DaemonSet, so the API server rejects it.
+	params := &kgateway.GatewayParameters{}
+	s.Require().NoError(s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: gwParamsDefaultObjectMeta.Namespace,
+		Name:      gwParamsDefaultObjectMeta.Name,
+	}, params))
+	withHPA := params.DeepCopy()
+	withHPA.Spec.Kube.HorizontalPodAutoscaler = &shared.KubernetesResourceOverlay{
+		Spec: mustMarshalJSON(map[string]any{"maxReplicas": 3}),
+	}
+	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, withHPA, client.MergeFrom(params))
+	s.Require().ErrorContains(err, "horizontalPodAutoscaler is not valid when workloadKind is DaemonSet")
+
+	// Step 3: switching back to a Deployment provisions it and prunes the DaemonSet.
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
+		parameters.Spec.Kube.WorkloadKind = new(kgateway.WorkloadKindDeployment)
+		parameters.Spec.Kube.DaemonSetOverlay = nil
+	})
+	a.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+	a.Gomega.Eventually(func(g gomega.Gomega) {
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, &appsv1.DaemonSet{})
+		g.Expect(apierrors.IsNotFound(err)).To(gomega.BeTrue(), "the DaemonSet should be pruned, got: %v", err)
+	}).WithTimeout(time.Minute).WithPolling(time.Second).Should(gomega.Succeed())
+	a.EventuallyGatewayCondition(s.Ctx, key.Name, key.Namespace, gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+
+	gw.Send(s.T(), &testmatchers.HttpResponse{StatusCode: http.StatusOK},
+		curl.WithHostHeader("example.com"),
+		curl.WithPort(8080),
+	)
+}
+
 func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patchFn func(*kgateway.GatewayParameters)) {
 	gatewayParameters := &kgateway.GatewayParameters{}
 	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{

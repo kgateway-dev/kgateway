@@ -24,6 +24,7 @@ import (
 // ResourceOverlays contains all the overlays that can be applied to rendered objects.
 type ResourceOverlays struct {
 	Deployment              *shared.KubernetesResourceOverlay
+	DaemonSet               *shared.KubernetesResourceOverlay
 	Service                 *shared.KubernetesResourceOverlay
 	ServiceAccount          *shared.KubernetesResourceOverlay
 	PodDisruptionBudget     *shared.KubernetesResourceOverlay
@@ -39,6 +40,7 @@ func FromGatewayParameters(params *kgateway.GatewayParameters) *ResourceOverlays
 	overlays := params.Spec.Kube.GatewayParametersOverlays
 	return &ResourceOverlays{
 		Deployment:              overlays.DeploymentOverlay,
+		DaemonSet:               overlays.DaemonSetOverlay,
 		Service:                 overlays.ServiceOverlay,
 		ServiceAccount:          overlays.ServiceAccountOverlay,
 		PodDisruptionBudget:     overlays.PodDisruptionBudget,
@@ -70,15 +72,6 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 		return objs, nil
 	}
 
-	// Find the Deployment first - we need it for PDB/HPA/VPA creation
-	var deployment *appsv1.Deployment
-	for _, obj := range objs {
-		if dep, ok := obj.(*appsv1.Deployment); ok {
-			deployment = dep
-			break
-		}
-	}
-
 	for i, obj := range objs {
 		var overlay *shared.KubernetesResourceOverlay
 		var gvk schema.GroupVersionKind
@@ -89,6 +82,9 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 		case *appsv1.Deployment:
 			overlay = a.overlays.Deployment
 			gvk = wellknown.DeploymentGVK
+		case *appsv1.DaemonSet:
+			overlay = a.overlays.DaemonSet
+			gvk = wellknown.DaemonSetGVK
 		case *corev1.Service:
 			overlay = a.overlays.Service
 			gvk = wellknown.ServiceGVK
@@ -110,18 +106,22 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 		objs[i] = patched //nolint:gosec // G602: i comes from ranging over objs
 	}
 
+	// Find the patched workload - PDB/HPA/VPA target it.
+	workload := findWorkload(objs)
+
 	// Create PDB if overlay is present
-	if a.overlays.PodDisruptionBudget != nil && deployment != nil {
-		pdb, err := createPodDisruptionBudget(deployment, a.overlays.PodDisruptionBudget)
+	if a.overlays.PodDisruptionBudget != nil && workload != nil {
+		pdb, err := createPodDisruptionBudget(workload, a.overlays.PodDisruptionBudget)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create PodDisruptionBudget: %w", err)
 		}
 		objs = append(objs, pdb)
 	}
 
-	// Create HPA if overlay is present
-	if a.overlays.HorizontalPodAutoscaler != nil && deployment != nil {
-		hpa, err := createHorizontalPodAutoscaler(deployment, a.overlays.HorizontalPodAutoscaler)
+	// Create HPA if overlay is present. A DaemonSet cannot be scaled, so the
+	// HPA only applies to a Deployment.
+	if a.overlays.HorizontalPodAutoscaler != nil && workload != nil && workload.gvk == wellknown.DeploymentGVK {
+		hpa, err := createHorizontalPodAutoscaler(workload, a.overlays.HorizontalPodAutoscaler)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create HorizontalPodAutoscaler: %w", err)
 		}
@@ -129,8 +129,8 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 	}
 
 	// Create VPA if overlay is present
-	if a.overlays.VerticalPodAutoscaler != nil && deployment != nil {
-		vpa, err := createVerticalPodAutoscaler(deployment, a.overlays.VerticalPodAutoscaler)
+	if a.overlays.VerticalPodAutoscaler != nil && workload != nil {
+		vpa, err := createVerticalPodAutoscaler(workload, a.overlays.VerticalPodAutoscaler)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create VerticalPodAutoscaler: %w", err)
 		}
@@ -138,6 +138,26 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 	}
 
 	return objs, nil
+}
+
+// proxyWorkload is the rendered Deployment or DaemonSet that runs the proxy pods.
+type proxyWorkload struct {
+	obj      client.Object
+	gvk      schema.GroupVersionKind
+	selector *metav1.LabelSelector
+}
+
+// findWorkload returns the first Deployment or DaemonSet in objs, or nil.
+func findWorkload(objs []client.Object) *proxyWorkload {
+	for _, obj := range objs {
+		switch w := obj.(type) {
+		case *appsv1.Deployment:
+			return &proxyWorkload{obj: w, gvk: wellknown.DeploymentGVK, selector: w.Spec.Selector}
+		case *appsv1.DaemonSet:
+			return &proxyWorkload{obj: w, gvk: wellknown.DaemonSetGVK, selector: w.Spec.Selector}
+		}
+	}
+	return nil
 }
 
 // applyOverlay applies a KubernetesResourceOverlay to a single object.
@@ -214,6 +234,8 @@ func getDataObjectForGVK(gvk schema.GroupVersionKind) (runtime.Object, error) {
 	switch gvk.Kind {
 	case wellknown.DeploymentGVK.Kind:
 		return &appsv1.Deployment{}, nil
+	case wellknown.DaemonSetGVK.Kind:
+		return &appsv1.DaemonSet{}, nil
 	case wellknown.ServiceGVK.Kind:
 		return &corev1.Service{}, nil
 	case wellknown.ServiceAccountGVK.Kind:
@@ -257,22 +279,22 @@ func deserializeToObject(data []byte, gvk schema.GroupVersionKind) (client.Objec
 	return clientObj, nil
 }
 
-// createPodDisruptionBudget creates a PodDisruptionBudget for the given Deployment
+// createPodDisruptionBudget creates a PodDisruptionBudget for the given workload
 // with the overlay applied.
-func createPodDisruptionBudget(deployment *appsv1.Deployment, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
-	// Create base PDB with selector matching the Deployment
+func createPodDisruptionBudget(workload *proxyWorkload, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
+	// Create base PDB with selector matching the workload
 	pdb := &policyv1.PodDisruptionBudget{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
 			Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployment.Name,
-			Namespace: deployment.Namespace,
-			Labels:    maps.Clone(deployment.GetLabels()),
+			Name:      workload.obj.GetName(),
+			Namespace: workload.obj.GetNamespace(),
+			Labels:    maps.Clone(workload.obj.GetLabels()),
 		},
 		Spec: policyv1.PodDisruptionBudgetSpec{
-			Selector: deployment.Spec.Selector,
+			Selector: workload.selector,
 		},
 	}
 
@@ -285,25 +307,25 @@ func createPodDisruptionBudget(deployment *appsv1.Deployment, overlay *shared.Ku
 	return patched, nil
 }
 
-// createHorizontalPodAutoscaler creates a HorizontalPodAutoscaler for the given Deployment
+// createHorizontalPodAutoscaler creates a HorizontalPodAutoscaler for the given workload
 // with the overlay applied.
-func createHorizontalPodAutoscaler(deployment *appsv1.Deployment, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
-	// Create base HPA with scaleTargetRef pointing to the Deployment
+func createHorizontalPodAutoscaler(workload *proxyWorkload, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
+	// Create base HPA with scaleTargetRef pointing to the workload
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: wellknown.HorizontalPodAutoscalerGVK.GroupVersion().String(),
 			Kind:       wellknown.HorizontalPodAutoscalerGVK.Kind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployment.Name,
-			Namespace: deployment.Namespace,
-			Labels:    maps.Clone(deployment.GetLabels()),
+			Name:      workload.obj.GetName(),
+			Namespace: workload.obj.GetNamespace(),
+			Labels:    maps.Clone(workload.obj.GetLabels()),
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
-				APIVersion: wellknown.DeploymentGVK.GroupVersion().String(),
-				Kind:       wellknown.DeploymentGVK.Kind,
-				Name:       deployment.Name,
+				APIVersion: workload.gvk.GroupVersion().String(),
+				Kind:       workload.gvk.Kind,
+				Name:       workload.obj.GetName(),
 			},
 		},
 	}
@@ -317,30 +339,30 @@ func createHorizontalPodAutoscaler(deployment *appsv1.Deployment, overlay *share
 	return patched, nil
 }
 
-// createVerticalPodAutoscaler creates a VerticalPodAutoscaler for the given Deployment
+// createVerticalPodAutoscaler creates a VerticalPodAutoscaler for the given workload
 // with the overlay applied.
-func createVerticalPodAutoscaler(deployment *appsv1.Deployment, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
-	// Create base VPA with targetRef pointing to the Deployment
+func createVerticalPodAutoscaler(workload *proxyWorkload, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
+	// Create base VPA with targetRef pointing to the workload
 	// VPA is a CRD, so we use unstructured
 	vpa := &unstructured.Unstructured{
 		Object: map[string]any{
 			"apiVersion": wellknown.VerticalPodAutoscalerGVK.GroupVersion().String(),
 			"kind":       wellknown.VerticalPodAutoscalerGVK.Kind,
 			"metadata": map[string]any{
-				"name":      deployment.Name,
-				"namespace": deployment.Namespace,
+				"name":      workload.obj.GetName(),
+				"namespace": workload.obj.GetNamespace(),
 			},
 			"spec": map[string]any{
 				"targetRef": map[string]any{
-					"apiVersion": wellknown.DeploymentGVK.GroupVersion().String(),
-					"kind":       wellknown.DeploymentGVK.Kind,
-					"name":       deployment.Name,
+					"apiVersion": workload.gvk.GroupVersion().String(),
+					"kind":       workload.gvk.Kind,
+					"name":       workload.obj.GetName(),
 				},
 			},
 		},
 	}
 	vpa.SetGroupVersionKind(wellknown.VerticalPodAutoscalerGVK)
-	vpa.SetLabels(maps.Clone(deployment.GetLabels()))
+	vpa.SetLabels(maps.Clone(workload.obj.GetLabels()))
 
 	// Apply the overlay - for VPA we need to handle it specially since it's unstructured
 	if overlay.Metadata != nil {

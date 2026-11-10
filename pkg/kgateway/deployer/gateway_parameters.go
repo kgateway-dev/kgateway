@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
@@ -181,6 +182,9 @@ func (h *kgatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 	// If this is a self-managed Gateway, skip gateway auto provisioning
 	if gwParam != nil && gwParam.Spec.SelfManaged != nil {
 		return nil, nil
+	}
+	if err := h.resolveParametersForOverlays(gw).validateWorkloadKind(); err != nil {
+		return nil, err
 	}
 	vals, err := h.getValues(gw, gwParam)
 	if err != nil {
@@ -394,6 +398,66 @@ type resolvedKgatewayParameters struct {
 	gatewayClassGWP *kgateway.GatewayParameters
 	// gatewayGWP is the GatewayParameters from the Gateway (if any).
 	gatewayGWP *kgateway.GatewayParameters
+}
+
+// layers returns the GatewayClass and Gateway parameters in precedence order,
+// skipping the ones that are absent.
+func (r *resolvedKgatewayParameters) layers() []parametersLayer {
+	var out []parametersLayer
+	if r.gatewayClassGWP != nil {
+		out = append(out, parametersLayer{source: "GatewayClass", params: r.gatewayClassGWP})
+	}
+	if r.gatewayGWP != nil {
+		out = append(out, parametersLayer{source: "Gateway", params: r.gatewayGWP})
+	}
+	return out
+}
+
+// parametersLayer is one GatewayParameters object and the resource that references it.
+type parametersLayer struct {
+	source string
+	params *kgateway.GatewayParameters
+}
+
+// validateWorkloadKind rejects settings that do not apply to the final workload
+// kind. CEL only sees one GatewayParameters at a time, so a GatewayClass setting
+// that conflicts with the kind a Gateway selects is caught here.
+func (r *resolvedKgatewayParameters) validateWorkloadKind() error {
+	kind := kgateway.WorkloadKindDeployment
+	for _, layer := range r.layers() {
+		if k := layer.params.Spec.Kube.GetWorkloadKind(); k != nil {
+			kind = *k
+		}
+	}
+
+	for _, layer := range r.layers() {
+		kube := layer.params.Spec.Kube
+		if kube == nil {
+			continue
+		}
+		var conflicts []string
+		switch kind {
+		case kgateway.WorkloadKindDeployment:
+			if kube.DaemonSetOverlay != nil {
+				conflicts = append(conflicts, "daemonSetOverlay")
+			}
+		case kgateway.WorkloadKindDaemonSet:
+			if kube.Deployment != nil {
+				conflicts = append(conflicts, "deployment")
+			}
+			if kube.DeploymentOverlay != nil {
+				conflicts = append(conflicts, "deploymentOverlay")
+			}
+			if kube.HorizontalPodAutoscaler != nil {
+				conflicts = append(conflicts, "horizontalPodAutoscaler")
+			}
+		}
+		if len(conflicts) > 0 {
+			return fmt.Errorf("%s GatewayParameters %s/%s sets %s, which is not valid for workload kind %s",
+				layer.source, layer.params.GetNamespace(), layer.params.GetName(), strings.Join(conflicts, ", "), kind)
+		}
+	}
+	return nil
 }
 
 // resolveParametersForOverlays resolves the GatewayParameters for the Gateway.

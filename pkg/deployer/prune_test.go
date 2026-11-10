@@ -2,13 +2,18 @@ package deployer
 
 import (
 	"context"
+	"slices"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube"
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -420,5 +425,92 @@ func TestPruneRemovedResourcesLongGatewayName(t *testing.T) {
 		if len(list.Items) != 1 {
 			t.Errorf("expected 1 PDB, got %d", len(list.Items))
 		}
+	})
+}
+
+func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
+	const (
+		ns     = "test-ns"
+		gwName = "test-gateway"
+	)
+	ctx := context.Background()
+
+	gw := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: gwName, Namespace: ns, UID: "gw-uid"},
+		Spec:       gwv1.GatewaySpec{GatewayClassName: wellknown.DefaultGatewayClassName},
+	}
+	gw.SetGroupVersionKind(wellknown.GatewayGVK)
+
+	meta := func(name string, controlled bool) metav1.ObjectMeta {
+		m := metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    map[string]string{wellknown.GatewayNameLabel: gwName},
+		}
+		if controlled {
+			m.OwnerReferences = []metav1.OwnerReference{{
+				APIVersion: wellknown.GatewayGVK.GroupVersion().String(),
+				Kind:       wellknown.GatewayGVK.Kind,
+				Name:       gwName,
+				UID:        gw.UID,
+				Controller: new(true),
+			}}
+		}
+		return m
+	}
+	deployment := func(name string, controlled bool) *appsv1.Deployment {
+		d := &appsv1.Deployment{ObjectMeta: meta(name, controlled)}
+		d.SetGroupVersionKind(wellknown.DeploymentGVK)
+		return d
+	}
+	daemonSet := func(name string, controlled bool) *appsv1.DaemonSet {
+		d := &appsv1.DaemonSet{ObjectMeta: meta(name, controlled)}
+		d.SetGroupVersionKind(wellknown.DaemonSetGVK)
+		return d
+	}
+	names := func(t *testing.T, fc kube.Client, gvk schema.GroupVersionKind) []string {
+		t.Helper()
+		gvr, err := wellknown.GVKToGVR(gvk)
+		require.NoError(t, err)
+		list, err := fc.Dynamic().Resource(gvr).Namespace(ns).List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		var out []string
+		for _, item := range list.Items {
+			out = append(out, item.GetName())
+		}
+		slices.Sort(out)
+		return out
+	}
+
+	t.Run("switching to DaemonSet deletes the owned Deployment", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, deployment(gwName, true), deployment("user-deploy", false), daemonSet(gwName, true))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		assert.Equal(t, []string{"user-deploy"}, names(t, fc, wellknown.DeploymentGVK),
+			"only the Deployment the Gateway controls should be pruned")
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK))
+	})
+
+	t.Run("switching to Deployment deletes the owned DaemonSet", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, deployment(gwName, true), daemonSet(gwName, true), daemonSet("user-ds", false))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK))
+		assert.Equal(t, []string{"user-ds"}, names(t, fc, wellknown.DaemonSetGVK),
+			"only the DaemonSet the Gateway controls should be pruned")
+	})
+
+	t.Run("no workload in the desired set prunes no workload", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, deployment(gwName, true), daemonSet(gwName, true))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, nil))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK))
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK))
 	})
 }

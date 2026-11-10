@@ -56,3 +56,95 @@ spec:
     deployment:
       strategy:
         type: SomeStrategemIntroducedInTheFuture
+---
+# WorkloadKind: DaemonSet with a DaemonSet overlay
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-daemonset
+spec:
+  kube:
+    workloadKind: DaemonSet
+    daemonSetOverlay:
+      spec:
+        updateStrategy:
+          type: OnDelete
+    podDisruptionBudget:
+      spec:
+        maxUnavailable: 1
+---
+# WorkloadKind: a DaemonSet overlay needs workloadKind DaemonSet in the same object
+_err: daemonSetOverlay is only valid when workloadKind is DaemonSet
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-unset-daemonset-overlay
+spec:
+  kube:
+    daemonSetOverlay:
+      metadata:
+        labels:
+          foo: bar
+---
+# WorkloadKind: unknown kind
+_err: 'spec.kube.workloadKind: Unsupported value: "StatefulSet"'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-unknown
+spec:
+  kube:
+    workloadKind: StatefulSet
+---
+# WorkloadKind: DaemonSet rejects the deployment config
+_err: deployment is not valid when workloadKind is DaemonSet
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-daemonset-deployment
+spec:
+  kube:
+    workloadKind: DaemonSet
+    deployment:
+      replicas: 2
+---
+# WorkloadKind: DaemonSet rejects a Deployment overlay
+_err: deploymentOverlay is not valid when workloadKind is DaemonSet
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-daemonset-deployment-overlay
+spec:
+  kube:
+    workloadKind: DaemonSet
+    deploymentOverlay:
+      metadata:
+        labels:
+          foo: bar
+---
+# WorkloadKind: DaemonSet rejects an HPA
+_err: horizontalPodAutoscaler is not valid when workloadKind is DaemonSet
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-daemonset-hpa
+spec:
+  kube:
+    workloadKind: DaemonSet
+    horizontalPodAutoscaler:
+      spec:
+        maxReplicas: 3
+---
+# WorkloadKind: Deployment rejects a DaemonSet overlay
+_err: daemonSetOverlay is only valid when workloadKind is DaemonSet
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-deployment-daemonset-overlay
+spec:
+  kube:
+    workloadKind: Deployment
+    daemonSetOverlay:
+      metadata:
+        labels:
+          foo: bar

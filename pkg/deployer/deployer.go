@@ -503,6 +503,10 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 // owner but are no longer in the desired set of objects. This prevents stale
 // resources from persisting when configuration changes. ownerReferences is
 // insufficient because the owner might still exist.
+//
+// When the desired objects include a Deployment or DaemonSet, it also deletes
+// the owner's workload of the other kind, so that switching the workload kind
+// does not leave the old proxy pods running.
 func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Object, desiredObjs []client.Object) error {
 	ownerNamespace := owner.GetNamespace()
 	// Kubernetes label values are limited to 63 characters, but Gateway names can exceed this limit.
@@ -522,6 +526,18 @@ func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Objec
 		wellknown.PodDisruptionBudgetGVK,
 		wellknown.HorizontalPodAutoscalerGVK,
 		wellknown.VerticalPodAutoscalerGVK,
+	}
+	// A workload is only pruned when the owner controls it, since a label match
+	// alone is not enough to delete running pods.
+	var staleWorkloadGVK schema.GroupVersionKind
+	switch {
+	case desiredByGVK[wellknown.DeploymentGVK] != nil:
+		staleWorkloadGVK = wellknown.DaemonSetGVK
+	case desiredByGVK[wellknown.DaemonSetGVK] != nil:
+		staleWorkloadGVK = wellknown.DeploymentGVK
+	}
+	if !staleWorkloadGVK.Empty() {
+		targetGVKs = append(targetGVKs, staleWorkloadGVK)
 	}
 	var pruningErrors []error
 	for _, gvk := range targetGVKs {
@@ -543,6 +559,9 @@ func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Objec
 		for _, item := range list.Items {
 			resourceName := item.GetName()
 			if desiredSet, exists := desiredByGVK[gvk]; exists && desiredSet[resourceName] {
+				continue
+			}
+			if gvk == staleWorkloadGVK && !metav1.IsControlledBy(&item, owner) {
 				continue
 			}
 			logger.Info("pruning removed resource",
