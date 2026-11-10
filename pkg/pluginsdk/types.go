@@ -379,6 +379,11 @@ type Plugin struct {
 	ContributesLeaderAction map[schema.GroupKind]func()
 	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
+	// RegisterStatus, when set, is called once by the proxy syncer to add status reporting
+	// for a kind the plugin translates that is not one of its policies, such as
+	// GatewayExtension. It registers the kind's status sources and writer, as
+	// PolicyPlugin.RegisterPolicyStatus does for a policy kind.
+	RegisterStatus func(inputs statussync.RegistrationInputs)
 }
 
 type (

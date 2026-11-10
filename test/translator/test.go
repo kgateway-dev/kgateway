@@ -351,7 +351,7 @@ func TestTranslationWithExtraPlugins(
 		Clusters:      result.Clusters,
 		Endpoints:     result.Endpoints,
 		Secrets:       result.Proxy.Secrets,
-		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets, result.GatewayExtensions),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -412,8 +412,11 @@ type ActualTestResult struct {
 	Gateways      map[types.NamespacedName]*gwv1.Gateway
 	ListenerSets  map[types.NamespacedName]*gwv1.ListenerSet
 	PolicyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin
-	Clusters      []*envoyclusterv3.Cluster
-	Endpoints     []*envoyendpointv3.ClusterLoadAssignment
+	// GatewayExtensions is the status of every GatewayExtension, which does not depend on
+	// the gateway being translated.
+	GatewayExtensions map[string]*kgateway.GatewayExtensionStatus
+	Clusters          []*envoyclusterv3.Cluster
+	Endpoints         []*envoyendpointv3.ClusterLoadAssignment
 }
 
 func compareProxy(expected *translationResult, actualProxy *irtranslator.TranslationResult) string {
@@ -962,6 +965,7 @@ func (tc TestCase) Run(
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol, v)
 	translator.Init(ctx)
+	gwExtStatuses := registerGatewayExtensionStatuses(extensions, krtOpts)
 
 	fakeClient.RunAndWait(ctx.Done())
 	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
@@ -972,6 +976,7 @@ func (tc TestCase) Run(
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
+	kubeclient.WaitForCacheSync("gatewayextension status", ctx.Done(), gwExtStatuses.HasSynced)
 	for i, plug := range extraPlugs {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
 	}
@@ -986,6 +991,7 @@ func (tc TestCase) Run(
 	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
+	gatewayExtensions := gwExtStatuses.build(commoncol.GatewayExtensions.List())
 	queries := query.NewData(commoncol)
 
 	// Build a map of all gateways by NamespacedName for status building
@@ -1075,6 +1081,8 @@ func (tc TestCase) Run(
 			Gateways:      gatewayMap,
 			ListenerSets:  listenerSetMap,
 			PolicyPlugins: extensions.ContributesPolicies,
+
+			GatewayExtensions: gatewayExtensions,
 		}
 		results[gwNN] = actual
 

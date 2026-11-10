@@ -165,6 +165,14 @@ Routes:
           - name: kube_gwtest_ratings_8080
             weight: 1
 Statuses:
+  gatewayExtensions:
+    gwtest/extproc-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     gwtest/http-gw-for-test:
       conditions:

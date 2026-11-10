@@ -9,6 +9,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -46,6 +47,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		},
 		"TestDefaultBufferStageDoesNotEnforceBehindExtAuth": {
 			Manifests: []string{bufferedRouteDefaultStageManifest},
+		},
+		"TestGatewayExtensionStatus": {
+			Manifests: []string{invalidExtensionManifest},
 		},
 	}
 	return &testingSuite{
@@ -270,4 +274,12 @@ func (s *testingSuite) TestDefaultBufferStageDoesNotEnforceBehindExtAuth() {
 			expectedStatus: http.StatusForbidden,
 		},
 	})
+}
+
+// TestGatewayExtensionStatus checks that a GatewayExtension reports whether it was accepted:
+// the shared extension translates, and one whose backend does not exist does not.
+func (s *testingSuite) TestGatewayExtensionStatus() {
+	assertions := s.TestInstallation.AssertionsT(s.T())
+	assertions.EventuallyGatewayExtensionCondition(s.Ctx, "basic-extauth", "kgateway-base", "Accepted", metav1.ConditionTrue)
+	assertions.EventuallyGatewayExtensionCondition(s.Ctx, "missing-backend-extauth", "kgateway-base", "Accepted", metav1.ConditionFalse)
 }

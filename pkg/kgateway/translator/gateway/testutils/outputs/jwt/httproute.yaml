@@ -162,6 +162,14 @@ Routes:
           filterName: rustformation
           perRouteConfigName: rustformation
 Statuses:
+  gatewayExtensions:
+    default/jwt-ext-1:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

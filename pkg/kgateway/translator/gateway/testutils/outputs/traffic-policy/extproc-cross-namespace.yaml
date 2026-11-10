@@ -134,6 +134,22 @@ Routes:
         pathSeparatedPrefix: /denied
       name: listener~80~denied_example_com-route-0-httproute-cross-namespace-denied-default-0-0-matcher-0
 Statuses:
+  gatewayExtensions:
+    default/allowed-extproc-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    denied/denied-extproc-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: 'GatewayExtension error: "failed to resolve ExtProc backend: missing
+          reference grant"'
+        reason: Invalid
+        status: "False"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

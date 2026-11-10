@@ -196,6 +196,21 @@ Routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
 Statuses:
+  gatewayExtensions:
+    default/extproc-after-route:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/extproc-before-authn:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/test:
       conditions:

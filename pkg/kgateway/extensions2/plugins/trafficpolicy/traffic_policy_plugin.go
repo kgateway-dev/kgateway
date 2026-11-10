@@ -300,17 +300,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 
-	registerTrafficPolicyStatus := pluginutils.RegisterPolicyStatus(
-		wellknown.TrafficPolicyGVK,
-		col,
-		cli,
-		commoncol.ControllerName,
-		func(o *kgateway.TrafficPolicy) gwv1.PolicyStatus { return o.Status },
-		func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.TrafficPolicy {
-			return &kgateway.TrafficPolicy{ObjectMeta: om, Status: st}
-		},
-	)
-
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *kgateway.TrafficPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
@@ -351,16 +340,20 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
-				// The same hook reports status for the GatewayExtension resources this plugin
-				// translates: their Accepted condition is derived from the extension IR errors,
-				// which only this plugin has.
-				RegisterPolicyStatus: func(in sdk.PolicyStatusInputs) {
-					registerTrafficPolicyStatus(in)
-					registerGatewayExtensionStatus(in, commoncol, constructor.gatewayExtensions)
-				},
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					wellknown.TrafficPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.TrafficPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.TrafficPolicy {
+						return &kgateway.TrafficPolicy{ObjectMeta: om, Status: st}
+					},
+				),
 			},
 		},
 		ExtraHasSynced: constructor.HasSynced,
+		RegisterStatus: registerGatewayExtensionStatus(commoncol, constructor.gatewayExtensions), //nolint:contextcheck // only ctx use in the chain is a slog level check
 	}
 }
 

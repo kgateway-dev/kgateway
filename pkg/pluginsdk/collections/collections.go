@@ -42,12 +42,8 @@ type CommonCollections struct {
 	Endpoints              krt.Collection[ir.EndpointsForBackend]
 	GatewayIndex           *krtcollections.GatewayIndex
 	GatewayExtensions      krt.Collection[ir.GatewayExtension]
-	// RawGatewayExtensions is the informer-backed *kgateway.GatewayExtension collection the
-	// IR collection above is derived from. It is exposed so the status syncer can reconcile
-	// GatewayExtension status against live objects.
-	RawGatewayExtensions krt.Collection[*kgateway.GatewayExtension]
-	Services             krt.Collection[*corev1.Service]
-	ServiceEntries       krt.Collection[*networkingclient.ServiceEntry]
+	Services               krt.Collection[*corev1.Service]
+	ServiceEntries         krt.Collection[*networkingclient.ServiceEntry]
 
 	// ServiceEntriesExclusionLabelSelectors is parsed from Settings.ServiceEntriesExclusionLabelSelectors.
 	// Keep it with CommonCollections so ServiceEntry exclusion config has one validated source of truth.
@@ -70,6 +66,8 @@ type CommonCollections struct {
 	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
 	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
 	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+	// RawGatewayExtensions is the informer-backed source of GatewayExtensions.
+	RawGatewayExtensions krt.Collection[*kgateway.GatewayExtension]
 
 	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
 	// writes may go through, most preferred first, resolved from CRD discovery at startup.

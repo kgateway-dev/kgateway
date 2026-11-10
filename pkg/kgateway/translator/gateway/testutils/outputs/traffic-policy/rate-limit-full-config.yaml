@@ -177,6 +177,21 @@ Routes:
             maxTokens: 99
             tokensPerFill: 1
 Statuses:
+  gatewayExtensions:
+    default/default-ratelimit:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/full-ratelimit:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

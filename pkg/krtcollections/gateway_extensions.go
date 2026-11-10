@@ -16,10 +16,7 @@ import (
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
-// NewGatewayExtensionsCollection builds the translated ir.GatewayExtension collection and
-// returns the raw informer-backed *kgateway.GatewayExtension collection it is derived from.
-// The raw collection is exposed so the status syncer can reconcile GatewayExtension status
-// against live objects (status-only updates do not re-emit the IR collection).
+// NewGatewayExtensionsCollection returns the raw GatewayExtensions and their IR.
 func NewGatewayExtensionsCollection(
 	ctx context.Context,
 	client apiclient.Client,
@@ -42,6 +39,7 @@ func NewGatewayExtensionsCollection(
 				Namespace: cr.Namespace,
 				Name:      cr.Name,
 			},
+			Generation:       cr.Generation,
 			ExtAuth:          cr.Spec.ExtAuth,
 			ExtProc:          cr.Spec.ExtProc,
 			RateLimit:        cr.Spec.RateLimit,

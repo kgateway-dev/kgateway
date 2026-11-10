@@ -1,118 +1,106 @@
 package trafficpolicy
 
 import (
+	"errors"
+	"slices"
+
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-// registerGatewayExtensionStatus publishes the Accepted condition on the GatewayExtension
-// resource itself, mirroring Backend: True/Accepted when the extension translated, and
-// False/Invalid with the translation error when it did not.
-//
-// A GatewayExtension's translation result is produced by this plugin (see
-// TranslateGatewayExtensionBuilder), which stores the error on
-// TrafficPolicyGatewayExtensionIR.Err instead of surfacing it anywhere. Reporting it on the
-// resource requires the IR collection, so this registration lives here rather than in the
-// proxy syncer's built-in status kinds.
-//
-// It is self-contained: the contributions, the report reducer, and the status writer for
-// GatewayExtension are all built and registered here, rather than joined into the syncer's
-// shared status-contribution collection. The syncer still owns the write queue, so status
-// is only written while this replica is leader.
-func registerGatewayExtensionStatus(
-	in sdk.PolicyStatusInputs,
-	commoncol *collections.CommonCollections,
-	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR],
-) {
-	rawExts := commoncol.RawGatewayExtensions
-	if rawExts == nil {
-		return
+// gatewayExtensionStatus is the status a GatewayExtension's translation earns: its Accepted
+// condition, stamped with the generation it was translated from.
+type gatewayExtensionStatus struct {
+	types.NamespacedName
+	Accepted metav1.Condition
+}
+
+func (s gatewayExtensionStatus) ResourceName() string {
+	return s.NamespacedName.String()
+}
+
+func (s gatewayExtensionStatus) Equals(other gatewayExtensionStatus) bool {
+	return s.NamespacedName == other.NamespacedName && s.Accepted == other.Accepted
+}
+
+// newGatewayExtensionStatus projects a translated extension onto its Accepted condition. The
+// extension is rejected for the same errors that reject a TrafficPolicy referencing it: the
+// translation error, or failing the proto validation the policy runs against its provider.
+func newGatewayExtensionStatus(_ krt.HandlerContext, ext TrafficPolicyGatewayExtensionIR) *gatewayExtensionStatus {
+	namespace, name, err := cache.SplitMetaNamespaceKey(ext.Name)
+	if err != nil {
+		logger.Error("unexpected GatewayExtension IR key", "key", ext.Name, "error", err)
+		return nil
 	}
-	gvk := wellknown.GatewayExtensionGVK
+	var errs []error
+	// Validate reports nothing for an extension that already failed to translate.
+	if err := errors.Join(ext.Err, ext.Validate()); err != nil {
+		errs = []error{err}
+	}
+	accepted := pluginutils.BuildCondition("GatewayExtension", errs)
+	accepted.ObservedGeneration = ext.Generation
+	return &gatewayExtensionStatus{
+		NamespacedName: types.NamespacedName{Namespace: namespace, Name: name},
+		Accepted:       accepted,
+	}
+}
 
-	// One contribution per GatewayExtension, keyed on the extension's own identity. The
-	// condition is rebuilt whenever the raw object or its translation changes, because the
-	// fetch on gatewayExtensions registers that dependency.
-	contributions := krt.NewCollection(rawExts, func(kctx krt.HandlerContext, ext *kgateway.GatewayExtension) *reports.StatusContribution {
-		var translatedErr error
-		translated := krt.FetchOne(kctx, gatewayExtensions, krt.FilterObjectName(types.NamespacedName{
-			Namespace: ext.Namespace,
-			Name:      ext.Name,
-		}))
-		if translated != nil {
-			translatedErr = translated.Err
-		}
-		return gatewayExtensionStatusContribution(ext, translatedErr)
-	}, commoncol.KrtOpts.ToOptions("GatewayExtensionStatusContributions")...)
+// registerGatewayExtensionStatus reports each GatewayExtension's Accepted condition, built from
+// the translated extensions.
+func registerGatewayExtensionStatus(
+	commoncol *collections.CommonCollections,
+	translated krt.Collection[TrafficPolicyGatewayExtensionIR],
+) func(statussync.RegistrationInputs) {
+	return func(in statussync.RegistrationInputs) {
+		// Status is read from the shared raw collection and written through a client on the
+		// same informer, as for Backend.
+		raw := commoncol.RawGatewayExtensions
+		cli := kclient.NewFilteredDelayed[*kgateway.GatewayExtension](
+			commoncol.Client,
+			wellknown.GatewayExtensionGVR,
+			kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
+		)
+		statuses := krt.NewCollection(translated, newGatewayExtensionStatus, in.KrtOpts.ToOptions("GatewayExtensionStatus")...)
 
-	byTarget := krtpkg.UnnamedIndex(contributions, func(c reports.StatusContribution) []reports.StatusKey {
-		return []reports.StatusKey{c.Target}
-	})
-	extReports := statussync.RegisterKind(in.Collections, gvk, rawExts, contributions, byTarget,
-		commoncol.KrtOpts.ToOptions("GatewayExtensionStatusReports")...)
+		statussync.RegisterDerivedKind(in.Collections, wellknown.GatewayExtensionGVK, raw, statuses,
+			func(s gatewayExtensionStatus) types.NamespacedName { return s.NamespacedName })
+		in.RegisterWriter(wellknown.GatewayExtensionGVK, gatewayExtensionWriter(cli, raw, statuses))
+	}
+}
 
-	// The write-side client is separate from the collection's informer: the collection
-	// enqueues the resource, and only the write goes through this client.
-	cl := kclient.NewFilteredDelayed[*kgateway.GatewayExtension](
-		commoncol.Client,
-		wellknown.GatewayExtensionGVR,
-		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	)
-	in.RegisterWriter(gvk, statussync.Writer[*kgateway.GatewayExtension, kgateway.GatewayExtensionStatus]{
-		Name:    "gatewayExtension",
-		Current: statussync.CollectionSource(rawExts),
-		Desired: func(res statussync.Resource, current *kgateway.GatewayExtension) (kgateway.GatewayExtensionStatus, bool) {
-			report, ok := statussync.ReportFor(extReports, res)
-			if !ok {
-				return kgateway.GatewayExtensionStatus{}, false
-			}
-			status := reports.BuildGatewayExtensionStatus(report.GatewayExtension, current.Status)
+func gatewayExtensionWriter(
+	cli kclient.Client[*kgateway.GatewayExtension],
+	raw krt.Collection[*kgateway.GatewayExtension],
+	statuses krt.Collection[gatewayExtensionStatus],
+) statussync.Writer[*kgateway.GatewayExtension, kgateway.GatewayExtensionStatus] {
+	return statussync.Writer[*kgateway.GatewayExtension, kgateway.GatewayExtensionStatus]{
+		Name:    wellknown.GatewayExtensionGVK.Kind,
+		Current: statussync.CollectionSource(raw),
+		Desired: func(res statussync.Resource, ext *kgateway.GatewayExtension) (kgateway.GatewayExtensionStatus, bool) {
+			status := statuses.GetKey(res.NamespacedName.String())
 			if status == nil {
 				return kgateway.GatewayExtensionStatus{}, false
 			}
-			return *status, true
+			// SetStatusCondition keeps the live LastTransitionTime while the condition's status
+			// holds, and leaves conditions of other types untouched.
+			conditions := slices.Clone(ext.Status.Conditions)
+			meta.SetStatusCondition(&conditions, status.Accepted)
+			return kgateway.GatewayExtensionStatus{Conditions: conditions}, true
 		},
-		UpdateStatus: statussync.ClientWriter(cl, func(om metav1.ObjectMeta, st kgateway.GatewayExtensionStatus) *kgateway.GatewayExtension {
-			return &kgateway.GatewayExtension{ObjectMeta: om, Status: st}
-		}),
+		UpdateStatus: statussync.ClientWriter(cli,
+			func(om metav1.ObjectMeta, st kgateway.GatewayExtensionStatus) *kgateway.GatewayExtension {
+				return &kgateway.GatewayExtension{ObjectMeta: om, Status: st}
+			}),
 		GetStatus: func(o *kgateway.GatewayExtension) kgateway.GatewayExtensionStatus { return o.Status },
-	})
-}
-
-// gatewayExtensionStatusContribution is the pure mapping from one GatewayExtension and its
-// translation error to the single status contribution that reports it: True/Accepted when
-// translatedErr is nil, False/Invalid carrying the error otherwise.
-func gatewayExtensionStatusContribution(
-	ext *kgateway.GatewayExtension,
-	translatedErr error,
-) *reports.StatusContribution {
-	var errs []error
-	if translatedErr != nil {
-		errs = append(errs, translatedErr)
-	}
-	cond := pluginutils.BuildGatewayExtensionCondition("GatewayExtension", errs)
-	return &reports.StatusContribution{
-		Target: reports.StatusKey{
-			GroupKind:      wellknown.GatewayExtensionGVK.GroupKind(),
-			NamespacedName: types.NamespacedName{Namespace: ext.Namespace, Name: ext.Name},
-		},
-		Source: reports.StatusSource{
-			Kind: reports.GatewayExtensionStatusSource,
-			Name: ext.Namespace + "/" + ext.Name,
-		},
-		StatusReport: reports.StatusReport{
-			GatewayExtension: reports.NewGatewayExtensionReport(ext.Generation, []metav1.Condition{cond}),
-		},
 	}
 }
