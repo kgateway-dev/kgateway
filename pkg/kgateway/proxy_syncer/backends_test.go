@@ -127,7 +127,7 @@ func TestBaseClusterVersion_ClusterChangesAreReflected(t *testing.T) {
 }
 
 // TestBaseClusterVersion_InlineCLAReflectsPolicyChanges is a regression test for
-// the stale-AttachedPolicies bug: PerClientProcessEndpoints hooks (e.g. the
+// the stale-AttachedPolicies bug: per-client endpoint hooks (e.g. the
 // backendconfigpolicy zone-aware plugin) read AttachedPolicies from the cached
 // BaseCluster.EndpointInputs, and KRT keeps the OLD stored object when Equals
 // returns true. If a policy-only change (cluster proto and endpoints unchanged)

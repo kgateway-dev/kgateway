@@ -18,8 +18,7 @@ import (
 // endpoint set built with [EndpointSetBuilder].
 //
 // This prevents plugins from accidentally mutating KRT-owned maps, slices, or
-// protobufs shared by other clients. Plugins that still use the legacy raw-input
-// hook are isolated by a defensive deep copy in the translation framework.
+// protobufs shared by other clients.
 type EndpointInputsEditor interface {
 	BackendLabels() map[string]string
 	Hostname() string
@@ -38,36 +37,19 @@ type EndpointInputsEditor interface {
 // code retains the concrete resolver to retrieve the result; plugins receive only
 // the restricted [EndpointInputsEditor] interface.
 type EndpointInputsResolver struct {
-	inputs                 EndpointsInputs
-	legacyIsolated         bool
-	endpointHashesReusable bool
+	inputs EndpointsInputs
 }
 
 // NewEndpointInputsResolver creates a per-client working view over shared
-// endpoint inputs. The shared nested state remains immutable until a plugin
-// explicitly builds a replacement or requests the legacy mutable view.
+// endpoint inputs. The shared nested state remains immutable; a plugin changes
+// the endpoint set only by explicitly building a replacement.
 func NewEndpointInputsResolver(inputs EndpointsInputs) *EndpointInputsResolver {
-	return &EndpointInputsResolver{inputs: inputs, endpointHashesReusable: true}
+	return &EndpointInputsResolver{inputs: inputs}
 }
 
 // Inputs returns the resolved per-client inputs after all plugins have run.
 func (e *EndpointInputsResolver) Inputs() EndpointsInputs {
 	return e.inputs
-}
-
-// LegacyMutableInputs returns a transitively isolated input graph for the legacy
-// raw mutation hook. The copy is made at most once per client even when multiple
-// legacy plugins run.
-func (e *EndpointInputsResolver) LegacyMutableInputs() *EndpointsInputs {
-	if !e.legacyIsolated {
-		e.inputs = cloneEndpointsInputs(e.inputs)
-		e.legacyIsolated = true
-	}
-	// A legacy plugin can mutate endpoint protos or metadata without going
-	// through EndpointsForBackend.Add, so their cached contribution hashes can
-	// no longer be trusted by a later editor plugin.
-	e.endpointHashesReusable = false
-	return &e.inputs
 }
 
 func (e *EndpointInputsResolver) BackendLabels() map[string]string {
@@ -116,9 +98,8 @@ func (e *EndpointInputsResolver) ForEachEndpoint(fn func(ir.PodLocality, Endpoin
 	for locality, localityEndpoints := range e.inputs.EndpointsForBackend.LbEps {
 		for _, endpoint := range localityEndpoints {
 			if !fn(locality, EndpointView{
-				locality:     locality,
-				endpoint:     endpoint,
-				hashReusable: e.endpointHashesReusable,
+				locality: locality,
+				endpoint: endpoint,
 			}) {
 				return
 			}
@@ -158,7 +139,6 @@ func (e *EndpointInputsResolver) ReplaceEndpoints(replacement *EndpointSetBuilde
 	// would fail silently: the resolved hash faithfully versions the reverted
 	// state.
 	e.inputs.EndpointsForBackend.AdoptEndpointsFrom(&installed)
-	e.endpointHashesReusable = true
 }
 
 // PolicyView is an immutable view of one policy attachment. It exposes what
@@ -198,9 +178,8 @@ func (p PolicyView) Generation() int64 {
 // EndpointView is an immutable view of one endpoint from shared input state.
 // Clone must be called before changing any endpoint proto or metadata label.
 type EndpointView struct {
-	locality     ir.PodLocality
-	endpoint     ir.EndpointWithMd
-	hashReusable bool
+	locality ir.PodLocality
+	endpoint ir.EndpointWithMd
 }
 
 func (e EndpointView) Label(name string) string {
@@ -266,19 +245,17 @@ func (b *EndpointSetBuilder) mutableState() *endpointSetBuilderState {
 }
 
 // AddUnchanged structurally shares an immutable endpoint and reuses its
-// precomputed contribution hash. Moving it to another locality, or using a view
-// exposed after a legacy mutable hook, safely falls back to a fresh hash.
+// precomputed contribution hash. Moving it to another locality safely falls
+// back to a fresh hash.
 //
 // This is the one path that installs an endpoint without copying it, and it can
 // be: a view only ever names source state the plugin has no way to write to.
 // Add and AddModified take values the plugin does own, so they copy.
 func (b *EndpointSetBuilder) AddUnchanged(locality ir.PodLocality, endpoint EndpointView) {
 	state := b.mutableState()
-	if locality != endpoint.locality || !endpoint.hashReusable {
+	if locality != endpoint.locality {
 		// Locality participates in the endpoint contribution hash, so moving an
-		// otherwise unchanged endpoint still requires a fresh hash. A legacy
-		// plugin may also have mutated the endpoint behind the view, invalidating
-		// the cached contribution.
+		// otherwise unchanged endpoint still requires a fresh hash.
 		state.endpoints.Add(locality, endpoint.endpoint)
 		return
 	}
@@ -316,57 +293,6 @@ func (b *EndpointSetBuilder) AddModified(locality ir.PodLocality, base EndpointV
 // one; it avoids the second clone.
 func (b *EndpointSetBuilder) Add(locality ir.PodLocality, endpoint ir.EndpointWithMd) {
 	b.mutableState().endpoints.Add(locality, endpoint.Clone())
-}
-
-func cloneEndpointsInputs(in EndpointsInputs) EndpointsInputs {
-	out := in
-	out.EndpointsForBackend = cloneEndpointsForBackend(in.EndpointsForBackend)
-	out.PriorityInfo = clonePriorityInfo(in.PriorityInfo)
-	return out
-}
-
-func cloneEndpointsForBackend(in ir.EndpointsForBackend) ir.EndpointsForBackend {
-	out := in
-	out.BackendLabels = maps.Clone(in.BackendLabels)
-	out.AttachedPolicies = cloneAttachedPolicies(in.AttachedPolicies)
-	out.LbEps = make(ir.LocalityLbMap, len(in.LbEps))
-	for locality, localityEndpoints := range in.LbEps {
-		cloned := make([]ir.EndpointWithMd, len(localityEndpoints))
-		for i, endpoint := range localityEndpoints {
-			cloned[i] = endpoint.Clone()
-		}
-		out.LbEps[locality] = cloned
-	}
-	return out
-}
-
-func cloneAttachedPolicies(in ir.AttachedPolicies) ir.AttachedPolicies {
-	if in.Policies == nil {
-		return ir.AttachedPolicies{}
-	}
-	out := ir.AttachedPolicies{Policies: make(map[schema.GroupKind][]ir.PolicyAtt, len(in.Policies))}
-	for groupKind, attachments := range in.Policies {
-		out.Policies[groupKind] = clonePolicyAttachments(attachments)
-	}
-	return out
-}
-
-func clonePolicyAttachments(in []ir.PolicyAtt) []ir.PolicyAtt {
-	out := slices.Clone(in)
-	for i := range out {
-		if out[i].PolicyRef != nil {
-			policyRef := *out[i].PolicyRef
-			out[i].PolicyRef = &policyRef
-		}
-		out[i].Errors = slices.Clone(out[i].Errors)
-		if out[i].MergeOrigins != nil {
-			out[i].MergeOrigins = make(ir.MergeOrigins, len(out[i].MergeOrigins))
-			for field, origins := range in[i].MergeOrigins {
-				out[i].MergeOrigins[field] = origins.Clone()
-			}
-		}
-	}
-	return out
 }
 
 func clonePriorityInfo(in *PriorityInfo) *PriorityInfo {

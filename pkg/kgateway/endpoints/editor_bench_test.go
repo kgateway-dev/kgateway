@@ -39,14 +39,6 @@ func BenchmarkEndpointInputsResolver(b *testing.B) {
 				benchmarkReplacement(base, 2)
 			}
 		})
-		b.Run(fmt.Sprintf("endpoints=%d/legacy-deep-copy", endpointCount), func(b *testing.B) {
-			b.ReportAllocs()
-			for range b.N {
-				resolver := NewEndpointInputsResolver(base)
-				resolver.LegacyMutableInputs()
-				endpointEditorBenchSink = resolver.Inputs()
-			}
-		})
 	}
 }
 
