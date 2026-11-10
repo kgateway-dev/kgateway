@@ -112,12 +112,16 @@ func (s *testingSuite) TestTLSCertificateRotation() {
 	)
 	s.Require().NoError(fwd.Start(s.Ctx), "failed to port-forward to the xDS port")
 	defer fwd.Close()
+	// Only the served certificate matters here, not whether it is trusted.
+	dialer := &cryptotls.Dialer{Config: &cryptotls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}}} //nolint:gosec
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-		// Only the served certificate matters here, not whether it is trusted.
-		conn, err := cryptotls.Dial("tcp", fwd.Address(), &cryptotls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}}) //nolint:gosec
+		// Bound each attempt so a stalled handshake fails it instead of blocking the poll.
+		ctx, cancel := context.WithTimeout(s.Ctx, 5*time.Second)
+		defer cancel()
+		conn, err := dialer.DialContext(ctx, "tcp", fwd.Address())
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "TLS handshake with the xDS port failed")
 		defer conn.Close()
-		g.Expect(conn.ConnectionState().PeerCertificates[0].Raw).To(gomega.Equal(block.Bytes), "xDS port does not serve the rotated certificate yet")
+		g.Expect(conn.(*cryptotls.Conn).ConnectionState().PeerCertificates[0].Raw).To(gomega.Equal(block.Bytes), "xDS port does not serve the rotated certificate yet")
 	}).WithTimeout(2 * time.Minute).WithPolling(100 * time.Millisecond).Should(gomega.Succeed())
 
 	// verify traffic still works after rotation
