@@ -91,19 +91,19 @@ type SelfManagedGateway struct{}
 // can achieve the same goal) for smoother upgrades, readability, and earlier
 // and improved validation.
 //
-// +kubebuilder:validation:XValidation:rule="!has(self.workloadKind) || self.workloadKind != 'DaemonSet' || !has(self.deployment)",message="deployment is not valid when workloadKind is DaemonSet"
-// +kubebuilder:validation:XValidation:rule="!has(self.workloadKind) || self.workloadKind != 'DaemonSet' || !has(self.deploymentOverlay)",message="deploymentOverlay is not valid when workloadKind is DaemonSet"
+// +kubebuilder:validation:XValidation:rule="!has(self.workloadKind) || self.workloadKind != 'DaemonSet' || !has(self.deployment) || (!has(self.deployment.replicas) && !has(self.deployment.strategy))",message="deployment is not valid when workloadKind is DaemonSet"
 // +kubebuilder:validation:XValidation:rule="!has(self.workloadKind) || self.workloadKind != 'DaemonSet' || !has(self.horizontalPodAutoscaler)",message="horizontalPodAutoscaler is not valid when workloadKind is DaemonSet"
-// +kubebuilder:validation:XValidation:rule="!has(self.daemonSetOverlay) || (has(self.workloadKind) && self.workloadKind == 'DaemonSet')",message="daemonSetOverlay is only valid when workloadKind is DaemonSet"
 type KubernetesProxyConfig struct {
 	// The Kubernetes workload kind that runs the proxy pods. Defaults to
 	// Deployment. Set it to DaemonSet to run one proxy pod on every eligible
 	// node; use the pod template's nodeSelector, affinity and tolerations to
 	// choose the nodes.
 	//
+	// The kind is never inferred from other fields: unset means Deployment.
 	// A Gateway's GatewayParameters override the kind set on its
 	// GatewayClass's GatewayParameters. Settings for the other kind are
-	// rejected, in either GatewayParameters: with DaemonSet, deployment,
+	// rejected, in either GatewayParameters (an empty deployment or overlay
+	// sets nothing and is allowed): with DaemonSet, deployment,
 	// deploymentOverlay, horizontalPodAutoscaler and a podDisruptionBudget
 	// using maxUnavailable or a percentage minAvailable are invalid; with
 	// Deployment, daemonSetOverlay is invalid. A Gateway whose parameters
@@ -869,8 +869,7 @@ type GatewayParametersOverlays struct {
 	DeploymentOverlay *shared.KubernetesResourceOverlay `json:"deploymentOverlay,omitempty"`
 
 	// daemonSetOverlay allows specifying overrides for the generated DaemonSet
-	// resource. Only valid when workloadKind is DaemonSet in the same
-	// GatewayParameters.
+	// resource. Only valid when the workload kind is DaemonSet.
 	// +optional
 	DaemonSetOverlay *shared.KubernetesResourceOverlay `json:"daemonSetOverlay,omitempty"`
 

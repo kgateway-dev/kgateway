@@ -63,8 +63,7 @@ spec:
                   daemonSetOverlay:
                     description: |-
                       daemonSetOverlay allows specifying overrides for the generated DaemonSet
-                      resource. Only valid when workloadKind is DaemonSet in the same
-                      GatewayParameters.
+                      resource. Only valid when the workload kind is DaemonSet.
                     properties:
                       metadata:
                         description: |-
@@ -8163,9 +8162,11 @@ spec:
                       node; use the pod template's nodeSelector, affinity and tolerations to
                       choose the nodes.
 
+                      The kind is never inferred from other fields: unset means Deployment.
                       A Gateway's GatewayParameters override the kind set on its
                       GatewayClass's GatewayParameters. Settings for the other kind are
-                      rejected, in either GatewayParameters: with DaemonSet, deployment,
+                      rejected, in either GatewayParameters (an empty deployment or overlay
+                      sets nothing and is allowed): with DaemonSet, deployment,
                       deploymentOverlay, horizontalPodAutoscaler and a podDisruptionBudget
                       using maxUnavailable or a percentage minAvailable are invalid; with
                       Deployment, daemonSetOverlay is invalid. A Gateway whose parameters
@@ -8179,17 +8180,12 @@ spec:
                 x-kubernetes-validations:
                 - message: deployment is not valid when workloadKind is DaemonSet
                   rule: '!has(self.workloadKind) || self.workloadKind != ''DaemonSet''
-                    || !has(self.deployment)'
-                - message: deploymentOverlay is not valid when workloadKind is DaemonSet
-                  rule: '!has(self.workloadKind) || self.workloadKind != ''DaemonSet''
-                    || !has(self.deploymentOverlay)'
+                    || !has(self.deployment) || (!has(self.deployment.replicas) &&
+                    !has(self.deployment.strategy))'
                 - message: horizontalPodAutoscaler is not valid when workloadKind
                     is DaemonSet
                   rule: '!has(self.workloadKind) || self.workloadKind != ''DaemonSet''
                     || !has(self.horizontalPodAutoscaler)'
-                - message: daemonSetOverlay is only valid when workloadKind is DaemonSet
-                  rule: '!has(self.daemonSetOverlay) || (has(self.workloadKind) &&
-                    self.workloadKind == ''DaemonSet'')'
               selfManaged:
                 description: The proxy will be self-managed and not auto-provisioned.
                 type: object

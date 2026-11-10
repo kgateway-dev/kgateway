@@ -442,16 +442,18 @@ func (r *resolvedKgatewayParameters) validateWorkloadKind() error {
 		var conflicts []string
 		switch kind {
 		case kgateway.WorkloadKindDeployment:
-			if kube.DaemonSetOverlay != nil {
+			if !isEmptyOverlay(kube.DaemonSetOverlay) {
 				conflicts = append(conflicts, "daemonSetOverlay")
 			}
 		case kgateway.WorkloadKindDaemonSet:
-			if kube.Deployment != nil {
+			if kube.Deployment.GetReplicas() != nil || kube.Deployment.GetStrategy() != nil {
 				conflicts = append(conflicts, "deployment")
 			}
-			if kube.DeploymentOverlay != nil {
+			if !isEmptyOverlay(kube.DeploymentOverlay) {
 				conflicts = append(conflicts, "deploymentOverlay")
 			}
+			// Unlike the overlays above, an empty horizontalPodAutoscaler is not a
+			// no-op: its presence is what creates the HPA.
 			if kube.HorizontalPodAutoscaler != nil {
 				conflicts = append(conflicts, "horizontalPodAutoscaler")
 			}
@@ -463,6 +465,28 @@ func (r *resolvedKgatewayParameters) validateWorkloadKind() error {
 		}
 	}
 	return nil
+}
+
+// isEmptyOverlay reports whether an overlay changes nothing. Tools such as Helm
+// or GitOps controllers may keep or drop an empty object like
+// `deploymentOverlay: {}`, so an empty overlay must not change whether the
+// parameters are valid.
+func isEmptyOverlay(o *shared.KubernetesResourceOverlay) bool {
+	if o == nil {
+		return true
+	}
+	if m := o.Metadata; m != nil && (len(m.Labels) > 0 || len(m.Annotations) > 0) {
+		return false
+	}
+	if o.Spec == nil || len(o.Spec.Raw) == 0 {
+		return true
+	}
+	var spec map[string]any
+	if err := json.Unmarshal(o.Spec.Raw, &spec); err != nil {
+		// Not an empty object; applying the overlay reports the malformed spec.
+		return false
+	}
+	return len(spec) == 0
 }
 
 // daemonSetPDBConflicts returns the PodDisruptionBudget settings that do not

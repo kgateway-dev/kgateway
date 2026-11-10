@@ -200,6 +200,7 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 	daemonSet := kgateway.WorkloadKindDaemonSet
 	deployment := kgateway.WorkloadKindDeployment
 	overlay := &shared.KubernetesResourceOverlay{}
+	labelOverlay := &shared.KubernetesResourceOverlay{Metadata: &shared.ObjectMetadata{Labels: map[string]string{"foo": "bar"}}}
 
 	tests := []struct {
 		name    string
@@ -217,7 +218,7 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 			name: "DaemonSet from the Gateway with Deployment settings from the GatewayClass",
 			gwcKube: &kgateway.KubernetesProxyConfig{
 				Deployment:                &kgateway.ProxyDeployment{Replicas: new(int32(2))},
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DeploymentOverlay: overlay},
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DeploymentOverlay: labelOverlay},
 			},
 			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
 			wantErr: "GatewayClass GatewayParameters default/kgateway sets deployment, deploymentOverlay, which is not valid for workload kind DaemonSet",
@@ -226,7 +227,7 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 			name: "Deployment from the Gateway overrides a GatewayClass DaemonSet with its overlay",
 			gwcKube: &kgateway.KubernetesProxyConfig{
 				WorkloadKind:              &daemonSet,
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DaemonSetOverlay: overlay},
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DaemonSetOverlay: labelOverlay},
 			},
 			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &deployment},
 			wantErr: "GatewayClass GatewayParameters default/kgateway sets daemonSetOverlay, which is not valid for workload kind Deployment",
@@ -253,6 +254,30 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 			name:    "Deployment with a maxUnavailable PDB",
 			gwcKube: &kgateway.KubernetesProxyConfig{},
 			gwKube:  &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{PodDisruptionBudget: pdbSpec(`{"maxUnavailable": "25%"}`)}},
+		},
+		{
+			name: "DaemonSet with empty Deployment objects from the GatewayClass",
+			gwcKube: &kgateway.KubernetesProxyConfig{
+				Deployment: &kgateway.ProxyDeployment{},
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{Labels: map[string]string{}},
+						Spec:     &apiextensionsv1.JSON{Raw: []byte(`{}`)},
+					},
+				},
+			},
+			gwKube: &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+		},
+		{
+			name:    "Deployment with an empty DaemonSet overlay from the GatewayClass",
+			gwcKube: &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DaemonSetOverlay: overlay}},
+			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &deployment},
+		},
+		{
+			name:    "DaemonSet with a Deployment overlay that patches the spec",
+			gwcKube: &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{DeploymentOverlay: pdbSpec(`{"replicas": 3}`)}},
+			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			wantErr: "GatewayClass GatewayParameters default/kgateway sets deploymentOverlay, which is not valid for workload kind DaemonSet",
 		},
 		{
 			name:    "DaemonSet from the GatewayClass with settings that fit it",

@@ -73,19 +73,6 @@ spec:
       spec:
         minAvailable: 1
 ---
-# WorkloadKind: a DaemonSet overlay needs workloadKind DaemonSet in the same object
-_err: daemonSetOverlay is only valid when workloadKind is DaemonSet
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
-metadata:
-  name: test-workload-kind-unset-daemonset-overlay
-spec:
-  kube:
-    daemonSetOverlay:
-      metadata:
-        labels:
-          foo: bar
----
 # WorkloadKind: unknown kind
 _err: 'spec.kube.workloadKind: Unsupported value: "StatefulSet"'
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -108,20 +95,6 @@ spec:
     deployment:
       replicas: 2
 ---
-# WorkloadKind: DaemonSet rejects a Deployment overlay
-_err: deploymentOverlay is not valid when workloadKind is DaemonSet
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
-metadata:
-  name: test-workload-kind-daemonset-deployment-overlay
-spec:
-  kube:
-    workloadKind: DaemonSet
-    deploymentOverlay:
-      metadata:
-        labels:
-          foo: bar
----
 # WorkloadKind: DaemonSet rejects an HPA
 _err: horizontalPodAutoscaler is not valid when workloadKind is DaemonSet
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -135,16 +108,59 @@ spec:
       spec:
         maxReplicas: 3
 ---
-# WorkloadKind: Deployment rejects a DaemonSet overlay
-_err: daemonSetOverlay is only valid when workloadKind is DaemonSet
+# WorkloadKind: empty Deployment-only objects set nothing, so DaemonSet accepts them
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: test-workload-kind-deployment-daemonset-overlay
+  name: test-workload-kind-daemonset-empty-deployment-objects
+spec:
+  kube:
+    workloadKind: DaemonSet
+    deployment: {}
+    deploymentOverlay: {}
+---
+# WorkloadKind: DaemonSet accepts a Deployment overlay whose metadata and spec are empty
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-daemonset-hollow-deployment-overlay
+spec:
+  kube:
+    workloadKind: DaemonSet
+    deploymentOverlay:
+      metadata:
+        labels: {}
+      spec: {}
+---
+# WorkloadKind: an empty DaemonSet overlay needs no workloadKind
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-empty-daemonset-overlay
 spec:
   kube:
     workloadKind: Deployment
-    daemonSetOverlay:
-      metadata:
-        labels:
-          foo: bar
+    daemonSetOverlay: {}
+---
+# WorkloadKind: DaemonSet rejects a deployment strategy
+_err: deployment is not valid when workloadKind is DaemonSet
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-daemonset-deployment-strategy
+spec:
+  kube:
+    workloadKind: DaemonSet
+    deployment:
+      strategy:
+        type: Recreate
+---
+# WorkloadKind: an empty string is not a kind
+_err: 'spec.kube.workloadKind: Unsupported value: ""'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-workload-kind-empty-string
+spec:
+  kube:
+    workloadKind: ""
