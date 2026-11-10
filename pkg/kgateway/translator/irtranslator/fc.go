@@ -216,11 +216,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 	// 1. Initialize the HttpConnectionManager (HCM)
 	httpConnectionManager := h.initializeHCM()
 
-	// 2. Apply HttpFilters
-	var err error
-	httpConnectionManager.HttpFilters = h.computeHttpFilters(l)
-
-	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
+	// 2. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
@@ -250,6 +246,9 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 		}
 		reportPolicyAttachmentStatus(h.reporter, h.policyAncestorRef, mergeOrigins, pols...)
 	}
+
+	// 3. Apply HttpFilters
+	httpConnectionManager.HttpFilters = h.computeHttpFilters(l)
 
 	// TODO: should we enable websockets by default?
 

@@ -150,6 +150,7 @@ func (ml *MergedListeners) appendHttpListener(
 		if lis.port != finalPort {
 			continue
 		}
+		lis.hasMultipleListeners = true
 		if lis.httpFilterChain != nil {
 			lis.httpFilterChain.parents = append(lis.httpFilterChain.parents, parent)
 		} else {
@@ -194,6 +195,7 @@ func (ml *MergedListeners) appendHttpsListener(
 	finalPort := getListenerPortNumber(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
+			lis.hasMultipleListeners = true
 			lis.httpsFilterChains = append(lis.httpsFilterChains, mfc)
 			return
 		}
@@ -228,6 +230,7 @@ func (ml *MergedListeners) AppendTcpListener(
 	finalPort := getListenerPortNumber(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
+			lis.hasMultipleListeners = true
 			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
 			return
 		}
@@ -296,6 +299,7 @@ func (ml *MergedListeners) AppendTlsListener(
 	finalPort := getListenerPortNumber(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
+			lis.hasMultipleListeners = true
 			lis.TcpFilterChains = append(lis.TcpFilterChains, filterChains...)
 			return
 		}
@@ -503,14 +507,15 @@ func (ml *MergedListeners) translateListeners(
 }
 
 type MergedListener struct {
-	name              string
-	port              gwv1.PortNumber
-	httpFilterChain   *httpFilterChain
-	httpsFilterChains []httpsFilterChain
-	TcpFilterChains   []tcpFilterChain
-	listener          ir.Listener
-	gateway           ir.Gateway
-	settings          ListenerTranslatorConfig
+	name                 string
+	port                 gwv1.PortNumber
+	httpFilterChain      *httpFilterChain
+	httpsFilterChains    []httpsFilterChain
+	TcpFilterChains      []tcpFilterChain
+	listener             ir.Listener
+	hasMultipleListeners bool
+	gateway              ir.Gateway
+	settings             ListenerTranslatorConfig
 }
 
 func (ml *MergedListener) TranslateListener(
@@ -579,12 +584,17 @@ func (ml *MergedListener) TranslateListener(
 		bindAddress = "::"
 	}
 
+	var attachedPolicies ir.AttachedPolicies
+	if !ml.hasMultipleListeners {
+		attachedPolicies = ml.listener.AttachedPolicies
+	}
+
 	// Create and return the listener with all filter chains and TCP listeners
 	return ir.ListenerIR{
 		Name:              ml.name,
 		BindAddress:       bindAddress,
-		BindPort:          uint32(ml.port),       //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
-		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possible due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
+		BindPort:          uint32(ml.port), //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
+		AttachedPolicies:  attachedPolicies,
 		HttpFilterChain:   httpFilterChains,
 		TcpFilterChain:    matchedTcpListeners,
 		PolicyAncestorRef: ml.listener.PolicyAncestorRef,
@@ -1037,7 +1047,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 			Name:             vhostName,
 			Hostname:         host,
 			Rules:            vhostRoutes.ToRoutes(),
-			AttachedPolicies: attachedPolicies,
+			AttachedPolicies: withoutListenerPolicies(attachedPolicies),
 			ParentRef:        listenerRef,
 		})
 	}
@@ -1046,20 +1056,45 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	// TODO: Make a similar change for other filter chains ???
+	var attachedPolicies ir.AttachedPolicies
+	if len(httpFilterChain.parents) == 1 {
+		attachedPolicies = onlyListenerPolicies(httpFilterChain.parents[0].attachedPolicies)
+	}
+
 	return ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: parentName,
 			StatPrefix:      buildStatPrefix("http", httpFilterChain.parents[0].gatewayListener.Port),
 		},
-		// Http plain text filter chains do not have attached policies.
-		// Because a single chain is shared across multiple gateway-api listeners, we don't have a clean way
-		// of applying listener level policies.
-		// For route policies this is not an issue, as they will be applied on the vhost.
-		// This is a problem for example if section name on HttpListener policy.
-		// it won't attach in that case..
-		// i'm pretty sure this is what we want, as we can't attach HCM policies to only some of the vhosts.
-		Vhosts: virtualHosts,
+		AttachedPolicies: attachedPolicies,
+		Vhosts:           virtualHosts,
+	}
+}
+
+func withoutListenerPolicies(ap ir.AttachedPolicies) ir.AttachedPolicies {
+	listenerPolicyGK := wellknown.ListenerPolicyGVK.GroupKind()
+	if len(ap.Policies[listenerPolicyGK]) == 0 {
+		return ap
+	}
+	policies := make(map[schema.GroupKind][]ir.PolicyAtt, len(ap.Policies)-1)
+	for gk, pols := range ap.Policies {
+		if gk != listenerPolicyGK {
+			policies[gk] = pols
+		}
+	}
+	return ir.AttachedPolicies{Policies: policies}
+}
+
+func onlyListenerPolicies(ap ir.AttachedPolicies) ir.AttachedPolicies {
+	listenerPolicyGK := wellknown.ListenerPolicyGVK.GroupKind()
+	pols := ap.Policies[listenerPolicyGK]
+	if len(pols) == 0 {
+		return ir.AttachedPolicies{}
+	}
+	return ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			listenerPolicyGK: pols,
+		},
 	}
 }
 
