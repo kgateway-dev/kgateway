@@ -21,7 +21,7 @@ spec:
   kube:
     podDisruptionBudget:
       spec:
-        maxUnavailable: 1
+        minAvailable: 1
     verticalPodAutoscaler:
       spec:
         updatePolicy:

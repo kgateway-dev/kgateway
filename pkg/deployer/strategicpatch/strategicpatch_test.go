@@ -512,7 +512,7 @@ func TestOverlayApplier_ApplyOverlays_DaemonSet(t *testing.T) {
 						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"replicas": 3}`)},
 					},
 					PodDisruptionBudget: &shared.KubernetesResourceOverlay{
-						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"maxUnavailable": 1}`)},
+						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"minAvailable": 1}`)},
 					},
 					HorizontalPodAutoscaler: &shared.KubernetesResourceOverlay{
 						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"maxReplicas": 5}`)},
@@ -536,7 +536,7 @@ func TestOverlayApplier_ApplyOverlays_DaemonSet(t *testing.T) {
 
 	pdb := objs[1].(*policyv1.PodDisruptionBudget)
 	assert.Equal(t, ds.Spec.Selector, pdb.Spec.Selector)
-	assert.Equal(t, 1, pdb.Spec.MaxUnavailable.IntValue())
+	assert.Equal(t, 1, pdb.Spec.MinAvailable.IntValue())
 
 	vpa := objs[2].(*unstructured.Unstructured)
 	targetKind, _, _ := unstructured.NestedString(vpa.Object, "spec", "targetRef", "kind")

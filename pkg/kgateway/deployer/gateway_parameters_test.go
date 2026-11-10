@@ -10,6 +10,7 @@ import (
 	"istio.io/istio/pkg/test"
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -237,10 +238,27 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 			wantErr: "Gateway GatewayParameters default/gw-params sets horizontalPodAutoscaler, which is not valid for workload kind DaemonSet",
 		},
 		{
+			name:    "DaemonSet with a maxUnavailable PDB",
+			gwcKube: &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{PodDisruptionBudget: pdbSpec(`{"maxUnavailable": 1}`)}},
+			gwKube:  &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			wantErr: "GatewayClass GatewayParameters default/kgateway sets podDisruptionBudget maxUnavailable, which is not valid for workload kind DaemonSet",
+		},
+		{
+			name:    "DaemonSet with a percentage minAvailable PDB",
+			gwcKube: &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
+			gwKube:  &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{PodDisruptionBudget: pdbSpec(`{"minAvailable": "50%"}`)}},
+			wantErr: "Gateway GatewayParameters default/gw-params sets podDisruptionBudget percentage minAvailable, which is not valid for workload kind DaemonSet",
+		},
+		{
+			name:    "Deployment with a maxUnavailable PDB",
+			gwcKube: &kgateway.KubernetesProxyConfig{},
+			gwKube:  &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{PodDisruptionBudget: pdbSpec(`{"maxUnavailable": "25%"}`)}},
+		},
+		{
 			name:    "DaemonSet from the GatewayClass with settings that fit it",
 			gwcKube: &kgateway.KubernetesProxyConfig{WorkloadKind: &daemonSet},
 			gwKube: &kgateway.KubernetesProxyConfig{GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-				PodDisruptionBudget:   overlay,
+				PodDisruptionBudget:   pdbSpec(`{"minAvailable": 1}`),
 				VerticalPodAutoscaler: overlay,
 			}},
 		},
@@ -283,4 +301,8 @@ func TestWorkloadKindConflictsAreRejected(t *testing.T) {
 			assert.EqualError(t, err, tt.wantErr)
 		})
 	}
+}
+
+func pdbSpec(spec string) *shared.KubernetesResourceOverlay {
+	return &shared.KubernetesResourceOverlay{Spec: &apiextensionsv1.JSON{Raw: []byte(spec)}}
 }

@@ -104,7 +104,8 @@ type KubernetesProxyConfig struct {
 	// A Gateway's GatewayParameters override the kind set on its
 	// GatewayClass's GatewayParameters. Settings for the other kind are
 	// rejected, in either GatewayParameters: with DaemonSet, deployment,
-	// deploymentOverlay and horizontalPodAutoscaler are invalid; with
+	// deploymentOverlay, horizontalPodAutoscaler and a podDisruptionBudget
+	// using maxUnavailable or a percentage minAvailable are invalid; with
 	// Deployment, daemonSetOverlay is invalid. A Gateway whose parameters
 	// conflict with the final kind is not Accepted, with reason
 	// InvalidParameters.
@@ -885,6 +886,9 @@ type GatewayParametersOverlays struct {
 	// If absent, no PDB is created. If present, a PDB is created with its selector
 	// automatically configured to target the proxy pods.
 	// The metadata and spec fields from this overlay are applied to the generated PDB.
+	// When workloadKind is DaemonSet, only an integer minAvailable is valid:
+	// Kubernetes cannot compute maxUnavailable or a percentage for a DaemonSet,
+	// and such a PDB would block every eviction.
 	// +optional
 	PodDisruptionBudget *shared.KubernetesResourceOverlay `json:"podDisruptionBudget,omitempty"`
 

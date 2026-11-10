@@ -2,6 +2,7 @@ package deployer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,12 +10,14 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
@@ -451,6 +454,7 @@ func (r *resolvedKgatewayParameters) validateWorkloadKind() error {
 			if kube.HorizontalPodAutoscaler != nil {
 				conflicts = append(conflicts, "horizontalPodAutoscaler")
 			}
+			conflicts = append(conflicts, daemonSetPDBConflicts(kube.PodDisruptionBudget)...)
 		}
 		if len(conflicts) > 0 {
 			return fmt.Errorf("%s GatewayParameters %s/%s sets %s, which is not valid for workload kind %s",
@@ -458,6 +462,32 @@ func (r *resolvedKgatewayParameters) validateWorkloadKind() error {
 		}
 	}
 	return nil
+}
+
+// daemonSetPDBConflicts returns the PodDisruptionBudget settings that do not
+// work for a DaemonSet. The disruption controller computes maxUnavailable and a
+// percentage minAvailable from the owning controller's scale, which a DaemonSet
+// does not have, so such a PDB allows no disruptions and blocks every eviction.
+func daemonSetPDBConflicts(pdb *shared.KubernetesResourceOverlay) []string {
+	if pdb == nil || pdb.Spec == nil || len(pdb.Spec.Raw) == 0 {
+		return nil
+	}
+	var spec struct {
+		MinAvailable   *intstr.IntOrString `json:"minAvailable"`
+		MaxUnavailable *intstr.IntOrString `json:"maxUnavailable"`
+	}
+	if err := json.Unmarshal(pdb.Spec.Raw, &spec); err != nil {
+		// Rendering the PDB reports the malformed spec.
+		return nil
+	}
+	var conflicts []string
+	if spec.MaxUnavailable != nil {
+		conflicts = append(conflicts, "podDisruptionBudget maxUnavailable")
+	}
+	if spec.MinAvailable != nil && spec.MinAvailable.Type == intstr.String {
+		conflicts = append(conflicts, "podDisruptionBudget percentage minAvailable")
+	}
+	return conflicts
 }
 
 // resolveParametersForOverlays resolves the GatewayParameters for the Gateway.

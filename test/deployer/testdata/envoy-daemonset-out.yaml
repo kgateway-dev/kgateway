@@ -419,7 +419,7 @@ metadata:
     kgateway: kube-gateway
   name: gw
 spec:
-  maxUnavailable: 1
+  minAvailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/instance: gw

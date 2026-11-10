@@ -71,7 +71,7 @@ spec:
           type: OnDelete
     podDisruptionBudget:
       spec:
-        maxUnavailable: 1
+        minAvailable: 1
 ---
 # WorkloadKind: a DaemonSet overlay needs workloadKind DaemonSet in the same object
 _err: daemonSetOverlay is only valid when workloadKind is DaemonSet

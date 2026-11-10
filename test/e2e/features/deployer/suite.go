@@ -622,8 +622,6 @@ func (s *testingSuite) patchGateway(objectMeta metav1.ObjectMeta, patchFn func(*
 	s.Assert().NoError(err, "can update the Gateway object")
 }
 
-// patchGatewayParameters accepts a reference to an object, and a patch function
-// It then queries the object, performs the patch in memory, and writes the object back to the cluster
 // TestDaemonSetLifecycle runs the proxy as a DaemonSet, checks that it serves
 // traffic, that Deployment-only settings are rejected, and that switching back
 // to a Deployment removes the DaemonSet.
@@ -646,9 +644,16 @@ func (s *testingSuite) TestDaemonSetLifecycle() {
 	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, &appsv1.Deployment{})
 	s.Require().True(apierrors.IsNotFound(err), "no proxy Deployment should exist, got: %v", err)
 
-	pdb := &policyv1.PodDisruptionBudget{}
-	s.Require().NoError(s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, pdb))
-	s.Assert().Equal(ds.Spec.Selector, pdb.Spec.Selector, "the PDB should select the DaemonSet pods")
+	// With minAvailable 0, every ready pod may be disrupted. A PDB the disruption
+	// controller cannot evaluate for a DaemonSet (maxUnavailable, a percentage)
+	// would instead allow 0 disruptions and block node drains.
+	a.Gomega.Eventually(func(g gomega.Gomega) {
+		pdb := &policyv1.PodDisruptionBudget{}
+		g.Expect(s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, pdb)).To(gomega.Succeed(), "PDB should exist")
+		g.Expect(pdb.Spec.Selector).To(gomega.Equal(ds.Spec.Selector), "the PDB should select the DaemonSet pods")
+		g.Expect(pdb.Status.ObservedGeneration).To(gomega.Equal(pdb.Generation), "the disruption controller should have evaluated the PDB")
+		g.Expect(pdb.Status.DisruptionsAllowed).To(gomega.Equal(ds.Status.NumberReady), "every ready DaemonSet pod should be disruptable")
+	}).WithTimeout(time.Minute).WithPolling(time.Second).Should(gomega.Succeed())
 
 	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName(key))
 	gw.Send(s.T(), &testmatchers.HttpResponse{StatusCode: http.StatusOK},
@@ -687,6 +692,8 @@ func (s *testingSuite) TestDaemonSetLifecycle() {
 	)
 }
 
+// patchGatewayParameters accepts a reference to an object, and a patch function
+// It then queries the object, performs the patch in memory, and writes the object back to the cluster
 func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patchFn func(*kgateway.GatewayParameters)) {
 	gatewayParameters := &kgateway.GatewayParameters{}
 	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{

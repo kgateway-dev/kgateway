@@ -49,4 +49,4 @@ spec:
             maxUnavailable: 1
     podDisruptionBudget:
       spec:
-        maxUnavailable: 1
+        minAvailable: 0
