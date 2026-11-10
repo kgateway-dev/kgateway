@@ -321,3 +321,40 @@ spec:
       stage: AuthN
       predicate: Before
       weight: 1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-with-request-body-valid
+spec:
+  extAuth:
+    extensionRef:
+      name: test-extension
+    withRequestBody:
+      maxRequestBytes: 1024
+      allowPartialMessage: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-with-pack-as-bytes-false-valid
+spec:
+  extAuth:
+    extensionRef:
+      name: test-extension
+    withRequestBody:
+      maxRequestBytes: 1024
+      packAsBytes: false
+---
+_err: withRequestBody.packAsBytes is not supported on TrafficPolicy; set it on the GatewayExtension instead
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-with-pack-as-bytes-invalid
+spec:
+  extAuth:
+    extensionRef:
+      name: test-extension
+    withRequestBody:
+      maxRequestBytes: 1024
+      packAsBytes: true
