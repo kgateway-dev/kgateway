@@ -9,14 +9,22 @@ set -euo pipefail
 : "${BUILD_JOB_NAME:?}"
 : "${UPLOAD_STEP_NAME:?}"
 
-# GITHUB_TOKEN allows 1,000 API requests per hour per repository, shared by
-# every shard of every concurrent run, so poll gently.
-poll_interval=30
+# GITHUB_TOKEN requests per hour per repository are shared by every shard of
+# every concurrent run. kgateway-dev is on GitHub Enterprise (15,000 per hour),
+# which can afford a short interval: about 240 requests per run, and about 5s
+# of average lag after the upload. Forks may be on plans limited to 1,000 per
+# hour, so they poll gently. IS_FORK is unset outside the workflow; treat that
+# like a fork.
+if [[ "${IS_FORK:-}" == "false" ]]; then
+  poll_interval=10
+else
+  poll_interval=30
+fi
 # Ride out transient API failures (5xx, rate limiting) for about ten minutes.
-max_api_errors=20
-# The build job exists from the start of the run, so a missing job means
-# BUILD_JOB_NAME no longer matches the workflow.
-max_missing=3
+max_api_errors=$((600 / poll_interval))
+# The build job exists from the start of the run, so a job missing for about a
+# minute means BUILD_JOB_NAME no longer matches the workflow.
+max_missing=$((60 / poll_interval))
 
 api_errors=0
 missing=0

@@ -207,6 +207,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          # Poll faster in the upstream repo, which has a larger API rate limit than forks.
+          IS_FORK: ${{ github.event.repository.fork }}
           # Keep in sync with the build_e2e_images job and its upload step.
           BUILD_JOB_NAME: Build End-to-End Images
           UPLOAD_STEP_NAME: Upload shared e2e images
