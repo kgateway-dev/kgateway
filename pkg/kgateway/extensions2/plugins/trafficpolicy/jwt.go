@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -324,34 +325,48 @@ func translateJwks(
 			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}
 
-		timeout := &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs}
-		if remote.Timeout != nil {
-			timeout = durationpb.New(remote.Timeout.Duration)
-		}
-
-		jwksOut := &jwtauthnv3.JwtProvider_RemoteJwks{
-			RemoteJwks: &jwtauthnv3.RemoteJwks{
-				HttpUri: &envoycorev3.HttpUri{
-					Timeout: timeout,
-					Uri:     remote.URL,
-					HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-						Cluster: backend.ClusterName(),
-					},
-				},
-			},
-		}
-		if remote.CacheDuration != nil {
-			jwksOut.RemoteJwks.CacheDuration = durationpb.New(remote.CacheDuration.Duration)
-		}
-		if remote.AsyncFetch != nil {
-			jwksOut.RemoteJwks.AsyncFetch = translateJwksAsyncFetch(remote.AsyncFetch)
-		}
-		if remote.RetryPolicy != nil {
-			jwksOut.RemoteJwks.RetryPolicy = translateJwksRetryPolicy(remote.RetryPolicy)
-		}
-		out.JwksSourceSpecifier = jwksOut
+		out.JwksSourceSpecifier = translateRemoteJwks(
+			remote.URL, backend.ClusterName(),
+			remote.Timeout, remote.CacheDuration, remote.AsyncFetch, remote.RetryPolicy,
+		)
 	}
 	return nil
+}
+
+// translateRemoteJwks builds the Envoy remote JWKS source shared by JWT providers and OAuth2 JWT parsing.
+// Unset options keep the defaults: a 5s fetch timeout and Envoy's defaults for everything else.
+func translateRemoteJwks(
+	uri, cluster string,
+	timeout, cacheDuration *metav1.Duration,
+	asyncFetch *kgateway.JWKSAsyncFetch,
+	retryPolicy *kgateway.JWKSRetryPolicy,
+) *jwtauthnv3.JwtProvider_RemoteJwks {
+	fetchTimeout := &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs}
+	if timeout != nil {
+		fetchTimeout = durationpb.New(timeout.Duration)
+	}
+
+	out := &jwtauthnv3.JwtProvider_RemoteJwks{
+		RemoteJwks: &jwtauthnv3.RemoteJwks{
+			HttpUri: &envoycorev3.HttpUri{
+				Timeout: fetchTimeout,
+				Uri:     uri,
+				HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+					Cluster: cluster,
+				},
+			},
+		},
+	}
+	if cacheDuration != nil {
+		out.RemoteJwks.CacheDuration = durationpb.New(cacheDuration.Duration)
+	}
+	if asyncFetch != nil {
+		out.RemoteJwks.AsyncFetch = translateJwksAsyncFetch(asyncFetch)
+	}
+	if retryPolicy != nil {
+		out.RemoteJwks.RetryPolicy = translateJwksRetryPolicy(retryPolicy)
+	}
+	return out
 }
 
 func translateJwksAsyncFetch(in *kgateway.JWKSAsyncFetch) *jwtauthnv3.JwksAsyncFetch {

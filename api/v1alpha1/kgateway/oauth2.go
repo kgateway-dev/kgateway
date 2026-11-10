@@ -2,6 +2,7 @@ package kgateway
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -211,6 +212,37 @@ type OAuth2JWTConfig struct {
 	// If not set, the parent OAuth2Provider's BackendRef is used.
 	// +optional
 	JWKSBackendRef *gwv1.BackendObjectReference `json:"jwksBackendRef,omitempty"`
+
+	// CacheDuration specifies the duration after which the cached JWKS expires.
+	// It applies to the JWKS shared by the access and ID token.
+	// If unspecified, Envoy's default cache duration of 10 minutes is used.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="cacheDuration must be at least 1ms."
+	CacheDuration *metav1.Duration `json:"cacheDuration,omitempty"`
+
+	// AsyncFetch configures fetching the JWKS asynchronously and caching it on a timer,
+	// instead of fetching it on demand during request handling.
+	// When unset, each Envoy worker thread fetches and caches its own copy of the JWKS on demand,
+	// and requests wait for that fetch whenever the worker's cached copy has expired.
+	// +optional
+	AsyncFetch *JWKSAsyncFetch `json:"asyncFetch,omitempty"`
+
+	// RetryPolicy configures how the JWKS fetch is retried (with exponential backoff)
+	// when the remote JWKS server is unavailable.
+	// If unset, a failed fetch is not retried.
+	// +optional
+	RetryPolicy *JWKSRetryPolicy `json:"retryPolicy,omitempty"`
+
+	// Timeout for fetching the remote JWKS. If not specified, defaults to 5s.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// AccessToken specifies how to process the retrieved access token.
 	// This requires the access token cookie to be enabled. Requests missing the token will be rejected.

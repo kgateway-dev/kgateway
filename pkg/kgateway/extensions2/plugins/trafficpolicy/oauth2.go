@@ -437,17 +437,10 @@ func buildOAuth2JWTConfig(
 	providers := map[string]*envoyjwtauthnv3.JwtProvider{}
 	var requirements []*envoyjwtauthnv3.JwtRequirement
 
-	jwksSource := &envoyjwtauthnv3.JwtProvider_RemoteJwks{
-		RemoteJwks: &envoyjwtauthnv3.RemoteJwks{
-			HttpUri: &envoycorev3.HttpUri{
-				Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
-				Uri:     jwksURI,
-				HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-					Cluster: jwksBackend.ClusterName(),
-				},
-			},
-		},
-	}
+	jwksSource := translateRemoteJwks(
+		jwksURI, jwksBackend.ClusterName(),
+		jwt.Timeout, jwt.CacheDuration, jwt.AsyncFetch, jwt.RetryPolicy,
+	)
 	if jwt.AccessToken != nil {
 		claimsToHeaders := translateJWTClaimsToHeaders(jwt.AccessToken.ClaimsToHeaders)
 		providers[oauthJWTAccessTokenProvider] = &envoyjwtauthnv3.JwtProvider{

@@ -4018,6 +4018,17 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("OAuth2 policy with remote JWKS fetch options", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/oauth2-jwks-remote-options.yaml"},
+			outputFile: "traffic-policy/oauth2-jwks-remote-options.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
 }
 
 // setupStructuralSchemas returns the structural schemas for kgateway's CRDs plus the
