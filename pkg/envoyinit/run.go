@@ -21,6 +21,10 @@ const (
 	inputConfigPathEnv     = "INPUT_CONF"
 	defaultInputConfigPath = "/etc/envoy/envoy.yaml"
 
+	// Environment variable for an optional file holding a partial bootstrap that is merged over
+	// the input configuration, so its values take precedence over the kgateway-rendered ones
+	overlayConfigPathEnv = "OVERLAY_CONF"
+
 	// Environment variable for the file that is written to with transformed bootstrap configuration
 	outputConfigPathEnv     = "OUTPUT_CONF"
 	defaultOutputConfigPath = "/tmp/envoy.yaml"
@@ -30,8 +34,10 @@ const (
 	defaultEnvoyExecutable = "/usr/local/bin/envoy"
 )
 
-// RunEnvoy run Envoy with bootstrap configuration injected from a file
-func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
+// RunEnvoy run Envoy with bootstrap configuration injected from a file. If overlayPath is
+// non-empty, the partial bootstrap in that file is merged over the input configuration
+// (see mergeBootstrapOverlay).
+func RunEnvoy(envoyExecutable, inputPath, overlayPath, outputPath string) {
 	// 1. Transform the configuration using the Kubernetes Downward API
 	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
@@ -73,6 +79,14 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 		bootstrapConfig = string(newBootstrapConfig)
 	}
 
+	if overlayPath != "" {
+		log.Printf("Merging bootstrap overlay: %s", overlayPath)
+		bootstrapConfig, err = applyOverlayFile(bootstrapConfig, overlayPath)
+		if err != nil {
+			log.Fatalf("initializer failed: %v", err)
+		}
+	}
+
 	// 2. Write to a file for debug purposes
 	// since this operation is meant only for debug purposes, we ignore the error
 	// this might fail if root fs is read only
@@ -93,6 +107,12 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 // https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/#the-downward-api
 func GetInputConfigPath() string {
 	return getEnvOrDefault(inputConfigPathEnv, defaultInputConfigPath)
+}
+
+// GetOverlayConfigPath returns the path to an optional file containing a partial Envoy
+// bootstrap to merge over the input configuration, or "" if none is configured
+func GetOverlayConfigPath() string {
+	return os.Getenv(overlayConfigPathEnv)
 }
 
 // GetOutputConfigPath returns the path to a file where the raw Envoy bootstrap configuration will
