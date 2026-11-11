@@ -1,14 +1,17 @@
 package proxy_syncer
 
 import (
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 type statusSyncerConfig struct {
 	statusRegistrations   []StatusRegistration
 	policyTargetResolvers policyTargetResolvers
+	statusContributions   []krt.Collection[reports.StatusContribution]
 }
 
 // StatusSyncerOption configures the status pipeline. The same options are passed to both
@@ -41,6 +44,16 @@ func WithStatusRegistration(registration StatusRegistration) StatusSyncerOption 
 	return func(cfg *statusSyncerConfig) {
 		if registration != nil {
 			cfg.statusRegistrations = append(cfg.statusRegistrations, registration)
+		}
+	}
+}
+
+// WithStatusContributions adds status contributions produced outside translation, such as
+// the Gateway deployer's GatewayParametersStatus, to the ones the status syncer reduces.
+func WithStatusContributions(contributions krt.Collection[reports.StatusContribution]) StatusSyncerOption {
+	return func(cfg *statusSyncerConfig) {
+		if contributions != nil {
+			cfg.statusContributions = append(cfg.statusContributions, contributions)
 		}
 	}
 }

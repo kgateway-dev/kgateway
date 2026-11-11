@@ -48,6 +48,7 @@ func cloneGatewayReport(in *GatewayReport) *GatewayReport {
 		listeners:            cloneListenerReports(in.listeners),
 		observedGeneration:   in.observedGeneration,
 		attachedListenerSets: in.attachedListenerSets,
+		parameters:           cloneGatewayParametersReport(in.parameters),
 	}
 }
 
@@ -141,6 +142,7 @@ func gatewayReportEqual(a, b *GatewayReport) bool {
 	}
 	return a.observedGeneration == b.observedGeneration &&
 		a.attachedListenerSets == b.attachedListenerSets &&
+		gatewayParametersReportEqual(a.parameters, b.parameters) &&
 		conditionsEqual(a.conditions, b.conditions) &&
 		maps.EqualFunc(a.listeners, b.listeners, listenerReportEqual)
 }

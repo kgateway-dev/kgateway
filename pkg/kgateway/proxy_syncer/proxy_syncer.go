@@ -74,6 +74,8 @@ type ProxySyncer struct {
 
 	// extraPolicyTargetResolvers are the resolvers registered with WithPolicyTargetResolver.
 	extraPolicyTargetResolvers policyTargetResolvers
+	// extraStatusContributions are the contributions registered with WithStatusContributions.
+	extraStatusContributions []krt.Collection[reports.StatusContribution]
 
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
@@ -231,6 +233,7 @@ func NewProxySyncer(
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
 		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
+		extraStatusContributions:   optCfg.statusContributions,
 	}
 }
 
@@ -432,12 +435,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// ancestors from Gateway translation, Backend translation, and targetRef
 	// resolution naturally reduce under the same policy key without a competing
 	// singleton writer.
-	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+	s.statusContributions = krt.JoinCollection(append([]krt.Collection[reports.StatusContribution]{
 		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
 		backendContributions,
 		policyTargetContributions,
-	}, krtopts.ToOptions("StatusContributions")...)
+	}, s.extraStatusContributions...), krtopts.ToOptions("StatusContributions")...)
 
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,

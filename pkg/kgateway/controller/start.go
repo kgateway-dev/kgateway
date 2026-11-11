@@ -5,6 +5,7 @@ import (
 	"errors"
 	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -103,10 +105,11 @@ type StartConfig struct {
 // It is intended to be run in a goroutine as the function will block until the supplied
 // context is cancelled
 type ControllerBuilder struct {
-	proxySyncer *proxy_syncer.ProxySyncer
-	cfg         StartConfig
-	mgr         ctrl.Manager
-	commoncol   *collections.CommonCollections
+	proxySyncer  *proxy_syncer.ProxySyncer
+	cfg          StartConfig
+	mgr          ctrl.Manager
+	commoncol    *collections.CommonCollections
+	paramsStatus *reports.GatewayParametersStatus
 
 	ready atomic.Bool
 }
@@ -147,6 +150,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// This only effects metrics in the resources subsystem and is not required for other metrics.
 	metrics.StartResourceSyncMetricsProcessing(ctx)
 
+	// The deployer reports its verdict on each Gateway's parameters through the status
+	// contribution pipeline, so only the status syncer writes the Gateway's Accepted condition.
+	paramsStatus := reports.NewGatewayParametersStatus(cfg.KrtOptions.ToOptions("GatewayParametersStatus")...)
+
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
@@ -159,7 +166,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
 		cfg.XDSClientState,
-		cfg.StatusSyncerOptions...,
+		append(slices.Clone(cfg.StatusSyncerOptions), proxy_syncer.WithStatusContributions(paramsStatus.Contributions()))...,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := cfg.Manager.Add(proxySyncer); err != nil {
@@ -189,10 +196,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	setupLog.Info("starting controller builder")
 	cb := &ControllerBuilder{
-		proxySyncer: proxySyncer,
-		cfg:         cfg,
-		mgr:         cfg.Manager,
-		commoncol:   cfg.CommonCollections,
+		proxySyncer:  proxySyncer,
+		cfg:          cfg,
+		mgr:          cfg.Manager,
+		commoncol:    cfg.CommonCollections,
+		paramsStatus: paramsStatus,
 	}
 
 	// wait for the ControllerBuilder to Start
@@ -270,6 +278,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		CommonCollections:        c.commoncol,
 		GatewayClassName:         c.cfg.GatewayClassName,
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
+		GatewayParametersStatus:  c.paramsStatus,
 	}
 
 	setupLog.Info("creating base gateway controller")

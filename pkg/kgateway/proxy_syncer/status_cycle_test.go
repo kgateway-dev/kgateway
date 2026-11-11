@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -208,6 +209,7 @@ type statusCycleFixture struct {
 	gatewayWriter     statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]
 	routeWriter       statussync.Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]
 	listenerSetWriter statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]
+	paramsStatus      *reports.GatewayParametersStatus
 	queue             *recordingQueue
 	// statusWrites counts status subresource writes that reached the API server for one
 	// resource plural (e.g. "gateways").
@@ -269,10 +271,15 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	reporter.Gateway(gw)
 	reporter.Route(route).ParentRef(&cycleParentRef)
 	reporter.ListenerSet(ls)
-	contributions := krt.NewStaticCollection(nil,
+	translated := krt.NewStaticCollection(nil,
 		reports.StatusContributionsFromReportMap(
 			reports.StatusSource{Kind: reports.GatewayStatusSource, Name: cycleNamespace + "/gw"}, reportMap),
-		krtopts.ToOptions("StatusContributions")...)
+		krtopts.ToOptions("TranslationStatusContributions")...)
+	// The deployer's verdicts join translation's, as WithStatusContributions does in production.
+	paramsStatus := reports.NewGatewayParametersStatus(krtopts.ToOptions("GatewayParametersStatus")...)
+	contributions := krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+		translated, paramsStatus.Contributions(),
+	}, krtopts.ToOptions("StatusContributions")...)
 	byTarget := krtpkg.UnnamedIndex(contributions, func(contribution reports.StatusContribution) []reports.StatusKey {
 		return []reports.StatusKey{contribution.Target}
 	})
@@ -286,6 +293,7 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 		listenerSets, contributions, byTarget, krtopts.ToOptions("ListenerSetStatusReports")...)
 
 	fixture := statusCycleFixture{
+		paramsStatus:      paramsStatus,
 		gateways:          gateways,
 		routes:            routes,
 		listenerSets:      listenerSets,
@@ -465,6 +473,62 @@ func TestStatusWritersConvergeAfterOneWrite(t *testing.T) {
 				"rebuilding from the status we just wrote must produce the same status, or writes never stop")
 		})
 	}
+}
+
+// TestGatewayWriterReportsDeployerVerdict covers the deployer's side of the Gateway Accepted
+// condition: the deployer only publishes its verdict as a status contribution, and the Gateway
+// writer is the one that reports a failure and, once the verdict changes, clears it.
+func TestGatewayWriterReportsDeployerVerdict(t *testing.T) {
+	f := newStatusCycleFixture(t)
+	ctx := context.Background()
+	gwNN := gatewayResource().NamespacedName
+	generation := f.liveGateway(t).Generation
+	accepted := func() *metav1.Condition {
+		return meta.FindStatusCondition(f.liveGateway(t).Status.Conditions, string(gwv1.GatewayConditionAccepted))
+	}
+	waitForPush := func(pushesBefore int, msg string) {
+		t.Helper()
+		require.Eventually(t, func() bool { return f.queue.count(gatewayResource()) > pushesBefore },
+			5*time.Second, 10*time.Millisecond, msg)
+	}
+	// waitForEcho waits until the writer's own write is back in the collection it reads.
+	waitForEcho := func(reason gwv1.GatewayConditionReason) {
+		t.Helper()
+		require.Eventually(t, func() bool {
+			cond := accepted()
+			return cond != nil && cond.Reason == string(reason)
+		}, 5*time.Second, 10*time.Millisecond, "the write should echo back with reason %s", reason)
+	}
+
+	pushes := f.queue.count(gatewayResource())
+	f.paramsStatus.Set(gwNN, generation, errors.New("invalid parametersRef"))
+	waitForPush(pushes, "a failed verdict should enqueue the Gateway")
+	f.gatewayWriter.ApplyStatus(ctx, gatewayResource())
+	require.Equal(t, 1, f.statusWrites("gateways"))
+	waitForEcho(gwv1.GatewayReasonInvalidParameters)
+	cond := accepted()
+	require.Equal(t, metav1.ConditionFalse, cond.Status)
+	require.Equal(t, "invalid parametersRef", cond.Message)
+	require.Equal(t, generation, cond.ObservedGeneration)
+
+	// A deployer retry publishes the same verdict again; nothing may be enqueued or written.
+	pushes = f.queue.count(gatewayResource())
+	f.paramsStatus.Set(gwNN, generation, errors.New("invalid parametersRef"))
+	// Never may still be running its condition after it returns, so it reads a copy.
+	unchangedPushes := pushes
+	require.Never(t, func() bool { return f.queue.count(gatewayResource()) > unchangedPushes },
+		200*time.Millisecond, 10*time.Millisecond, "an unchanged verdict should not enqueue the Gateway")
+	f.gatewayWriter.ApplyStatus(ctx, gatewayResource())
+	require.Equal(t, 1, f.statusWrites("gateways"), "an unchanged verdict must not be written again")
+
+	// The parameters are fixed: the new verdict alone must clear the condition.
+	pushes = f.queue.count(gatewayResource())
+	f.paramsStatus.Set(gwNN, generation, nil)
+	waitForPush(pushes, "a changed verdict should enqueue the Gateway")
+	f.gatewayWriter.ApplyStatus(ctx, gatewayResource())
+	require.Equal(t, 2, f.statusWrites("gateways"))
+	waitForEcho(gwv1.GatewayReasonAccepted)
+	require.Equal(t, metav1.ConditionTrue, accepted().Status)
 }
 
 // TestStatusWritersAreIdempotent runs the same invariant through the exported harness, on
