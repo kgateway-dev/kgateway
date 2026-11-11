@@ -163,6 +163,11 @@ func (h *RoutesIndex) convertGRPCBackendsToHTTP(kctx krt.HandlerContext, src ir.
 	httpBackends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
 		backend, clusterName, err := h.resolveRouteBackend(kctx, src, ref.BackendObjectReference)
+		if backend != nil {
+			if backend.AppProtocol == ir.DefaultAppProtocol {
+				backend.AppProtocol = ir.HTTP2AppProtocol
+			}
+		}
 		httpBackends = append(httpBackends, ir.HttpBackendOrDelegate{
 			Backend: &ir.BackendRefIR{
 				BackendObject: backend,

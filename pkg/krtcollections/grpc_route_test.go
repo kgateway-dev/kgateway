@@ -454,6 +454,105 @@ func TestTransformGRPCRoute(t *testing.T) {
 				return true
 			},
 		},
+		{
+			name: "force_http2_app_protocol",
+			grpcRoute: &gwv1.GRPCRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-grpc-route",
+					Namespace: "default",
+				},
+				Spec: gwv1.GRPCRouteSpec{
+					Hostnames: []gwv1.Hostname{"test.example.com"},
+					Rules: []gwv1.GRPCRouteRule{
+						{
+							Matches: []gwv1.GRPCRouteMatch{
+								{
+									Method: &gwv1.GRPCMethodMatch{
+										Service: new("TestService"),
+										Method:  new("TestMethod"),
+										Type:    new(gwv1.GRPCMethodMatchExact),
+									},
+								},
+							},
+							BackendRefs: []gwv1.GRPCBackendRef{
+								{
+									BackendRef: gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+											Port: new(gwv1.PortNumber(8080)),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-service",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Name: "http",
+								Port: 8080,
+							},
+						},
+					},
+				},
+			},
+			expectedResult: func(httpRouteIR *ir.HttpRouteIR) bool {
+				if httpRouteIR == nil {
+					return false
+				}
+
+				// Verify the basic properties were copied
+				if httpRouteIR.Name != "test-grpc-route" ||
+					httpRouteIR.Namespace != "default" ||
+					len(httpRouteIR.Hostnames) != 1 ||
+					httpRouteIR.Hostnames[0] != "test.example.com" {
+					return false
+				}
+
+				// Verify rules were transformed correctly
+				if len(httpRouteIR.Rules) != 1 {
+					return false
+				}
+
+				// Verify matches
+				rule := httpRouteIR.Rules[0]
+				if len(rule.Matches) != 1 {
+					return false
+				}
+
+				match := rule.Matches[0]
+				if match.Path == nil ||
+					*match.Path.Value != "/TestService/TestMethod" ||
+					*match.Path.Type != gwv1.PathMatchExact {
+					return false
+				}
+
+				// Verify backends
+				if len(rule.Backends) != 1 {
+					return false
+				}
+
+				backend := rule.Backends[0]
+				if backend.Backend == nil ||
+					backend.Backend.ClusterName != "service_default_test-service_8080" {
+					return false
+				}
+
+				if backend.Backend.BackendObject.AppProtocol != "http2" {
+					return false
+				}
+
+				return true
+			},
+		},
 	}
 
 	for _, tc := range testCases {
