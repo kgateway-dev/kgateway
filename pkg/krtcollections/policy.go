@@ -91,6 +91,16 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+type UnsupportedAppProtocolError struct {
+	FailedObj             ir.ObjectSource
+	AppProtocol           ir.AppProtocol
+	SupportedAppProtocols []string
+}
+
+func (i *UnsupportedAppProtocolError) Error() string {
+	return fmt.Sprintf("%s %s/%s has unsupported app protocol '%s' for this route kind, needs to be one of: %s", i.FailedObj.Kind, i.FailedObj.Namespace, i.FailedObj.Name, i.AppProtocol, strings.Join(i.SupportedAppProtocols, ", "))
+}
+
 // ListenerCollection defines an interface that returns the listeners belonging to the implementing struct
 type ListenerCollection interface {
 	GetListeners() []gwv1.Listener

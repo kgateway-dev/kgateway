@@ -7,9 +7,17 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+var grpcSupportedAppProtocols = []string{
+	string(kgateway.AppProtocolHttp2),
+	string(kgateway.AppProtocolGrpc),
+	string(kgateway.AppProtocolGrpcWeb),
+	string(kgateway.AppProtocolKubernetesH2C),
+}
 
 func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
@@ -166,6 +174,12 @@ func (h *RoutesIndex) convertGRPCBackendsToHTTP(kctx krt.HandlerContext, src ir.
 		if backend != nil {
 			if backend.AppProtocol == ir.DefaultAppProtocol {
 				backend.AppProtocol = ir.HTTP2AppProtocol
+			} else if backend.AppProtocol != ir.HTTP2AppProtocol {
+				err = &UnsupportedAppProtocolError{
+					FailedObj:             backend.GetObjectSource(),
+					AppProtocol:           backend.AppProtocol,
+					SupportedAppProtocols: grpcSupportedAppProtocols,
+				}
 			}
 		}
 		httpBackends = append(httpBackends, ir.HttpBackendOrDelegate{
