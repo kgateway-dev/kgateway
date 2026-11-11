@@ -126,6 +126,15 @@ spec:
                   divisor: "1"
                   resource: limits.memory
             {{- end }}
+            {{- /* Provide limits.memory (node allocatable when unbounded) as a fallback when AUTOMEMLIMIT will be active, unless overridden via extraEnv. */}}
+            {{- $hasCustomAutoMemoryFallback := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_GOMEMLIMIT_FALLBACK") }}
+            {{- if and (not $hasCustomAutoMemoryFallback) (or (ne $goMemLimitPercent 0) (and (not $hasCustomGoMemLimit) $hasCustomAutoMemoryLimit (ne (toString .Values.controller.extraEnv.AUTOMEMLIMIT) "off"))) }}
+            - name: KGW_GOMEMLIMIT_FALLBACK
+              valueFrom:
+                resourceFieldRef:
+                  divisor: "1"
+                  resource: limits.memory
+            {{- end }}
             - name: KGW_LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
             - name: KGW_ADMIN_BIND_ADDRESS

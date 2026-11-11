@@ -137,6 +137,7 @@ func TestConfigureMemoryLimitHonorsOff(t *testing.T) {
 
 func TestConfigureMemoryLimitWithoutContainerLimit(t *testing.T) {
 	unsetEnv(t, "GOMEMLIMIT")
+	unsetEnv(t, AutoMemoryLimitFallbackEnv)
 	t.Setenv(AutoMemoryLimitEnv, "0.9")
 	restoreMemoryLimit(t)
 
@@ -146,6 +147,101 @@ func TestConfigureMemoryLimitWithoutContainerLimit(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, int64(math.MaxInt64), debug.SetMemoryLimit(-1))
+}
+
+func TestConfigureMemoryLimitFallbackOnErrNoLimit(t *testing.T) {
+	unsetEnv(t, "GOMEMLIMIT")
+	t.Setenv(AutoMemoryLimitEnv, "0.5")
+	t.Setenv(AutoMemoryLimitFallbackEnv, "1000")
+	restoreMemoryLimit(t)
+
+	err := configureMemoryLimit(context.Background(), func() (uint64, error) {
+		return 0, memlimit.ErrNoLimit
+	}, 0)
+
+	require.NoError(t, err)
+	require.Equal(t, int64(500), debug.SetMemoryLimit(-1))
+}
+
+func TestConfigureMemoryLimitFallbackReplacedByLiveCgroupLimit(t *testing.T) {
+	unsetEnv(t, "GOMEMLIMIT")
+	t.Setenv(AutoMemoryLimitEnv, "0.5")
+	t.Setenv(AutoMemoryLimitFallbackEnv, "1000")
+	restoreMemoryLimit(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	})
+
+	var cgroupLimit atomic.Uint64
+	err := configureMemoryLimit(ctx, func() (uint64, error) {
+		if limit := cgroupLimit.Load(); limit > 0 {
+			return limit, nil
+		}
+		return 0, memlimit.ErrNoLimit
+	}, 5*time.Millisecond)
+	require.NoError(t, err)
+	require.Equal(t, int64(500), debug.SetMemoryLimit(-1))
+
+	cgroupLimit.Store(2_000)
+	require.Eventually(t, func() bool {
+		return debug.SetMemoryLimit(-1) == 1_000
+	}, time.Second, time.Millisecond)
+
+	cgroupLimit.Store(0)
+	require.Eventually(t, func() bool {
+		return debug.SetMemoryLimit(-1) == 500
+	}, time.Second, time.Millisecond)
+}
+
+func TestConfigureMemoryLimitFallbackNotUsedOnOtherErrors(t *testing.T) {
+	unsetEnv(t, "GOMEMLIMIT")
+	t.Setenv(AutoMemoryLimitEnv, "0.5")
+	t.Setenv(AutoMemoryLimitFallbackEnv, "1000")
+	restoreMemoryLimit(t)
+	debug.SetMemoryLimit(2_048)
+
+	err := configureMemoryLimit(context.Background(), func() (uint64, error) {
+		return 0, memlimit.ErrNoCgroup
+	}, 0)
+	require.NoError(t, err)
+	require.Equal(t, int64(2_048), debug.SetMemoryLimit(-1))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	})
+
+	var calls atomic.Uint32
+	err = configureMemoryLimit(ctx, func() (uint64, error) {
+		if calls.Add(1) == 1 {
+			return 0, errors.New("temporary cgroup read failure")
+		}
+		return 0, memlimit.ErrNoLimit
+	}, 5*time.Millisecond)
+	require.NoError(t, err)
+	require.Equal(t, int64(2_048), debug.SetMemoryLimit(-1))
+
+	require.Eventually(t, func() bool {
+		return debug.SetMemoryLimit(-1) == 500
+	}, time.Second, time.Millisecond)
+}
+
+func TestConfigureMemoryLimitRejectsInvalidFallback(t *testing.T) {
+	for _, value := range []string{"", "0", "-1", "1GiB", "9223372036854775808"} {
+		t.Run(value, func(t *testing.T) {
+			unsetEnv(t, "GOMEMLIMIT")
+			t.Setenv(AutoMemoryLimitEnv, "0.5")
+			t.Setenv(AutoMemoryLimitFallbackEnv, value)
+			restoreMemoryLimit(t)
+
+			err := configureMemoryLimit(context.Background(), memlimit.Limit(1_000), time.Millisecond)
+			require.ErrorContains(t, err, `KGW_GOMEMLIMIT_FALLBACK=`)
+		})
+	}
 }
 
 func TestConfigureMemoryLimitRecoversFromInitialProviderError(t *testing.T) {
