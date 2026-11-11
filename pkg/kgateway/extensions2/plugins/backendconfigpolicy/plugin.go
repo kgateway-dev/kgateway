@@ -15,6 +15,7 @@ import (
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -55,6 +56,7 @@ type BackendConfigPolicyIR struct {
 	loadBalancerConfig            *LoadBalancerConfigIR
 	healthCheck                   *envoycorev3.HealthCheck
 	outlierDetection              *envoyclusterv3.OutlierDetection
+	outlierDetectionHttpOptions   *envoy_upstreams_v3.HttpProtocolOptions_OutlierDetection
 	circuitBreakers               *envoyclusterv3.CircuitBreakers
 	dnsRefreshRate                *durationpb.Duration
 	dnsJitter                     *durationpb.Duration
@@ -122,6 +124,10 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 
 	if !proto.Equal(d.outlierDetection, d2.outlierDetection) {
+		return false
+	}
+
+	if !proto.Equal(d.outlierDetectionHttpOptions, d2.outlierDetectionHttpOptions) {
 		return false
 	}
 
@@ -315,6 +321,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 		out.OutlierDetection = pol.outlierDetection
 	}
 
+	if pol.outlierDetectionHttpOptions != nil {
+		applyOutlierDetectionHttpOptions(pol.outlierDetectionHttpOptions, out)
+	}
+
 	if pol.circuitBreakers != nil {
 		out.CircuitBreakers = pol.circuitBreakers
 	}
@@ -411,6 +421,7 @@ func translate(
 
 	if pol.Spec.OutlierDetection != nil {
 		ir.outlierDetection = translateOutlierDetection(pol.Spec.OutlierDetection)
+		ir.outlierDetectionHttpOptions = translateOutlierDetectionHttpOptions(pol.Spec.OutlierDetection)
 	}
 
 	if pol.Spec.CircuitBreakers != nil {

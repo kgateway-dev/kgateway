@@ -1086,6 +1086,43 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	MaxEjectionPercent *int32 `json:"maxEjectionPercent,omitempty"`
+
+	// ErrorStatusCodes specifies HTTP status codes or status code ranges that outlier detection
+	// should treat as errors.
+	//
+	// NOTE: When configured, Envoy replaces its default 5xx error checking with this matcher.
+	// If you still want 5xx responses to be treated as errors, you must include them explicitly
+	// (e.g., range: {start: 500, end: 599}).
+	// +optional
+	ErrorStatusCodes []StatusCodeOrRange `json:"errorStatusCodes,omitempty"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=code;range
+type StatusCodeOrRange struct {
+	// Code specifies an exact HTTP status code (e.g., 429, 500).
+	// +optional
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	Code *int32 `json:"code,omitempty"`
+
+	// Range specifies an inclusive range of HTTP status codes (e.g., start: 500, end: 599).
+	// +optional
+	Range *HttpStatusRange `json:"range,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="self.start <= self.end",message="start must be less than or equal to end"
+type HttpStatusRange struct {
+	// Start is the inclusive start of the HTTP status code range.
+	// +required
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	Start int32 `json:"start"`
+
+	// End is the inclusive end of the HTTP status code range.
+	// +required
+	// +kubebuilder:validation:Minimum=100
+	// +kubebuilder:validation:Maximum=599
+	End int32 `json:"end"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP

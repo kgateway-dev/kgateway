@@ -2887,6 +2887,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with OutlierDetection error matcher", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/outlierdetection-error-matcher.yaml"},
+			outputFile: "backendconfigpolicy/outlierdetection-error-matcher.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with Common HTTP Protocol - HTTP backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/commonhttpprotocol-httpbackend.yaml"},
