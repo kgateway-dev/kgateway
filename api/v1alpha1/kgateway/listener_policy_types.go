@@ -625,6 +625,7 @@ type RetryPolicy struct {
 
 // Configuration defining a jittered exponential back off strategy.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/backoff.proto#envoy-v3-api-msg-config-core-v3-backoffstrategy
+// +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
 type BackoffStrategy struct {
 	// The base interval to be used for the next back off computation. Must be at least 1ms and less than or equal to max_interval.
 	// +required
