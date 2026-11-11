@@ -70,8 +70,12 @@ spec:
                       When configured on a ListenerPolicy targeting a specific listener (via sectionName),
                       it overrides any Gateway-level mTLS configuration for that listener.
                       When configured on a ListenerPolicy targeting the whole Gateway (no sectionName), it applies to
-                      every TLS-terminating listener of the Gateway, including those of attached ListenerSets, unless a
-                      ListenerPolicy targeting that specific listener configures it.
+                      every TLS-terminating listener of the Gateway, including those of attached ListenerSets, and it
+                      overrides the Gateway's spec.tls.frontend validation (default and perPort) for those listeners.
+                      A ListenerPolicy targeting a specific listener takes precedence over it; if that policy does not
+                      require client certificates and none of its CA certificates can be fetched, the Gateway-wide
+                      configuration applies to the listener instead.
+                      CA certificate references without a namespace are resolved in the ListenerPolicy's namespace.
 
                       Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
                       wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,

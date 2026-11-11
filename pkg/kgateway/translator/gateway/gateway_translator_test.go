@@ -3799,6 +3799,31 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with mTLS selecting the Gateway by label, including from the global policy namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-selectors.yaml"},
+			outputFile: "listener-policy/gateway-mtls-selectors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		},
+			func(s *apisettings.Settings) {
+				s.GlobalPolicyNamespace = "kgateway-system"
+			})
+	})
+
+	t.Run("ListenerPolicy with mTLS for the whole Gateway overrides frontend TLS validation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy merge happens in the default and perPort fields", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/deep-merge.yaml"},
