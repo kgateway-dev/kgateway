@@ -456,6 +456,14 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "should error with unsupported well-known ca set",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesType("example.com/corporate-roots")),
+				Sni:                     new("test.example.com"),
+			},
+			wantErr: true,
+		},
+		{
 			name: "TLS config with system ca pins SAN to SNI",
 			tlsConfig: &kgateway.TLS{
 				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),

@@ -170,7 +170,9 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 			tlsContext.ValidationContextType = combined
 			return nil
 		default:
-			logger.Error("unsupported WellKnownCACertificates value", "value", *wellKnown)
+			// Falling through would leave the context without validation, so Envoy
+			// would accept any certificate the backend presents.
+			return fmt.Errorf("unsupported wellKnownCACertificates value %q: only %q is supported", *wellKnown, gwv1.WellKnownCACertificatesSystem)
 		}
 	}
 
