@@ -17,7 +17,8 @@ spec:
   selector:
     test: test
   ports:
-    - protocol: HTTP
+    - name: grpc
+      protocol: HTTP
       port: 80
       targetPort: test
 ---
@@ -118,7 +119,7 @@ spec:
         method: foo
     backendRefs:
     - name: example-svc
-      port: 80      
+      port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -157,7 +158,7 @@ spec:
   retry:
     attempts: 3
     retryOn:
-    - gateway-error 
+    - gateway-error
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -171,7 +172,7 @@ spec:
   rules:
   - backendRefs:
     - name: example-svc
-      port: 80    
+      port: 80
     timeouts:
       backendRequest: 5ms
       request: 5s
@@ -180,7 +181,7 @@ spec:
       codes:
         - 500
         - 503
-      backoff: 5s      
+      backoff: 5s
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -201,7 +202,7 @@ spec:
     - 409
     backoffBaseInterval: 2s
   timeouts:
-    request: 2s      
+    request: 2s
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

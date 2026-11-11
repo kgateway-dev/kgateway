@@ -19,7 +19,8 @@ spec:
   selector:
     app: backend
   ports:
-    - port: 3000
+    - name: grpc
+      port: 3000
       targetPort: 3000
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -56,7 +57,7 @@ spec:
         absoluteTimeout: 8760h
         cookie:
           name: Session-B
-          lifetimeType: Permanent 
+          lifetimeType: Permanent
     - matches:
         - path:
             type: PathPrefix
@@ -118,7 +119,7 @@ spec:
         absoluteTimeout: 8760h
         cookie:
           name: Session-B
-          lifetimeType: Permanent 
+          lifetimeType: Permanent
     - matches:
         - method:
             type: Exact
