@@ -13,14 +13,6 @@ Clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       commonTlsContext:
-        combinedValidationContext:
-          defaultValidationContext:
-            matchTypedSubjectAltNames:
-            - matcher:
-                exact: backend.example.com
-              sanType: DNS
-          validationContextSdsSecretConfig:
-            name: SYSTEM_CA_CERT
         tlsParams:
           cipherSuites:
           - BOGUS_CIPHER_SUITE_1
@@ -35,6 +27,7 @@ Clusters:
           - ecdsa_bogus
           tlsMaximumProtocolVersion: TLSv1_3
           tlsMinimumProtocolVersion: TLSv1_2
+        validationContext: {}
       sni: backend.example.com
   type: EDS
 Listeners:

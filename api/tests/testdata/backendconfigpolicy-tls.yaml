@@ -23,6 +23,7 @@ spec:
   tls:
     wellKnownCACertificates: System
 ---
+_err: insecureSkipVerify can only be set to true
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
@@ -60,7 +61,7 @@ spec:
     name: backend
   tls: {}
 ---
-_err: sni is required when no trust source is set
+_err: insecureSkipVerify can only be set to true
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
@@ -101,3 +102,17 @@ spec:
     secretRef:
       name: tls-secret
     wellKnownCACertificates: System
+---
+_err: wellKnownCACertificates only supports System
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: unsupported-well-known-ca
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    sni: example.com
+    wellKnownCACertificates: example.com/corporate-roots

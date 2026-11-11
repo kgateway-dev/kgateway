@@ -1235,9 +1235,13 @@ spec:
                   insecureSkipVerify:
                     description: |-
                       InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
-                      Setting it to false has the same effect as leaving it unset.
+                      It can only be set to true; leave it unset to verify the backend's certificate.
                       WARNING: This is an insecure option that should only be used if the risks are understood.
                     type: boolean
+                    x-kubernetes-validations:
+                    - message: insecureSkipVerify can only be set to true; remove
+                        it to verify the backend certificate
+                      rule: self
                   parameters:
                     description: |-
                       General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
@@ -1319,14 +1323,16 @@ spec:
                     minLength: 1
                     pattern: ^(System|([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/([A-Za-z0-9][-A-Za-z0-9_.]{0,61})?[A-Za-z0-9]))$
                     type: string
+                    x-kubernetes-validations:
+                    - message: wellKnownCACertificates only supports System
+                      rule: self == 'System'
                 type: object
                 x-kubernetes-validations:
                 - message: sni is required when no trust source is set; set sni, provide
                     secretRef, files, or wellKnownCACertificates, or set insecureSkipVerify
                     to true
                   rule: has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates)
-                    || (has(self.insecureSkipVerify) && self.insecureSkipVerify) ||
-                    has(self.sni)
+                    || has(self.insecureSkipVerify) || has(self.sni)
                 - message: at most one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] may be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()

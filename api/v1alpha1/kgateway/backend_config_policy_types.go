@@ -583,7 +583,7 @@ type TCPKeepalive struct {
 // and sni is required so the certificate can be checked against a hostname.
 //
 // +kubebuilder:validation:AtMostOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
-// +kubebuilder:validation:XValidation:rule="has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates) || (has(self.insecureSkipVerify) && self.insecureSkipVerify) || has(self.sni)",message="sni is required when no trust source is set; set sni, provide secretRef, files, or wellKnownCACertificates, or set insecureSkipVerify to true"
+// +kubebuilder:validation:XValidation:rule="has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates) || has(self.insecureSkipVerify) || has(self.sni)",message="sni is required when no trust source is set; set sni, provide secretRef, files, or wellKnownCACertificates, or set insecureSkipVerify to true"
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -599,12 +599,14 @@ type TLS struct {
 	// This is the default when no other trust source is set. When sni is set and
 	// verifySubjectAltNames is empty, the certificate must also be valid for the sni.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == 'System'",message="wellKnownCACertificates only supports System"
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
-	// Setting it to false has the same effect as leaving it unset.
+	// It can only be set to true; leave it unset to verify the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self",message="insecureSkipVerify can only be set to true; remove it to verify the backend certificate"
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
 	// The SNI domains that should be considered for TLS connection

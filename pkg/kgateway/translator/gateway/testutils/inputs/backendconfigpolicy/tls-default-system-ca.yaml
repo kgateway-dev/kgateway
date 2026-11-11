@@ -28,22 +28,6 @@ spec:
   selector:
     app: backend
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service2
-  labels:
-    app: backend
-    service: backend
-spec:
-  ports:
-    - name: https
-      port: 443
-      targetPort: 8443
-      appProtocol: https
-  selector:
-    app: backend
----
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
@@ -56,19 +40,6 @@ spec:
   tls:
     sni: test.example.com
     simpleTLS: true
----
-kind: BackendConfigPolicy
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: insecure-skip-verify-false
-spec:
-  targetRefs:
-    - name: backend-service2
-      group: ""
-      kind: Service
-  tls:
-    sni: test.example.com
-    insecureSkipVerify: false
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
