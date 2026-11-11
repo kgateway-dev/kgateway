@@ -1,0 +1,235 @@
+Clusters:
+- commonLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          consistentHashingLbConfig:
+            hashPolicy:
+            - connectionProperties:
+                sourceIp: true
+            - header:
+                headerName: x-user
+  name: kube_default_udp-svc-a_8080
+  type: EDS
+  upstreamConnectionOptions:
+    tcpKeepalive:
+      keepaliveInterval: 5
+      keepaliveProbes: 3
+      keepaliveTime: 30
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_default_udp-svc-b_8080
+  type: EDS
+ExtraClusters:
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: udpagg_default_weighted
+  type: EDS
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+      protocol: UDP
+  listenerFilters:
+  - name: envoy.filters.udp_listener.udp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
+      hashPolicies:
+      - sourceIp: true
+      idleTimeout: 60s
+      matcher:
+        onNoMatch:
+          action:
+            name: route
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.Route
+              cluster: kube_default_udp-svc-a_8080
+      statPrefix: listener~8080-default.single-backend-rule-0
+  name: listener~8080
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8081
+      protocol: UDP
+  listenerFilters:
+  - name: envoy.filters.udp_listener.udp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
+      idleTimeout: 60s
+      matcher:
+        onNoMatch:
+          action:
+            name: route
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.Route
+              cluster: udpagg_default_weighted
+      statPrefix: listener~8081-default.weighted-rule-0
+  name: listener~8081
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: udp-single
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: UDPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: udp-weighted
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: UDPRoute
+  policies:
+    BackendConfigPolicy/default/udp-svc-a-policy:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: udp-svc-a
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+  udpRoutes:
+    default/single-backend:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: ""
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: 'BackendConfigPolicy default/udp-svc-a-policy on backend udp-svc-a
+            sets fields that have no effect on UDP: header hashPolicies, tcpKeepalive'
+          reason: BackendPolicyNotApplied
+          status: "True"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+          sectionName: udp-single
+    default/weighted:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: ""
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: 'BackendConfigPolicy default/udp-svc-a-policy on backend udp-svc-a
+            is not applied: a UDPRoute with several backendRefs routes to one cluster
+            built from their endpoints, which does not carry per-backend cluster settings'
+          reason: BackendPolicyNotApplied
+          status: "True"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+          sectionName: udp-weighted

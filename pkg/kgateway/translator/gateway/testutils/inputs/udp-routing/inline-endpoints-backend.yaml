@@ -1,0 +1,69 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: weighted
+    protocol: UDP
+    port: 8080
+  - name: single
+    protocol: UDP
+    port: 8081
+---
+# A Static Backend cannot join a weighted rule's aggregate cluster: it is rejected and its weight dropped.
+apiVersion: gateway.networking.k8s.io/v1
+kind: UDPRoute
+metadata:
+  name: weighted-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: weighted
+  rules:
+  - backendRefs:
+    - name: example-udp-svc
+      port: 8080
+      weight: 80
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: static-backend
+      weight: 20
+---
+# As a rule's only backendRef, the same Backend is routed to directly.
+apiVersion: gateway.networking.k8s.io/v1
+kind: UDPRoute
+metadata:
+  name: single-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: single
+  rules:
+  - backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: static-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-udp-svc
+spec:
+  selector:
+    app: example
+  ports:
+    - protocol: UDP
+      port: 8080
+      targetPort: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: static-backend
+spec:
+  static:
+    hosts:
+    - host: 10.0.0.10
+      port: 9000

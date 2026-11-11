@@ -27,6 +27,7 @@ const (
 	HTTPRouteKind        = "HTTPRoute"
 	TCPRouteKind         = "TCPRoute"
 	TLSRouteKind         = "TLSRoute"
+	UDPRouteKind         = "UDPRoute"
 	GRPCRouteKind        = "GRPCRoute"
 	GatewayKind          = "Gateway"
 	GatewayClassKind     = "GatewayClass"
@@ -49,6 +50,7 @@ const (
 	// Gateway API CRD names
 	TCPRouteCRDName = "tcproutes.gateway.networking.k8s.io"
 	TLSRouteCRDName = "tlsroutes.gateway.networking.k8s.io"
+	UDPRouteCRDName = "udproutes.gateway.networking.k8s.io"
 
 	// TLSRouteV1Alpha3Version names the v1alpha3 TLSRoute API. kgateway's
 	// internal routing representation is *gwv1a2.TLSRoute — v1 and v1alpha3
@@ -142,6 +144,16 @@ var (
 		Version:  gwv1a2.GroupVersion.Version,
 		Resource: "tcproutes",
 	}
+	UDPRouteGVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: gwv1.GroupVersion.Version,
+		Kind:    UDPRouteKind,
+	}
+	UDPRouteGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  gwv1.GroupVersion.Version,
+		Resource: "udproutes",
+	}
 	GRPCRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: gwv1.GroupVersion.Version,
@@ -176,6 +188,12 @@ var (
 	TCPRouteCRD = apiextv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: TCPRouteCRDName,
+		},
+	}
+
+	UDPRouteCRD = apiextv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: UDPRouteCRDName,
 		},
 	}
 

@@ -13,8 +13,9 @@ import (
 
 func ProcessBackendError(err error, reporter reports.ParentRefReporter) {
 	var unsupportedRouteKind *krtcollections.UnsupportedRouteKindError
+	var unweightable *krtcollections.UnweightableBackendError
 	switch {
-	case errors.Is(err, krtcollections.ErrUnknownBackendKind), errors.As(err, &unsupportedRouteKind):
+	case errors.Is(err, krtcollections.ErrUnknownBackendKind), errors.As(err, &unsupportedRouteKind), errors.As(err, &unweightable):
 		reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
