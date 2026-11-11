@@ -486,10 +486,30 @@ func TestGatewayWriterReportsDeployerVerdict(t *testing.T) {
 	accepted := func() *metav1.Condition {
 		return meta.FindStatusCondition(f.liveGateway(t).Status.Conditions, string(gwv1.GatewayConditionAccepted))
 	}
-	waitForPush := func(pushesBefore int, msg string) {
+	// settledPushes waits until nothing is still enqueuing the Gateway (the initial replay, or
+	// the echo of an earlier write) and returns the count, so a later push can only come from
+	// what the test does next.
+	settledPushes := func() int {
 		t.Helper()
-		require.Eventually(t, func() bool { return f.queue.count(gatewayResource()) > pushesBefore },
-			5*time.Second, 10*time.Millisecond, msg)
+		last, stableSince, deadline := f.queue.count(gatewayResource()), time.Now(), time.Now().Add(5*time.Second)
+		for time.Since(stableSince) < 300*time.Millisecond {
+			require.True(t, time.Now().Before(deadline), "the Gateway's queue should go quiet")
+			time.Sleep(10 * time.Millisecond)
+			if n := f.queue.count(gatewayResource()); n != last {
+				last, stableSince = n, time.Now()
+			}
+		}
+		return last
+	}
+	// waitForDesired waits until the writer would publish reason, i.e. until the verdict has
+	// reached the reduced report the writer reads. A push alone does not prove that.
+	waitForDesired := func(reason gwv1.GatewayConditionReason) {
+		t.Helper()
+		require.Eventually(t, func() bool {
+			status, ok := f.gatewayWriter.Desired(gatewayResource(), f.liveGateway(t))
+			cond := meta.FindStatusCondition(status.Conditions, string(gwv1.GatewayConditionAccepted))
+			return ok && cond != nil && cond.Reason == string(reason)
+		}, 5*time.Second, 10*time.Millisecond, "the writer should see the verdict as reason %s", reason)
 	}
 	// waitForEcho waits until the writer's own write is back in the collection it reads.
 	waitForEcho := func(reason gwv1.GatewayConditionReason) {
@@ -500,9 +520,11 @@ func TestGatewayWriterReportsDeployerVerdict(t *testing.T) {
 		}, 5*time.Second, 10*time.Millisecond, "the write should echo back with reason %s", reason)
 	}
 
-	pushes := f.queue.count(gatewayResource())
+	pushes := settledPushes()
 	f.paramsStatus.Set(gwNN, generation, errors.New("invalid parametersRef"))
-	waitForPush(pushes, "a failed verdict should enqueue the Gateway")
+	require.Eventually(t, func() bool { return f.queue.count(gatewayResource()) > pushes },
+		5*time.Second, 10*time.Millisecond, "a failed verdict should enqueue the Gateway")
+	waitForDesired(gwv1.GatewayReasonInvalidParameters)
 	f.gatewayWriter.ApplyStatus(ctx, gatewayResource())
 	require.Equal(t, 1, f.statusWrites("gateways"))
 	waitForEcho(gwv1.GatewayReasonInvalidParameters)
@@ -512,19 +534,19 @@ func TestGatewayWriterReportsDeployerVerdict(t *testing.T) {
 	require.Equal(t, generation, cond.ObservedGeneration)
 
 	// A deployer retry publishes the same verdict again; nothing may be enqueued or written.
-	pushes = f.queue.count(gatewayResource())
+	unchangedPushes := settledPushes()
 	f.paramsStatus.Set(gwNN, generation, errors.New("invalid parametersRef"))
-	// Never may still be running its condition after it returns, so it reads a copy.
-	unchangedPushes := pushes
 	require.Never(t, func() bool { return f.queue.count(gatewayResource()) > unchangedPushes },
-		200*time.Millisecond, 10*time.Millisecond, "an unchanged verdict should not enqueue the Gateway")
+		300*time.Millisecond, 10*time.Millisecond, "an unchanged verdict should not enqueue the Gateway")
 	f.gatewayWriter.ApplyStatus(ctx, gatewayResource())
 	require.Equal(t, 1, f.statusWrites("gateways"), "an unchanged verdict must not be written again")
 
 	// The parameters are fixed: the new verdict alone must clear the condition.
-	pushes = f.queue.count(gatewayResource())
+	pushes = settledPushes()
 	f.paramsStatus.Set(gwNN, generation, nil)
-	waitForPush(pushes, "a changed verdict should enqueue the Gateway")
+	require.Eventually(t, func() bool { return f.queue.count(gatewayResource()) > pushes },
+		5*time.Second, 10*time.Millisecond, "a changed verdict should enqueue the Gateway")
+	waitForDesired(gwv1.GatewayReasonAccepted)
 	f.gatewayWriter.ApplyStatus(ctx, gatewayResource())
 	require.Equal(t, 2, f.statusWrites("gateways"))
 	waitForEcho(gwv1.GatewayReasonAccepted)
