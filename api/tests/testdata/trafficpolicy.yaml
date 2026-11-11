@@ -1,0 +1,59 @@
+# TrafficPolicy: retry.perTryTimeout cannot be longer than timeouts.request
+_err: retry.perTryTimeout cannot be longer than timeouts.request
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-must-be-less-than-timeouts-request
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 6s
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+---
+# TrafficPolicy: retry.perTryTimeout may equal timeouts.request
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-equal-to-timeouts-request
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    attempts: 2
+    perTryTimeout: 5s
+  timeouts:
+    request: 5s
+---
+# TrafficPolicy: retry.perTryTimeout with timeouts.request disabled (0s)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-with-timeouts-request-0s
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    attempts: 3
+    perTryTimeout: 2s
+  timeouts:
+    request: 0s
+---
+# TrafficPolicy: retry.perTryTimeout with timeouts.request disabled (0ms)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: retry-pertrytimeout-with-timeouts-request-0ms
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    attempts: 3
+    perTryTimeout: 2s
+  timeouts:
+    request: 0ms
