@@ -578,7 +578,12 @@ type TCPKeepalive struct {
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
-	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
+	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
+	//   - tls.crt: the client certificate chain, used for mTLS.
+	//   - tls.key: the client private key, used for mTLS.
+	//   - ca.crt: the root CA used to validate the backend's certificate. If omitted, the
+	//     backend's certificate is not verified, and verifySubjectAltNames cannot be used.
+	// tls.crt and tls.key must be set together or both omitted. Other keys are ignored.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
