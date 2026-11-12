@@ -5,6 +5,7 @@ import (
 	"errors"
 	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -50,6 +51,10 @@ type SetupOpts struct {
 	// CertWatcher is the shared certificate watcher for xDS TLS
 	// Used by the Gateway controller to trigger reconciliation on cert changes
 	CertWatcher *certwatcher.CertWatcher
+
+	// XdsRejections tracks the xDS rejections proxies connected to this replica report.
+	// When set, they appear on Gateway status as Programmed=False with reason XdsRejected.
+	XdsRejections *xds.RejectionTracker
 
 	PprofBindAddress       string
 	HealthProbeBindAddress string
@@ -149,6 +154,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
+	proxySyncerOpts := cfg.StatusSyncerOptions
+	if cfg.SetupOpts.XdsRejections != nil {
+		proxySyncerOpts = append(slices.Clip(proxySyncerOpts), proxy_syncer.WithXdsRejections(cfg.SetupOpts.XdsRejections.Rejections()))
+	}
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
 		cfg.ControllerName,
@@ -159,7 +168,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
 		cfg.XDSClientState,
-		cfg.StatusSyncerOptions...,
+		proxySyncerOpts...,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := cfg.Manager.Add(proxySyncer); err != nil {

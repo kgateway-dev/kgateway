@@ -75,6 +75,9 @@ type ProxySyncer struct {
 	// extraPolicyTargetResolvers are the resolvers registered with WithPolicyTargetResolver.
 	extraPolicyTargetResolvers policyTargetResolvers
 
+	// xdsRejections is the collection registered with WithXdsRejections, or nil.
+	xdsRejections krt.Collection[xds.GatewayXdsRejection]
+
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
 }
@@ -231,6 +234,7 @@ func NewProxySyncer(
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
 		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
+		xdsRejections:              optCfg.xdsRejections,
 	}
 }
 
@@ -432,12 +436,16 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// ancestors from Gateway translation, Backend translation, and targetRef
 	// resolution naturally reduce under the same policy key without a competing
 	// singleton writer.
-	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+	contributionCols := []krt.Collection[reports.StatusContribution]{
 		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
 		backendContributions,
 		policyTargetContributions,
-	}, krtopts.ToOptions("StatusContributions")...)
+	}
+	if s.xdsRejections != nil {
+		contributionCols = append(contributionCols, xdsRejectionStatusContributions(s.xdsRejections, krtopts))
+	}
+	s.statusContributions = krt.JoinCollection(contributionCols, krtopts.ToOptions("StatusContributions")...)
 
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,

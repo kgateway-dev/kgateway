@@ -12,6 +12,7 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"istio.io/istio/pkg/security"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -45,6 +46,9 @@ type resourceKey struct {
 	Namespace       string
 	Name            string
 	ResourceTypeUrl string
+	// gateway is set once Namespace and Name come from a resolved Gateway role rather than
+	// the "unknown" placeholder. Only those rejections reach Gateway status.
+	gateway bool
 }
 
 type resourceState struct {
@@ -62,17 +66,21 @@ type logNackCallback struct {
 	streamState    map[int64]resourceState
 	streamIdentity map[int64]resourceKey
 	xdsAuth        bool
+	// rejections, when set, receives every rejection and resolution so it can be reported
+	// on the Gateway's status.
+	rejections *xds.RejectionTracker
 
 	lock sync.Mutex
 }
 
 var _ xdsserver.Callbacks = (*logNackCallback)(nil)
 
-func newLogNackCallback(xdsAuth bool) *logNackCallback {
+func newLogNackCallback(xdsAuth bool, rejections *xds.RejectionTracker) *logNackCallback {
 	return &logNackCallback{
 		streamState:    make(map[int64]resourceState),
 		streamIdentity: make(map[int64]resourceKey),
 		xdsAuth:        xdsAuth,
+		rejections:     rejections,
 	}
 }
 
@@ -101,7 +109,7 @@ func (l *logNackCallback) OnStreamClosed(streamID int64, node *envoycorev3.Node)
 	l.lock.Unlock()
 
 	for k := range streamState.errors {
-		l.onErrorGone(k)
+		l.onErrorGone(streamID, k)
 	}
 }
 
@@ -122,6 +130,7 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	parts := strings.SplitN(role, xds.KeyDelimiter, 4)
 	if xds.IsKubeGatewayCacheKey(role) && len(parts) >= 3 {
 		key.Namespace, key.Name = parts[1], parts[2]
+		key.gateway = true
 		l.lock.Lock()
 		l.streamIdentity[streamID] = key
 		l.lock.Unlock()
@@ -129,6 +138,11 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	key.ResourceTypeUrl = rejectionTypeURL(req.GetTypeUrl())
 
 	if req.ErrorDetail != nil {
+		// A repeated NACK may carry a different message, which status should show, so the
+		// tracker sees every one. It ignores repeats of the message it already has.
+		if key.gateway {
+			l.rejections.Reject(streamID, gatewayOf(key), key.ResourceTypeUrl, req.GetErrorDetail().GetMessage())
+		}
 		if !l.handleError(streamID, key) {
 			// Log NACK only once per resource
 			return nil
@@ -137,7 +151,7 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	} else {
 		errorGone := l.handleNoError(streamID, key)
 		if errorGone {
-			l.onErrorGone(key)
+			l.onErrorGone(streamID, key)
 		}
 	}
 	return nil
@@ -150,8 +164,15 @@ func (l *logNackCallback) onNewError(key resourceKey, err *status.Status) {
 	envoyLogger.Warn("xds error", "gateway_name", key.Name, "gateway_ns", key.Namespace, "resource", key.ResourceTypeUrl, "error", err.Message)
 }
 
-func (l *logNackCallback) onErrorGone(key resourceKey) {
+func (l *logNackCallback) onErrorGone(streamID int64, key resourceKey) {
 	xdsRejectsCurrent.Add(-1, toLabels(key)...)
+	if key.gateway {
+		l.rejections.Resolve(streamID, gatewayOf(key), key.ResourceTypeUrl)
+	}
+}
+
+func gatewayOf(key resourceKey) types.NamespacedName {
+	return types.NamespacedName{Namespace: key.Namespace, Name: key.Name}
 }
 
 func (l *logNackCallback) handleNoError(streamID int64, key resourceKey) bool {
