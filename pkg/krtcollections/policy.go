@@ -39,6 +39,11 @@ var (
 	ErrMissingReferenceGrant = errors.New("missing reference grant")
 	ErrUnknownBackendKind    = errors.New("unknown backend kind")
 	ErrPolicyNotFound        = errors.New("policy not found")
+
+	// ListenerSet denial errors
+	errListenerSetsNotEnabled  = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
+	errAllowedListenersInvalid = errors.New("Unable to parse allowedListeners")
+	errListenerSetNotAllowed   = errors.New("Attachment not allowed")
 )
 
 type NotFoundError struct {
@@ -549,6 +554,72 @@ func (r listenerSetIRRef) Equals(in listenerSetIRRef) bool {
 	return r.ListenerSet.Equals(*in.ListenerSet)
 }
 
+// ListenerSetAttachment decides whether a Gateway's allowedListeners admit a ListenerSet.
+type ListenerSetAttachment struct {
+	enabled bool
+	// allowedNs is nil when allowedListeners could not be parsed.
+	allowedNs func(kctx krt.HandlerContext, namespace string) bool
+}
+
+// NewListenerSetAttachment builds the check for a Gateway in parentNamespace.
+func NewListenerSetAttachment(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (ListenerSetAttachment, error) {
+	allowedNs, err := AllowedListenerSet(allowedListeners, parentNamespace, namespaces)
+	return ListenerSetAttachment{enabled: allowedListeners != nil, allowedNs: allowedNs}, err
+}
+
+// Denial returns why the Gateway denies a ListenerSet in namespace.
+func (a ListenerSetAttachment) Denial(kctx krt.HandlerContext, namespace string) error {
+	if !a.enabled {
+		return errListenerSetsNotEnabled
+	}
+	if a.allowedNs == nil {
+		return errAllowedListenersInvalid
+	}
+	if !a.allowedNs(kctx, namespace) {
+		return errListenerSetNotAllowed
+	}
+	return nil
+}
+
+func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
+	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
+	allowedNs := NoNamespace()
+
+	if allowedListeners != nil {
+		// Determine the allowed namespaces if specified
+		if allowedListeners.Namespaces != nil && allowedListeners.Namespaces.From != nil {
+			switch *allowedListeners.Namespaces.From {
+			case gwv1.NamespacesFromAll:
+				allowedNs = AllNamespace()
+			case gwv1.NamespacesFromSame:
+				allowedNs = SameNamespace(parentNamespace)
+			case gwv1.NamespacesFromSelector:
+				if allowedListeners.Namespaces.Selector == nil {
+					return nil, errors.New("selector must be set")
+				}
+				selector, err := metav1.LabelSelectorAsSelector(allowedListeners.Namespaces.Selector)
+				if err != nil {
+					return nil, err
+				}
+				allowedNs = NamespaceSelector(namespaces, selector)
+			}
+		}
+	}
+
+	return allowedNs, nil
+}
+
+// ListenerSetPrecedence compares ListenerSets by precedence:
+// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
+// - ListenerSet ordered by creation time (oldest first)
+// - ListenerSet ordered alphabetically by “{namespace}/{name}”
+func ListenerSetPrecedence(a, b metav1.Object) int {
+	if c := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); c != 0 {
+		return c
+	}
+	return strings.Compare(a.GetNamespace()+"/"+a.GetName(), b.GetNamespace()+"/"+b.GetName())
+}
+
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 		// only care about gateways that use a class controlled by us
@@ -573,6 +644,14 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
+
+		// ListenerSet denied adds no listener to the proxy and no port.
+		attachment, _ := NewListenerSetAttachment(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
+		listenerSets = slices.FilterInPlace(listenerSets, func(ls *gwv1.ListenerSet) bool {
+			return attachment.Denial(kctx, ls.GetNamespace()) == nil
+		})
+		// Sort ListenerSets to match the precedence used by Envoy translation.
+		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int { return ListenerSetPrecedence(a, b) })
 
 		for _, ls := range listenerSets {
 			for _, l := range ls.Spec.Listeners {
@@ -638,7 +717,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			})
 		}
 
-		allowedNs, err := AllowedListenerSet(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
+		attachment, err := NewListenerSetAttachment(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
 		if err != nil {
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
@@ -656,44 +735,16 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 		gwIR.Listeners = append(make([]ir.Listener, 0, numListeners), gwIR.Listeners...)
 
-		// Sort by listener precedence
-		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
-		// - ListenerSet ordered by creation time (oldest first)
-		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int {
-			// primary sort: creation timestamp (oldest first)
-			if cmp := a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time); cmp != 0 {
-				return cmp
-			}
-			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls listenerSetIRRef) string {
-				return ls.Namespace + "/" + ls.Name
-			}
-			return strings.Compare(nnsString(a), nnsString(b))
-		})
+		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int { return ListenerSetPrecedence(a.Obj, b.Obj) })
 
 		for _, ls := range listenerSets {
 			// A copy, since Err is set per Gateway.
 			lsIR := *ls.ListenerSet
 			lsGVK := lsIR.Obj.GetObjectKind().GroupVersionKind()
 
-			if gw.Spec.AllowedListeners == nil {
-				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
-				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
-				continue
-			}
-
-			// allowedNs is nil if allowedListeners could not be parsed, so deny the attachment.
-			if err != nil {
-				lsIR.Err = errors.New("Unable to parse allowedListeners")
-				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
-				continue
-			}
-
-			// Check if the namespace of the listenerSet is allowed by the gateway
-			// We return the denied list of ls to have their status set to rejected during validation
-			if !allowedNs(kctx, lsIR.Namespace) {
-				lsIR.Err = errors.New("Attachment not allowed")
+			// A denied ListenerSet is kept so its status can be set to rejected during validation.
+			if denial := attachment.Denial(kctx, lsIR.Namespace); denial != nil {
+				lsIR.Err = denial
 				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
 			}
@@ -774,34 +825,6 @@ func listenerSetIR(kctx krt.HandlerContext, policyIndex *PolicyIndex, ls *gwv1.L
 		})
 	}
 	return lsIR
-}
-
-func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
-	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
-	allowedNs := NoNamespace()
-
-	if allowedListeners != nil {
-		// Determine the allowed namespaces if specified
-		if allowedListeners.Namespaces != nil && allowedListeners.Namespaces.From != nil {
-			switch *allowedListeners.Namespaces.From {
-			case gwv1.NamespacesFromAll:
-				allowedNs = AllNamespace()
-			case gwv1.NamespacesFromSame:
-				allowedNs = SameNamespace(parentNamespace)
-			case gwv1.NamespacesFromSelector:
-				if allowedListeners.Namespaces.Selector == nil {
-					return nil, errors.New("selector must be set")
-				}
-				selector, err := metav1.LabelSelectorAsSelector(allowedListeners.Namespaces.Selector)
-				if err != nil {
-					return nil, err
-				}
-				allowedNs = NamespaceSelector(namespaces, selector)
-			}
-		}
-	}
-
-	return allowedNs, nil
 }
 
 type TargetRefIndexKey struct {

@@ -2260,8 +2260,9 @@ var _ = Describe("Deployer", func() {
 
 	Context("with listener sets", func() {
 		var (
-			listenerSetPort int32 = 4567
-			listenerPort    int32 = 1234
+			listenerSetPort       int32 = 4567
+			listenerPort          int32 = 1234
+			deniedListenerSetPort int32 = 7890
 		)
 
 		render := func(gw *gwv1.Gateway, extra ...client.Object) clientObjects {
@@ -2294,7 +2295,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		It("exposes all necessary ports", func() {
-			allNamespaces := gwv1.NamespacesFromAll
+			sameNamespace := gwv1.NamespacesFromSame
 			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
@@ -2305,7 +2306,7 @@ var _ = Describe("Deployer", func() {
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					AllowedListeners: &gwv1.AllowedListeners{
 						Namespaces: &gwv1.ListenerNamespaces{
-							From: &allNamespaces,
+							From: &sameNamespace,
 						},
 					},
 					Listeners: []gwv1.Listener{
@@ -2338,7 +2339,13 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
-			objs := render(gw, ls)
+			// Denied ListenerSet in another namespace should have its port not exposed.
+			deniedLS := ls.DeepCopy()
+			deniedLS.Name = "denied-ls"
+			deniedLS.Namespace = "other-ns"
+			deniedLS.Spec.Listeners[0].Port = gwv1.PortNumber(deniedListenerSetPort)
+
+			objs := render(gw, ls, deniedLS)
 
 			Expect(objs).To(HaveLen(4))
 			Expect(objs.findConfigMap(defaultNamespace, gw.Name)).ToNot(BeNil())
@@ -2349,6 +2356,7 @@ var _ = Describe("Deployer", func() {
 			Expect(servicePorts[0].Port).To(Equal(listenerPort))
 			Expect(servicePorts[1].Name).To(Equal(fmt.Sprintf("listener-%d", listenerSetPort)))
 			Expect(servicePorts[1].Port).To(Equal(listenerSetPort))
+			Expect(servicePorts).To(HaveLen(2), "a ListenerSet the Gateway does not allow adds no Service port")
 
 			deploymentPorts := objs.findDeployment(gw.Name).Spec.Template.Spec.Containers[0].Ports
 			Expect(deploymentPorts).To(ConsistOf(HaveField("Name", "http-monitoring")),

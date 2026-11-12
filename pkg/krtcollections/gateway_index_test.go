@@ -174,11 +174,16 @@ func TestGatewayForDeployerIgnoresListenerSetStatusWrites(t *testing.T) {
 	const barrier = "barrier"
 	ls := testListenerSet("ls", "gw")
 	barrierLS := testListenerSet("barrier-ls", barrier)
+	// Not allowed by the Gateway so its port should not show up.
+	denied := testListenerSet("denied", "gw")
+	denied.Namespace = "other"
+	denied.Spec.ParentRef.Namespace = new(gwv1.Namespace("default"))
+	denied.Spec.Listeners[0].Port = 7070
 
 	config := getConfig(t)
 	config.PolicyIndex = nil
 	gateways := krt.NewMutableCollection(nil, []*gwv1.Gateway{testGateway("gw"), testGateway(barrier)}, config.KrtOpts.ToOptions("Gateways")...)
-	listenerSets := krt.NewMutableCollection(nil, []*gwv1.ListenerSet{ls, barrierLS}, config.KrtOpts.ToOptions("ListenerSets")...)
+	listenerSets := krt.NewMutableCollection(nil, []*gwv1.ListenerSet{ls, barrierLS, denied}, config.KrtOpts.ToOptions("ListenerSets")...)
 	config.Gateways = gateways.AsCollection()
 	config.ListenerSets = listenerSets.AsCollection()
 	config.GatewayClasses = krt.NewStaticCollection(nil, []*gwv1.GatewayClass{{
