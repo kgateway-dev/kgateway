@@ -56,8 +56,8 @@ spec:
           path: /dev/stdout
           stringFormat: "%DOWNSTREAM_REMOTE_ADDRESS%\n"
 ---
-# Listener-level fields of a sectionName-targeted ListenerPolicy are not applied, so a policy
-# that sets nothing else must not be reported as attached to the TCP listener.
+# Listener-level fields of a sectionName-targeted ListenerPolicy are applied when the listener
+# does not share its port.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: ListenerPolicy
 metadata:
