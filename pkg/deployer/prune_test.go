@@ -482,8 +482,22 @@ func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
 		return out
 	}
 
+	readyDeployment := func(name string) *appsv1.Deployment {
+		d := deployment(name, true)
+		d.Generation = 1
+		d.Spec.Replicas = new(int32(2))
+		d.Status = appsv1.DeploymentStatus{ObservedGeneration: 1, UpdatedReplicas: 2, AvailableReplicas: 2}
+		return d
+	}
+	readyDaemonSet := func(name string) *appsv1.DaemonSet {
+		d := daemonSet(name, true)
+		d.Generation = 1
+		d.Status = appsv1.DaemonSetStatus{ObservedGeneration: 1, DesiredNumberScheduled: 3, UpdatedNumberScheduled: 3, NumberAvailable: 3}
+		return d
+	}
+
 	t.Run("switching to DaemonSet deletes the owned Deployment", func(t *testing.T) {
-		fc := fake.NewClient(t, gw, deployment(gwName, true), deployment("user-deploy", false), daemonSet(gwName, true))
+		fc := fake.NewClient(t, gw, readyDeployment(gwName), deployment("user-deploy", false), readyDaemonSet(gwName))
 		d := &Deployer{client: fc}
 
 		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
@@ -494,7 +508,7 @@ func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
 	})
 
 	t.Run("switching to Deployment deletes the owned DaemonSet", func(t *testing.T) {
-		fc := fake.NewClient(t, gw, deployment(gwName, true), daemonSet(gwName, true), daemonSet("user-ds", false))
+		fc := fake.NewClient(t, gw, readyDeployment(gwName), readyDaemonSet(gwName), daemonSet("user-ds", false))
 		d := &Deployer{client: fc}
 
 		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
@@ -502,6 +516,65 @@ func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
 		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK))
 		assert.Equal(t, []string{"user-ds"}, names(t, fc, wellknown.DaemonSetGVK),
 			"only the DaemonSet the Gateway controls should be pruned")
+	})
+
+	// The old workload keeps serving until its replacement can take over.
+	notReadyDaemonSets := map[string]func() *appsv1.DaemonSet{
+		"has no available pods": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Status.NumberAvailable = 0
+			return ds
+		},
+		"has some pods unavailable": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Status.NumberAvailable = 2
+			return ds
+		},
+		"has pods not yet updated": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Status.UpdatedNumberScheduled = 1
+			return ds
+		},
+		"is scheduled on no nodes": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Status = appsv1.DaemonSetStatus{ObservedGeneration: 1}
+			return ds
+		},
+		"has a spec its controller has not observed": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Generation = 2
+			return ds
+		},
+	}
+	for name, replacement := range notReadyDaemonSets {
+		t.Run("keeps the Deployment while the DaemonSet "+name, func(t *testing.T) {
+			fc := fake.NewClient(t, gw, readyDeployment(gwName), replacement())
+			d := &Deployer{client: fc}
+
+			require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+			assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK), "the serving Deployment must be kept")
+		})
+	}
+
+	t.Run("keeps the Deployment while the DaemonSet does not exist yet", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, readyDeployment(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK), "the serving Deployment must be kept")
+	})
+
+	t.Run("keeps the DaemonSet while the Deployment has unavailable replicas", func(t *testing.T) {
+		dep := readyDeployment(gwName)
+		dep.Status.AvailableReplicas = 1
+		fc := fake.NewClient(t, gw, dep, readyDaemonSet(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK), "the serving DaemonSet must be kept")
 	})
 
 	t.Run("no workload in the desired set prunes no workload", func(t *testing.T) {
