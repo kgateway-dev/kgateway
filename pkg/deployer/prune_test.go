@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -525,16 +526,6 @@ func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
 			ds.Status.NumberAvailable = 0
 			return ds
 		},
-		"has some pods unavailable": func() *appsv1.DaemonSet {
-			ds := readyDaemonSet(gwName)
-			ds.Status.NumberAvailable = 2
-			return ds
-		},
-		"has pods not yet updated": func() *appsv1.DaemonSet {
-			ds := readyDaemonSet(gwName)
-			ds.Status.UpdatedNumberScheduled = 1
-			return ds
-		},
 		"is scheduled on no nodes": func() *appsv1.DaemonSet {
 			ds := readyDaemonSet(gwName)
 			ds.Status = appsv1.DaemonSetStatus{ObservedGeneration: 1}
@@ -566,15 +557,55 @@ func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
 		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK), "the serving Deployment must be kept")
 	})
 
-	t.Run("keeps the DaemonSet while the Deployment has unavailable replicas", func(t *testing.T) {
+	t.Run("keeps the DaemonSet while the Deployment has no available replicas", func(t *testing.T) {
 		dep := readyDeployment(gwName)
-		dep.Status.AvailableReplicas = 1
+		dep.Status.AvailableReplicas = 0
 		fc := fake.NewClient(t, gw, dep, readyDaemonSet(gwName))
 		d := &Deployer{client: fc}
 
 		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
 
 		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK), "the serving DaemonSet must be kept")
+	})
+
+	// Waiting for every pod could deadlock: the old pods can hold the room the
+	// replacement's pending pods need. One available pod is enough to serve.
+	t.Run("a partly available DaemonSet replaces the Deployment", func(t *testing.T) {
+		ds := readyDaemonSet(gwName)
+		ds.Status.NumberAvailable = 1
+		ds.Status.UpdatedNumberScheduled = 1
+		fc := fake.NewClient(t, gw, readyDeployment(gwName), ds)
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		assert.Empty(t, names(t, fc, wellknown.DeploymentGVK), "the Deployment should be pruned")
+	})
+
+	t.Run("a partly available Deployment replaces the DaemonSet", func(t *testing.T) {
+		dep := readyDeployment(gwName)
+		dep.Status.AvailableReplicas = 1
+		dep.Status.UpdatedReplicas = 1
+		fc := fake.NewClient(t, gw, dep, readyDaemonSet(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
+
+		assert.Empty(t, names(t, fc, wellknown.DaemonSetGVK), "the DaemonSet should be pruned")
+	})
+
+	t.Run("reads no workload status when there is no old workload", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, readyDaemonSet(gwName), deployment("user-deploy", false))
+		d := &Deployer{client: fc}
+		dyn := fc.Dynamic().(*dynamicfake.FakeDynamicClient)
+		dyn.ClearActions()
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		for _, action := range dyn.Actions() {
+			assert.NotEqual(t, "get", action.GetVerb(), "unexpected read of %s", action.GetResource().Resource)
+		}
+		assert.Equal(t, []string{"user-deploy"}, names(t, fc, wellknown.DeploymentGVK))
 	})
 
 	t.Run("no workload in the desired set prunes no workload", func(t *testing.T) {

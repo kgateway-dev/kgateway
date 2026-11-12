@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -509,8 +508,9 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 // When the desired objects include a Deployment or DaemonSet, it also deletes
 // the owner's workload of the other kind, so that switching the workload kind
 // does not leave the old proxy pods running. The old workload is kept until its
-// replacement is ready, so a switch never takes the Gateway offline; a status
-// change on the replacement triggers the reconcile that prunes it.
+// replacement has an available pod, so a switch never takes the Gateway
+// offline; a status change on the replacement triggers the reconcile that
+// prunes it.
 func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Object, desiredObjs []client.Object) error {
 	ownerNamespace := owner.GetNamespace()
 	// Kubernetes label values are limited to 63 characters, but Gateway names can exceed this limit.
@@ -541,21 +541,11 @@ func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Objec
 		staleWorkloadGVK, replacementGVK = wellknown.DeploymentGVK, wellknown.DaemonSetGVK
 	}
 	if !staleWorkloadGVK.Empty() {
-		ready, reason, err := d.workloadsReady(ctx, ownerNamespace, replacementGVK, desiredByGVK[replacementGVK])
-		switch {
-		case err != nil:
-			return fmt.Errorf("failed to check the replacement %s for pruning: %w", replacementGVK.Kind, err)
-		case ready:
-			targetGVKs = append(targetGVKs, staleWorkloadGVK)
-		default:
-			logger.Info("keeping the old workload until its replacement is ready",
-				"owner", owner.GetName(),
-				"namespace", ownerNamespace,
-				"old_kind", staleWorkloadGVK.Kind,
-				"replacement_kind", replacementGVK.Kind,
-				"reason", reason)
-		}
+		targetGVKs = append(targetGVKs, staleWorkloadGVK)
 	}
+	// replacementReady is checked at most once, and only when an old workload
+	// exists, so reconciles where nothing is switching read no workload status.
+	var replacementReady *bool
 	var pruningErrors []error
 	for _, gvk := range targetGVKs {
 		gvr, err := d.gvkToGVR(gvk)
@@ -578,8 +568,28 @@ func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Objec
 			if desiredSet, exists := desiredByGVK[gvk]; exists && desiredSet[resourceName] {
 				continue
 			}
-			if gvk == staleWorkloadGVK && !metav1.IsControlledBy(&item, owner) {
-				continue
+			if gvk == staleWorkloadGVK {
+				if !metav1.IsControlledBy(&item, owner) {
+					continue
+				}
+				if replacementReady == nil {
+					ready, reason, err := d.workloadsReady(ctx, ownerNamespace, replacementGVK, desiredByGVK[replacementGVK])
+					if err != nil {
+						return fmt.Errorf("failed to check the replacement %s for pruning: %w", replacementGVK.Kind, err)
+					}
+					if !ready {
+						logger.Info("keeping the old workload until its replacement is ready",
+							"owner", owner.GetName(),
+							"namespace", ownerNamespace,
+							"old_kind", staleWorkloadGVK.Kind,
+							"replacement_kind", replacementGVK.Kind,
+							"reason", reason)
+					}
+					replacementReady = &ready
+				}
+				if !*replacementReady {
+					continue
+				}
 			}
 			logger.Info("pruning removed resource",
 				"gvk", gvk.String(),
@@ -606,9 +616,8 @@ func (d *Deployer) PruneRemovedResources(ctx context.Context, owner client.Objec
 	return nil
 }
 
-// workloadsReady reports whether every named Deployment or DaemonSet has
-// finished rolling out and has available pods. When one is not ready, it
-// returns the reason.
+// workloadsReady reports whether every named Deployment or DaemonSet can take
+// over serving the Gateway. When one cannot, it returns the reason.
 func (d *Deployer) workloadsReady(ctx context.Context, namespace string, gvk schema.GroupVersionKind, names map[string]bool) (bool, string, error) {
 	gvr, err := d.gvkToGVR(gvk)
 	if err != nil {
@@ -633,44 +642,42 @@ func (d *Deployer) workloadsReady(ctx context.Context, namespace string, gvk sch
 	return true, "", nil
 }
 
-// workloadNotReadyReason returns why a Deployment or DaemonSet cannot yet
-// replace the workload it is taking over from, or "" when it can: the
-// controller has observed its latest spec and every desired pod is updated
-// and available. A DaemonSet that schedules no pods is never ready, since
-// removing the old workload would leave the Gateway with no proxy.
+// workloadNotReadyReason returns why a Deployment or DaemonSet cannot yet take
+// over from the workload it replaces, or "" when it can: its controller has
+// observed its latest spec and at least one pod is available.
+//
+// It deliberately does not wait for every pod. The old workload's pods can hold
+// the resources that the replacement's pending pods need, and a DaemonSet never
+// evicts to make room, so waiting for all of them (or for all but the rollout's
+// maxUnavailable) can deadlock with both workloads running. One available pod
+// keeps the Gateway serving; the remaining pods schedule once the old workload
+// is gone.
 func workloadNotReadyReason(u *unstructured.Unstructured, gvk schema.GroupVersionKind) (string, error) {
+	var generation, observedGeneration int64
+	var available int32
 	switch gvk {
 	case wellknown.DeploymentGVK:
 		dep := &appsv1.Deployment{}
 		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, dep); err != nil {
 			return "", err
 		}
-		desired := ptr.Deref(dep.Spec.Replicas, 1)
-		switch {
-		case dep.Status.ObservedGeneration < dep.Generation:
-			return "rollout not observed yet", nil
-		case dep.Status.UpdatedReplicas < desired || dep.Status.AvailableReplicas < desired:
-			return fmt.Sprintf("%d of %d replicas available", dep.Status.AvailableReplicas, desired), nil
-		}
-		return "", nil
+		generation, observedGeneration, available = dep.Generation, dep.Status.ObservedGeneration, dep.Status.AvailableReplicas
 	case wellknown.DaemonSetGVK:
 		ds := &appsv1.DaemonSet{}
 		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, ds); err != nil {
 			return "", err
 		}
-		desired := ds.Status.DesiredNumberScheduled
-		switch {
-		case ds.Status.ObservedGeneration < ds.Generation:
-			return "rollout not observed yet", nil
-		case desired == 0:
-			return "no nodes are scheduled to run it", nil
-		case ds.Status.UpdatedNumberScheduled < desired || ds.Status.NumberAvailable < desired:
-			return fmt.Sprintf("%d of %d pods available", ds.Status.NumberAvailable, desired), nil
-		}
-		return "", nil
+		generation, observedGeneration, available = ds.Generation, ds.Status.ObservedGeneration, ds.Status.NumberAvailable
 	default:
 		return "", fmt.Errorf("unsupported workload kind %s", gvk.Kind)
 	}
+	switch {
+	case observedGeneration < generation:
+		return "rollout not observed yet", nil
+	case available < 1:
+		return "no pods available", nil
+	}
+	return "", nil
 }
 
 // kindPriority returns a numeric priority for a Kubernetes resource kind.
