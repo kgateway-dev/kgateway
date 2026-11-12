@@ -1374,49 +1374,45 @@ func translateTLSConfig(
 	}
 
 	// ListenerPolicy clientCertificateValidation overrides the Gateway's spec.tls.frontend validation.
-	// A policy targeting the listener (via sectionName) takes precedence over a policy targeting the whole
-	// Gateway. If the listener's policy is optional and none of its CA certificates can be fetched, the
-	// Gateway-wide policy applies instead, so a broken listener policy cannot drop a Gateway-wide requirement.
-	type certValidationCandidate struct {
-		validation *listenerPolicyCertValidation
-		parentGVK  schema.GroupVersionKind
-	}
-	var candidates []certValidationCandidate
-	if v := getCertValidationFromAttached(listener.AttachedPolicies, listener.Parent.GetNamespace()); v != nil {
-		parentGVK, err := listenerParentGVK(listener)
-		if err != nil {
+	// Like the other ListenerPolicy fields, the most specific value wins: a policy targeting the listener
+	// (via sectionName) replaces a policy targeting the whole Gateway, even when its CA certificates cannot
+	// be fetched. ListenerPolicies can only target Gateways, so a ListenerSet listener only has the
+	// Gateway-wide policy.
+	certVal := getCertValidationFromAttached(listener.AttachedPolicies, listener.Parent.GetNamespace())
+	parentGVK := wellknown.GatewayGVK
+	if certVal != nil {
+		var err error
+		if parentGVK, err = listenerParentGVK(listener); err != nil {
 			return nil, err
 		}
-		candidates = append(candidates, certValidationCandidate{validation: v, parentGVK: parentGVK})
+	} else {
+		certVal = getCertValidationFromAttached(gatewayPolicies, gatewayNamespace)
 	}
-	if v := getCertValidationFromAttached(gatewayPolicies, gatewayNamespace); v != nil {
-		candidates = append(candidates, certValidationCandidate{validation: v, parentGVK: wellknown.GatewayGVK})
+	if certVal == nil {
+		return tlsConfig, errors.Join(certErr, caErr)
 	}
-	for _, c := range candidates {
-		generated, policyErr := applyListenerPolicyCertValidation(kctx, ctx, queries, c.validation, tlsConfig, c.parentGVK)
-		if generated {
-			return tlsConfig, errors.Join(certErr, policyErr)
-		}
-		if c.validation.requireClientCertificate {
-			logger.Error("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
-				"listener", listener.Name,
-				"port", listener.Port,
-				"error", policyErr,
-				"mode", "required")
-			return nil, errors.Join(certErr, policyErr)
-		}
-		logger.Warn("failed to fetch CA certificate for ListenerPolicy client validation override, skipping validation",
+
+	generated, policyErr := applyListenerPolicyCertValidation(kctx, ctx, queries, certVal, tlsConfig, parentGVK)
+	if generated {
+		return tlsConfig, errors.Join(certErr, policyErr)
+	}
+	if certVal.requireClientCertificate {
+		logger.Error("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
 			"listener", listener.Name,
 			"port", listener.Port,
 			"error", policyErr,
-			"mode", "optional")
+			"mode", "required")
+		return nil, errors.Join(certErr, policyErr)
 	}
-	if len(candidates) > 0 {
-		// Every ListenerPolicy validation was optional and failed: keep the Gateway's spec.tls.frontend validation.
-		return tlsConfig, nil
-	}
-
-	return tlsConfig, errors.Join(certErr, caErr)
+	// An optional policy without a fetchable CA certificate leaves the Gateway's spec.tls.frontend
+	// validation in place. The error is returned with the TLS config, so the listener reports the broken
+	// reference while it keeps serving.
+	logger.Warn("failed to fetch CA certificate for ListenerPolicy client validation override, skipping validation",
+		"listener", listener.Name,
+		"port", listener.Port,
+		"error", policyErr,
+		"mode", "optional")
+	return tlsConfig, errors.Join(certErr, caErr, policyErr)
 }
 
 // listenerParentGVK returns the GVK of the listener's parent, which ListenerPolicy CA refs are resolved as.

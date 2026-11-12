@@ -1,8 +1,9 @@
 # A Gateway-wide ListenerPolicy overrides the Gateway's spec.tls.frontend validation, both the default
 # (port 8443) and perPort (port 9443): every listener trusts gateway-wide-ca-cert and requires a client
 # certificate.
-# The web listener has an optional policy of its own whose CA does not exist. Rather than dropping to the
-# frontend validation, the listener falls back to the Gateway-wide policy.
+# The web listener has an optional policy of its own whose CA does not exist. It still replaces the
+# Gateway-wide policy, so the listener keeps the frontend validation (frontend-ca-cert, optional) and
+# reports the missing CA certificate.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
