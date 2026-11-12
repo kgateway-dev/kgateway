@@ -191,6 +191,11 @@ func snapshotPerClient(
 		)
 
 		snap.missingReferenced = missingClusters
+		if filtered && len(missingClusters) > 0 {
+			snap.translatedEndpoints = clientEndpointResources.endpoints.Items
+			snap.translatedEndpointHashes = clientEndpointResources.rowHashes
+			snap.translatedEndpointsVersion = clientEndpointResources.endpoints.Version
+		}
 		snap.missingEndpointsReferenced = missingEndpointClusters
 		// Settle only placeholders whose rows are on their way. A source-less
 		// synthesized CLA is the cluster's steady state and publishes as-is.
