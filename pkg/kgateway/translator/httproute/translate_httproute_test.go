@@ -27,7 +27,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		ctx  context.Context
 
 		// Shared variables for all tests
-		up                *ir.BackendObjectIR
 		route             *gwv1.HTTPRoute
 		routeir           *ir.HttpRouteIR
 		routeInfo         *query.RouteInfo
@@ -35,9 +34,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		baseReporter      reporter.Reporter
 		parentRefReporter reporter.ParentRefReporter
 		reportsMap        reports.ReportMap
-
-		// Service backing for routes
-		backingSvc *corev1.Service
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -78,8 +74,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			Hostnames:    []string{"example.com"},
 		}
 
-		// “backingSvc” or “backingPool” are assigned in each test’s BeforeEach if needed.
-
 		reportsMap = reports.NewReportMap()
 		baseReporter = reports.NewReporter(&reportsMap)
 		parentRefReporter = baseReporter.Route(route).ParentRef(parentRef)
@@ -91,6 +85,12 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 	Context("HTTPRoute resource routing with Service backendRef", func() {
 		When("referencing a valid backing service", func() {
+			// Scoped to this spec: Ginkgo shuffles specs under --randomize-all, so a sibling
+			// that read these would see nil whenever it ran first.
+			var (
+				backingSvc *corev1.Service
+				up         *ir.BackendObjectIR
+			)
 			BeforeEach(func() {
 				// Setup the backing service
 				backingSvc = &corev1.Service{
@@ -185,16 +185,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 		When("referencing a non-existent backing service", func() {
 			BeforeEach(func() {
-				// Setup the backendObjIR
-				backend := ir.NewBackendObjectIR(ir.ObjectSource{
-					Namespace: backingSvc.Namespace,
-					Name:      backingSvc.Name,
-					Kind:      "Service",
-					Group:     "",
-				}, 8080, "", "")
-				backend.Obj = backingSvc
-				up = &backend
-				// Setup the route rules
+				// The referenced Service does not exist, so there is no backend object to
+				// build: the route IR below carries only the resolution error.
 				route.Spec.Rules = []gwv1.HTTPRouteRule{
 					{
 						Matches: []gwv1.HTTPRouteMatch{
