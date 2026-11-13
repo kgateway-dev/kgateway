@@ -59,18 +59,21 @@ func (p *Provider) EventuallyObjectTypesNotExist(ctx context.Context, objectList
 	}
 }
 
+// ConsistentlyObjectsNotExist asserts that none of the objects appears in the cluster for 10s.
+// All objects are checked on every poll within a single window, so the assertion takes 10s
+// regardless of how many objects are passed.
 func (p *Provider) ConsistentlyObjectsNotExist(ctx context.Context, objects ...client.Object) {
 	p.t.Helper()
-	for _, o := range objects {
-		p.Gomega.Consistently(ctx, func(innerG Gomega) {
+	p.Gomega.Consistently(ctx, func(innerG Gomega) {
+		for _, o := range objects {
 			err := p.clusterContext.Client.Get(ctx, client.ObjectKeyFromObject(o), o)
-			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object %s %s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String())
-		}).
-			WithContext(ctx).
-			WithTimeout(time.Second*10).
-			WithPolling(time.Second*1).
-			Should(Succeed(), fmt.Sprintf("object %s %s should not be found in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String()))
-	}
+			innerG.Expect(apierrors.IsNotFound(err)).To(BeTrue(), "object %T %s should not be found in cluster", o, client.ObjectKeyFromObject(o).String())
+		}
+	}).
+		WithContext(ctx).
+		WithTimeout(time.Second*10).
+		WithPolling(time.Second*1).
+		Should(Succeed(), "objects should not be found in cluster")
 }
 
 func (p *Provider) ExpectNamespaceNotExist(ctx context.Context, ns string) {
