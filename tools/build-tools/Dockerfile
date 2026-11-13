@@ -78,6 +78,7 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 # go.mod is the single source of truth for Go, Helm, and Kind versions.
 # Tool install steps below extract their version from it at build time.
 COPY go.mod /tmp/go.mod
+COPY --chmod=0555 hack/download-github-release-asset.sh /usr/local/bin/download-github-release-asset
 
 # Go toolchain (version from the go.mod toolchain directive, falling back to the go directive)
 RUN set -eux; \
@@ -92,7 +93,7 @@ RUN set -eux; \
       arm64) PROTOC_ZIP="protoc-${PROTOC_VERSION}-linux-aarch_64.zip" ;; \
       *) echo "unsupported TARGETARCH ${TARGETARCH}"; exit 1 ;; \
     esac; \
-    wget -nv -O "/tmp/${PROTOC_ZIP}" "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"; \
+    download-github-release-asset protocolbuffers/protobuf "v${PROTOC_VERSION}" "${PROTOC_ZIP}" "/tmp/${PROTOC_ZIP}"; \
     unzip -q "/tmp/${PROTOC_ZIP}" -d /tmp/protoc; \
     mv /tmp/protoc/bin/protoc /usr/local/bin/protoc; \
     chmod 555 /usr/local/bin/protoc; \
@@ -121,12 +122,12 @@ RUN set -eux; \
 # buf
 RUN set -eux; \
     arch="$(uname -m)"; \
-    curl -fsSL -o /usr/local/bin/buf "https://github.com/bufbuild/buf/releases/download/${BUF_VERSION}/buf-Linux-${arch}"; \
+    download-github-release-asset bufbuild/buf "${BUF_VERSION}" "buf-Linux-${arch}" /usr/local/bin/buf; \
     chmod 555 /usr/local/bin/buf
 
 # yq
 RUN set -eux; \
-    curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TARGETARCH}"; \
+    download-github-release-asset mikefarah/yq "v${YQ_VERSION}" "yq_linux_${TARGETARCH}" /usr/local/bin/yq; \
     chmod 555 /usr/local/bin/yq
 
 # Rust toolchain (version sourced from rust-toolchain.toml)
