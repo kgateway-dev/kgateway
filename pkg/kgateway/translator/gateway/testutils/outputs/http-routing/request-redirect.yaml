@@ -117,6 +117,15 @@ Routes:
         portRedirect: 8080
         responseCode: TEMPORARY_REDIRECT
   - domains:
+    - rule-level-override-unnamed-rule.com
+    name: listener~8080~rule-level-override-unnamed-rule_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~rule-level-override-unnamed-rule_com-route-0-httproute-rule-level-override-unnamed-rule-default-0-0-matcher-0
+      redirect:
+        portRedirect: 8080
+  - domains:
     - rule-level-override.com
     name: listener~8080~rule-level-override_com
     routes:
@@ -158,7 +167,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 8
+      - attachedRoutes: 9
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -238,7 +247,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): invalid redirect status code: abc; must be one of 301, 302, 303, 307, 308
+            Replaced Rule (0): kgateway.dev/http-redirect-status-code annotation: invalid redirect status code: abc; must be one of 301, 302, 303, 307, 308
             no action specified
           reason: RouteRuleReplaced
           status: "False"
@@ -263,7 +272,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308
+            Replaced Rule (0): kgateway.dev/http-redirect-status-code annotation: invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308
             no action specified
           reason: RouteRuleReplaced
           status: "False"
@@ -347,6 +356,31 @@ Statuses:
           reason: Programmed
           status: "True"
           type: kgateway.dev/Programmed
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/rule-level-override-unnamed-rule:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: |-
+            kgateway.dev/http-redirect-status-code annotation:
+            entry "rule0=307" is unused: no rule is named "rule0"; a rule-scoped value only applies to a rule with that name
+          reason: HTTPRedirectStatusCodeIgnored
+          status: "True"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
         controllerName: kgateway
         parentRef:
           group: ""

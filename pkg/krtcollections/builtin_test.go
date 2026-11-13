@@ -304,6 +304,117 @@ func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
 	}
 }
 
+func TestUnusedRedirectStatusCodeEntries(t *testing.T) {
+	redirectRule := func(name string) gwv1.HTTPRouteRule {
+		r := gwv1.HTTPRouteRule{Filters: []gwv1.HTTPRouteFilter{{
+			Type:            gwv1.HTTPRouteFilterRequestRedirect,
+			RequestRedirect: &gwv1.HTTPRequestRedirectFilter{},
+		}}}
+		if name != "" {
+			r.Name = new(gwv1.SectionName(name))
+		}
+		return r
+	}
+	plainRule := func(name string) gwv1.HTTPRouteRule {
+		return gwv1.HTTPRouteRule{Name: new(gwv1.SectionName(name))}
+	}
+
+	tests := []struct {
+		name  string
+		value *string
+		rules []gwv1.HTTPRouteRule
+		want  []string
+	}{
+		{
+			name:  "no annotation",
+			rules: []gwv1.HTTPRouteRule{redirectRule("")},
+		},
+		{
+			name:  "every entry used",
+			value: new("rule1=307,rule2=308"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("rule1"), redirectRule("rule2")},
+		},
+		{
+			name:  "route-wide value used",
+			value: new("307"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("")},
+		},
+		{
+			name:  "used invalid entry is left to rule translation",
+			value: new("rule1=abc"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("rule1")},
+		},
+		{
+			name:  "empty value is left to rule translation",
+			value: new(""),
+			rules: []gwv1.HTTPRouteRule{redirectRule("")},
+		},
+		{
+			name:  "rule-scoped entry on an unnamed rule",
+			value: new("rule1=308"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("")},
+			want: []string{
+				`entry "rule1=308" is unused: no rule is named "rule1"; a rule-scoped value only applies to a rule with that name`,
+			},
+		},
+		{
+			name:  "rule without a RequestRedirect filter",
+			value: new("rule1=307,rule2=308"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("rule1"), plainRule("rule2")},
+			want:  []string{`entry "rule2=308" is unused: rule "rule2" has no RequestRedirect filter`},
+		},
+		{
+			name:  "no rule has a RequestRedirect filter",
+			value: new("307"),
+			rules: []gwv1.HTTPRouteRule{plainRule("rule1")},
+			want:  []string{`entry "307" is unused: no rule has a RequestRedirect filter`},
+		},
+		{
+			name:  "rule-scoped entry after a route-wide value",
+			value: new("301, rule1=308"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("rule1")},
+			want:  []string{`entry "rule1=308" is unused: an earlier entry applies to rule "rule1"`},
+		},
+		{
+			name:  "route-wide value after one for every rule",
+			value: new("rule1=308,301"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("rule1")},
+			want:  []string{`entry "301" is unused: an earlier entry applies to every rule with a RequestRedirect filter`},
+		},
+		{
+			name:  "invalid code in an unused entry",
+			value: new("rule1=307,rule9=abc,rule8=200"),
+			rules: []gwv1.HTTPRouteRule{redirectRule("rule1")},
+			want: []string{
+				`entry "rule9=abc" is unused: no rule is named "rule9"; a rule-scoped value only applies to a rule with that name; ` +
+					"invalid redirect status code: abc; must be one of 301, 302, 303, 307, 308",
+				`entry "rule8=200" is unused: no rule is named "rule8"; a rule-scoped value only applies to a rule with that name; ` +
+					"invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			route := &gwv1.HTTPRoute{Spec: gwv1.HTTPRouteSpec{Rules: tc.rules}}
+			if tc.value != nil {
+				route.Annotations = map[string]string{apiannotations.HTTPRedirectStatusCode: *tc.value}
+			}
+			assert.Equal(t, tc.want, UnusedRedirectStatusCodeEntries(route))
+		})
+	}
+}
+
+func TestTranslateStatusCodeNamesAnnotation(t *testing.T) {
+	_, err := translateStatusCode(nil, nil, map[string]string{apiannotations.HTTPRedirectStatusCode: "200"})
+	require.EqualError(t, err,
+		"kgateway.dev/http-redirect-status-code annotation: invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308")
+
+	code, err := translateStatusCode(new(308), nil, map[string]string{apiannotations.HTTPRedirectStatusCode: "rule1=301"})
+	require.NoError(t, err)
+	assert.Equal(t, envoyroutev3.RedirectAction_PERMANENT_REDIRECT, code, "an unnamed rule keeps its filter's statusCode")
+}
+
 func TestGetFractionPercent(t *testing.T) {
 	tests := []struct {
 		name                string

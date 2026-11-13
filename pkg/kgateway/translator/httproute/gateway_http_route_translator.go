@@ -2,12 +2,17 @@ package httproute
 
 import (
 	"context"
+	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -58,6 +63,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	if !ok {
 		return
 	}
+	reportUnusedRedirectStatusCodes(route, reporter)
 
 	for ruleIdx, rule := range route.Rules {
 		if len(rule.Matches) == 0 {
@@ -227,3 +233,24 @@ func applyBackendPlugins(
 	return nil, false
 }
 */
+
+// reportUnusedRedirectStatusCodes reports the entries of the route's
+// kgateway.dev/http-redirect-status-code annotation that no rule uses. Rule translation runs
+// later and replaces kgateway.dev/Programmed with False if a rule fails, so a failed rule is
+// never hidden by this condition.
+func reportUnusedRedirectStatusCodes(route *ir.HttpRouteIR, reporter reports.ParentRefReporter) {
+	hr, ok := route.SourceObject.(*gwv1.HTTPRoute)
+	if !ok || reporter == nil {
+		return
+	}
+	unused := krtcollections.UnusedRedirectStatusCodeEntries(hr)
+	if len(unused) == 0 {
+		return
+	}
+	reporter.SetCondition(reports.RouteCondition{
+		Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.RouteConditionReason(conditions.KgatewayReasonHTTPRedirectStatusCodeIgnored),
+		Message: annotations.HTTPRedirectStatusCode + " annotation:\n" + strings.Join(unused, "\n"),
+	})
+}
