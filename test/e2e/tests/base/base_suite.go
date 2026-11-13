@@ -742,10 +742,14 @@ func splitNamespaceResources(t *testing.T, content string) (namespaces, rest []s
 	return namespaces, rest
 }
 
-// DeleteManifests deletes the non-namespace resources in the manifests (fire-and-forget, no wait).
-// Namespace resources are intentionally skipped: namespaces are slow to delete, and deleting one
-// here would race the follow-up apply on a test retry. Namespaces belong to the base-level
-// manifests applied by SetupBaseConfig, whose teardown deletes and waits for them.
+// DeleteManifests deletes the non-namespace resources in the manifests and waits until they are
+// gone from the API server. Namespace resources are intentionally skipped: namespaces are slow to
+// delete, and deleting one here would race the follow-up apply on a test retry. Namespaces belong
+// to the base-level manifests applied by SetupBaseConfig, whose teardown deletes and waits for them.
+//
+// The wait matters because the Istio client's delete returns as soon as the API server accepts
+// it. Without it, the next test that applies an object with the same name (for example a bare Pod
+// with a different spec) patches the still-terminating object instead of creating a new one.
 //
 // Deletion goes through the Istio client (not client.Delete on parsed objects) so that resources
 // whose manifests omit metadata.namespace are resolved to the same default namespace the apply used.
@@ -755,19 +759,30 @@ func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 	s.Require().NoError(os.WriteFile(fp, []byte(nf), 0o600))
 	s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", fp))
 
-	if len(testCase.ManifestsWithTransform) == 0 {
-		return
+	if len(testCase.ManifestsWithTransform) > 0 {
+		transformedCfgs := []string{}
+		for manifest, transform := range testCase.ManifestsWithTransform {
+			d, err := os.ReadFile(manifest)
+			s.Require().NoError(err)
+			transformedCfgs = append(transformedCfgs, stripNamespaceResourcesFromContent(s.T(), transform(string(d))))
+		}
+		transformedFp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
+		s.Require().NoError(os.WriteFile(transformedFp, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
+		s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedFp))
 	}
 
-	transformedCfgs := []string{}
-	for manifest, transform := range testCase.ManifestsWithTransform {
-		d, err := os.ReadFile(manifest)
-		s.Require().NoError(err)
-		transformedCfgs = append(transformedCfgs, stripNamespaceResourcesFromContent(s.T(), transform(string(d))))
+	// loadManifestResources is a no-op if ApplyManifests already loaded them; it is called here in
+	// case ApplyManifests failed before getting that far.
+	s.loadManifestResources(testCase)
+	deleted := make([]client.Object, 0, len(testCase.manifestResources))
+	for _, obj := range testCase.manifestResources {
+		if _, ok := obj.(*corev1.Namespace); ok {
+			continue
+		}
+		// copy so polling Gets don't overwrite the cached objects with live state
+		deleted = append(deleted, obj.DeepCopyObject().(client.Object))
 	}
-	transformedFp := filepath.Join(s.TestInstallation.GeneratedFiles.TempDir, "delete_transformed_manifests.yaml")
-	s.Require().NoError(os.WriteFile(transformedFp, []byte(strings.Join(transformedCfgs, "\n---\n")), 0o600))
-	s.Require().NoError(s.TestInstallation.ClusterContext.IstioClient.DeleteYAMLFiles("", transformedFp))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, deleted...)
 }
 
 func (s *BaseTestingSuite) setupHelpers() {
