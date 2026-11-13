@@ -958,13 +958,13 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	if inPolicy.hasCors {
 		p.hasCorsPolicy[pCtx.FilterChainName] = true
 	}
-	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
-		backendPolicy.applyToBackend(pCtx)
-	} else {
-		logger.Error("filter policy is not supported on backendRef", "filter_type", inPolicy.filter.filterType)
-		// TODO: once we have warnings / non terminal errors we should return it here, so the policy status is updated.
-		return nil
+	backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend)
+	if !ok {
+		// The filter cannot apply to a single weighted backend, so the backend fails closed
+		// rather than forwarding without it.
+		return fmt.Errorf("%s filter is not supported on a backendRef: %w", inPolicy.filter.filterType, ir.ErrNotAttachable)
 	}
+	backendPolicy.applyToBackend(pCtx)
 
 	return nil
 }
