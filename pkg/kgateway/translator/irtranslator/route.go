@@ -92,32 +92,24 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 	attachedPolicies.Append(h.attachedPolicies, h.gw.AttachedHttpPolicies)
 
 	// Apply plugins and report status for each GK attached to the route config.
-	var errs []error
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-		pols := attachedPolicies.Policies[gk]
-		pass := h.pluginPass[gk]
-		if pass == nil {
-			continue
-		}
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.fc, pols...)
-		for _, pol := range policies {
-			if len(pol.Errors) > 0 {
-				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
-				continue
-			}
-			pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
-				FilterChainName:   h.fc.FilterChainName,
-				TypedFilterConfig: typedPerFilterConfigRoute,
-				Policy:            pol.PolicyIr,
-				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
-			}, cfg)
-		}
-		cfg.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, cfg.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
-	}
+	errs := applyPolicies(h.pluginPass, &attachedPolicies, &policyApplyOptions{
+		reporter:    h.reporter,
+		ancestorRef: h.listener.PolicyAncestorRef,
+		skipErrored: true,
+		metadata:    &cfg.Metadata,
+		reportErrored: func(pols []ir.PolicyAtt) {
+			reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.fc, pols...)
+		},
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
+			FilterChainName:   h.fc.FilterChainName,
+			TypedFilterConfig: typedPerFilterConfigRoute,
+			Policy:            pol.PolicyIr,
+			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
+		}, cfg)
+		return nil
+	})
 	validationCtx := newRouteValidationContext(computedVhosts)
 	if len(errs) > 0 {
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
@@ -809,32 +801,20 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 	// its PolicyAncestorRef is fixed to whichever Gateway/ListenerSet happened to be
 	// first in the merge, which misattributes status for every other parent sharing
 	// the port. virtualHost.ParentRef is the listener that actually won this vhost.
-	ancestorRef := virtualHost.ParentRef.PolicyAncestorRef
-	var errs []error
-	for _, gk := range virtualHost.AttachedPolicies.ApplyOrderedGroupKinds() {
-		pols := virtualHost.AttachedPolicies.Policies[gk]
-		pass := h.pluginPass[gk]
-		if pass == nil {
-			continue
-		}
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			if len(pol.Errors) > 0 {
-				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
-				continue
-			}
-			pctx := &ir.VirtualHostContext{
-				Policy:            pol.PolicyIr,
-				TypedFilterConfig: typedPerFilterConfig,
-				FilterChainName:   h.fc.FilterChainName,
-				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
-			}
-			pass.ApplyVhostPlugin(pctx, out)
-		}
-		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
-	}
+	errs := applyPolicies(h.pluginPass, &virtualHost.AttachedPolicies, &policyApplyOptions{
+		reporter:    h.reporter,
+		ancestorRef: virtualHost.ParentRef.PolicyAncestorRef,
+		skipErrored: true,
+		metadata:    &out.Metadata,
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pass.ApplyVhostPlugin(&ir.VirtualHostContext{
+			Policy:            pol.PolicyIr,
+			TypedFilterConfig: typedPerFilterConfig,
+			FilterChainName:   h.fc.FilterChainName,
+			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
+		}, out)
+		return nil
+	})
 	return errors.Join(errs...)
 }
 
@@ -869,45 +849,32 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		delegatingParent = delegatingParent.DelegatingParent
 	}
 
-	var errs []error
-	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-		pols := attachedPolicies.Policies[gk]
-		pass := h.pluginPass[gk]
-		if pass == nil {
-			// TODO: should never happen, log error and report condition
-			continue
-		}
-		pctx := &ir.RouteContext{
-			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
-			FilterChainName:   h.fc.FilterChainName,
-			In:                in,
-			TypedFilterConfig: typedPerFilterConfig,
-			ListenerPort:      h.listener.BindPort,
-			ListenerHasTLS:    h.fc.TLS != nil,
-		}
-		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			// Builtin policies use InheritedPolicyPriority
-			pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
-
-			// skip plugin application if we encountered any errors while constructing
-			// the policy IR.
-			if len(pol.Errors) > 0 {
-				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
-				continue
-			}
-
-			pctx.Policy = pol.PolicyIr
-			err := pass.ApplyForRoute(pctx, out)
-			if err != nil {
-				errs = append(errs, err)
+	// One context per group kind, shared by that group kind's policies. Each group kind has
+	// its own translation pass, so a new pass starts a new group kind.
+	var pctx *ir.RouteContext
+	var pctxPass *TranslationPass
+	errs := applyPolicies(h.pluginPass, &attachedPolicies, &policyApplyOptions{
+		reporter:    h.reporter,
+		ancestorRef: routeAncestorRef(in, h.listener.PolicyAncestorRef),
+		skipErrored: true,
+		metadata:    &out.Metadata,
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		if pass != pctxPass {
+			pctxPass = pass
+			pctx = &ir.RouteContext{
+				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
+				FilterChainName:   h.fc.FilterChainName,
+				In:                in,
+				TypedFilterConfig: typedPerFilterConfig,
+				ListenerPort:      h.listener.BindPort,
+				ListenerHasTLS:    h.fc.TLS != nil,
 			}
 		}
-		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
-		reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
-	}
+		// Builtin policies use InheritedPolicyPriority
+		pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
+		pctx.Policy = pol.PolicyIr
+		return pass.ApplyForRoute(pctx, out)
+	})
 
 	return errors.Join(errs...)
 }
@@ -927,35 +894,14 @@ func routeAncestorRef(in ir.HttpRouteRuleMatchIR, fallbackRef gwv1.ParentReferen
 	return in.ListenerParentRef
 }
 
-func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyAtt, ir.MergeOrigins) {
-	if pass.MergePolicies != nil {
-		mergedPolicy := pass.MergePolicies(policies)
-		merged := [1]ir.PolicyAtt{mergedPolicy}
-		return merged[:], mergedPolicy.MergeOrigins
-	}
-
-	return policies, nil
-}
-
 func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, ancestorRef gwv1.ParentReference, pCtx *ir.RouteBackendContext) error {
-	var errs []error
-	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
-		pols := in.AttachedPolicies.Policies[gk]
-		pass := h.pluginPass[gk]
-		if pass == nil {
-			// TODO: should never happen, log error and report condition
-			continue
-		}
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
-		policies, _ := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			// Policy on extension ref
-			err := pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
-	}
+	errs := applyPolicies(h.pluginPass, &in.AttachedPolicies, &policyApplyOptions{
+		reporter:    h.reporter,
+		ancestorRef: ancestorRef,
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		// Policy on extension ref
+		return pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
+	})
 	return errors.Join(errs...)
 }
 

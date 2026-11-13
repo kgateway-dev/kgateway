@@ -224,32 +224,26 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
-	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-		pols := attachedPolicies.Policies[gk]
-		pass := h.pluginPass[gk]
-		if pass == nil {
-			// TODO: report user error - they attached a non http policy
-			continue
+	// TODO: report user error when a policy without an http translation pass is attached
+	applyPolicies(h.pluginPass, &attachedPolicies, &policyApplyOptions{
+		reporter:    h.reporter,
+		ancestorRef: h.policyAncestorRef,
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pctx := &ir.HcmContext{
+			ListenerPort: h.lis.BindPort,
+			Policy:       pol.PolicyIr,
+			Gateway:      h.gateway,
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, pols...)
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			pctx := &ir.HcmContext{
-				ListenerPort: h.lis.BindPort,
-				Policy:       pol.PolicyIr,
-				Gateway:      h.gateway,
-			}
-			if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
-				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
-					Type:    gwv1.ListenerConditionProgrammed,
-					Reason:  gwv1.ListenerReasonInvalid,
-					Status:  metav1.ConditionFalse,
-					Message: "Error processing HCM plugin: " + err.Error(),
-				})
-			}
+		if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
+			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing HCM plugin: " + err.Error(),
+			})
 		}
-		reportPolicyAttachmentStatus(h.reporter, h.policyAncestorRef, mergeOrigins, pols...)
-	}
+		return nil
+	})
 
 	// TODO: should we enable websockets by default?
 
@@ -485,54 +479,56 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
+	apply := func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pctx := &ir.TcpProxyContext{
+			ListenerPort: h.listener.BindPort,
+			Policy:       pol.PolicyIr,
+			Gateway:      h.gateway,
+		}
+		if err := pass.ApplyTcpProxy(pctx, out); err != nil {
+			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing TcpProxy plugin: " + err.Error(),
+			})
+		}
+		return nil
+	}
+	reported := &policyApplyOptions{reporter: h.reporter, ancestorRef: h.listener.PolicyAncestorRef}
+	unreported := &policyApplyOptions{}
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
 		pass := h.pluginPass[gk]
 		if pass == nil {
 			continue
 		}
+		tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass)
+		if !ok {
+			applyPolicyGroup(gk, pass, pols, unreported, apply)
+			continue
+		}
 		// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
 		// this chain's Gateway listener only get it here, and only when they have an effect on
 		// TCP filter chains. The others are left out of the merge as well, so that they do not
 		// show up in the merge origins of the policies that do apply.
-		reportStatus := false
-		if tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass); ok {
-			pols = nil
-			for _, pol := range l.AttachedPolicies.Policies[gk] {
-				if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
-					pols = append(pols, pol)
-				}
-			}
-			// Gateway-wide policies are reported again alongside listener policies so that
-			// overriding them is reflected in their attachment state.
-			reportStatus = h.reporter != nil && len(pols) > 0
-			pols = append(pols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
-			if len(pols) == 0 {
-				continue
+		pols = nil
+		for _, pol := range l.AttachedPolicies.Policies[gk] {
+			if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
+				pols = append(pols, pol)
 			}
 		}
-		if reportStatus {
-			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		// Gateway-wide policies are reported again alongside listener policies so that
+		// overriding them is reflected in their attachment state.
+		opts := unreported
+		if h.reporter != nil && len(pols) > 0 {
+			opts = reported
 		}
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			pctx := &ir.TcpProxyContext{
-				ListenerPort: h.listener.BindPort,
-				Policy:       pol.PolicyIr,
-				Gateway:      h.gateway,
-			}
-			if err := pass.ApplyTcpProxy(pctx, out); err != nil {
-				listenerReporter.SetCondition(sdkreporter.ListenerCondition{
-					Type:    gwv1.ListenerConditionProgrammed,
-					Reason:  gwv1.ListenerReasonInvalid,
-					Status:  metav1.ConditionFalse,
-					Message: "Error processing TcpProxy plugin: " + err.Error(),
-				})
-			}
+		pols = append(pols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
+		if len(pols) == 0 {
+			continue
 		}
-		if reportStatus {
-			reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
-		}
+		applyPolicyGroup(gk, pass, pols, opts, apply)
 	}
 }
 
