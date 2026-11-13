@@ -399,6 +399,12 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 			memoryLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitEnv)
 			require.Equal(t, test.want, memoryLimit.Value)
 			require.Nil(t, memoryLimit.ValueFrom)
+			fallbackLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitFallbackEnv)
+			require.Empty(t, fallbackLimit.Value)
+			require.NotNil(t, fallbackLimit.ValueFrom)
+			require.NotNil(t, fallbackLimit.ValueFrom.ResourceFieldRef)
+			require.Equal(t, "limits.memory", fallbackLimit.ValueFrom.ResourceFieldRef.Resource)
+			require.Equal(t, "1", fallbackLimit.ValueFrom.ResourceFieldRef.Divisor.String())
 			_, found := lookupContainerEnvVar(container, "GOMEMLIMIT")
 			require.False(t, found, "GOMEMLIMIT should not mask container-aware configuration")
 		})
@@ -409,11 +415,14 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
   goMemLimitPercent: 0
 `, nil)
 		deployment := findDeployment(t, output)
-		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		container := deployment.Spec.Template.Spec.Containers[0]
+		memoryLimit := findContainerEnvVar(t, container, "GOMEMLIMIT")
 		require.Empty(t, memoryLimit.Value)
 		require.NotNil(t, memoryLimit.ValueFrom)
 		require.NotNil(t, memoryLimit.ValueFrom.ResourceFieldRef)
 		require.Equal(t, "limits.memory", memoryLimit.ValueFrom.ResourceFieldRef.Resource)
+		_, found := lookupContainerEnvVar(container, goruntime.AutoMemoryLimitFallbackEnv)
+		require.False(t, found)
 	})
 
 	t.Run("allows extraEnv to override the generated fallback", func(t *testing.T) {
@@ -445,8 +454,33 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 		container := deployment.Spec.Template.Spec.Containers[0]
 		autoMemoryLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitEnv)
 		require.Equal(t, "0.75", autoMemoryLimit.Value)
+		fallbackLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitFallbackEnv)
+		require.NotNil(t, fallbackLimit.ValueFrom)
+		require.NotNil(t, fallbackLimit.ValueFrom.ResourceFieldRef)
+		require.Equal(t, "limits.memory", fallbackLimit.ValueFrom.ResourceFieldRef.Resource)
 		_, found := lookupContainerEnvVar(container, "GOMEMLIMIT")
 		require.False(t, found, "GOMEMLIMIT should not mask AUTOMEMLIMIT")
+	})
+
+	t.Run("allows extraEnv to override the container-aware fallback", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  goMemLimitPercent: 80
+  extraEnv:
+    KGW_GOMEMLIMIT_FALLBACK: "1073741824"
+`, nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		fallbackLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitFallbackEnv)
+		require.Equal(t, "1073741824", fallbackLimit.Value)
+		require.Nil(t, fallbackLimit.ValueFrom)
+
+		count := 0
+		for _, envVar := range container.Env {
+			if envVar.Name == goruntime.AutoMemoryLimitFallbackEnv {
+				count++
+			}
+		}
+		require.Equal(t, 1, count)
 	})
 
 	t.Run("allows extraEnv to disable container awareness", func(t *testing.T) {
@@ -460,6 +494,8 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 		require.Equal(t, "off", autoMemoryLimit.Value)
 		_, found := lookupContainerEnvVar(container, "GOMEMLIMIT")
 		require.False(t, found, "GOMEMLIMIT should not mask an explicit AUTOMEMLIMIT=off")
+		_, foundFallback := lookupContainerEnvVar(container, goruntime.AutoMemoryLimitFallbackEnv)
+		require.False(t, foundFallback)
 	})
 
 	t.Run("allows a null percentage as unset", func(t *testing.T) {
