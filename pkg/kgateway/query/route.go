@@ -249,13 +249,13 @@ func (r *gatewayQueries) getDelegatedChildren(
 
 	children := NewBackendMap[[]*RouteInfo]()
 	for _, parentRule := range parent.Rules {
-		var refChildren []*RouteInfo
 		for _, backendRef := range parentRule.Backends {
 			// Check if the backend reference is an HTTPRoute
 			if backendRef.Delegate == nil {
 				continue
 			}
 			ref := *backendRef.Delegate
+			var refChildren []*RouteInfo
 			// Fetch child routes based on the backend reference
 			referencedRoutes, err := r.fetchRoutesByRef(kctx, backendRef)
 			if err != nil {
