@@ -16,11 +16,12 @@ import (
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
+// NewGatewayExtensionsCollection returns the raw GatewayExtensions and their IR.
 func NewGatewayExtensionsCollection(
 	ctx context.Context,
 	client apiclient.Client,
 	krtOpts krtutil.KrtOptions,
-) krt.Collection[ir.GatewayExtension] {
+) (krt.Collection[*kgateway.GatewayExtension], krt.Collection[ir.GatewayExtension]) {
 	rawGwExts := krt.WrapClient(kclient.NewFilteredDelayed[*kgateway.GatewayExtension](
 		client,
 		wellknown.GatewayExtensionGVR,
@@ -38,6 +39,7 @@ func NewGatewayExtensionsCollection(
 				Namespace: cr.Namespace,
 				Name:      cr.Name,
 			},
+			Generation:       cr.Generation,
 			ExtAuth:          cr.Spec.ExtAuth,
 			ExtProc:          cr.Spec.ExtProc,
 			RateLimit:        cr.Spec.RateLimit,
@@ -47,5 +49,5 @@ func NewGatewayExtensionsCollection(
 		}
 		return gwExt
 	})
-	return gwExtCol
+	return rawGwExts, gwExtCol
 }

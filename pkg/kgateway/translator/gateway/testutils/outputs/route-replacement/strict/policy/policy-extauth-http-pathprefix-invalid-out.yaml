@@ -62,6 +62,14 @@ Routes:
         prefix: /
       name: listener~8080~test_example_com-route-0-httproute-httpbin-route-gwtest-0-0-matcher-0
 Statuses:
+  gatewayExtensions:
+    gwtest/oauth2-proxy-extauth:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     gwtest/example-gateway:
       conditions:

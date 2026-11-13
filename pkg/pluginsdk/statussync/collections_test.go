@@ -243,3 +243,31 @@ func routeContribution(t *testing.T, route *gwv1.HTTPRoute, source reports.Statu
 	require.Len(t, contributions, 1)
 	return contributions[0]
 }
+
+func TestRegisterDerivedKindEnqueuesOwnerOfChangedStatusRow(t *testing.T) {
+	stop := test.NewStop(t)
+	gvk := schema.GroupVersionKind{Group: "gateway.kgateway.dev", Version: "v1alpha1", Kind: "GatewayExtension"}
+	nn := types.NamespacedName{Namespace: "default", Name: "ext"}
+	objects := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{{ObjectMeta: metav1.ObjectMeta{Namespace: nn.Namespace, Name: nn.Name}}}, krt.WithStop(stop))
+	rows := krt.NewMutableCollection(nil, []derivedRow{{nn: nn, msg: "accepted"}}, krt.WithStop(stop))
+
+	sources := NewStatusCollections()
+	queue := &recordingQueue{}
+	RegisterDerivedKind(sources, gvk, objects, rows.AsCollection(), func(r derivedRow) types.NamespacedName { return r.nn })
+	require.True(t, sources.HasSynced(), "the status rows must be part of the cache-sync barrier")
+	sources.SetQueue(queue)
+
+	want := Resource{GroupVersionKind: gvk, NamespacedName: nn}
+	require.Equal(t, []Resource{want, want}, queue.awaitResources(t, 2), "leadership acquisition must sweep both the objects and their status rows")
+
+	rows.UpdateObject(derivedRow{nn: nn, msg: "invalid"})
+	require.Equal(t, want, queue.awaitResources(t, 3)[2], "a changed status row must enqueue its owner")
+}
+
+type derivedRow struct {
+	nn  types.NamespacedName
+	msg string
+}
+
+func (r derivedRow) ResourceName() string         { return r.nn.String() }
+func (r derivedRow) Equals(other derivedRow) bool { return r.nn == other.nn && r.msg == other.msg }

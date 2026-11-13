@@ -203,6 +203,14 @@ Statuses:
         reason: Accepted
         status: "True"
         type: Accepted
+  gatewayExtensions:
+    default/oauth-jwks:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/test:
       conditions:

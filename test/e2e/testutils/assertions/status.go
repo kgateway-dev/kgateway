@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -476,11 +477,44 @@ func (p *Provider) EventuallyBackendCondition(
 	timeout ...time.Duration,
 ) {
 	ginkgo.GinkgoHelper()
+	eventuallyCondition(ctx, p, &kgateway.Backend{}, name, namespace,
+		func(o *kgateway.Backend) []metav1.Condition { return o.Status.Conditions },
+		condition, expect, timeout...)
+}
+
+// EventuallyGatewayExtensionCondition checks that provided GatewayExtension condition is set to expect.
+func (p *Provider) EventuallyGatewayExtensionCondition(
+	ctx context.Context,
+	name string,
+	namespace string,
+	condition string,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	eventuallyCondition(ctx, p, &kgateway.GatewayExtension{}, name, namespace,
+		func(o *kgateway.GatewayExtension) []metav1.Condition { return o.Status.Conditions },
+		condition, expect, timeout...)
+}
+
+// eventuallyCondition checks that the named object's condition is set to expect, reading the
+// object into obj and its conditions through conditions.
+func eventuallyCondition[T client.Object](
+	ctx context.Context,
+	p *Provider,
+	obj T,
+	name string,
+	namespace string,
+	conditions func(T) []metav1.Condition,
+	condition string,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		backend := &kgateway.Backend{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Backend %s/%s", namespace, name))
-		g.Expect(backend.Status.Conditions).To(matchers.HaveCondition(condition, expect))
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, obj)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get %T %s/%s", obj, namespace, name))
+		g.Expect(conditions(obj)).To(matchers.HaveCondition(condition, expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

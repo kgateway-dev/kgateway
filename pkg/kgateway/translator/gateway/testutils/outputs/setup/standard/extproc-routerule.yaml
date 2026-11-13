@@ -170,6 +170,14 @@ Routes:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
           overrides: {}
 Statuses:
+  gatewayExtensions:
+    gwtest/extproc-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     gwtest/http-gw-for-test:
       conditions:

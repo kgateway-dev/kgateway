@@ -178,6 +178,14 @@ Routes:
           buffer:
             maxRequestBytes: 65536
 Statuses:
+  gatewayExtensions:
+    default/extauth:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/test:
       conditions:

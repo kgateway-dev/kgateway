@@ -52,6 +52,14 @@ Routes:
         prefix: /
       name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
 Statuses:
+  gatewayExtensions:
+    other-ns/jwt-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

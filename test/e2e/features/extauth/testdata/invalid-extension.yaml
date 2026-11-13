@@ -1,0 +1,14 @@
+# A GatewayExtension whose ext_authz backend does not exist; translation fails, so it reports
+# Accepted=False.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  namespace: kgateway-base
+  name: missing-backend-extauth
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: no-such-service
+        port: 4444

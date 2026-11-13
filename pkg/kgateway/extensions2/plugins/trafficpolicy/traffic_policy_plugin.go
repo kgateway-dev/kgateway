@@ -353,6 +353,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			},
 		},
 		ExtraHasSynced: constructor.HasSynced,
+		RegisterStatus: registerGatewayExtensionStatus(commoncol, constructor.gatewayExtensions), //nolint:contextcheck // only ctx use in the chain is a slog level check
 	}
 }
 
