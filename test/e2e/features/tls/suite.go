@@ -4,18 +4,26 @@ package tls
 
 import (
 	"context"
+	cryptotls "crypto/tls"
+	"encoding/pem"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 // TODO: Add negative test case to verify that invalid/malformed TLS certificates
@@ -76,16 +84,45 @@ func (s *testingSuite) TestTLSCertificateRotation() {
 	)
 
 	// generate a new certificate for rotation and update Secret
-	rotatedSecretYAML, err := SecretManifest(s.TestInstallation.Metadata.InstallNamespace, DefaultExpiration)
+	installNs := s.TestInstallation.Metadata.InstallNamespace
+	rotatedSecretYAML, rotatedCertPEM, err := secretManifestWithCert(installNs, DefaultExpiration)
 	s.Require().NoError(err, "failed to generate rotated certificate")
 
 	err = s.TestInstallation.ClusterContext.Manifests().Apply(rotatedSecretYAML)
 	s.Require().NoError(err, "failed to apply rotated TLS secret")
 
-	// wait for certificate rotation to propagate. arbitrary sleep used here to allow
-	// time for kubelet and the control plane's certificate watcher to detect the change
-	// and propagate the change throughout.
-	time.Sleep(10 * time.Second)
+	// The kubelet rewrites a mounted Secret only when it next syncs the Pod, which can
+	// take over a minute. Any Pod update triggers that sync, so touch an annotation.
+	pods, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods(installNs).List(s.Ctx, metav1.ListOptions{LabelSelector: testdefaults.KGatewayPodLabel})
+	s.Require().NoError(err, "failed to list control plane pods")
+	s.Require().NotEmpty(pods.Items, "no control plane pods found")
+	patch := fmt.Sprintf(`{"metadata":{"annotations":{"e2e.kgateway.dev/secret-rotated-at":%q}}}`, time.Now().Format(time.RFC3339Nano))
+	for _, pod := range pods.Items {
+		_, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods(installNs).Patch(s.Ctx, pod.Name, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
+		s.Require().NoError(err, "failed to annotate control plane pod %s", pod.Name)
+	}
+
+	// wait until the control plane's certificate watcher serves the rotated certificate on the xDS port
+	block, _ := pem.Decode(rotatedCertPEM)
+	s.Require().NotNil(block, "failed to decode rotated certificate")
+	fwd := portforward.NewApiPortForwarder(
+		portforward.WithKubeContext(s.TestInstallation.ClusterContext.KubeContext),
+		portforward.WithService(helpers.DefaultKgatewayDeploymentName, installNs),
+		portforward.WithRemotePort(int(wellknown.DefaultXdsPort)),
+	)
+	s.Require().NoError(fwd.Start(s.Ctx), "failed to port-forward to the xDS port")
+	defer fwd.Close()
+	// Only the served certificate matters here, not whether it is trusted.
+	dialer := &cryptotls.Dialer{Config: &cryptotls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}}} //nolint:gosec
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		// Bound each attempt so a stalled handshake fails it instead of blocking the poll.
+		ctx, cancel := context.WithTimeout(s.Ctx, 5*time.Second)
+		defer cancel()
+		conn, err := dialer.DialContext(ctx, "tcp", fwd.Address())
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "TLS handshake with the xDS port failed")
+		defer conn.Close()
+		g.Expect(conn.(*cryptotls.Conn).ConnectionState().PeerCertificates[0].Raw).To(gomega.Equal(block.Bytes), "xDS port does not serve the rotated certificate yet")
+	}).WithTimeout(2 * time.Minute).WithPolling(100 * time.Millisecond).Should(gomega.Succeed())
 
 	// verify traffic still works after rotation
 	common.BaseGateway.Send(
