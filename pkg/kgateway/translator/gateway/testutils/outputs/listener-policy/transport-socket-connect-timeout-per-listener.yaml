@@ -384,9 +384,9 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Overridden due to conflict with higher priority policy in target(s)
-          reason: Overridden
-          status: "False"
+          message: Merged with other policies in target(s) and attached
+          reason: Merged
+          status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway
     ListenerPolicy/default/tenant-a-override:
