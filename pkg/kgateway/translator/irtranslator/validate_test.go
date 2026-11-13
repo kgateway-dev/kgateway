@@ -3,13 +3,17 @@ package irtranslator
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 )
@@ -166,4 +170,128 @@ func TestValidateRoute_StrictMatcherFailure(t *testing.T) {
 	assert.True(t, errors.Is(err, ErrInvalidMatcher))
 	assert.False(t, errors.Is(err, ErrInvalidRoute))
 	assert.Equal(t, int32(2), v.calls.Load())
+}
+
+// Host and pseudo-header mutations NACK the entire RouteConfiguration in Envoy.
+// Validate both route-level and backendRef filters before publishing it.
+func TestValidateRoute_HeaderMutations(t *testing.T) {
+	for _, mode := range []apisettings.ValidationMode{apisettings.ValidationStandard, apisettings.ValidationStrict} {
+		for _, backend := range []bool{false, true} {
+			for _, response := range []bool{false, true} {
+				for _, operation := range []string{"add", "set", "remove"} {
+					for _, name := range []string{"host", "Host", "hOsT", ":authority", ":path", ":status", "X-Forwarded-Host", "X-Test"} {
+						t.Run(fmt.Sprintf("%s/backend=%t/response=%t/%s/%s", mode, backend, response, operation, name), func(t *testing.T) {
+							r := newRouteWithPrefix("/")
+							r.GetRoute().HostRewriteSpecifier = &envoyroutev3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "backend.example.com"}
+							var add []*envoycorev3.HeaderValueOption
+							var remove []string
+							if operation == "remove" {
+								remove = []string{name}
+							} else {
+								action := envoycorev3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+								if operation == "set" {
+									action = envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+								}
+								add = []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: name, Value: "api.example.com"}, AppendAction: action}}
+							}
+							if backend {
+								c := &envoyroutev3.WeightedCluster_ClusterWeight{Name: "c", Weight: wrapperspb.UInt32(1)}
+								if response {
+									c.ResponseHeadersToAdd, c.ResponseHeadersToRemove = add, remove
+								} else {
+									c.RequestHeadersToAdd, c.RequestHeadersToRemove = add, remove
+								}
+								r.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{WeightedClusters: &envoyroutev3.WeightedCluster{Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{c}}}
+							} else if response {
+								r.ResponseHeadersToAdd, r.ResponseHeadersToRemove = add, remove
+							} else {
+								r.RequestHeadersToAdd, r.RequestHeadersToRemove = add, remove
+							}
+							v := &countingValidator{}
+							err := validateRoute(context.Background(), r, v, mode)
+							if strings.HasPrefix(name, "X-") {
+								require.NoError(t, err)
+							} else {
+								require.ErrorIs(t, err, ErrInvalidRoute)
+								require.NotErrorIs(t, err, ErrInvalidMatcher)
+								require.ErrorContains(t, err, name)
+								require.Zero(t, v.calls.Load(), "invalid headers must be caught without invoking Envoy")
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+}
+
+// A header value Envoy cannot parse as a substitution format NACKs the entire
+// RouteConfiguration, as does a host rewrite containing CR or LF. Catch both in
+// standard mode on the route and on each weighted cluster.
+func TestValidateRoute_HeaderValuesAndHostRewrite(t *testing.T) {
+	for _, mode := range []apisettings.ValidationMode{apisettings.ValidationStandard, apisettings.ValidationStrict} {
+		for _, backend := range []bool{false, true} {
+			for _, response := range []bool{false, true} {
+				for value, valid := range map[string]bool{
+					"%REQ(x-id)%":     true,
+					"100%%":           true,
+					"%REQ(x-id":       false,
+					"%RESPONSE(x-id)": false,
+					"100%":            false,
+					"a\r\nb: c":       false,
+				} {
+					t.Run(fmt.Sprintf("%s/backend=%t/response=%t/%q", mode, backend, response, value), func(t *testing.T) {
+						r := newRouteWithPrefix("/")
+						add := []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "x-test", Value: value}}}
+						if backend {
+							c := &envoyroutev3.WeightedCluster_ClusterWeight{Name: "c", Weight: wrapperspb.UInt32(1)}
+							if response {
+								c.ResponseHeadersToAdd = add
+							} else {
+								c.RequestHeadersToAdd = add
+							}
+							r.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{WeightedClusters: &envoyroutev3.WeightedCluster{Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{c}}}
+						} else if response {
+							r.ResponseHeadersToAdd = add
+						} else {
+							r.RequestHeadersToAdd = add
+						}
+						v := &countingValidator{}
+						err := validateRoute(context.Background(), r, v, mode)
+						if valid {
+							require.NoError(t, err)
+							return
+						}
+						require.ErrorIs(t, err, ErrInvalidRoute)
+						require.ErrorContains(t, err, `invalid value for header "x-test"`)
+						require.Zero(t, v.calls.Load(), "invalid values must be caught without invoking Envoy")
+					})
+				}
+			}
+		}
+	}
+
+	for _, backend := range []bool{false, true} {
+		for host, valid := range map[string]bool{"api.example.com": true, "100%": true, "a\r\nb": false} {
+			t.Run(fmt.Sprintf("host rewrite/backend=%t/%q", backend, host), func(t *testing.T) {
+				r := newRouteWithPrefix("/")
+				if backend {
+					c := &envoyroutev3.WeightedCluster_ClusterWeight{
+						Name: "c", Weight: wrapperspb.UInt32(1),
+						HostRewriteSpecifier: &envoyroutev3.WeightedCluster_ClusterWeight_HostRewriteLiteral{HostRewriteLiteral: host},
+					}
+					r.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{WeightedClusters: &envoyroutev3.WeightedCluster{Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{c}}}
+				} else {
+					r.GetRoute().HostRewriteSpecifier = &envoyroutev3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: host}
+				}
+				err := validateRoute(context.Background(), r, &countingValidator{}, apisettings.ValidationStandard)
+				if valid {
+					require.NoError(t, err)
+					return
+				}
+				require.ErrorIs(t, err, ErrInvalidRoute)
+				require.ErrorContains(t, err, "invalid host rewrite")
+			})
+		}
+	}
 }

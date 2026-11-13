@@ -215,3 +215,13 @@ func TestKrtDebugRedactsInlineTunnelHeaders(t *testing.T) {
 	assert.False(t, strings.Contains(dump, inlineValue), "inline tunnel header values must be redacted from KRT debug output")
 	assert.True(t, strings.Contains(dump, redactedValue), "the redacted header must stay visible in KRT debug output")
 }
+
+// Envoy configures tunneling headers with its route HeaderParser, which
+// rejects host and pseudo-headers and would NACK the listener.
+func TestNormalizeTunnelHeadersRejectsHost(t *testing.T) {
+	for _, name := range []gwv1.HTTPHeaderName{"Host", "host"} {
+		err := normalizeTunnelHeaders([]gwv1.HTTPHeader{{Name: name, Value: "proxy.example.com"}})
+		require.ErrorContains(t, err, `cannot set header "`+string(name)+`"`)
+	}
+	require.NoError(t, normalizeTunnelHeaders([]gwv1.HTTPHeader{{Name: "X-Host", Value: "proxy.example.com"}}))
+}

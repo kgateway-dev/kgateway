@@ -105,8 +105,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: |-
-            Replaced Rule (0): invalid route configuration
-            validation failed: invalid xds configuration: error initializing configuration '/dev/fd/0': Incorrect configuration: %RESPONSE(Invalid-Variable). Couldn't find valid command at position 0
+            Replaced Rule (0): error listener~8080~www_example_com-route-0-httproute-invalid-response-header-modifier-route-gwtest-0-0-matcher-0: invalid value for header "x-response-id": no valid substitution command at position 0; use %% for a literal %
+            invalid route configuration
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed

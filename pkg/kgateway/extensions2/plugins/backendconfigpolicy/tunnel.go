@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyheaders"
 )
 
 // redactedValue replaces inline header values in KRT diagnostics.
@@ -82,6 +83,9 @@ func normalizeTunnelHeaders(headers []gwv1.HTTPHeader) error {
 		// Secret files often end with a newline.
 		value := strings.TrimSpace(h.Value)
 		switch {
+		case !envoyheaders.IsMutable(string(h.Name)):
+			// Envoy configures tunneling headers with its route HeaderParser.
+			return fmt.Errorf("cannot set header %q: Envoy does not allow modifying host or :-prefixed pseudo-headers", h.Name)
 		case value == "":
 			return fmt.Errorf("header %s has an empty value", h.Name)
 		case !tunnelHeaderValuePattern.MatchString(value):

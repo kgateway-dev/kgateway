@@ -681,14 +681,21 @@ type headerModifierIr struct {
 	Add       []*envoycorev3.HeaderValueOption
 	Remove    []string
 	IsRequest bool // true=request, false=response
+	// HostRewrite carries a request `set: Host`. Envoy rejects Host in
+	// request_headers_to_add, so a route rule rewrites the host instead.
+	HostRewrite *envoyroutev3.RouteAction_HostRewriteLiteral
 }
 
 func (h *headerModifierIr) apply(
 	outputRoute *envoyroutev3.Route,
-	_ policy.MergeOptions,
+	mergeOpts policy.MergeOptions,
 ) {
 	if outputRoute == nil {
 		return
+	}
+	if h.HostRewrite != nil && outputRoute.GetRoute() != nil &&
+		policy.IsSettable(outputRoute.GetRoute().GetHostRewriteSpecifier(), mergeOpts) {
+		outputRoute.GetRoute().HostRewriteSpecifier = h.HostRewrite
 	}
 	if h.IsRequest {
 		outputRoute.RequestHeadersToAdd = append(outputRoute.GetRequestHeadersToAdd(), h.Add...)
@@ -700,22 +707,36 @@ func (h *headerModifierIr) apply(
 }
 
 func (h *headerModifierIr) applyToBackend(pCtx *ir.RouteBackendContext) {
-	if h.IsRequest {
-		pCtx.RequestHeadersToAdd = h.Add
-		pCtx.RequestHeadersToRemove = h.Remove
-	} else {
+	// A backendRef has no host rewrite to carry `set: Host`, so it stays a
+	// header and route validation rejects it.
+	if !h.IsRequest {
 		pCtx.ResponseHeadersToAdd = h.Add
 		pCtx.ResponseHeadersToRemove = h.Remove
+		return
 	}
+	add := h.Add
+	if h.HostRewrite != nil {
+		add = append(slices.Clip(add), &envoycorev3.HeaderValueOption{
+			Header:       &envoycorev3.HeaderValue{Key: hostHeader, Value: h.HostRewrite.HostRewriteLiteral},
+			AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+		})
+	}
+	pCtx.RequestHeadersToAdd = add
+	pCtx.RequestHeadersToRemove = h.Remove
 }
+
+const hostHeader = "Host"
 
 func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isRequest bool) *headerModifierIr {
 	if f == nil {
 		return nil
 	}
-	var add []*envoycorev3.HeaderValueOption
+	out := &headerModifierIr{
+		Remove:    f.Remove,
+		IsRequest: isRequest,
+	}
 	for _, h := range f.Add {
-		add = append(add, &envoycorev3.HeaderValueOption{
+		out.Add = append(out.Add, &envoycorev3.HeaderValueOption{
 			Header: &envoycorev3.HeaderValue{
 				Key:   string(h.Name),
 				Value: h.Value,
@@ -724,7 +745,11 @@ func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isR
 		})
 	}
 	for _, h := range f.Set {
-		add = append(add, &envoycorev3.HeaderValueOption{
+		if host, ok := requestHostRewrite(h, isRequest); ok {
+			out.HostRewrite = &envoyroutev3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: host}
+			continue
+		}
+		out.Add = append(out.Add, &envoycorev3.HeaderValueOption{
 			Header: &envoycorev3.HeaderValue{
 				Key:   string(h.Name),
 				Value: h.Value,
@@ -732,11 +757,41 @@ func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isR
 			AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 		})
 	}
-	return &headerModifierIr{
-		Add:       add,
-		Remove:    f.Remove,
-		IsRequest: isRequest,
+	return out
+}
+
+// requestHostRewrite reports whether a `set` header is a request Host that can
+// become host_rewrite_literal, as Istio translates it. A value containing % is
+// left as a header: Envoy would format it as a header but use it verbatim as a
+// literal, so route validation rejects it rather than silently changing it.
+func requestHostRewrite(h gwv1.HTTPHeader, isRequest bool) (string, bool) {
+	if !isRequest || !strings.EqualFold(string(h.Name), hostHeader) || strings.Contains(h.Value, "%") {
+		return "", false
 	}
+	return h.Value, true
+}
+
+// ruleHostRewriteConflict rejects a rule whose URLRewrite hostname and request
+// `set: Host` disagree. Either one alone becomes host_rewrite_literal; with both
+// set, whichever filter applied first would silently win.
+func ruleHostRewriteConflict(filters []gwv1.HTTPRouteFilter) error {
+	var rewrite, header *string
+	for _, f := range filters {
+		switch {
+		case f.Type == gwv1.HTTPRouteFilterURLRewrite && f.URLRewrite != nil && f.URLRewrite.Hostname != nil:
+			rewrite = (*string)(f.URLRewrite.Hostname)
+		case f.Type == gwv1.HTTPRouteFilterRequestHeaderModifier && f.RequestHeaderModifier != nil:
+			for _, h := range f.RequestHeaderModifier.Set {
+				if host, ok := requestHostRewrite(h, true); ok {
+					header = &host
+				}
+			}
+		}
+	}
+	if rewrite != nil && header != nil && *rewrite != *header {
+		return fmt.Errorf("URLRewrite hostname %q conflicts with RequestHeaderModifier set Host %q", *rewrite, *header)
+	}
+	return nil
 }
 
 func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFractionalPercent {

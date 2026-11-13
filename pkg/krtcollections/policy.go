@@ -1538,6 +1538,7 @@ func (h *RoutesIndex) transformRules(
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
 		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, r.Name, srcAnnotations, opts...)
+		err = errors.Join(err, ruleHostRewriteConflict(r.Filters))
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {

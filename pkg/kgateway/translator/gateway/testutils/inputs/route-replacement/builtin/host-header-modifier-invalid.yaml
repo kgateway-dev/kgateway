@@ -1,0 +1,131 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: gwtest
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: example
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: invalid-host-header-modifier-route
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    namespace: gwtest
+  hostnames:
+  - "example.com"
+  rules:
+  # URLRewrite hostname and set Host disagree.
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        hostname: backend.example.com
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+        - name: Host
+          value: api.example.com
+    backendRefs:
+    - name: example-svc
+      port: 80
+  # Envoy forbids adding a Host header.
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /add
+    filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        add:
+        - name: Host
+          value: api.example.com
+    backendRefs:
+    - name: example-svc
+      port: 80
+  # A backendRef has no host rewrite, so set Host stays a header.
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /backend
+    backendRefs:
+    - name: example-svc
+      port: 80
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: Host
+            value: api.example.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: valid-host-rewrite-route
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - healthy.example.com
+  rules:
+  - filters:
+    - type: URLRewrite
+      urlRewrite:
+        hostname: backend.example.com
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+        - name: X-Forwarded-Host
+          value: api.example.com
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+# A rule's request set Host becomes host_rewrite_literal.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: set-host-rewrite-route
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - rewrite.example.com
+  rules:
+  - filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+        - name: Host
+          value: api.example.com
+    backendRefs:
+    - name: example-svc
+      port: 80
