@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	"istio.io/istio/pkg/test/util/assert"
 	"istio.io/istio/pkg/test/util/yml"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -510,23 +510,39 @@ func (s *BaseTestingSuite) prePullImages(testCase *TestCase) {
 		return
 	}
 
-	// Create temporary pods to pull images
+	// Pull the images in parallel: each pull is mostly waiting on the node, and a suite can need
+	// several (redis and ratelimit, keycloak and httpbin). Failures are reported back here, on the
+	// test goroutine, because FailNow must not be called from another goroutine.
+	var wg sync.WaitGroup
+	errs := make([]error, 0, len(images))
+	var errsMu sync.Mutex
 	for image := range images {
-		s.pullImage(image)
+		wg.Go(func() {
+			if err := s.pullImage(image); err != nil {
+				errsMu.Lock()
+				errs = append(errs, err)
+				errsMu.Unlock()
+			}
+		})
 	}
+	wg.Wait()
+	s.Require().NoError(errors.Join(errs...), "pre-pull images")
 }
 
 // pullImage creates a temporary pod to pull the given image with a long timeout.
 // Images this process already pulled to the cluster are skipped. The pod gets
 // a generated name so concurrent pulls, including from other test processes
 // against the same cluster, never share or delete each other's puller pod.
-func (s *BaseTestingSuite) pullImage(image string) {
+//
+// It is safe to call from several goroutines: it reports a failed pull as an error instead of
+// failing the test, and only logs otherwise.
+func (s *BaseTestingSuite) pullImage(image string) error {
 	cluster := s.TestInstallation.ClusterContext
 	entry := pulledImages.entry(cluster.KubeContext, image)
 	entry.mu.Lock()
 	defer entry.mu.Unlock()
 	if entry.pulled {
-		return
+		return nil
 	}
 
 	start := time.Now()
@@ -547,20 +563,30 @@ func (s *BaseTestingSuite) pullImage(image string) {
 	}, metav1.CreateOptions{})
 	if err != nil {
 		s.T().Logf("Warning: failed to create image puller pod for %s: %v", image, err)
-		return
+		return nil
 	}
 	podName := pullerPod.Name
 	defer func() { _ = pods.Delete(s.Ctx, podName, metav1.DeleteOptions{}) }()
 
-	// Wait for the pod to complete (image pulled) with a long timeout (5 minutes)
-	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-		pod, err := pods.Get(s.Ctx, podName, metav1.GetOptions{})
-		g.Expect(err).NotTo(gomega.HaveOccurred())
-		// Pod should be Succeeded (completed) or Running (image pulled, command ran)
-		g.Expect(pod.Status.Phase).To(gomega.BeElementOf(corev1.PodSucceeded, corev1.PodRunning, corev1.PodFailed))
-	}).WithTimeout(5*time.Minute).WithPolling(2*time.Second).Should(gomega.Succeed(), "waiting for image %s to be pulled", image)
+	// Wait for the pod to start or finish, which means the image is on the node. Pulls usually
+	// take a second or two, so poll often: a coarse interval rounds every pull up to it.
+	var phase corev1.PodPhase
+	var lastGetErr error
+	err = wait.PollUntilContextTimeout(s.Ctx, 100*time.Millisecond, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+		pod, getErr := pods.Get(ctx, podName, metav1.GetOptions{})
+		// Retry transient API errors until the timeout, as before; the last one goes in the error.
+		lastGetErr = getErr
+		if getErr == nil {
+			phase = pod.Status.Phase
+		}
+		return phase == corev1.PodSucceeded || phase == corev1.PodRunning || phase == corev1.PodFailed, nil
+	})
+	if err != nil {
+		return fmt.Errorf("waiting for image %s to be pulled (pod phase %q): %w", image, phase, errors.Join(err, lastGetErr))
+	}
 	entry.pulled = true
 	s.T().Logf("Pre-pulled image %s in %s", image, time.Since(start).Round(time.Millisecond))
+	return nil
 }
 
 func imagePullerPodName(image string) string {
