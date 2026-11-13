@@ -39,6 +39,7 @@ func TranslateGatewayHTTPRouteRules(
 
 	translateGatewayHTTPRouteRulesUtil(
 		ctx, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, nil)
+	reportShadowedDelegatedMatches(routeInfo, finalRoutes, baseReporter)
 	return finalRoutes
 }
 
