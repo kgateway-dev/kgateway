@@ -41,6 +41,52 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
+			name: "should override the GatewayClass workload kind",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						WorkloadKind: new(kgateway.WorkloadKindDaemonSet),
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						WorkloadKind: new(kgateway.WorkloadKindDeployment),
+					},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						WorkloadKind: new(kgateway.WorkloadKindDeployment),
+					},
+				},
+			},
+		},
+		{
+			name: "should keep the GatewayClass workload kind when the Gateway sets none",
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						WorkloadKind: new(kgateway.WorkloadKindDaemonSet),
+					},
+				},
+			},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{},
+				},
+			},
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						WorkloadKind: new(kgateway.WorkloadKindDaemonSet),
+					},
+				},
+			},
+		},
+		{
 			name: "should override kube deployment replicas by default",
 			dst: &kgateway.GatewayParameters{
 				Spec: kgateway.GatewayParametersSpec{

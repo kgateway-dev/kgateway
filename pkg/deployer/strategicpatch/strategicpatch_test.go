@@ -1,6 +1,7 @@
 package strategicpatch
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -374,7 +375,7 @@ func TestCreatePodDisruptionBudget_InheritsDeploymentLabels(t *testing.T) {
 	dep := deploymentWithLabels(gatewayLabels)
 	overlay := &shared.KubernetesResourceOverlay{}
 
-	obj, err := createPodDisruptionBudget(dep, overlay)
+	obj, err := createPodDisruptionBudget(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	pdb := obj.(*policyv1.PodDisruptionBudget)
@@ -389,7 +390,7 @@ func TestCreatePodDisruptionBudget_OverlayLabelsMergeOnTop(t *testing.T) {
 		},
 	}
 
-	obj, err := createPodDisruptionBudget(dep, overlay)
+	obj, err := createPodDisruptionBudget(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	pdb := obj.(*policyv1.PodDisruptionBudget)
@@ -403,7 +404,7 @@ func TestCreateHorizontalPodAutoscaler_InheritsDeploymentLabels(t *testing.T) {
 	dep := deploymentWithLabels(gatewayLabels)
 	overlay := &shared.KubernetesResourceOverlay{}
 
-	obj, err := createHorizontalPodAutoscaler(dep, overlay)
+	obj, err := createHorizontalPodAutoscaler(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	hpa := obj.(*autoscalingv2.HorizontalPodAutoscaler)
@@ -418,7 +419,7 @@ func TestCreateHorizontalPodAutoscaler_OverlayLabelsMergeOnTop(t *testing.T) {
 		},
 	}
 
-	obj, err := createHorizontalPodAutoscaler(dep, overlay)
+	obj, err := createHorizontalPodAutoscaler(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	hpa := obj.(*autoscalingv2.HorizontalPodAutoscaler)
@@ -432,7 +433,7 @@ func TestCreateVerticalPodAutoscaler_InheritsDeploymentLabels(t *testing.T) {
 	dep := deploymentWithLabels(gatewayLabels)
 	overlay := &shared.KubernetesResourceOverlay{}
 
-	obj, err := createVerticalPodAutoscaler(dep, overlay)
+	obj, err := createVerticalPodAutoscaler(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	vpa := obj.(*unstructured.Unstructured)
@@ -447,7 +448,7 @@ func TestCreateVerticalPodAutoscaler_OverlayLabelsMergeOnTop(t *testing.T) {
 		},
 	}
 
-	obj, err := createVerticalPodAutoscaler(dep, overlay)
+	obj, err := createVerticalPodAutoscaler(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	vpa := obj.(*unstructured.Unstructured)
@@ -465,9 +466,101 @@ func TestCreatePodDisruptionBudget_DeploymentLabelsNotMutated(t *testing.T) {
 		},
 	}
 
-	_, err := createPodDisruptionBudget(dep, overlay)
+	_, err := createPodDisruptionBudget(findWorkload([]client.Object{dep}), overlay)
 	require.NoError(t, err)
 
 	// The original deployment labels must not have been mutated.
 	assert.NotContains(t, dep.GetLabels(), "extra")
+}
+
+func testDaemonSet() *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "DaemonSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gw",
+			Namespace: "default",
+			Labels:    maps.Clone(gatewayLabels),
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app.kubernetes.io/name": "gw"}},
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "kgateway-proxy", Image: "foo/envoy-wrapper:latest"}},
+				},
+			},
+		},
+	}
+}
+
+func TestOverlayApplier_ApplyOverlays_DaemonSet(t *testing.T) {
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DaemonSetOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{Labels: map[string]string{"extra": "label"}},
+						Spec: &apiextensionsv1.JSON{Raw: []byte(`{
+							"updateStrategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": 2}},
+							"template": {"spec": {"hostNetwork": true}}
+						}`)},
+					},
+					// A Deployment overlay has nothing to patch when the proxy is a DaemonSet.
+					DeploymentOverlay: &shared.KubernetesResourceOverlay{
+						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"replicas": 3}`)},
+					},
+					PodDisruptionBudget: &shared.KubernetesResourceOverlay{
+						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"minAvailable": 1}`)},
+					},
+					HorizontalPodAutoscaler: &shared.KubernetesResourceOverlay{
+						Spec: &apiextensionsv1.JSON{Raw: []byte(`{"maxReplicas": 5}`)},
+					},
+					VerticalPodAutoscaler: &shared.KubernetesResourceOverlay{},
+				},
+			},
+		},
+	}
+
+	objs, err := NewOverlayApplierFromGatewayParameters(params).ApplyOverlays([]client.Object{testDaemonSet()})
+	require.NoError(t, err)
+	require.Len(t, objs, 3, "expected the DaemonSet, a PDB and a VPA, but no HPA")
+
+	ds := objs[0].(*appsv1.DaemonSet)
+	assert.Equal(t, "label", ds.GetLabels()["extra"])
+	assert.Equal(t, appsv1.RollingUpdateDaemonSetStrategyType, ds.Spec.UpdateStrategy.Type)
+	assert.Equal(t, 2, ds.Spec.UpdateStrategy.RollingUpdate.MaxUnavailable.IntValue())
+	assert.True(t, ds.Spec.Template.Spec.HostNetwork)
+	assert.Equal(t, "foo/envoy-wrapper:latest", ds.Spec.Template.Spec.Containers[0].Image)
+
+	pdb := objs[1].(*policyv1.PodDisruptionBudget)
+	assert.Equal(t, ds.Spec.Selector, pdb.Spec.Selector)
+	assert.Equal(t, 1, pdb.Spec.MinAvailable.IntValue())
+
+	vpa := objs[2].(*unstructured.Unstructured)
+	targetKind, _, _ := unstructured.NestedString(vpa.Object, "spec", "targetRef", "kind")
+	targetName, _, _ := unstructured.NestedString(vpa.Object, "spec", "targetRef", "name")
+	assert.Equal(t, "DaemonSet", targetKind)
+	assert.Equal(t, "gw", targetName)
+}
+
+func TestOverlayApplier_ApplyOverlays_DaemonSetOverlayIgnoredForDeployment(t *testing.T) {
+	params := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
+					DaemonSetOverlay: &shared.KubernetesResourceOverlay{
+						Metadata: &shared.ObjectMetadata{Labels: map[string]string{"extra": "label"}},
+					},
+				},
+			},
+		},
+	}
+	dep := deploymentWithLabels(gatewayLabels)
+
+	objs, err := NewOverlayApplierFromGatewayParameters(params).ApplyOverlays([]client.Object{dep})
+	require.NoError(t, err)
+	require.Len(t, objs, 1)
+	assert.NotContains(t, objs[0].GetLabels(), "extra", "a DaemonSet overlay must not patch a Deployment")
 }

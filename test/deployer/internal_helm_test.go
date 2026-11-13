@@ -598,6 +598,20 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
+			Name:      "envoy as a DaemonSet",
+			InputFile: "envoy-daemonset",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "kind: DaemonSet", "the proxy should run as a DaemonSet")
+				assert.NotContains(t, outputYaml, "kind: Deployment", "no Deployment should be rendered")
+				assert.NotContains(t, outputYaml, "replicas:", "a DaemonSet has no replicas")
+				assert.Contains(t, outputYaml, "kind: PodDisruptionBudget", "the PDB should target the DaemonSet pods")
+				assert.Contains(t, outputYaml, "kind: DaemonSet\n    name: gw", "the VPA should target the DaemonSet")
+				assert.Contains(t, outputYaml, "daemonset-overlay: applied", "the DaemonSet overlay should be applied")
+				assert.Contains(t, outputYaml, "k8s.daemonset.name=gw", "OTel attributes should name the DaemonSet")
+			},
+		},
+		{
 			// This test proves the documented overlay ordering:
 			// 1. GatewayClass overlay is applied first
 			// 2. Gateway overlay is applied second (overrides GatewayClass values)
@@ -914,7 +928,7 @@ func TestEnvtestRejectsLongLabelValue(t *testing.T) {
 func TestDeployerManagedResourcesHaveRBACPermissions(t *testing.T) {
 	// Guard: if ResourceOverlays gains new fields, this test must be updated.
 	numFields := reflect.TypeFor[strategicpatch.ResourceOverlays]().NumField()
-	require.Equal(t, 6, numFields,
+	require.Equal(t, 7, numFields,
 		"ResourceOverlays struct field count changed; update this test's resource lists "+
 			"and add +kubebuilder:rbac markers in doc.go for any new resource types")
 
@@ -930,6 +944,7 @@ func TestDeployerManagedResourcesHaveRBACPermissions(t *testing.T) {
 	// strategicpatch.ResourceOverlays.
 	allOverlayResources := []managedResource{
 		{apiGroup: "apps", resource: "deployments"},                          // Deployment
+		{apiGroup: "apps", resource: "daemonsets"},                           // DaemonSet
 		{apiGroup: "", resource: "services"},                                 // Service
 		{apiGroup: "", resource: "serviceaccounts"},                          // ServiceAccount
 		{apiGroup: "policy", resource: "poddisruptionbudgets"},               // PodDisruptionBudget

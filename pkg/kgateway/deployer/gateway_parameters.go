@@ -2,18 +2,22 @@ package deployer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
@@ -108,6 +112,10 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 		return rendered, nil
 	}
 	resolved := gp.kgwParameters.resolveParametersForOverlays(gw)
+	// Validate the same parameters whose overlays are applied below.
+	if err := resolved.validateWorkloadKind(); err != nil {
+		return nil, err
+	}
 
 	// Apply overlays in order: GatewayClass first, then Gateway.
 	if resolved.gatewayClassGWP != nil {
@@ -394,6 +402,117 @@ type resolvedKgatewayParameters struct {
 	gatewayClassGWP *kgateway.GatewayParameters
 	// gatewayGWP is the GatewayParameters from the Gateway (if any).
 	gatewayGWP *kgateway.GatewayParameters
+}
+
+// layers returns the GatewayClass and Gateway parameters in precedence order,
+// skipping the ones that are absent.
+func (r *resolvedKgatewayParameters) layers() []parametersLayer {
+	var out []parametersLayer
+	if r.gatewayClassGWP != nil {
+		out = append(out, parametersLayer{source: "GatewayClass", params: r.gatewayClassGWP})
+	}
+	if r.gatewayGWP != nil {
+		out = append(out, parametersLayer{source: "Gateway", params: r.gatewayGWP})
+	}
+	return out
+}
+
+// parametersLayer is one GatewayParameters object and the resource that references it.
+type parametersLayer struct {
+	source string
+	params *kgateway.GatewayParameters
+}
+
+// validateWorkloadKind rejects settings that do not apply to the final workload
+// kind. CEL only sees one GatewayParameters at a time, so a GatewayClass setting
+// that conflicts with the kind a Gateway selects is caught here.
+func (r *resolvedKgatewayParameters) validateWorkloadKind() error {
+	kind := kgateway.WorkloadKindDeployment
+	for _, layer := range r.layers() {
+		if k := layer.params.Spec.Kube.GetWorkloadKind(); k != nil {
+			kind = *k
+		}
+	}
+
+	for _, layer := range r.layers() {
+		kube := layer.params.Spec.Kube
+		if kube == nil {
+			continue
+		}
+		var conflicts []string
+		switch kind {
+		case kgateway.WorkloadKindDeployment:
+			if !isEmptyOverlay(kube.DaemonSetOverlay) {
+				conflicts = append(conflicts, "daemonSetOverlay")
+			}
+		case kgateway.WorkloadKindDaemonSet:
+			if kube.Deployment.GetReplicas() != nil || kube.Deployment.GetStrategy() != nil {
+				conflicts = append(conflicts, "deployment")
+			}
+			if !isEmptyOverlay(kube.DeploymentOverlay) {
+				conflicts = append(conflicts, "deploymentOverlay")
+			}
+			// Unlike the overlays above, an empty horizontalPodAutoscaler is not a
+			// no-op: its presence is what creates the HPA.
+			if kube.HorizontalPodAutoscaler != nil {
+				conflicts = append(conflicts, "horizontalPodAutoscaler")
+			}
+			conflicts = append(conflicts, daemonSetPDBConflicts(kube.PodDisruptionBudget)...)
+		}
+		if len(conflicts) > 0 {
+			return fmt.Errorf("%s GatewayParameters %s/%s sets %s, which is not valid for workload kind %s",
+				layer.source, layer.params.GetNamespace(), layer.params.GetName(), strings.Join(conflicts, ", "), kind)
+		}
+	}
+	return nil
+}
+
+// isEmptyOverlay reports whether an overlay changes nothing. Tools such as Helm
+// or GitOps controllers may keep or drop an empty object like
+// `deploymentOverlay: {}`, so an empty overlay must not change whether the
+// parameters are valid.
+func isEmptyOverlay(o *shared.KubernetesResourceOverlay) bool {
+	if o == nil {
+		return true
+	}
+	if m := o.Metadata; m != nil && (len(m.Labels) > 0 || len(m.Annotations) > 0) {
+		return false
+	}
+	if o.Spec == nil || len(o.Spec.Raw) == 0 {
+		return true
+	}
+	var spec map[string]any
+	if err := json.Unmarshal(o.Spec.Raw, &spec); err != nil {
+		// Not an empty object; applying the overlay reports the malformed spec.
+		return false
+	}
+	return len(spec) == 0
+}
+
+// daemonSetPDBConflicts returns the PodDisruptionBudget settings that do not
+// work for a DaemonSet. The disruption controller computes maxUnavailable and a
+// percentage minAvailable from the owning controller's scale, which a DaemonSet
+// does not have, so such a PDB allows no disruptions and blocks every eviction.
+func daemonSetPDBConflicts(pdb *shared.KubernetesResourceOverlay) []string {
+	if pdb == nil || pdb.Spec == nil || len(pdb.Spec.Raw) == 0 {
+		return nil
+	}
+	var spec struct {
+		MinAvailable   *intstr.IntOrString `json:"minAvailable"`
+		MaxUnavailable *intstr.IntOrString `json:"maxUnavailable"`
+	}
+	if err := json.Unmarshal(pdb.Spec.Raw, &spec); err != nil {
+		// Rendering the PDB reports the malformed spec.
+		return nil
+	}
+	var conflicts []string
+	if spec.MaxUnavailable != nil {
+		conflicts = append(conflicts, "podDisruptionBudget maxUnavailable")
+	}
+	if spec.MinAvailable != nil && spec.MinAvailable.Type == intstr.String {
+		conflicts = append(conflicts, "podDisruptionBudget percentage minAvailable")
+	}
+	return conflicts
 }
 
 // resolveParametersForOverlays resolves the GatewayParameters for the Gateway.

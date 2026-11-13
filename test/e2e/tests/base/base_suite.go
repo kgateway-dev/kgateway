@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
@@ -692,6 +693,9 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 		} else if deployment, ok := resource.(*appsv1.Deployment); ok {
 			ns = deployment.Namespace
 			name = deployment.Name
+		} else if daemonSet, ok := resource.(*appsv1.DaemonSet); ok {
+			ns = daemonSet.Namespace
+			name = daemonSet.Name
 		} else {
 			continue
 		}
@@ -821,15 +825,19 @@ func (s *BaseTestingSuite) loadDynamicResources(testCase *TestCase) {
 		if gw, ok := obj.(*gwv1.Gateway); ok {
 			selfManaged := IsSelfManagedGateway(gw)
 
-			// if the gateway is not self-managed, then we expect a proxy deployment and service
+			// if the gateway is not self-managed, then we expect a proxy workload and service
 			// to be created, so add them to the dynamic resource list
 			if !selfManaged {
 				proxyObjectMeta := metav1.ObjectMeta{
 					Name:      kubeutils.SafeGatewayLabelValue(gw.GetName()),
 					Namespace: gw.GetNamespace(),
 				}
+				var workload client.Object = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
+				if s.proxyWorkloadKind(gw) == kgateway.WorkloadKindDaemonSet {
+					workload = &appsv1.DaemonSet{ObjectMeta: proxyObjectMeta}
+				}
 				proxyResources := []client.Object{
-					&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
+					workload,
 					&corev1.Service{ObjectMeta: proxyObjectMeta},
 				}
 				dynamicResources = append(dynamicResources, proxyResources...)
@@ -837,6 +845,37 @@ func (s *BaseTestingSuite) loadDynamicResources(testCase *TestCase) {
 		}
 	}
 	testCase.dynamicResources = dynamicResources
+}
+
+// proxyWorkloadKind returns the workload kind the deployer provisions for gw:
+// the kind set on the Gateway's GatewayParameters, else on its GatewayClass's,
+// else Deployment.
+func (s *BaseTestingSuite) proxyWorkloadKind(gw *gwv1.Gateway) kgateway.WorkloadKind {
+	c := s.TestInstallation.ClusterContext.Client
+	kindOf := func(name, namespace string) *kgateway.WorkloadKind {
+		gwp := &kgateway.GatewayParameters{}
+		if err := c.Get(s.Ctx, client.ObjectKey{Name: name, Namespace: namespace}, gwp); err != nil {
+			return nil
+		}
+		return gwp.Spec.Kube.GetWorkloadKind()
+	}
+
+	if ref := gw.Spec.Infrastructure; ref != nil && ref.ParametersRef != nil &&
+		string(ref.ParametersRef.Group) == kgateway.GroupName && ref.ParametersRef.Kind == "GatewayParameters" {
+		if kind := kindOf(ref.ParametersRef.Name, gw.GetNamespace()); kind != nil {
+			return *kind
+		}
+	}
+	gwc := &gwv1.GatewayClass{}
+	if err := c.Get(s.Ctx, client.ObjectKey{Name: string(gw.Spec.GatewayClassName)}, gwc); err == nil {
+		if ref := gwc.Spec.ParametersRef; ref != nil &&
+			string(ref.Group) == kgateway.GroupName && ref.Kind == "GatewayParameters" && ref.Namespace != nil {
+			if kind := kindOf(ref.Name, string(*ref.Namespace)); kind != nil {
+				return *kind
+			}
+		}
+	}
+	return kgateway.WorkloadKindDeployment
 }
 
 func IsSelfManagedGateway(gw *gwv1.Gateway) bool {
