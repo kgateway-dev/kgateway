@@ -22,7 +22,10 @@ func DefaultGatewayIRGetter(gw *gwv1.Gateway, commonCollections *collections.Com
 
 	irGW := commonCollections.GatewayIndex.GatewaysForDeployer.GetKey(gwKey.ResourceName())
 	if irGW == nil {
-		// If its not in the IR we cannot tell, so need to make a guess.
+		// The row can lag a Gateway that was just created or moved to one of our classes, so
+		// guess from the Gateway's own listeners; the row's arrival re-enqueues the Gateway.
+		// The guess leaves out ListenerSet ports, which is why the Gateway reconciler waits for
+		// GatewaysForDeployer to sync before its first reconcile.
 		controllerNameGuess := commonCollections.ControllerName
 		irGW = GatewayIRFrom(gw, controllerNameGuess)
 	}
