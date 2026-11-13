@@ -169,16 +169,17 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 ) computedVirtualHost {
 	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
 
-	var envoyRoutes []*envoyroutev3.Route
-	var computedRoutes []computedHTTPRoute
-	for i, route := range virtualHost.Rules {
+	envoyRoutes := make([]*envoyroutev3.Route, 0, len(virtualHost.Rules))
+	computedRoutes := make([]computedHTTPRoute, 0, len(virtualHost.Rules))
+	for i := range virtualHost.Rules {
+		route := &virtualHost.Rules[i]
 		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
 		if route.Parent != nil {
 			// route may be a synthetic one without a parent that we don't report.
 			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
 		}
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-		computedRoute := h.envoyRoutes(routeReport, route, generatedName)
+		computedRoute := h.envoyRoutes(routeReport, *route, generatedName)
 		if computedRoute != nil {
 			envoyRoutes = append(envoyRoutes, computedRoute)
 			computedRoutes = append(computedRoutes, computedHTTPRoute{
@@ -264,7 +265,7 @@ type backendConfigContext struct {
 }
 
 type computedHTTPRoute struct {
-	in          ir.HttpRouteRuleMatchIR
+	in          *ir.HttpRouteRuleMatchIR
 	routeReport reportssdk.ParentRefReporter
 	route       *envoyroutev3.Route
 }
@@ -666,7 +667,7 @@ func (h *httpRouteConfigurationTranslator) finalizeValidatedRoute(
 	finalNameUnique bool,
 ) *envoyroutev3.Route {
 	if computedRoute, ok := validationCtx.forRoute(route, finalNameUnique); ok {
-		return h.finalizeRoute(computedRoute.routeReport, computedRoute.in, route, routeValidationErr)
+		return h.finalizeRoute(computedRoute.routeReport, *computedRoute.in, route, routeValidationErr)
 	}
 	if errors.Is(routeValidationErr, ErrInvalidMatcher) {
 		h.logger.Info("invalid matcher on route without reporter metadata", "route", route.GetName(), "error", routeValidationErr)
