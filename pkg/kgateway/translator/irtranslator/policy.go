@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -24,38 +23,7 @@ func reportPolicyAcceptanceStatus(
 	policies ...ir.PolicyAtt,
 ) {
 	for _, policy := range policies {
-		if policy.PolicyRef == nil {
-			// Not a policy associated with a CR, can't report status on it
-			continue
-		}
-
-		key := reporter.PolicyKey{
-			Group:     policy.PolicyRef.Group,
-			Kind:      policy.PolicyRef.Kind,
-			Namespace: policy.PolicyRef.Namespace,
-			Name:      policy.PolicyRef.Name,
-		}
-		// Update the initial status
-		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
-
-		if len(policy.Errors) > 0 {
-			r.SetCondition(reporter.PolicyCondition{
-				Type:               string(shared.PolicyConditionAccepted),
-				Status:             metav1.ConditionFalse,
-				Reason:             string(shared.PolicyReasonInvalid),
-				Message:            policy.FormatErrors(),
-				ObservedGeneration: policy.Generation,
-			})
-			continue
-		}
-
-		r.SetCondition(reporter.PolicyCondition{
-			Type:               string(shared.PolicyConditionAccepted),
-			Status:             metav1.ConditionTrue,
-			Reason:             string(shared.PolicyReasonValid),
-			Message:            reporter.PolicyAcceptedMsg,
-			ObservedGeneration: policy.Generation,
-		})
+		ir.ReportPolicyAccepted(rp, policy, ancestorRef)
 	}
 }
 
@@ -71,18 +39,11 @@ func reportPolicyAttachmentStatus(
 			continue
 		}
 
-		if policy.PolicyRef == nil {
+		r := policy.AncestorReporter(rp, ancestorRef)
+		if r == nil {
 			// Not a policy associated with a CR, can't report status on it
 			continue
 		}
-
-		key := reporter.PolicyKey{
-			Group:     policy.PolicyRef.Group,
-			Kind:      policy.PolicyRef.Kind,
-			Namespace: policy.PolicyRef.Namespace,
-			Name:      policy.PolicyRef.Name,
-		}
-		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
 
 		if !mergeOrigins.IsSet() {
 			// Not a merged policy so this should be a direct attachment
@@ -199,18 +160,10 @@ func reportBackendObjectPolicyStatus(
 	}
 
 	for _, policy := range policies {
-		if policy.PolicyRef == nil {
+		ancestorReporter := policy.AncestorReporter(rp, ancestorRef)
+		if ancestorReporter == nil {
 			continue
 		}
-
-		key := reporter.PolicyKey{
-			Group:     policy.PolicyRef.Group,
-			Kind:      policy.PolicyRef.Kind,
-			Namespace: policy.PolicyRef.Namespace,
-			Name:      policy.PolicyRef.Name,
-		}
-
-		ancestorReporter := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
 		for _, condition := range backendtlspolicyplugin.BuildPolicyConditions(policy, effectivePolicy) {
 			ancestorReporter.SetCondition(condition)
 		}

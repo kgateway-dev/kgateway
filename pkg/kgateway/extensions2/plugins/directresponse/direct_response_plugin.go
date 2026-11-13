@@ -89,7 +89,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 					wellknown.DirectResponseGVK,
 					col,
 					cli,
-					commoncol.ControllerName,
 					func(o *kgateway.DirectResponse) gwv1.PolicyStatus { return o.Status },
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.DirectResponse {
 						return &kgateway.DirectResponse{ObjectMeta: om, Status: st}

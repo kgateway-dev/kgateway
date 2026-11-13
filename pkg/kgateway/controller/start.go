@@ -94,8 +94,9 @@ type StartConfig struct {
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
-	// StatusSyncerOptions configure the status pipeline. They are passed to both the ProxySyncer,
-	// which produces status contributions, and the StatusSyncer, which writes them.
+	// StatusSyncerOptions configure the status pipeline. They are passed to NewProxySyncer,
+	// which owns the pipeline; the leader-only runnable that writes status comes from its
+	// StatusSyncer method and takes no options of its own.
 	StatusSyncerOptions []proxy_syncer.StatusSyncerOption
 }
 
@@ -167,18 +168,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	statusSyncer := proxy_syncer.NewStatusSyncer(proxy_syncer.StatusSyncerConfig{
-		Plugins:                     mergedPlugins,
-		ControllerName:              cfg.ControllerName,
-		Client:                      cfg.Client,
-		StatusCollections:           proxySyncer.StatusCollections(),
-		StatusWriters:               proxySyncer.StatusWriters(),
-		StatusContributions:         proxySyncer.StatusContributions(),
-		StatusContributionsByTarget: proxySyncer.StatusContributionsByTarget(),
-		KrtOpts:                     cfg.KrtOptions,
-		CacheSyncs:                  proxySyncer.CacheSyncs(),
-	}, cfg.StatusSyncerOptions...)
-	if err := cfg.Manager.Add(statusSyncer); err != nil {
+	if err := cfg.Manager.Add(proxySyncer.StatusSyncer()); err != nil {
 		setupLog.Error(err, "unable to add statusSyncer runnable")
 		return nil, err
 	}

@@ -156,7 +156,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 					kgwellknown.BackendTLSPolicyGVK,
 					col,
 					cli,
-					commoncol.ControllerName,
 					func(o *gwv1.BackendTLSPolicy) gwv1.PolicyStatus { return o.Status },
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
 						return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}

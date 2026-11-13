@@ -208,7 +208,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 					wellknown.BackendConfigPolicyGVK,
 					col,
 					cli,
-					commoncol.ControllerName,
 					func(o *kgateway.BackendConfigPolicy) gwv1.PolicyStatus { return o.Status },
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.BackendConfigPolicy {
 						return &kgateway.BackendConfigPolicy{ObjectMeta: om, Status: st}

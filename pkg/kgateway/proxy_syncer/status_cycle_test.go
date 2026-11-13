@@ -278,12 +278,15 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	})
 
 	collections := statussync.NewStatusCollections()
-	gatewayReports := statussync.RegisterKind(collections, wellknown.GatewayGVK, gateways,
-		contributions, byTarget, krtopts.ToOptions("GatewayStatusReports")...)
-	routeReports := statussync.RegisterKind(collections, wellknown.HTTPRouteGVK, routes,
-		contributions, byTarget, krtopts.ToOptions("HTTPRouteStatusReports")...)
-	listenerSetReports := statussync.RegisterKindByObjectGVK(collections, wellknown.ListenerSetGVK,
-		listenerSets, contributions, byTarget, krtopts.ToOptions("ListenerSetStatusReports")...)
+	in := statussync.RegistrationInputs{
+		Collections:           collections,
+		StatusContributions:   contributions,
+		ContributionsByTarget: byTarget,
+		KrtOpts:               krtopts,
+	}
+	gatewayReports := statussync.Register(in, wellknown.GatewayGVK, gateways)
+	routeReports := statussync.Register(in, wellknown.HTTPRouteGVK, routes)
+	listenerSetReports := statussync.RegisterByObjectGVK(in, wellknown.ListenerSetGVK, listenerSets)
 
 	fixture := statusCycleFixture{
 		gateways:          gateways,
@@ -291,12 +294,15 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 		listenerSets:      listenerSets,
 		gatewayWriter:     gatewayWriter(c, f, gateways, gatewayReports),
 		listenerSetWriter: listenerSetWriter(c, f, listenerSets, listenerSetReports),
-		routeWriter: routeWriter[*gwv1.HTTPRoute, *gwv1.HTTPRoute](c, f, routes, routeReports,
-			wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, cycleController,
+		routeWriter: routeWriter(
+			routeKind[*gwv1.HTTPRoute]{
+				c, f, routes, routeReports, cycleController,
+				func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+			},
+			wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR,
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 			},
-			func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		),
 		queue: &recordingQueue{pushes: map[statussync.Resource]int{}},
 	}

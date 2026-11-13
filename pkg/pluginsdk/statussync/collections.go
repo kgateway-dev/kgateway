@@ -42,44 +42,6 @@ func (r ResourceReports) Equals(other ResourceReports) bool {
 		r.Report.Equals(other.Report)
 }
 
-// RegisterKind wires one status kind end to end: it derives the report reducer for a raw
-// collection, registers that collection as a reconciliation source, and enrolls the reducer as
-// both an event source and a cache-sync dependency.
-//
-// The three belong together. Done separately, each compiles on its own and omitting one is
-// invisible: skip the raw registration and the resource is never swept on leadership, skip
-// the reducer registration and status stops following report changes. Both are silent status
-// outages rather than build or test failures.
-func RegisterKind[I controllers.Object](
-	s *StatusCollections,
-	gvk schema.GroupVersionKind,
-	objects krt.Collection[I],
-	contributions krt.Collection[reports.StatusContribution],
-	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
-	opts ...krt.CollectionOption,
-) krt.Collection[ResourceReports] {
-	return registerKind(s, objects, contributions, byTarget,
-		func(I) schema.GroupVersionKind { return gvk },
-		func() { RegisterResource(s, gvk, objects) },
-		opts...)
-}
-
-// RegisterKindByObjectGVK is RegisterKind for a normalized collection whose objects retain
-// distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
-func RegisterKindByObjectGVK[I controllers.Object](
-	s *StatusCollections,
-	fallback schema.GroupVersionKind,
-	objects krt.Collection[I],
-	contributions krt.Collection[reports.StatusContribution],
-	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
-	opts ...krt.CollectionOption,
-) krt.Collection[ResourceReports] {
-	return registerKind(s, objects, contributions, byTarget,
-		func(obj I) schema.GroupVersionKind { return ObjectGVKOrDefault(obj, fallback) },
-		func() { registerResourceByObjectGVK(s, fallback, objects) },
-		opts...)
-}
-
 func registerKind[I controllers.Object](
 	s *StatusCollections,
 	objects krt.Collection[I],
@@ -153,6 +115,30 @@ func ReportFor(
 	return current.Report, true
 }
 
+// DesiredFromReport builds a Writer.Desired from build. It looks up the reduction res was
+// enqueued under in reportCol (see ReportFor) and hands it to build, suppressing the write
+// when res has no reduction yet or build returns nil. A build that wants to write an empty
+// status returns a pointer to the zero value.
+//
+// report contains pointers into KRT-owned retained state; build must treat it as read-only.
+func DesiredFromReport[O, S any](
+	reportCol krt.Collection[ResourceReports],
+	build func(res Resource, report reports.StatusReport, current O) *S,
+) func(Resource, O) (S, bool) {
+	return func(res Resource, current O) (S, bool) {
+		var zero S
+		report, ok := ReportFor(reportCol, res)
+		if !ok {
+			return zero, false
+		}
+		status := build(res, report, current)
+		if status == nil {
+			return zero, false
+		}
+		return *status, true
+	}
+}
+
 // StatusRegistration attaches a source handler that feeds the given queue. It is invoked
 // when status writing becomes enabled on the leader.
 type StatusRegistration = func(statusWriter WorkerQueue) krt.HandlerRegistration
@@ -221,7 +207,7 @@ func RegisterResource[I controllers.Object](
 
 // registerResourceByObjectGVK registers a normalized collection whose objects retain
 // distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
-// Callers reach it through RegisterKindByObjectGVK, which wires the reducer alongside it.
+// Callers reach it through RegisterByObjectGVK, which wires the reducer alongside it.
 func registerResourceByObjectGVK[I controllers.Object](
 	s *StatusCollections,
 	fallback schema.GroupVersionKind,
