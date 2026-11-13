@@ -21,14 +21,14 @@ type testClusterCols struct {
 // and Base are left nil: such a row has nothing to overlay, so every client
 // publishes it as-is.
 func baseFromCluster(cluster uccWithCluster) baseEnvoyCluster {
-	return baseEnvoyCluster{
+	return baseEnvoyCluster{&baseClusterRow{
 		Name:              cluster.Name,
 		Cluster:           cluster.Cluster,
 		ClusterVersion:    cluster.ClusterVersion,
 		Error:             cluster.Error,
 		BackendSource:     cluster.BackendSource,
 		BackendGeneration: cluster.BackendGeneration,
-	}
+	}}
 }
 
 // newTestPerClientClusters builds a PerClientEnvoyClusters from flat cluster

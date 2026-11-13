@@ -177,25 +177,25 @@ func TestCLARetainerKeepsOnlyWhatRowsReference(t *testing.T) {
 	second := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "second"})
 
 	r.keep("backend", []UccWithEndpoints{
-		{EndpointsHash: 1, Endpoints: first},
-		{EndpointsHash: 1, Endpoints: first},
+		{&uccEndpointsRow{EndpointsHash: 1, Endpoints: first}},
+		{&uccEndpointsRow{EndpointsHash: 1, Endpoints: first}},
 	})
 	require.Len(t, r.byBackend["backend"], 1, "one shared proto across many rows must be retained once")
 
 	// A new generation replaces the old one rather than accumulating beside it.
-	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 2, Endpoints: second}})
+	r.keep("backend", []UccWithEndpoints{{&uccEndpointsRow{EndpointsHash: 2, Endpoints: second}}})
 	require.Len(t, r.byBackend["backend"], 1, "a superseded generation must not be retained")
 	require.True(t, sharedproto.Same(second, r.byBackend["backend"][0].cla))
 
 	// Genuinely distinct results are both live, so both are retained.
 	r.keep("backend", []UccWithEndpoints{
-		{EndpointsHash: 1, Endpoints: first},
-		{EndpointsHash: 2, Endpoints: second},
+		{&uccEndpointsRow{EndpointsHash: 1, Endpoints: first}},
+		{&uccEndpointsRow{EndpointsHash: 2, Endpoints: second}},
 	})
 	require.Len(t, r.byBackend["backend"], 2, "distinct live results must each be retained")
 
 	// Rows without a proto contribute nothing to retention.
-	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 3}})
+	r.keep("backend", []UccWithEndpoints{{&uccEndpointsRow{EndpointsHash: 3}}})
 	require.Empty(t, r.byBackend["backend"], "a backend whose rows reference no proto must retain nothing")
 }
 
@@ -204,7 +204,7 @@ func TestCLARetainerKeepsOnlyWhatRowsReference(t *testing.T) {
 func TestCLARetainerForgetsDeletedBackend(t *testing.T) {
 	r := newCLARetainer()
 	cla := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "gone"})
-	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 1, Endpoints: cla}})
+	r.keep("backend", []UccWithEndpoints{{&uccEndpointsRow{EndpointsHash: 1, Endpoints: cla}}})
 	require.Len(t, r.byBackend, 1)
 
 	r.forget("backend")
@@ -220,7 +220,7 @@ func TestCLARetainerForgetsDeletedBackend(t *testing.T) {
 func TestCLARetainerForgetIfAbsentKeepsReAddedBackend(t *testing.T) {
 	r := newCLARetainer()
 	live := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "live"})
-	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 1, Endpoints: live}})
+	r.keep("backend", []UccWithEndpoints{{&uccEndpointsRow{EndpointsHash: 1, Endpoints: live}}})
 
 	r.forgetIfAbsent("backend", false)
 	require.Len(t, r.byBackend, 1, "a backend that is present again must keep the entry its own pass maintains")
@@ -263,7 +263,7 @@ func TestNewPerClientEnvoyEndpointsSharesClaAcrossBackendDeleteAndReAdd(t *testi
 func TestCLARetainerSeedsInternerWithLiveGeneration(t *testing.T) {
 	r := newCLARetainer()
 	original := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "shared"})
-	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 7, Endpoints: original}})
+	r.keep("backend", []UccWithEndpoints{{&uccEndpointsRow{EndpointsHash: 7, Endpoints: original}}})
 
 	var interner sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]
 	r.seed("backend", &interner)
@@ -293,7 +293,7 @@ func TestCLARetainerSeedsInternerWithLiveGeneration(t *testing.T) {
 func TestCLARetainerKeepIfPresentDropsEntryStoredAfterDelete(t *testing.T) {
 	r := newCLARetainer()
 	cla := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "late"})
-	rows := []UccWithEndpoints{{EndpointsHash: 1, Endpoints: cla}}
+	rows := []UccWithEndpoints{{&uccEndpointsRow{EndpointsHash: 1, Endpoints: cla}}}
 
 	// Delete handled first: nothing retained yet, nothing to forget.
 	r.forgetIfAbsent("backend", true)
