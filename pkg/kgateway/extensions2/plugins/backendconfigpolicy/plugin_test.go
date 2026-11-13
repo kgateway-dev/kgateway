@@ -30,6 +30,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -649,12 +650,12 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 			kgateway.DnsLookupFamilyIPv6Preferred: envoycommondnsv3.DnsLookupFamily_AUTO,
 			kgateway.DnsLookupFamilyAll:           envoycommondnsv3.DnsLookupFamily_ALL,
 		} {
-			got, err := toDnsLookupFamily(family)
+			got, err := pluginutils.ToEnvoyDNSLookupFamily(family)
 			require.NoError(t, err, "family %q", family)
 			assert.Equal(t, want, got, "family %q", family)
 		}
 
-		_, err := toDnsLookupFamily(kgateway.DnsLookupFamily("Nonsense"))
+		_, err := pluginutils.ToEnvoyDNSLookupFamily(kgateway.DnsLookupFamily("Nonsense"))
 		assert.ErrorContains(t, err, `unknown DNS lookup family "Nonsense"`)
 	})
 

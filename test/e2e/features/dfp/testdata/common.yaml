@@ -5,7 +5,8 @@ metadata:
   namespace: kgateway-base
 spec:
   type: DynamicForwardProxy
-  dynamicForwardProxy: {}
+  dynamicForwardProxy:
+    dnsLookupFamily: IPv4Only
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

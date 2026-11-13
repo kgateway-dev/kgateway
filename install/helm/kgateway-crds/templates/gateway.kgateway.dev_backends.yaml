@@ -279,6 +279,19 @@ spec:
                 description: DynamicForwardProxy is the dynamic forward proxy backend
                   configuration.
                 properties:
+                  dnsLookupFamily:
+                    description: |-
+                      DNSLookupFamily selects which IP address families Envoy resolves for upstream hosts.
+                      When unset, Envoy uses its default DNS lookup family (IPv6Preferred).
+                      Envoy shares subclusters by host and port within a proxy. Use the same lookup
+                      family for Dynamic Forward Proxy backends that can reach the same destination.
+                    enum:
+                    - IPv4Preferred
+                    - IPv4Only
+                    - IPv6Only
+                    - IPv6Preferred
+                    - All
+                    type: string
                   enableTls:
                     description: |-
                       EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
