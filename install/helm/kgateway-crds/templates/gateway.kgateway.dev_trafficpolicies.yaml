@@ -2123,8 +2123,7 @@ spec:
                   perTryTimeout:
                     description: |-
                       PerTryTimeout specifies the timeout per retry attempt (including the initial attempt).
-                      If a global timeout is configured on a route, this timeout must be less than the global
-                      route timeout.
+                      It cannot be longer than the route's request timeout, unless that timeout is 0s (disabled).
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
                     maxLength: 32
                     type: string
@@ -2815,10 +2814,11 @@ spec:
             - message: httpUpgrade types must be unique ignoring ASCII case
               rule: '!has(self.httpUpgrade) || self.httpUpgrade.all(x, self.httpUpgrade.exists_one(y,
                 y.type.lowerAscii() == x.type.lowerAscii()))'
-            - message: retry.perTryTimeout must be less than timeouts.request
-              rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
-                && has(self.timeouts.request) ? duration(self.retry.perTryTimeout)
-                < duration(self.timeouts.request) : true) : true'
+            - message: retry.perTryTimeout cannot be longer than timeouts.request
+                unless timeouts.request is 0s
+              rule: '!(has(self.retry) && has(self.retry.perTryTimeout) && has(self.timeouts)
+                && has(self.timeouts.request) && duration(self.timeouts.request) !=
+                duration(''0s'') && duration(self.retry.perTryTimeout) > duration(self.timeouts.request))'
             - message: buffer cannot be used together with httpUpgrade unless buffering
                 is disabled
               rule: '!has(self.buffer) || has(self.buffer.disable) || !has(self.httpUpgrade)
