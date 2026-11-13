@@ -226,3 +226,102 @@ spec:
         name: ext-proc
         port: 80
     messageTimeout: 2h
+---
+# GatewayExtension: oauth2 jwt accepts remote JWKS fetch options
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth2-jwt-remote-jwks-options-valid
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    tokenEndpoint: https://auth.example.com/token
+    authorizationEndpoint: https://auth.example.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    jwt:
+      jwksURI: https://auth.example.com/.well-known/jwks.json
+      cacheDuration: 30m
+      timeout: 10s
+      asyncFetch:
+        fastListener: true
+        failedRefetchDuration: 5s
+      retryPolicy:
+        numRetries: 3
+        backOff:
+          baseInterval: 500ms
+          maxInterval: 5s
+      idToken: {}
+---
+# GatewayExtension: oauth2 jwt rejects an invalid cacheDuration
+_err: invalid duration value
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth2-jwt-cache-duration-invalid
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    tokenEndpoint: https://auth.example.com/token
+    authorizationEndpoint: https://auth.example.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    jwt:
+      jwksURI: https://auth.example.com/.well-known/jwks.json
+      cacheDuration: 10x
+      idToken: {}
+---
+# GatewayExtension: oauth2 jwt rejects a zero timeout
+_err: timeout must be at least 1ms.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth2-jwt-timeout-zero
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    tokenEndpoint: https://auth.example.com/token
+    authorizationEndpoint: https://auth.example.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    jwt:
+      jwksURI: https://auth.example.com/.well-known/jwks.json
+      timeout: 0s
+      idToken: {}
+---
+# GatewayExtension: oauth2 jwt rejects a retry maxInterval below baseInterval
+_err: maxInterval must be greater than or equal to baseInterval
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth2-jwt-retry-backoff-invalid
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    tokenEndpoint: https://auth.example.com/token
+    authorizationEndpoint: https://auth.example.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    jwt:
+      jwksURI: https://auth.example.com/.well-known/jwks.json
+      retryPolicy:
+        backOff:
+          baseInterval: 5s
+          maxInterval: 1s
+      idToken: {}
