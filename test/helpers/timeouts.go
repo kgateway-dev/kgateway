@@ -11,7 +11,7 @@ import (
 
 const (
 	DefaultTimeout         = time.Second * 60
-	DefaultPollingInterval = time.Second * 2
+	DefaultPollingInterval = 200 * time.Millisecond
 )
 
 var getTimeoutsAsInterfaces = GetDefaultTimingsTransform(DefaultTimeout, DefaultPollingInterval)
