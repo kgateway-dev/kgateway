@@ -719,7 +719,8 @@ func splitNamespaceResources(t *testing.T, content string) (namespaces, rest []s
 // DeleteManifests deletes the non-namespace resources in the manifests (fire-and-forget, no wait).
 // Namespace resources are intentionally skipped: namespaces are slow to delete, and deleting one
 // here would race the follow-up apply on a test retry. Namespaces belong to the base-level
-// manifests applied by SetupBaseConfig, whose teardown deletes and waits for them.
+// manifests applied by SetupBaseConfig, whose teardown deletes them and whose setup waits out any
+// still terminating from a previous run.
 //
 // Deletion goes through the Istio client (not client.Delete on parsed objects) so that resources
 // whose manifests omit metadata.namespace are resolved to the same default namespace the apply used.
