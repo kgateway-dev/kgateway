@@ -78,6 +78,10 @@ type ruleIR struct {
 type filterIR struct {
 	filterType gwv1.HTTPRouteFilterType
 	policy     applyToRoute
+	// refErr is set, and policy is nil, when the filter references an object that is not
+	// permitted or cannot be resolved. The route keeps serving without the filter and reports
+	// the error as ResolvedRefs=False.
+	refErr error
 }
 
 func (f *filterIR) apply(
@@ -656,23 +660,23 @@ func convertMirrorIR(
 	fromns string,
 	refgrants *RefGrantIndex,
 	ups *BackendIndex,
-) *mirrorIr {
+) (*mirrorIr, error) {
 	if f == nil {
-		return nil
+		return nil, nil
 	}
 	to := toFromBackendRef(fromns, f.BackendRef)
 	if !refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
-		return nil
+		return nil, fmt.Errorf("requestMirror backendRef %s %s/%s: %w", to.Kind, to.Namespace, to.Name, ErrMissingReferenceGrant)
 	}
 	up, err := ups.getBackendFromRef(kctx, fromns, f.BackendRef)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("requestMirror backendRef %s %s/%s: %w", to.Kind, to.Namespace, to.Name, err)
 	}
 	fraction := getFractionPercent(*f)
 	return &mirrorIr{
 		Cluster:         up.ClusterName(),
 		RuntimeFraction: fraction,
-	}
+	}, nil
 }
 
 // HEADER MODIFIER IR
@@ -1001,9 +1005,12 @@ func (h *RoutesIndex) convertfilterIR(
 	annotations map[string]string,
 ) (*filterIR, error) {
 	var policy applyToRoute
+	// refErr is not returned: an unresolved reference drops the filter, not the route.
+	var refErr error
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
-		mir := convertMirrorIR(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
+		var mir *mirrorIr
+		mir, refErr = convertMirrorIR(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
 		if mir != nil {
 			policy = mir
 		}
@@ -1036,12 +1043,13 @@ func (h *RoutesIndex) convertfilterIR(
 			policy = ci
 		}
 	}
-	if policy == nil {
+	if policy == nil && refErr == nil {
 		return nil, nil
 	}
 	return &filterIR{
 		filterType: f.Type,
 		policy:     policy,
+		refErr:     refErr,
 	}, nil
 }
 
