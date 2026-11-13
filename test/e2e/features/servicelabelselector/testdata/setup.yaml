@@ -1,0 +1,54 @@
+# The Gateway deliberately carries no infrastructure labels, so its proxy Service does not
+# match the controller's serviceLabelSelector. SetupSuite waits on Gateway status.addresses,
+# which the gateway controller derives from that Service: this pins that the controller's
+# own Service watch does not depend on the operator's selector.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: service-label-selector
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# The selector excludes every other Service in the cluster, including kubernetes.default, so
+# this is the controller's only backend. Setup waits for the proxy to become ready, and the
+# controller publishes nothing to a proxy until it has at least one backend, so the matching
+# Service has to exist before the tests apply their routes.
+apiVersion: v1
+kind: Service
+metadata:
+  name: matching-service
+  namespace: default
+  labels:
+    e2e.kgateway.dev/discovery: enabled
+    e2e.kgateway.dev/excluded: "false"
+spec:
+  selector:
+    app.kubernetes.io/name: matching-service-backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: matching-service-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: matching-service-backend
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.28.0
+      ports:
+        - name: http
+          containerPort: 80

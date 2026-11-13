@@ -40,6 +40,27 @@ const (
 	ResourceNotFoundMessageTemplate = "%s %s/%s not found."
 )
 
+// ResourceNotFoundMessage returns the status message for a reference to a missing object, and
+// false when err wraps no NotFoundError. When the object's kind is watched through a label
+// selector (krtcollections.SelectorNotFoundError), the message names the selector, since an
+// object the selector excludes is indistinguishable from a missing one.
+func ResourceNotFoundMessage(err error) (string, bool) {
+	notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err)
+	if !ok {
+		return "", false
+	}
+	// errors.As returns the first match in the tree, so a joined error may hold the selector
+	// error of a different reference; only use it when it wraps this NotFoundError.
+	if selectorErr, ok := errors.AsType[*krtcollections.SelectorNotFoundError](err); ok && selectorErr.NotFound == notFoundErr {
+		return selectorErr.Error() + ".", true
+	}
+	resourceType := notFoundErr.NotFoundObj.Kind
+	if resourceType == "" {
+		resourceType = "Resource"
+	}
+	return fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name), true
+}
+
 type ListenerTranslatorConfig struct {
 	ListenerBindIpv6                     bool
 	EnableExperimentalGatewayAPIFeatures bool
@@ -1407,6 +1428,21 @@ func translateTLSConfig(
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
 // referenced by the given ObjectReference. Returns the CA certificate data as a string.
+// caConfigMapFetchError classifies a failed CA certificate ConfigMap lookup. A miss caused by
+// ConfigMapLabelSelector keeps the selector diagnostic, so listener status names the selector;
+// the reason is still InvalidCACertificateRef.
+func caConfigMapFetchError(namespace, name string, err error) error {
+	// If its a missing reference grant error, return the CA Certificate specific error
+	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+		return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", namespace, name, sslutils.ErrMissingCaCertificateRefGrant)
+	}
+	if selectorErr, ok := errors.AsType[*krtcollections.SelectorNotFoundError](err); ok {
+		return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w: %w", namespace, name, sslutils.ErrInvalidCACertificateRef, selectorErr)
+	}
+	// If its not a missing reference grant error, return the invalid certificate ref error
+	return fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", namespace, name, sslutils.ErrInvalidCACertificateRef)
+}
+
 func buildCaCertificateReference(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -1426,12 +1462,11 @@ func buildCaCertificateReference(
 			caCertRef,
 		)
 		if err != nil {
-			// If its a missing reference grant error, return the CA Certificate specific error
-			if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
-				return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrMissingCaCertificateRefGrant)
+			namespace := parentNamespace
+			if caCertRef.Namespace != nil {
+				namespace = string(*caCertRef.Namespace)
 			}
-			// If its not a missing reference grant error, return the invalid certificate ref error
-			return "", fmt.Errorf("failed to fetch CA certificate ConfigMap %s/%s: %w", caCertRef.Name, parentNamespace, sslutils.ErrInvalidCACertificateRef)
+			return "", caConfigMapFetchError(namespace, string(caCertRef.Name), err)
 		}
 
 		// Extract CA certificate from ConfigMap
@@ -1625,12 +1660,8 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	}
 
-	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {
-		resourceType := notFoundErr.NotFoundObj.Kind
-		if resourceType == "" {
-			resourceType = "Resource"
-		}
-		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+	if notFoundMessage, ok := ResourceNotFoundMessage(err); ok {
+		message = notFoundMessage
 	}
 
 	// When resolvedRefsOK is true, do not set a ResolvedRefs condition at all

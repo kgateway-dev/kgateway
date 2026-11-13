@@ -3,7 +3,6 @@ package gateway
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,12 +126,8 @@ func reportGatewayBackendClientCertificateError(err error, gatewayReporter repor
 	}
 
 	message := err.Error()
-	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {
-		resourceType := notFoundErr.NotFoundObj.Kind
-		if resourceType == "" {
-			resourceType = "Resource"
-		}
-		message = fmt.Sprintf(listener.ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+	if notFoundMessage, ok := listener.ResourceNotFoundMessage(err); ok {
+		message = notFoundMessage
 	}
 
 	gatewayReporter.SetCondition(reports.GatewayCondition{
