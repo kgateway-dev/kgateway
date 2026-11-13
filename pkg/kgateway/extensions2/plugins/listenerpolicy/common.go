@@ -12,6 +12,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -73,6 +74,74 @@ func ToEnvoyGrpc(in kgateway.CommonGrpcService, backend *ir.BackendObjectIR) (*e
 		grpcService.RetryPolicy = retryPolicy
 	}
 	return grpcService, nil
+}
+
+// OTLP/HTTP paths per spec (https://opentelemetry.io/docs/specs/otlp/#otlphttp).
+const (
+	OTLPHTTPLogsPath   = "/v1/logs"
+	OTLPHTTPTracesPath = "/v1/traces"
+)
+
+// ToEnvoyHttp builds the HttpService used by OTLP/HTTP access log and tracing exporters.
+// CommonHttpService has no literal URL of its own: Envoy derives the outgoing request's
+// :path and Host header by parsing HttpUri.uri (see Http::Utility::prepareHeaders), so Uri
+// is built here from the backend's own host/port rather than its (internal, non-resolvable)
+// cluster name.
+// This requires the backend to have a real, known hostname - a Kubernetes Service
+// or a kgateway Backend of type Static - which rules out backend kinds with no
+// inherent network address (e.g. AWS Lambda, DynamicForwardProxy).
+func ToEnvoyHttp(in kgateway.CommonHttpService, backend *ir.BackendObjectIR, defaultPath string) (*envoycorev3.HttpService, error) {
+	if backend.CanonicalHostname == "" {
+		return nil, fmt.Errorf("backend %q has no resolvable hostname for an OTLP/HTTP service; use a Kubernetes Service or a kgateway Backend of type Static", backend.ResourceName())
+	}
+
+	path := defaultPath
+	if in.Path != nil {
+		path = *in.Path
+	}
+
+	// BackendTLSPolicy wins over BackendConfigPolicy's TLS config when both are attached to the
+	// same backend (see backendconfigpolicy.hasBackendTLSPolicy), so check it first.
+	scheme := "http"
+	if len(backend.AttachedPolicies.Policies[kwellknown.BackendTLSPolicyGVK.GroupKind()]) > 0 {
+		scheme = "https"
+	} else {
+		for _, pol := range backend.AttachedPolicies.Policies[kwellknown.BackendConfigPolicyGVK.GroupKind()] {
+			if backendconfigpolicy.HasTLS(pol.PolicyIr) {
+				scheme = "https"
+				break
+			}
+		}
+	}
+
+	// HttpUri.Timeout is required by Envoy's proto validation, so fall back to the same
+	// default used for ext_authz/ext_proc HTTP services when the user hasn't set one.
+	timeout := kgateway.HTTPDefaultTimeout
+	if in.Timeout != nil {
+		timeout = in.Timeout.Duration
+	}
+
+	httpService := &envoycorev3.HttpService{
+		HttpUri: &envoycorev3.HttpUri{
+			Uri: fmt.Sprintf("%s://%s:%d%s", scheme, backend.CanonicalHostname, backend.GetPort(), path),
+			HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+				Cluster: backend.ClusterName(),
+			},
+			Timeout: utils.DurationToProto(timeout),
+		},
+	}
+	if in.RequestHeadersToAdd != nil {
+		httpService.RequestHeadersToAdd = make([]*envoycorev3.HeaderValueOption, len(in.RequestHeadersToAdd))
+		for i, header := range in.RequestHeadersToAdd {
+			httpService.RequestHeadersToAdd[i] = &envoycorev3.HeaderValueOption{
+				Header: &envoycorev3.HeaderValue{
+					Key:   header.Key,
+					Value: ptr.Deref(header.Value, ""),
+				},
+			}
+		}
+	}
+	return httpService, nil
 }
 
 // convertAccessLogFilter translates filtering logic to Envoy filter
