@@ -33,6 +33,9 @@ const (
 	// against the objects they name, independently of any Gateway translation. They are the
 	// only source that can report on a policy whose target does not exist.
 	PolicyTargetStatusSource StatusSourceKind = "policy-target"
+	// GatewayParametersStatusSource contributions are the Gateway deployer's verdict on a
+	// Gateway's infrastructure parameters; see GatewayParametersStatus.
+	GatewayParametersStatusSource StatusSourceKind = "gateway-parameters"
 )
 
 // StatusSource identifies the translation unit that produced a contribution.
@@ -48,17 +51,20 @@ func (s StatusSource) String() string {
 }
 
 // StatusReport is the compact report fragment retained for one status owner.
-// Exactly one field is populated.
+// Exactly one field is populated in a contribution. A reduction folds GatewayParameters into
+// Gateway, so it never carries GatewayParameters itself.
 type StatusReport struct {
-	Gateway     *GatewayReport
-	ListenerSet *ListenerSetReport
-	Route       *RouteReport
-	Policy      *PolicyReport
-	Backend     *BackendReport
+	Gateway           *GatewayReport
+	GatewayParameters *GatewayParametersReport
+	ListenerSet       *ListenerSetReport
+	Route             *RouteReport
+	Policy            *PolicyReport
+	Backend           *BackendReport
 }
 
 func (r StatusReport) Equals(other StatusReport) bool {
 	return gatewayReportEqual(r.Gateway, other.Gateway) &&
+		gatewayParametersReportEqual(r.GatewayParameters, other.GatewayParameters) &&
 		listenerSetReportEqual(r.ListenerSet, other.ListenerSet) &&
 		routeReportEqual(r.Route, other.Route) &&
 		policyReportEqual(r.Policy, other.Policy) &&
@@ -205,13 +211,18 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 	// Only the source of the previously seen contribution needs tracking: the reports
 	// themselves say whether one was seen, since a non-nil contribution always clones to a
 	// non-nil report.
-	var gatewaySource, listenerSetSource, backendSource StatusSource
+	var gatewaySource, listenerSetSource, backendSource, gatewayParametersSource StatusSource
+	var gatewayParameters *GatewayParametersReport
 	for _, contribution := range contributions {
 		switch {
 		case contribution.Gateway != nil:
 			warnOnMultipleSingleWriterContributions("Gateway", contribution, gatewaySource, reduced.Gateway != nil)
 			reduced.Gateway = cloneGatewayReport(contribution.Gateway)
 			gatewaySource = contribution.Source
+		case contribution.GatewayParameters != nil:
+			warnOnMultipleSingleWriterContributions("GatewayParameters", contribution, gatewayParametersSource, gatewayParameters != nil)
+			gatewayParameters = cloneGatewayParametersReport(contribution.GatewayParameters)
+			gatewayParametersSource = contribution.Source
 		case contribution.ListenerSet != nil:
 			warnOnMultipleSingleWriterContributions("ListenerSet", contribution, listenerSetSource, reduced.ListenerSet != nil)
 			reduced.ListenerSet = cloneListenerSetReport(contribution.ListenerSet)
@@ -233,6 +244,14 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 			reduced.Backend = cloneBackendReport(contribution.Backend)
 			backendSource = contribution.Source
 		}
+	}
+	// The deployer's verdict is not a competing Gateway report but one input to it, merged
+	// after the loop so the order the two sources sort in cannot drop it. BuildGWStatus
+	// decides how it takes precedence over the translation report's own Accepted. Every
+	// Gateway the deployer reconciles is translated too, and translation always reports on a
+	// Gateway's listeners, so a verdict with no report only exists until translation catches up.
+	if gatewayParameters != nil && reduced.Gateway != nil {
+		reduced.Gateway.parameters = gatewayParameters
 	}
 	return reduced
 }

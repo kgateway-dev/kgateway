@@ -17,7 +17,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,6 +66,11 @@ type gatewayReconciler struct {
 
 	controllerExtension pluginsdk.GatewayControllerExtension
 
+	// paramsStatus is where Reconcile reports whether each Gateway's objects could be built
+	// from its parameters. The Gateway status writer turns a failure into
+	// Accepted=False/InvalidParameters; this controller never writes that condition itself.
+	paramsStatus *reports.GatewayParametersStatus
+
 	queue controllers.Queue
 }
 
@@ -97,6 +101,7 @@ func NewGatewayReconciler(
 	r.gwParamClient = gwParams.GetGatewayParametersClient()
 
 	r.queue = controllers.NewQueue("GatewayController", controllers.WithReconciler(r.Reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
+	r.paramsStatus = cfg.GatewayParametersStatus
 
 	// Gateway event handler
 	r.gwClient.AddEventHandler(
@@ -276,6 +281,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	if gw == nil || gw.GetDeletionTimestamp() != nil {
 		// ignore the event if the Gateway is not found. A subsequent event should handle this if needed
 		logger.Debug("gateway not found, skipping reconciliation", "ref", req)
+		r.paramsStatus.Remove(req)
 		return nil
 	}
 
@@ -288,49 +294,31 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	// Only reconcile Gateways for our controller
 	if gwc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) {
 		// Not our GatewayClass at all
+		r.paramsStatus.Remove(req)
 		return nil
 	}
 	if wellknown.IsRetiredWaypointClass(gwc) {
 		logger.Debug("ignoring Gateway of a retired waypoint GatewayClass", "ref", req, "gwclass", gwc.Name)
+		r.paramsStatus.Remove(req)
 		return nil
 	}
 
 	logger.Info("reconciling Gateway", "ref", req)
 	ctx := r.ctx
 	objs, err := r.deployer.GetObjsToDeploy(ctx, gw)
-	if err != nil {
-		if errors.Is(err, internaldeployer.ErrNoValidPorts) {
-			// status is reported from translator, so return normally
-			return err
-		}
+	// ErrNoValidPorts is only returned once the GatewayParameters resolve, so the parameters
+	// are valid; the listener ports' own status is reported from the translator.
+	noValidPorts := errors.Is(err, internaldeployer.ErrNoValidPorts)
+	if err != nil && !noValidPorts {
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
 		// objects, we want to set the status to InvalidParameters.
-		condition := metav1.Condition{
-			Type:               string(gwv1.GatewayConditionAccepted),
-			Status:             metav1.ConditionFalse,
-			ObservedGeneration: gw.Generation,
-			Reason:             string(gwv1.GatewayReasonInvalidParameters),
-			Message:            err.Error(),
-		}
-		if statusErr := r.updateGatewayStatusWithRetry(ctx, gw, condition); statusErr != nil {
-			return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
-		}
+		r.paramsStatus.Set(req, gw.Generation, err)
 		return err
-	} else if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
-		existing.Status == metav1.ConditionFalse &&
-		existing.Reason == string(gwv1.GatewayReasonInvalidParameters) {
-		// set the status Accepted=true if it had been set to false due to InvalidParameters
-		condition := metav1.Condition{
-			Type:               string(gwv1.GatewayConditionAccepted),
-			Status:             metav1.ConditionTrue,
-			ObservedGeneration: gw.Generation,
-			Reason:             string(gwv1.GatewayReasonAccepted),
-			Message:            reports.GatewayAcceptedMessage,
-		}
-		if statusErr := r.updateGatewayStatusWithRetry(ctx, gw, condition); statusErr != nil {
-			return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
-		}
+	}
+	r.paramsStatus.Set(req, gw.Generation, nil)
+	if noValidPorts {
+		return err
 	}
 	objs = r.deployer.SetNamespaceAndOwnerWithGVK(gw, wellknown.GatewayGVK, objs)
 	err = r.deployer.DeployObjsWithSource(ctx, objs, gw)
@@ -488,21 +476,6 @@ func updateGatewayAddresses(
 			}
 			newStatus := gw.Status.DeepCopy()
 			newStatus.Addresses = desired
-			return *newStatus, true
-		},
-	)
-}
-
-// updateGatewayStatusWithRetry attempts to update the Gateway status with retry logic
-// to handle transient failures when updating the status subresource
-func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw *gwv1.Gateway, condition metav1.Condition) error {
-	return updateGatewayStatusWithRetryFunc(
-		ctx,
-		r.gwClient,
-		client.ObjectKeyFromObject(gw),
-		func(latest *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
-			newStatus := latest.Status.DeepCopy()
-			meta.SetStatusCondition(&newStatus.Conditions, condition)
 			return *newStatus, true
 		},
 	)

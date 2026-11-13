@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
@@ -79,6 +80,7 @@ type ControllerSuite struct {
 	client          client.Client //nolint:forbidigo // can use client.Client in envtest
 	kubeconfigPath  string
 	managerErr      chan error
+	paramsStatus    *reports.GatewayParametersStatus
 }
 
 func TestControllerSuite(t *testing.T) {
@@ -293,16 +295,89 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 	err = s.client.Create(ctx, gw)
 	s.Require().NoError(err)
 
+	// The status writer, which this suite does not run, reports the failed verdict as
+	// Accepted=False/InvalidParameters.
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		err := s.client.Get(ctx, types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}, gw)
-		require.NoError(c, err, "error getting Gateway")
+		verdict := s.verdictFor(types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace})
+		require.NotNil(c, verdict, "the deployer should publish its verdict")
+		require.Contains(c, verdict.Err(), "InvalidKindName")
+		require.Equal(c, int64(1), verdict.ObservedGeneration())
+	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for the deployer's failed verdict")
+}
 
-		condition := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
-		require.NotNil(c, condition)
-		require.Equal(c, metav1.ConditionFalse, condition.Status)
-		require.Equal(c, string(gwv1.GatewayReasonInvalidParameters), condition.Reason)
-		require.Equal(c, gw.Generation, condition.ObservedGeneration)
-	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for Gateway to have GatewayReasonInvalidParameters")
+// TestInvalidGatewayParametersClearedWithoutValidPorts tests that fixing the parametersRef
+// removes the Gateway's parameters error even when the Gateway still has no valid ports.
+func (s *ControllerSuite) TestInvalidGatewayParametersClearedWithoutValidPorts() {
+	ctx := context.Background()
+	gwp := &kgateway.GatewayParameters{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "reserved-port-gwp",
+			Namespace: "default",
+		},
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{},
+		},
+	}
+	gw := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "reserved-port-gw",
+			Namespace: "default",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: gwv1.ObjectName(gatewayClassName),
+			Infrastructure: &gwv1.GatewayInfrastructure{
+				ParametersRef: &gwv1.LocalParametersReference{
+					Group: kgateway.GroupName,
+					Kind:  "InvalidKindName",
+					Name:  gwp.Name,
+				},
+			},
+			Listeners: []gwv1.Listener{{
+				Name:     "listener",
+				Protocol: "HTTP",
+				// A reserved port: once the parameters resolve, there are no valid ports to deploy.
+				Port: 9091,
+			}},
+		},
+	}
+	s.Require().NoError(s.client.Create(ctx, gwp))
+	s.Require().NoError(s.client.Create(ctx, gw))
+	s.T().Cleanup(func() {
+		s.NoError(s.client.Delete(ctx, gw))
+		s.NoError(s.client.Delete(ctx, gwp))
+	})
+
+	nn := types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		verdict := s.verdictFor(nn)
+		require.NotNil(c, verdict, "the deployer should publish its verdict")
+		require.NotEmpty(c, verdict.Err(), "the verdict should be a failure")
+	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for the deployer's failed verdict")
+
+	s.Require().NoError(retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err := s.client.Get(ctx, nn, gw); err != nil {
+			return err
+		}
+		gw.Spec.Infrastructure.ParametersRef.Kind = gwv1.Kind(wellknown.GatewayParametersGVK.Kind)
+		return s.client.Update(ctx, gw)
+	}))
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		verdict := s.verdictFor(nn)
+		require.NotNil(c, verdict, "the deployer should publish its verdict")
+		require.Empty(c, verdict.Err(), "fixing the parametersRef should make the verdict a success")
+		require.Equal(c, int64(2), verdict.ObservedGeneration(), "the verdict should be for the fixed generation")
+	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for the deployer's successful verdict")
+}
+
+// verdictFor reads the deployer's verdict for gw from the status contributions it publishes.
+func (s *ControllerSuite) verdictFor(gw types.NamespacedName) *reports.GatewayParametersReport {
+	for _, contribution := range s.paramsStatus.Contributions().List() {
+		if contribution.Target.NamespacedName == gw && contribution.GatewayParameters != nil {
+			return contribution.GatewayParameters
+		}
+	}
+	return nil
 }
 
 // TestGatewayClassStatus tests the Status conditions on GatewayClass
@@ -706,6 +781,7 @@ func (s *ControllerSuite) startController(
 	if err != nil {
 		return err
 	}
+	s.paramsStatus = reports.NewGatewayParametersStatus()
 
 	gwCfg := GatewayConfig{
 		Client:         kubeClient,
@@ -717,6 +793,7 @@ func (s *ControllerSuite) startController(
 		},
 		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 		CommonCollections:        commonCols,
+		GatewayParametersStatus:  s.paramsStatus,
 	}
 
 	supportedFeatures := deployer.GetSupportedFeaturesForStandardGateway(true)
