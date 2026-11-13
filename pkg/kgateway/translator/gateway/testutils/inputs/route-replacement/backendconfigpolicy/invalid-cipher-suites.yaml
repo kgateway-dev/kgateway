@@ -53,7 +53,8 @@ spec:
     kind: Service
     name: example-svc
   tls:
-    insecureSkipVerify: false
+    insecureSkipVerify: true
+    sni: backend.example.com
     parameters:
       minVersion: "1.2"
       maxVersion: "1.3"
