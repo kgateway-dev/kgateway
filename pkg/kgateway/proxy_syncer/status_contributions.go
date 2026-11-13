@@ -2,10 +2,12 @@ package proxy_syncer
 
 import (
 	"strconv"
+	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -93,4 +95,37 @@ func backendStatusContributions(
 
 func backendGenerationKey(resourceName string, generation int64) string {
 	return resourceName + "@" + strconv.FormatInt(generation, 10)
+}
+
+// xdsRejectionStatusContributions turns each Gateway's outstanding xDS rejections into a
+// Programmed=False overlay on its status.
+func xdsRejectionStatusContributions(
+	rejections krt.Collection[xds.GatewayXdsRejection],
+	krtopts krtutil.KrtOptions,
+) krt.Collection[reports.StatusContribution] {
+	return krt.NewCollection(rejections, func(_ krt.HandlerContext, rejection xds.GatewayXdsRejection) *reports.StatusContribution {
+		contribution := reports.NewXdsRejectionContribution(rejection.Gateway, xdsRejectionMessage(rejection))
+		return &contribution
+	}, krtopts.ToOptions("XdsRejectionStatusContributions")...)
+}
+
+// xdsRejectionMessage names each rejected resource type with Envoy's error. It contains no
+// proxy or stream identity, so it changes only when the rejections themselves do.
+func xdsRejectionMessage(rejection xds.GatewayXdsRejection) string {
+	var b strings.Builder
+	b.WriteString("Envoy rejected the latest configuration and is serving the last accepted version: ")
+	for i, r := range rejection.Rejections {
+		if i > 0 {
+			b.WriteString("; ")
+		}
+		b.WriteString(r.TypeURL)
+		b.WriteString(": ")
+		b.WriteString(r.Message)
+		if r.Others > 0 {
+			b.WriteString(" (and ")
+			b.WriteString(strconv.Itoa(r.Others))
+			b.WriteString(" other errors from other proxies)")
+		}
+	}
+	return b.String()
 }

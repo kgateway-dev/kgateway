@@ -44,6 +44,11 @@ const (
 	// GatewayReplacedReason is used with the Accepted=False condition when the entire Gateway is replaced
 	// due to an error in a policy targeting the Gateway.
 	GatewayReplacedReason = "GatewayReplaced"
+
+	// GatewayXdsRejectedReason is used with the Programmed=False condition when at least one
+	// connected proxy of the Gateway rejected the latest xDS configuration and keeps serving an
+	// older one.
+	GatewayXdsRejectedReason = "XdsRejected"
 )
 
 // PolicyAttachmentState represents the state of a policy attachment

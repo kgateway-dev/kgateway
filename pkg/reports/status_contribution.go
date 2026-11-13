@@ -4,10 +4,14 @@ import (
 	"slices"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 // StatusKey is the version-independent identity of a status owner. Multiple
@@ -33,6 +37,11 @@ const (
 	// against the objects they name, independently of any Gateway translation. They are the
 	// only source that can report on a policy whose target does not exist.
 	PolicyTargetStatusSource StatusSourceKind = "policy-target"
+	// XdsRejectionStatusSource contributions report that connected proxies rejected a
+	// Gateway's xDS configuration. Unlike other Gateway contributions they are not complete
+	// reports: the reducer overlays their conditions on the Gateway's translation report, and
+	// drops them when there is no translation report to overlay.
+	XdsRejectionStatusSource StatusSourceKind = "xds-rejection"
 )
 
 // StatusSource identifies the translation unit that produced a contribution.
@@ -206,8 +215,11 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 	// themselves say whether one was seen, since a non-nil contribution always clones to a
 	// non-nil report.
 	var gatewaySource, listenerSetSource, backendSource StatusSource
+	var gatewayOverlay *GatewayReport
 	for _, contribution := range contributions {
 		switch {
+		case contribution.Gateway != nil && contribution.Source.Kind == XdsRejectionStatusSource:
+			gatewayOverlay = contribution.Gateway
 		case contribution.Gateway != nil:
 			warnOnMultipleSingleWriterContributions("Gateway", contribution, gatewaySource, reduced.Gateway != nil)
 			reduced.Gateway = cloneGatewayReport(contribution.Gateway)
@@ -234,7 +246,40 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 			backendSource = contribution.Source
 		}
 	}
+	if reduced.Gateway != nil && gatewayOverlay != nil {
+		overlayGatewayConditions(reduced.Gateway, gatewayOverlay)
+	}
 	return reduced
+}
+
+// NewXdsRejectionContribution reports that connected proxies of gw rejected its xDS
+// configuration, as Programmed=False with reason XdsRejected.
+func NewXdsRejectionContribution(gw types.NamespacedName, message string) StatusContribution {
+	report := &GatewayReport{}
+	report.SetCondition(reporter.GatewayCondition{
+		Type:    gwv1.GatewayConditionProgrammed,
+		Status:  metav1.ConditionFalse,
+		Reason:  reporter.GatewayXdsRejectedReason,
+		Message: message,
+	})
+	return StatusContribution{
+		Target:       StatusKey{GroupKind: wellknown.GatewayGVK.GroupKind(), NamespacedName: gw},
+		Source:       StatusSource{Kind: XdsRejectionStatusSource, Name: gw.String()},
+		StatusReport: StatusReport{Gateway: report},
+	}
+}
+
+// overlayGatewayConditions sets overlay's conditions on report, except where report already
+// has a False condition of the same type: translation's reason is the more fundamental one,
+// and a proxy rejecting config that translation already marked invalid adds nothing.
+func overlayGatewayConditions(report, overlay *GatewayReport) {
+	for _, condition := range overlay.conditions {
+		if existing := meta.FindStatusCondition(report.conditions, condition.Type); existing != nil &&
+			existing.Status == metav1.ConditionFalse {
+			continue
+		}
+		meta.SetStatusCondition(&report.conditions, condition)
+	}
 }
 
 // Gateway, ListenerSet, and Backend reports are complete owner snapshots, not
