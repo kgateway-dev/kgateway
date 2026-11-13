@@ -142,6 +142,13 @@ type ListenerDefaultConfig struct {
 	// allowing different listeners on the same port to enforce different mTLS trust boundaries.
 	// When configured on a ListenerPolicy targeting a specific listener (via sectionName),
 	// it overrides any Gateway-level mTLS configuration for that listener.
+	// When configured on a ListenerPolicy targeting the whole Gateway (no sectionName), it applies to
+	// every TLS-terminating listener of the Gateway, including those of attached ListenerSets, and it
+	// overrides the Gateway's spec.tls.frontend validation (default and perPort) for those listeners.
+	// A ListenerPolicy targeting a specific listener takes precedence over it, even when that policy's CA
+	// certificates cannot be fetched: if it requires client certificates the listener fails, otherwise the
+	// Gateway's spec.tls.frontend validation applies to the listener.
+	// CA certificate references without a namespace are resolved in the ListenerPolicy's namespace.
 	//
 	// Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
 	// wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,
