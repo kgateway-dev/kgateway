@@ -21,6 +21,7 @@ var (
 	// the buffer filter's default placement
 	bufferedRouteManifest             = getTestFile("buffered-route.yaml")
 	bufferedRouteDefaultStageManifest = getTestFile("buffered-route-default-stage.yaml")
+	bufferingOptOutManifest           = getTestFile("buffering-opt-out.yaml")
 )
 
 func getTestFile(filename string) string {
