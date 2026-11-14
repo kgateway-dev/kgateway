@@ -95,6 +95,26 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.Http2ProtocolO
 	return out
 }
 
+func applyOutlierDetectionHttpOptions(outlierDetectionHttpOptions *envoy_upstreams_v3.HttpProtocolOptions_OutlierDetection, out *envoyclusterv3.Cluster) {
+	if outlierDetectionHttpOptions == nil {
+		return
+	}
+
+	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+		opts.OutlierDetection = outlierDetectionHttpOptions
+		if opts.GetUpstreamProtocolOptions() == nil {
+			// Envoy requires UpstreamProtocolOptions if TypedExtensionProtocolOptions is set for HttpProtocolOptions.
+			opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_HttpProtocolOptions{},
+				},
+			}
+		}
+	}); err != nil {
+		logger.Error("failed to apply outlier detection http options", "error", err)
+	}
+}
+
 func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *envoycorev3.HttpProtocolOptions, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	if commonHttpProtocolOptions == nil {
 		return
