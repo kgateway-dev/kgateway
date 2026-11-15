@@ -281,9 +281,17 @@ func (ml *MergedListeners) AppendTlsListener(
 					partial:   owned.ok,
 				})
 			}
-			// A duplicate shares the filter chain of its first entry.
+			// A duplicate shares the filter chain of its first entry, so it is
+			// added to that chain's routes to have its parentRef reported.
 			if owned.ok && !owned.duplicate {
-				appendFilterChain([]*query.RouteInfo{routeInfos[i]}, owned.sniDomains)
+				routeSet := []*query.RouteInfo{routeInfos[i]}
+				key := keyOfRoute(routeInfos[i])
+				for _, other := range routeInfos[i+1:] {
+					if keyOfRoute(other) == key {
+						routeSet = append(routeSet, other)
+					}
+				}
+				appendFilterChain(routeSet, owned.sniDomains)
 			}
 		}
 		// Every lost SNI domain has a winning route, so there is at least one
@@ -646,7 +654,8 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	// by CreationTimestamp wins; any others are rejected with Accepted=False.
 	//
 	// Note: after #13694, AppendTlsListener creates one filter chain per
-	// TLSRoute, so this path is only reached with len > 1 for TCPRoutes.
+	// TLSRoute, so for TLSRoutes len > 1 only means the same route is attached
+	// through more than one parentRef.
 	r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
@@ -686,13 +695,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		// Collect ParentRefReporters for the TCPRoute
-		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
-		for _, parentRef := range tRoute.ParentRefs {
-			parentRefReporter := reporter.Route(tRoute.SourceObject).ParentRef(&parentRef)
-			parentRefReporter.SetCondition(condition)
-			parentRefReporters = append(parentRefReporters, parentRefReporter)
-		}
+		parentRefReporters := acceptAttachedParentRefs(r, parent.routesWithHosts, condition, reporter)
 
 		// Ensure unique names by appending the rule index to the TCPRoute name
 		tcpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, tRoute.Namespace, tRoute.Name, 0)
@@ -771,12 +774,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
-		for _, parentRef := range tRoute.ParentRefs {
-			parentRefReporter := reporter.Route(tRoute.SourceObject).ParentRef(&parentRef)
-			parentRefReporter.SetCondition(condition)
-			parentRefReporters = append(parentRefReporters, parentRefReporter)
-		}
+		parentRefReporters := acceptAttachedParentRefs(r, parent.routesWithHosts, condition, reporter)
 
 		// Ensure unique names by appending the rule index to the TLSRoute name
 		tcpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, tRoute.Namespace, tRoute.Name, 0)
@@ -842,6 +840,31 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	default:
 		return nil
 	}
+}
+
+// acceptAttachedParentRefs sets the condition on each parentRef through which
+// the winning route is attached to this listener, and returns their reporters.
+// The route can reach the listener through more than one parentRef. Its other
+// parentRefs (another listener, another Gateway, or no matching parent) carry
+// the status of their own attachment and must not be touched here.
+func acceptAttachedParentRefs(
+	winner *query.RouteInfo,
+	routesWithHosts []*query.RouteInfo,
+	condition reports.RouteCondition,
+	reporter reports.Reporter,
+) []reports.ParentRefReporter {
+	winnerKey := keyOfRoute(winner)
+	routeReporter := reporter.Route(winner.Object.GetSourceObject())
+	var parentRefReporters []reports.ParentRefReporter
+	for _, ri := range routesWithHosts {
+		if keyOfRoute(ri) != winnerKey {
+			continue
+		}
+		parentRefReporter := routeReporter.ParentRef(&ri.ParentRef)
+		parentRefReporter.SetCondition(condition)
+		parentRefReporters = append(parentRefReporters, parentRefReporter)
+	}
+	return parentRefReporters
 }
 
 // rejectConflictingRoute sets Programmed=False on the specific listener

@@ -1,0 +1,52 @@
+# The TCPRoute is attached to the tcp listener through two parentRefs (by
+# sectionName and by Gateway name); both are accepted. Its other parentRefs
+# must keep the status of their own attachment and must not be reported as
+# accepted by the tcp listener:
+# - sectionName "missing" does not exist on the Gateway (NoMatchingParent).
+# - sectionName "http" is an HTTP listener, which does not match a TCPRoute
+#   (NoMatchingParent).
+# - other-gateway is not translated here, so it gets no status entry.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tcp
+  - name: example-gateway
+  - name: example-gateway
+    sectionName: missing
+  - name: example-gateway
+    sectionName: http
+  - name: other-gateway
+  rules:
+  - backendRefs:
+    - name: example-tcp-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8080
+  - name: http
+    protocol: HTTP
+    port: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-tcp-svc
+spec:
+  selector:
+    app: example
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
