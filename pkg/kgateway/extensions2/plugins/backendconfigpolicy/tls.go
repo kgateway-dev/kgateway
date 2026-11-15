@@ -3,12 +3,9 @@ package backendconfigpolicy
 import (
 	"errors"
 	"fmt"
-	"net/netip"
-	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -17,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -144,7 +142,7 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 }
 
 func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
-	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
+	sanMatchers := sslutils.VerifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 
 	// If the user opted to use the system CA bundle, or named no trust source at all,
 	// configure a CombinedValidationContext that references the SDS secret for the
@@ -155,7 +153,7 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 			// A public CA vouches for every hostname it has issued for, so without an
 			// explicit SAN list, pin the certificate to the SNI we are sending.
 			if len(sanMatchers) == 0 && tlsConfig.Sni != nil {
-				sanMatchers = verifySanListToTypedMatchSanList([]string{*tlsConfig.Sni})
+				sanMatchers = sslutils.VerifySanListToTypedMatchSanList([]string{*tlsConfig.Sni})
 			}
 			combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
 				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
@@ -295,47 +293,5 @@ func parseTLSVersion(tlsVersion *kgateway.TLSVersion) (envoytlsv3.TlsParameters_
 		return envoytlsv3.TlsParameters_TLS_AUTO, nil
 	default:
 		return 0, fmt.Errorf("invalid TLS version: %s", *tlsVersion)
-	}
-}
-
-func verifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAltNameMatcher {
-	var matchSanList []*envoytlsv3.SubjectAltNameMatcher
-	for _, san := range sanList {
-		if ip, err := netip.ParseAddr(san); err == nil {
-			// A certificate can carry an IP address as an IP SAN or as a DNS SAN. Match both, so
-			// certificates that matched the DNS-only matcher before still match. The IP matcher
-			// uses the canonical form of the address, which is the form Envoy compares IP SANs in.
-			matchSanList = append(matchSanList,
-				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS, ip.String()),
-				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_DNS, san),
-			)
-			continue
-		}
-		matchSanList = append(matchSanList, exactSanMatcher(sanTypeOf(san), san))
-	}
-	return matchSanList
-}
-
-func exactSanMatcher(sanType envoytlsv3.SubjectAltNameMatcher_SanType, san string) *envoytlsv3.SubjectAltNameMatcher {
-	return &envoytlsv3.SubjectAltNameMatcher{
-		SanType: sanType,
-		Matcher: &envoymatcher.StringMatcher{
-			MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
-		},
-	}
-}
-
-// sanTypeOf picks the SAN type to match a verifySubjectAltNames entry that is not an IP address
-// against. Typed matchers only compare against a single SAN type, so a DNS-only matcher never
-// matches a certificate that carries its identity as a URI (such as a SPIFFE ID) or an email
-// address.
-func sanTypeOf(san string) envoytlsv3.SubjectAltNameMatcher_SanType {
-	switch {
-	case strings.Contains(san, ":"):
-		return envoytlsv3.SubjectAltNameMatcher_URI
-	case strings.Contains(san, "@"):
-		return envoytlsv3.SubjectAltNameMatcher_EMAIL
-	default:
-		return envoytlsv3.SubjectAltNameMatcher_DNS
 	}
 }
