@@ -22,9 +22,12 @@ type ExtAuthPolicy struct {
 	// +optional
 	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
-	// DisableRequestBodyBuffering disables request body buffering for this route,
-	// even when the GatewayExtension enables it with withRequestBody.
-	// Defaults to false. Mutually exclusive with WithRequestBody.
+	// DisableRequestBodyBuffering disables request body buffering for the
+	// referenced ext auth provider on the routes this policy applies to, even
+	// when that provider's GatewayExtension sets withRequestBody.
+	// Use it for routes that carry large or streaming bodies.
+	//
+	// Defaults to false. Mutually exclusive with withRequestBody.
 	// +optional
 	DisableRequestBodyBuffering *bool `json:"disableRequestBodyBuffering,omitempty"`
 

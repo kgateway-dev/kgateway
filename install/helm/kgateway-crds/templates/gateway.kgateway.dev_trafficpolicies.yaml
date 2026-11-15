@@ -979,9 +979,12 @@ spec:
                     type: object
                   disableRequestBodyBuffering:
                     description: |-
-                      DisableRequestBodyBuffering disables request body buffering for this route,
-                      even when the GatewayExtension enables it with withRequestBody.
-                      Defaults to false. Mutually exclusive with WithRequestBody.
+                      DisableRequestBodyBuffering disables request body buffering for the
+                      referenced ext auth provider on the routes this policy applies to, even
+                      when that provider's GatewayExtension sets withRequestBody.
+                      Use it for routes that carry large or streaming bodies.
+
+                      Defaults to false. Mutually exclusive with withRequestBody.
                     type: boolean
                   extensionRef:
                     description: ExtensionRef references the GatewayExtension that
