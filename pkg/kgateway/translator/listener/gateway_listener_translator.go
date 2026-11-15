@@ -272,6 +272,13 @@ func (ml *MergedListeners) AppendTlsListener(
 	if len(routeInfos) == 0 {
 		appendFilterChain(nil, listenerSNIDomains(listener))
 	} else {
+		// The same route can be attached through more than one parentRef; group
+		// its entries, first entry first.
+		attachments := make(map[routeKey][]*query.RouteInfo, len(routeInfos))
+		for _, ri := range routeInfos {
+			key := keyOfRoute(ri)
+			attachments[key] = append(attachments[key], ri)
+		}
 		var conflicted []conflictedRoute
 		for i, owned := range resolveTLSRouteSNIDomains(listener, routeInfos) {
 			if len(owned.lost) > 0 {
@@ -284,14 +291,7 @@ func (ml *MergedListeners) AppendTlsListener(
 			// A duplicate shares the filter chain of its first entry, so it is
 			// added to that chain's routes to have its parentRef reported.
 			if owned.ok && !owned.duplicate {
-				routeSet := []*query.RouteInfo{routeInfos[i]}
-				key := keyOfRoute(routeInfos[i])
-				for _, other := range routeInfos[i+1:] {
-					if keyOfRoute(other) == key {
-						routeSet = append(routeSet, other)
-					}
-				}
-				appendFilterChain(routeSet, owned.sniDomains)
+				appendFilterChain(attachments[keyOfRoute(routeInfos[i])], owned.sniDomains)
 			}
 		}
 		// Every lost SNI domain has a winning route, so there is at least one
