@@ -5797,8 +5797,8 @@ func (in *TLS) DeepCopyInto(out *TLS) {
 	*out = *in
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(corev1.LocalObjectReference)
-		**out = **in
+		*out = new(apisv1.SecretObjectReference)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Files != nil {
 		in, out := &in.Files, &out.Files

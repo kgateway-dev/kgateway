@@ -1,7 +1,6 @@
 package kgateway
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -578,14 +577,17 @@ type TCPKeepalive struct {
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
-	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
+	// Reference to a Secret. If namespace is omitted, the Secret is looked up in the
+	// namespace of the policy. A Secret in another namespace requires a ReferenceGrant in
+	// that namespace that allows references from this BackendConfigPolicy's namespace.
+	// The following data keys are read:
 	//   - tls.crt: the client certificate chain, used for mTLS.
 	//   - tls.key: the client private key, used for mTLS.
 	//   - ca.crt: the root CA used to validate the backend's certificate. If omitted, the
 	//     backend's certificate is not verified, and verifySubjectAltNames cannot be used.
 	// tls.crt and tls.key must be set together or both omitted. Other keys are ignored.
 	// +optional
-	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	SecretRef *gwv1.SecretObjectReference `json:"secretRef,omitempty"`
 
 	// File paths to certificates local to the proxy.
 	// +optional

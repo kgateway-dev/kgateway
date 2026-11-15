@@ -10,23 +10,25 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // SecretGetter defines the interface for retrieving secrets
 type SecretGetter interface {
-	GetSecret(name, namespace string) (*ir.Secret, error)
+	// GetSecret resolves secretRef on behalf of a BackendConfigPolicy in policyNamespace.
+	GetSecret(secretRef gwv1.SecretObjectReference, policyNamespace string) (*ir.Secret, error)
 }
 
-// DefaultSecretGetter implements SecretGetter using SecretIndex.GetSecretWithoutRefGrant
+// DefaultSecretGetter implements SecretGetter using SecretIndex.GetSecret, which
+// enforces ReferenceGrants for Secrets outside the policy's namespace.
 type DefaultSecretGetter struct {
 	secrets *krtcollections.SecretIndex
 	krtctx  krt.HandlerContext
@@ -39,8 +41,12 @@ func NewDefaultSecretGetter(secrets *krtcollections.SecretIndex, krtctx krt.Hand
 	}
 }
 
-func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, error) {
-	return g.secrets.GetSecretWithoutRefGrant(g.krtctx, name, namespace)
+func (g *DefaultSecretGetter) GetSecret(secretRef gwv1.SecretObjectReference, policyNamespace string) (*ir.Secret, error) {
+	from := krtcollections.From{
+		GroupKind: wellknown.BackendConfigPolicyGVK.GroupKind(),
+		Namespace: policyNamespace,
+	}
+	return g.secrets.GetSecret(g.krtctx, from, secretRef)
 }
 
 func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
@@ -84,8 +90,8 @@ func extractTLSData(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespac
 	return data, nil
 }
 
-func extractFromSecret(secretRef *corev1.LocalObjectReference, secretGetter SecretGetter, namespace string, data *tlsData) error {
-	secret, err := secretGetter.GetSecret(secretRef.Name, namespace)
+func extractFromSecret(secretRef *gwv1.SecretObjectReference, secretGetter SecretGetter, namespace string, data *tlsData) error {
+	secret, err := secretGetter.GetSecret(*secretRef, namespace)
 	if err != nil {
 		return err
 	}
