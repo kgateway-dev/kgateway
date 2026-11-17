@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -16,17 +17,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -43,6 +48,8 @@ type bootstrapTestCase struct {
 	listenerPorts []gwv1.PortNumber
 	// validator validates the patched bootstrap; nil for none.
 	validator validator.BootstrapValidator
+	// managedPaths is the KGW_BOOTSTRAP_PATCH_MANAGED_PATHS mode; empty means WARN.
+	managedPaths apisettings.BootstrapPatchManagedPathsMode
 }
 
 // render renders the Gateway's objects through the full deployer, including post-processing.
@@ -80,6 +87,7 @@ func (tc bootstrapTestCase) render(t *testing.T) ([]client.Object, *deployer.Pos
 	fakeClient := fake.NewClient(t, objs...)
 	inputs := defaultInputs(t, gwc, gw)
 	inputs.BootstrapValidator = tc.validator
+	inputs.BootstrapPatchManagedPaths = tc.managedPaths
 	gwp := NewGatewayParameters(fakeClient, inputs)
 	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, schemes.GatewayScheme(), fakeClient, gwp)
 	require.NoError(t, err)
@@ -151,10 +159,11 @@ func TestBootstrapPatchesNotSet(t *testing.T) {
 	assert.Equal(t, hex.EncodeToString(sum[:]), checksum(t, objs), "checksum should be Helm's SHA-256 of the rendered bootstrap")
 	assert.Contains(t, envoyYaml, "port_value: 19000\n", "the bootstrap should keep the Helm template's formatting")
 
-	// The report clears the condition and sets none.
+	// The report clears the condition, sets none, and records no events.
 	require.NotNil(t, report)
 	assert.Empty(t, report.Conditions)
 	assert.Equal(t, []string{conditions.KgatewayConditionBootstrapPatchApplied}, report.OwnedConditionTypes)
+	assert.Empty(t, report.Events)
 }
 
 func TestBootstrapPatchesApplied(t *testing.T) {
@@ -185,6 +194,7 @@ layered_runtime:
 	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
 	assert.Equal(t, int64(3), cond.ObservedGeneration)
 	assert.Equal(t, "The bootstrap patches are applied.", cond.Message)
+	assert.Empty(t, report.Events, "patches with nothing to warn about should record no events")
 
 	// Rendering the same patches again gives the same checksum; changing them changes it.
 	again, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), overlay)}.render(t)
@@ -389,4 +399,248 @@ func TestBootstrapPatchesNotMounted(t *testing.T) {
 	assert.Equal(t, metav1.ConditionFalse, cond.Status)
 	assert.Equal(t, conditions.KgatewayReasonBootstrapNotMounted, cond.Reason)
 	assert.Contains(t, cond.Message, `mounts ConfigMap "my-bootstrap"`)
+}
+
+func TestBootstrapPatchesManagedPathModes(t *testing.T) {
+	// The patches replace the xDS cluster's connect timeout and add a runtime layer.
+	overlay := `{static_resources: {clusters: [{name: xds_cluster, connect_timeout: 9s}]}, layered_runtime: {layers: [{name: user_runtime, static_layer: {}}]}}`
+	xdsTimeout := func(bs *envoybootstrapv3.Bootstrap) int64 {
+		for _, c := range bs.GetStaticResources().GetClusters() {
+			if c.GetName() == "xds_cluster" {
+				return c.GetConnectTimeout().GetSeconds()
+			}
+		}
+		return 0
+	}
+
+	t.Run("WARN", func(t *testing.T) {
+		// Render under WARN.
+		objs, report, err := bootstrapTestCase{
+			gatewayParams: withOverlay(t, gatewayParams(), overlay),
+			managedPaths:  apisettings.BootstrapPatchManagedPathsWarn,
+		}.render(t)
+		require.NoError(t, err)
+
+		// The managed path applies, and a Warning event names it.
+		_, bs := renderedBootstrap(t, objs)
+		assert.Equal(t, int64(9), xdsTimeout(bs))
+		assert.Equal(t, conditions.KgatewayReasonBootstrapManagedPathsOverridden, bootstrapCondition(t, report).Reason)
+		assert.Equal(t, []deployer.ReportEvent{{
+			Type:   corev1.EventTypeWarning,
+			Reason: conditions.KgatewayReasonBootstrapManagedPathsOverridden,
+			Action: applyBootstrapPatchesAction,
+			Note:   "Applied bootstrap patches that set static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params), which the control plane manages.",
+		}}, report.Events)
+	})
+
+	t.Run("PRUNE", func(t *testing.T) {
+		// Render under PRUNE.
+		objs, report, err := bootstrapTestCase{
+			gatewayParams: withOverlay(t, gatewayParams(), overlay),
+			managedPaths:  apisettings.BootstrapPatchManagedPathsPrune,
+		}.render(t)
+		require.NoError(t, err)
+
+		// The managed path is dropped and the rest applies.
+		_, bs := renderedBootstrap(t, objs)
+		assert.NotEqual(t, int64(9), xdsTimeout(bs), "the xDS cluster should keep its generated timeout")
+		assert.Equal(t, "user_runtime", bs.GetLayeredRuntime().GetLayers()[0].GetName())
+
+		// The condition stays True and names the dropped path, as does a Warning event.
+		cond := bootstrapCondition(t, report)
+		assert.Equal(t, metav1.ConditionTrue, cond.Status)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapPathsIgnored, cond.Reason)
+		assert.Contains(t, cond.Message, "These paths were dropped from them because the control plane manages them: static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params).")
+		assert.Equal(t, []deployer.ReportEvent{{
+			Type:   corev1.EventTypeWarning,
+			Reason: conditions.KgatewayReasonBootstrapPathsIgnored,
+			Action: applyBootstrapPatchesAction,
+			Note:   "Dropped static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params) from the bootstrap patches because the control plane manages it.",
+		}}, report.Events)
+	})
+
+	t.Run("REJECT", func(t *testing.T) {
+		// Render under REJECT.
+		objs, report, err := bootstrapTestCase{
+			gatewayParams: withOverlay(t, gatewayParams(), overlay),
+			managedPaths:  apisettings.BootstrapPatchManagedPathsReject,
+		}.render(t)
+
+		// Nothing is rendered, and the error lists the denied path.
+		patchErr, ok := errors.AsType[*BootstrapPatchError](err)
+		require.True(t, ok, "expected a *BootstrapPatchError, got %v", err)
+		assert.Nil(t, objs)
+		assert.Nil(t, report)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapPathsDenied, patchErr.Reason)
+		assert.Equal(t, []bootstrappatch.ManagedPath{{
+			Path:   "static_resources.clusters[name=xds_cluster]",
+			Source: gatewayParamsKey(),
+		}}, patchErr.ManagedPaths)
+
+		// A Warning event names each denied path.
+		assert.Equal(t, []deployer.ReportEvent{{
+			Type:   corev1.EventTypeWarning,
+			Reason: conditions.KgatewayReasonBootstrapPathsDenied,
+			Action: applyBootstrapPatchesAction,
+			Note:   "Applied none of the bootstrap patches: they set static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params), which the control plane manages, and the controller is configured to reject such patches.",
+		}}, patchErr.Events())
+	})
+
+	t.Run("REJECT without managed paths", func(t *testing.T) {
+		// Patches that set no managed path apply under REJECT.
+		_, report, err := bootstrapTestCase{
+			gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`),
+			managedPaths:  apisettings.BootstrapPatchManagedPathsReject,
+		}.render(t)
+		require.NoError(t, err)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, bootstrapCondition(t, report).Reason)
+	})
+}
+
+func TestBootstrapPatchesCuratedOverride(t *testing.T) {
+	// Render a Gateway whose patches replace the DNS resolver that
+	// envoyContainer.bootstrap.dnsResolver generates.
+	overlay := `
+typed_dns_resolver_config:
+  name: envoy.network.dns_resolver.cares
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+    use_resolvers_as_fallback: true`
+	objs, report, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), overlay)}.render(t)
+	require.NoError(t, err)
+
+	// The overlay's resolver replaces the generated one.
+	_, bs := renderedBootstrap(t, objs)
+	require.NotNil(t, bs.GetTypedDnsResolverConfig())
+
+	// The condition keeps its reason and names the field and the path.
+	cond := bootstrapCondition(t, report)
+	assert.Equal(t, metav1.ConditionTrue, cond.Status)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
+	assert.Contains(t, cond.Message,
+		"typed_dns_resolver_config replaces what envoyContainer.bootstrap.dnsResolver generates (GatewayParameters default/gw-params)")
+
+	// A Warning event names the replaced field.
+	assert.Equal(t, []deployer.ReportEvent{{
+		Type:   corev1.EventTypeWarning,
+		Reason: curatedFieldOverriddenReason,
+		Action: applyBootstrapPatchesAction,
+		Note:   "The bootstrap patches replace generated configuration: typed_dns_resolver_config replaces what envoyContainer.bootstrap.dnsResolver generates (GatewayParameters default/gw-params).",
+	}}, report.Events)
+}
+
+func TestBootstrapPatchEvents(t *testing.T) {
+	t.Run("removed runtime guards", func(t *testing.T) {
+		// Render a Gateway whose patched bootstrap Envoy accepts with removed guards.
+		v := &fakeBootstrapValidator{result: validator.BootstrapResult{RemovedRuntimeGuards: []string{"envoy.reloadable_features.a", "envoy.reloadable_features.b"}}}
+		_, report, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`), validator: v}.render(t)
+		require.NoError(t, err)
+
+		// One Warning event names them all.
+		assert.Equal(t, []deployer.ReportEvent{{
+			Type:   corev1.EventTypeWarning,
+			Reason: removedRuntimeGuardsReason,
+			Action: applyBootstrapPatchesAction,
+			Note:   "Envoy no longer has the runtime guard(s) envoy.reloadable_features.a, envoy.reloadable_features.b, so their values have no effect; remove them from the bootstrap patches.",
+		}}, report.Events)
+	})
+
+	t.Run("not mounted", func(t *testing.T) {
+		// Render a Gateway whose deploymentOverlay mounts another ConfigMap, with patches
+		// that also set a managed path.
+		gwp := withOverlay(t, gatewayParams(), `{static_resources: {clusters: [{name: xds_cluster, connect_timeout: 9s}]}}`)
+		gwp.Spec.Kube.DeploymentOverlay = &shared.KubernetesResourceOverlay{Spec: &apiextensionsv1.JSON{Raw: []byte(
+			`{"template": {"spec": {"volumes": [{"name": "envoy-config", "configMap": {"name": "my-bootstrap"}}]}}}`)}}
+		_, report, err := bootstrapTestCase{gatewayParams: gwp}.render(t)
+		require.NoError(t, err)
+
+		// The only event is the condition's: the patches have no other effect.
+		cond := bootstrapCondition(t, report)
+		assert.Equal(t, []deployer.ReportEvent{{
+			Type:   corev1.EventTypeWarning,
+			Reason: conditions.KgatewayReasonBootstrapNotMounted,
+			Action: applyBootstrapPatchesAction,
+			Note:   cond.Message,
+		}}, report.Events)
+	})
+
+	t.Run("invalid overlay", func(t *testing.T) {
+		// Render a Gateway whose overlay does not parse.
+		_, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{layerd_runtime: {}}`)}.render(t)
+		patchErr, ok := errors.AsType[*BootstrapPatchError](err)
+		require.True(t, ok, "expected a *BootstrapPatchError, got %v", err)
+
+		// One Warning event carries the error.
+		assert.Equal(t, []deployer.ReportEvent{{
+			Type:   corev1.EventTypeWarning,
+			Reason: conditions.KgatewayReasonBootstrapInvalidOverlay,
+			Action: applyBootstrapPatchesAction,
+			Note:   "Applied none of the bootstrap patches: " + patchErr.Error(),
+		}}, patchErr.Events())
+	})
+}
+
+func TestBootstrapPatchManagedPathsMetric(t *testing.T) {
+	// Collect metrics for this test only.
+	wasActive := metrics.Active()
+	metrics.SetActive(true)
+	ResetMetrics()
+	t.Cleanup(func() {
+		ResetMetrics()
+		metrics.SetActive(wasActive)
+	})
+	gw := types.NamespacedName{Namespace: defaultNamespace, Name: "gw"}
+	assertSeries := func(t *testing.T, want string) {
+		t.Helper()
+		expected := "# HELP kgateway_controller_bootstrap_patch_managed_paths Control-plane-managed bootstrap paths that a Gateway's GatewayParameters bootstrap patches set. The value is always 1.\n" +
+			"# TYPE kgateway_controller_bootstrap_patch_managed_paths gauge\n" + want
+		if want == "" {
+			expected = ""
+		}
+		require.NoError(t, metricstest.CollectAndCompare(bootstrapPatchManagedPaths, strings.NewReader(expected),
+			"kgateway_controller_bootstrap_patch_managed_paths"))
+	}
+
+	// Patches that set two managed paths give one series per path.
+	_, _, err := bootstrapTestCase{
+		gatewayParams: withOverlay(t, gatewayParams(), `{static_resources: {clusters: [{name: xds_cluster}]}, admin: {address: {socket_address: {address: 0.0.0.0, port_value: 19000}}}}`),
+	}.render(t)
+	require.NoError(t, err)
+	assertSeries(t, `kgateway_controller_bootstrap_patch_managed_paths{name="gw",namespace="default",path="admin.address"} 1
+kgateway_controller_bootstrap_patch_managed_paths{name="gw",namespace="default",path="static_resources.clusters[name=xds_cluster]"} 1
+`)
+
+	// A REJECT error still reports what the patches set, replacing the earlier series.
+	_, _, err = bootstrapTestCase{
+		gatewayParams: withOverlay(t, gatewayParams(), `{static_resources: {clusters: [{name: xds_cluster}]}}`),
+		managedPaths:  apisettings.BootstrapPatchManagedPathsReject,
+	}.render(t)
+	require.Error(t, err)
+	assertSeries(t, `kgateway_controller_bootstrap_patch_managed_paths{name="gw",namespace="default",path="static_resources.clusters[name=xds_cluster]"} 1
+`)
+
+	// An invalid overlay leaves the series as they were, since its paths are unknown.
+	_, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{layerd_runtime: {}}`)}.render(t)
+	require.Error(t, err)
+	assertSeries(t, `kgateway_controller_bootstrap_patch_managed_paths{name="gw",namespace="default",path="static_resources.clusters[name=xds_cluster]"} 1
+`)
+
+	// Patches that set no managed path remove the Gateway's series.
+	_, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)}.render(t)
+	require.NoError(t, err)
+	assertSeries(t, "")
+
+	// Removing the patches, or deleting the Gateway, removes them too.
+	_, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{static_resources: {clusters: [{name: xds_cluster}]}}`)}.render(t)
+	require.NoError(t, err)
+	_, _, err = bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
+	require.NoError(t, err)
+	assertSeries(t, "")
+	recordBootstrapPatchManagedPaths(gw, []bootstrappatch.ManagedPath{{Path: "node"}})
+	ForgetBootstrapPatchMetrics(gw)
+	assertSeries(t, "")
+}
+
+func gatewayParamsKey() types.NamespacedName {
+	return types.NamespacedName{Namespace: defaultNamespace, Name: gatewayParamsName}
 }

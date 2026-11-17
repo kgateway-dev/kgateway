@@ -376,6 +376,16 @@ type Settings struct {
 	// A value <= 0 selects validator.DefaultCacheSize.
 	ValidatorCacheSize int `split_words:"true"`
 
+	// BootstrapPatchManagedPaths determines what the controller does with a
+	// GatewayParameters bootstrap overlay that sets a path the control plane manages.
+	// Supported values:
+	// - "WARN" (default): apply the overlay as written and report each managed path
+	//   it sets on status, in an event and in a metric.
+	// - "PRUNE": drop each managed path from the overlay before merging, apply the
+	//   rest, and report each dropped path.
+	// - "REJECT": apply none of the overlay and report the managed paths.
+	BootstrapPatchManagedPaths BootstrapPatchManagedPathsMode `split_words:"true" default:"WARN"`
+
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.
 	EnableBuiltinDefaultMetrics bool `split_words:"true" default:"false"`

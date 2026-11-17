@@ -51,3 +51,6 @@ package kgateway
 // Leases for leader election
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
+// Events the Gateway controller records on Gateways
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch

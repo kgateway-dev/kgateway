@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -25,6 +26,9 @@ type Inputs struct {
 	// BootstrapValidator validates a proxy bootstrap that GatewayParameters bootstrap
 	// patches change. When nil, the patched bootstrap is not validated.
 	BootstrapValidator validator.BootstrapValidator
+	// BootstrapPatchManagedPaths decides what happens to GatewayParameters bootstrap
+	// patches that set paths the control plane manages. Empty means WARN.
+	BootstrapPatchManagedPaths apisettings.BootstrapPatchManagedPathsMode
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.

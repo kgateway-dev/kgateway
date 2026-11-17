@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/events"
 	utilretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,6 +69,9 @@ type gatewayReconciler struct {
 
 	controllerExtension pluginsdk.GatewayControllerExtension
 
+	// recorder records the events the deployer reports on Gateways.
+	recorder events.EventRecorder
+
 	queue controllers.Queue
 }
 
@@ -84,6 +88,7 @@ func NewGatewayReconciler(
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
 		controllerExtension: controllerExtension,
+		recorder:            cfg.Mgr.GetEventRecorder(cfg.ControllerName),
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
@@ -277,6 +282,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	if gw == nil || gw.GetDeletionTimestamp() != nil {
 		// ignore the event if the Gateway is not found. A subsequent event should handle this if needed
 		logger.Debug("gateway not found, skipping reconciliation", "ref", req)
+		internaldeployer.ForgetBootstrapPatchMetrics(req)
 		return nil
 	}
 
@@ -328,7 +334,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 					Message:            "No proxy is deployed until the bootstrap patches apply: " + patchErr.Error(),
 				})
 			}
-			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil); statusErr != nil {
+			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil, patchErr.Events()); statusErr != nil {
 				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
 			}
 			return nil
@@ -376,7 +382,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 
 	// Report what the post-processor found, now that the objects are deployed.
 	if report != nil {
-		if err := r.applyGatewayConditions(ctx, gw, report.Conditions, report.OwnedConditionTypes); err != nil {
+		if err := r.applyGatewayConditions(ctx, gw, report.Conditions, report.OwnedConditionTypes, report.Events); err != nil {
 			return fmt.Errorf("error updating status for Gateway %s: %w", req, err)
 		}
 	}
@@ -546,16 +552,26 @@ func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw
 }
 
 // applyGatewayConditions sets each condition on the Gateway's status, and removes each
-// type in ownedTypes that conds does not set. It writes the status only when it changes.
-func (r *gatewayReconciler) applyGatewayConditions(ctx context.Context, gw *gwv1.Gateway, conds []metav1.Condition, ownedTypes []string) error {
-	return updateGatewayStatusWithRetryFunc(
+// type in ownedTypes that conds does not set. It writes the status only when it
+// changes, and records evts on the Gateway only then, so that reconciling an unchanged
+// Gateway does not repeat them.
+func (r *gatewayReconciler) applyGatewayConditions(
+	ctx context.Context,
+	gw *gwv1.Gateway,
+	conds []metav1.Condition,
+	ownedTypes []string,
+	evts []deployer.ReportEvent,
+) error {
+	// Update the status. The last attempt decides whether it changed.
+	var changed bool
+	err := updateGatewayStatusWithRetryFunc(
 		ctx,
 		r.gwClient,
 		client.ObjectKeyFromObject(gw),
 		func(latest *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
 			// Set the reported conditions.
 			newStatus := latest.Status.DeepCopy()
-			changed := false
+			changed = false
 			for _, c := range conds {
 				changed = meta.SetStatusCondition(&newStatus.Conditions, c) || changed
 			}
@@ -569,6 +585,15 @@ func (r *gatewayReconciler) applyGatewayConditions(ctx context.Context, gw *gwv1
 			return *newStatus, changed
 		},
 	)
+	if err != nil || !changed {
+		return err
+	}
+
+	// Record the events that go with the new status.
+	for _, e := range evts {
+		r.recorder.Eventf(gw, nil, e.Type, e.Reason, e.Action, "%s", e.Note)
+	}
+	return nil
 }
 
 // setupTLSCertificateWatch configures a watch for xDS TLS certificate changes.

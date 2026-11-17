@@ -403,6 +403,70 @@ staticResources:
 	})
 }
 
+func TestApplyCuratedOverrides(t *testing.T) {
+	// The class overlay switches the stats matcher's oneof; the Gateway overlay replaces
+	// the DNS resolver and adds the downstream connections monitor.
+	classOverlay := `{stats_config: {stats_matcher: {reject_all: true}}}`
+	gatewayOverlay := `
+typed_dns_resolver_config:
+  name: envoy.network.dns_resolver.cares
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+    use_resolvers_as_fallback: true
+overload_manager:
+  resource_monitors:
+  - name: envoy.resource_monitors.global_downstream_max_connections
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+      max_active_downstream_connections: 10`
+	overlays := func(t *testing.T) []Overlay {
+		return []Overlay{overlay(t, gcParams, classOverlay), overlay(t, gwParams, gatewayOverlay)}
+	}
+
+	t.Run("reports paths the base generated", func(t *testing.T) {
+		// Apply onto a base without the monitor, under PRUNE: curated paths are not managed.
+		res, err := Apply(parseBase(t), overlays(t), apisettings.BootstrapPatchManagedPathsPrune)
+		require.NoError(t, err)
+
+		// Each replacement is attributed to its overlay; the monitor is not reported
+		// since the base did not generate it.
+		assert.Equal(t, []CuratedOverride{
+			{Field: "stats.matcher", Path: "stats_config.stats_matcher", Source: gcParams},
+			{Field: "envoyContainer.bootstrap.dnsResolver", Path: "typed_dns_resolver_config", Source: gwParams},
+		}, res.CuratedOverrides)
+		assert.Empty(t, res.ManagedPaths)
+
+		// The overlays replace the generated values, dropping udp_max_queries.
+		assert.True(t, res.Bootstrap.GetStatsConfig().GetStatsMatcher().GetRejectAll())
+		cares := &envoycaresv3.CaresDnsResolverConfig{}
+		require.NoError(t, res.Bootstrap.GetTypedDnsResolverConfig().GetTypedConfig().UnmarshalTo(cares))
+		assert.True(t, cares.GetUseResolversAsFallback())
+		assert.Nil(t, cares.GetUdpMaxQueries())
+	})
+
+	t.Run("reports the monitor when the base has it", func(t *testing.T) {
+		// Apply onto a base that has the monitor maxDownstreamConnections generates.
+		base, err := ParseBootstrap([]byte(generatedBase + `
+overload_manager:
+  resource_monitors:
+  - name: envoy.resource_monitors.global_downstream_max_connections
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+      max_active_downstream_connections: 100`))
+		require.NoError(t, err)
+		res, err := Apply(base, overlays(t), apisettings.BootstrapPatchManagedPathsWarn)
+		require.NoError(t, err)
+
+		// The monitor is reported along with the other two.
+		assert.Contains(t, res.CuratedOverrides, CuratedOverride{
+			Field:  "envoyContainer.bootstrap.maxDownstreamConnections",
+			Path:   "overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections]",
+			Source: gwParams,
+		})
+		assert.Len(t, res.CuratedOverrides, 3)
+	})
+}
+
 func TestListenerPorts(t *testing.T) {
 	// Parse a bootstrap with the admin address, static listeners, an additional
 	// address, a pipe listener and an internal listener.

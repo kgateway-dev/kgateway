@@ -266,11 +266,12 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 			Tag:        globalSettings.DefaultImageTag,
 			PullPolicy: globalSettings.DefaultImagePullPolicy,
 		},
-		DiscoveryNamespaceFilter: c.cfg.Client.ObjectFilter(),
-		CommonCollections:        c.commoncol,
-		GatewayClassName:         c.cfg.GatewayClassName,
-		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
-		BootstrapValidator:       validator.BootstrapValidatorFor(c.cfg.Validator),
+		DiscoveryNamespaceFilter:   c.cfg.Client.ObjectFilter(),
+		CommonCollections:          c.commoncol,
+		GatewayClassName:           c.cfg.GatewayClassName,
+		CertWatcher:                c.cfg.SetupOpts.CertWatcher,
+		BootstrapValidator:         validator.BootstrapValidatorFor(c.cfg.Validator),
+		BootstrapPatchManagedPaths: globalSettings.BootstrapPatchManagedPaths,
 	}
 
 	setupLog.Info("creating base gateway controller")

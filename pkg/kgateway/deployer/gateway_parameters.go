@@ -8,13 +8,13 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
-	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -124,17 +124,28 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 	}
 
 	// Merge the bootstrap patches first, so the object overlays can still change any object.
+	gwNN := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
 	var outcome *BootstrapPatchOutcome
 	if overlays := resolved.bootstrapOverlays(); len(overlays) > 0 {
 		var err error
 		outcome, err = ApplyBootstrapPatches(ctx, rendered, overlays, BootstrapPatchConfig{
 			ListenerPorts: deployer.GetGatewayIR(gw, gp.inputs.CommonCollections).Ports.List(),
-			ManagedPaths:  apisettings.BootstrapPatchManagedPathsWarn,
+			ManagedPaths:  gp.inputs.BootstrapPatchManagedPaths,
 			Validator:     gp.inputs.BootstrapValidator,
 		})
+
+		// The managed paths of an invalid overlay are unknown, so its series stay as
+		// they were.
+		if patchErr, ok := errors.AsType[*BootstrapPatchError](err); ok &&
+			patchErr.Reason != conditions.KgatewayReasonBootstrapInvalidOverlay {
+			recordBootstrapPatchManagedPaths(gwNN, patchErr.ManagedPaths)
+		}
 		if err != nil {
 			return nil, nil, err
 		}
+		recordBootstrapPatchManagedPaths(gwNN, outcome.ManagedPaths)
+	} else {
+		ForgetBootstrapPatchMetrics(gwNN)
 	}
 
 	// Apply overlays in order: GatewayClass first, then Gateway.
@@ -157,7 +168,9 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 
 	// Report the bootstrap patches against the final objects.
 	if outcome != nil {
-		report.Conditions = append(report.Conditions, bootstrapPatchAppliedCondition(gw, outcome, rendered))
+		cond := bootstrapPatchAppliedCondition(gw, outcome, rendered)
+		report.Conditions = append(report.Conditions, cond)
+		report.Events = append(report.Events, bootstrapPatchEvents(cond, outcome)...)
 	}
 	return rendered, report, nil
 }

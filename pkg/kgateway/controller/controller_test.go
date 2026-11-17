@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,12 +19,14 @@ import (
 	istiosets "istio.io/istio/pkg/util/sets"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -346,6 +350,23 @@ func (s *ControllerSuite) TestBootstrapPatchesInvalidOnNewGateway() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		require.NoError(c, s.client.Get(ctx, key, &appsv1.Deployment{}))
 	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for the proxy Deployment")
+}
+
+// TestBootstrapPatchEvents tests that the Gateway reconciler records the events the
+// deployer reports on the Gateway, for applied patches and for patches that fail.
+func (s *ControllerSuite) TestBootstrapPatchEvents() {
+	key := types.NamespacedName{Name: "bootstrap-patch-events", Namespace: defaultNamespace}
+
+	// Patches that set a managed path record a Warning event that names it.
+	s.createGatewayWithOverlay(key, `{"static_resources": {"clusters": [{"name": "xds_cluster", "connect_timeout": "9s"}]}}`)
+	s.waitForBootstrapPatchApplied(key, metav1.ConditionTrue, conditions.KgatewayReasonBootstrapManagedPathsOverridden, false)
+	s.waitForGatewayEvent(key, conditions.KgatewayReasonBootstrapManagedPathsOverridden,
+		"set static_resources.clusters[name=xds_cluster] (GatewayParameters default/bootstrap-patch-events)")
+
+	// Patches that fail record a Warning event with the error.
+	s.updateOverlay(key, `{"layerd_runtime": {}}`)
+	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidOverlay, false)
+	s.waitForGatewayEvent(key, conditions.KgatewayReasonBootstrapInvalidOverlay, "Applied none of the bootstrap patches")
 }
 
 // TestGatewayClassStatus tests the Status conditions on GatewayClass
@@ -735,6 +756,27 @@ func (s *ControllerSuite) waitForBootstrapPatchApplied(key types.NamespacedName,
 			require.NotEqual(c, string(gwv1.GatewayReasonInvalidParameters), accepted.Reason)
 		}
 	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for %s=%s/%s", conditions.KgatewayConditionBootstrapPatchApplied, status, reason)
+}
+
+// waitForGatewayEvent waits until the Gateway named by key has a Warning event with
+// reason whose note contains noteSubstring.
+func (s *ControllerSuite) waitForGatewayEvent(key types.NamespacedName, reason, noteSubstring string) {
+	ctx := context.Background()
+	clientset, err := kubernetes.NewForConfig(s.env.Config)
+	s.Require().NoError(err)
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		// List the namespace's events.
+		evts, err := clientset.EventsV1().Events(key.Namespace).List(ctx, metav1.ListOptions{})
+		require.NoError(c, err)
+
+		// Find one for the Gateway with the reason and note.
+		found := slices.ContainsFunc(evts.Items, func(e eventsv1.Event) bool {
+			return e.Regarding.Kind == wellknown.GatewayKind && e.Regarding.Name == key.Name &&
+				e.Type == corev1.EventTypeWarning && e.Reason == reason && strings.Contains(e.Note, noteSubstring)
+		})
+		require.True(c, found, "no Warning event %s containing %q for Gateway %s", reason, noteSubstring, key)
+	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for event %s on Gateway %s", reason, key)
 }
 
 // setBootstrapOverlay sets the bootstrap overlay of gwp; an empty overlay removes the

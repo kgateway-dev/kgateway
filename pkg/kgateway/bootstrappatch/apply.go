@@ -39,6 +39,9 @@ type Result struct {
 	// ManagedPaths lists each managed path the overlays set. Under WARN each one was
 	// applied; under PRUNE each one was dropped from its overlay before merging.
 	ManagedPaths []ManagedPath
+	// CuratedOverrides lists each path the overlays replace that a GatewayParameters
+	// field generated. They apply under every mode.
+	CuratedOverrides []CuratedOverride
 }
 
 // InvalidOverlayError reports an overlay that cannot be applied under any mode.
@@ -90,6 +93,7 @@ func Apply(
 	// managed paths of all of them.
 	parsed := make([]*envoybootstrapv3.Bootstrap, 0, len(overlays))
 	var managed []ManagedPath
+	var curated []CuratedOverride
 	for _, o := range overlays {
 		ov, err := parseOverlay(o.Raw)
 		if err != nil {
@@ -105,6 +109,7 @@ func Apply(
 		for _, p := range managedPaths(base, ov) {
 			managed = append(managed, ManagedPath{Path: p, Source: o.Source})
 		}
+		curated = append(curated, curatedOverrides(base, ov, o.Source)...)
 		if mode == apisettings.BootstrapPatchManagedPathsPrune {
 			ov = prune(base, ov)
 		}
@@ -121,7 +126,7 @@ func Apply(
 	for _, ov := range parsed {
 		mergeOverlay(merged, ov)
 	}
-	return &Result{Bootstrap: merged, ManagedPaths: managed}, nil
+	return &Result{Bootstrap: merged, ManagedPaths: managed, CuratedOverrides: curated}, nil
 }
 
 // checkReserved rejects names the proxy reserves and lists entries Envoy requires to

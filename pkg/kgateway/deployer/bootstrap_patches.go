@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -20,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -34,6 +36,15 @@ const (
 	// of the bootstrap, so that a bootstrap change rolls the pods. The Helm template
 	// sets it from the rendered bootstrap.
 	bootstrapChecksumAnnotation = "kgateway.dev/checksum-config"
+
+	// applyBootstrapPatchesAction is the action of each bootstrap patch event.
+	applyBootstrapPatchesAction = "ApplyBootstrapPatches"
+	// curatedFieldOverriddenReason is the event reason for bootstrap patches that
+	// replace what a GatewayParameters field generates.
+	curatedFieldOverriddenReason = "CuratedFieldOverridden"
+	// removedRuntimeGuardsReason is the event reason for bootstrap patches that set
+	// runtime guards Envoy no longer has.
+	removedRuntimeGuardsReason = "RemovedRuntimeGuards"
 )
 
 // BootstrapPatchError reports bootstrap patches that cannot be applied as written.
@@ -45,7 +56,24 @@ type BootstrapPatchError struct {
 	// ConfigMapName is the name of the Gateway's generated bootstrap ConfigMap. When it
 	// does not exist yet, the Gateway has no proxy.
 	ConfigMapName string
-	Err           error
+	// ManagedPaths lists each path the control plane manages that the patches set.
+	// It is nil when an overlay is invalid, since its paths are then unknown.
+	ManagedPaths []bootstrappatch.ManagedPath
+	Err          error
+}
+
+// Events returns the Warning events that report the failure.
+func (e *BootstrapPatchError) Events() []deployer.ReportEvent {
+	// Report each denied path on its own, so each one can be found.
+	if e.Reason == conditions.KgatewayReasonBootstrapPathsDenied {
+		out := make([]deployer.ReportEvent, 0, len(e.ManagedPaths))
+		for _, p := range e.ManagedPaths {
+			out = append(out, bootstrapPatchEvent(e.Reason,
+				fmt.Sprintf("Applied none of the bootstrap patches: they set %s, which the control plane manages, and the controller is configured to reject such patches.", p)))
+		}
+		return out
+	}
+	return []deployer.ReportEvent{bootstrapPatchEvent(e.Reason, "Applied none of the bootstrap patches: "+e.Error())}
 }
 
 func (e *BootstrapPatchError) Error() string {
@@ -60,8 +88,14 @@ func (e *BootstrapPatchError) Unwrap() error {
 type BootstrapPatchOutcome struct {
 	// ConfigMapName is the name of the generated bootstrap ConfigMap.
 	ConfigMapName string
+	// ManagedPathsMode is the mode the patches were applied under.
+	ManagedPathsMode apisettings.BootstrapPatchManagedPathsMode
 	// ManagedPaths lists each path the control plane manages that the patches set.
+	// Under PRUNE each one was dropped; otherwise each one applied.
 	ManagedPaths []bootstrappatch.ManagedPath
+	// CuratedOverrides lists each path the patches replace that a GatewayParameters
+	// field generated.
+	CuratedOverrides []bootstrappatch.CuratedOverride
 	// RemovedServicePorts lists the Gateway listener ports left off the Service because
 	// a static listener in the patched bootstrap uses them.
 	RemovedServicePorts []int32
@@ -106,20 +140,20 @@ func ApplyBootstrapPatches(
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the generated bootstrap: %w", err)
 	}
-	patchErr := func(reason string, err error) error {
-		return &BootstrapPatchError{Reason: reason, ConfigMapName: cm.Name, Err: err}
+	patchErr := func(reason string, paths []bootstrappatch.ManagedPath, err error) error {
+		return &BootstrapPatchError{Reason: reason, ConfigMapName: cm.Name, ManagedPaths: paths, Err: err}
 	}
 
 	// Merge the overlays into it.
-	res, err := bootstrappatch.Apply(base, overlays, cfg.ManagedPaths)
-	var invalid *bootstrappatch.InvalidOverlayError
-	var denied *bootstrappatch.ManagedPathsDeniedError
-	switch {
-	case errors.As(err, &invalid):
-		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, err)
-	case errors.As(err, &denied):
-		return nil, patchErr(conditions.KgatewayReasonBootstrapPathsDenied, err)
-	case err != nil:
+	mode := cmp.Or(cfg.ManagedPaths, apisettings.BootstrapPatchManagedPathsWarn)
+	res, err := bootstrappatch.Apply(base, overlays, mode)
+	if invalid, ok := errors.AsType[*bootstrappatch.InvalidOverlayError](err); ok {
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, invalid)
+	}
+	if denied, ok := errors.AsType[*bootstrappatch.ManagedPathsDeniedError](err); ok {
+		return nil, patchErr(conditions.KgatewayReasonBootstrapPathsDenied, denied.Paths, denied)
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -129,7 +163,7 @@ func ApplyBootstrapPatches(
 		validation, err = cfg.Validator.ValidateBootstrap(ctx, res.Bootstrap)
 		switch {
 		case errors.Is(err, validator.ErrInvalidBootstrap):
-			return nil, patchErr(conditions.KgatewayReasonBootstrapValidationFailed, err)
+			return nil, patchErr(conditions.KgatewayReasonBootstrapValidationFailed, res.ManagedPaths, err)
 		case err != nil:
 			return nil, fmt.Errorf("failed to validate the patched bootstrap: %w", err)
 		}
@@ -158,7 +192,9 @@ func ApplyBootstrapPatches(
 
 	return &BootstrapPatchOutcome{
 		ConfigMapName:        cm.Name,
+		ManagedPathsMode:     mode,
 		ManagedPaths:         res.ManagedPaths,
+		CuratedOverrides:     res.CuratedOverrides,
 		RemovedServicePorts:  removed,
 		RemovedRuntimeGuards: validation.RemovedRuntimeGuards,
 	}, nil
@@ -227,15 +263,35 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 		return cond
 	}
 
-	// Report each managed path the patches set.
+	// Report each managed path the patches set: under PRUNE it was dropped, otherwise
+	// it applied.
 	cond.Status = metav1.ConditionTrue
 	cond.Reason = conditions.KgatewayReasonBootstrapPatchApplied
 	msg := []string{"The bootstrap patches are applied."}
-	if len(outcome.ManagedPaths) > 0 {
+	switch {
+	case len(outcome.ManagedPaths) == 0:
+	case outcome.ManagedPathsMode == apisettings.BootstrapPatchManagedPathsPrune:
+		cond.Reason = conditions.KgatewayReasonBootstrapPathsIgnored
+		msg = append(msg, fmt.Sprintf(
+			"These paths were dropped from them because the control plane manages them: %s.",
+			joinManagedPaths(outcome.ManagedPaths)))
+	default:
 		cond.Reason = conditions.KgatewayReasonBootstrapManagedPathsOverridden
 		msg = append(msg, fmt.Sprintf(
 			"They set paths the control plane manages, which can disconnect the proxy from the controller or break its probes: %s.",
 			joinManagedPaths(outcome.ManagedPaths)))
+	}
+
+	// Report each path that replaces what a GatewayParameters field generated. The
+	// reason does not change: the replaced value is the user's own configuration.
+	if len(outcome.CuratedOverrides) > 0 {
+		overrides := make([]string, 0, len(outcome.CuratedOverrides))
+		for _, o := range outcome.CuratedOverrides {
+			overrides = append(overrides, o.String())
+		}
+		msg = append(msg, fmt.Sprintf(
+			"The patches replace configuration other GatewayParameters fields generate, including values left at their defaults: %s.",
+			strings.Join(overrides, "; ")))
 	}
 
 	// Report each listener port left off the Service.
@@ -257,6 +313,52 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 	}
 	cond.Message = strings.Join(msg, " ")
 	return cond
+}
+
+// bootstrapPatchEvents returns the Warning events that go with the
+// kgateway.dev/BootstrapPatchApplied condition cond: one for each managed path the
+// patches set, each GatewayParameters field they replace, and the runtime guards Envoy
+// ignores.
+func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome) []deployer.ReportEvent {
+	// Patches that are not mounted have no other effect to report.
+	if cond.Reason == conditions.KgatewayReasonBootstrapNotMounted {
+		return []deployer.ReportEvent{bootstrapPatchEvent(cond.Reason, cond.Message)}
+	}
+
+	// Report each managed path the patches set.
+	var out []deployer.ReportEvent
+	for _, p := range outcome.ManagedPaths {
+		if outcome.ManagedPathsMode == apisettings.BootstrapPatchManagedPathsPrune {
+			out = append(out, bootstrapPatchEvent(conditions.KgatewayReasonBootstrapPathsIgnored,
+				fmt.Sprintf("Dropped %s from the bootstrap patches because the control plane manages it.", p)))
+			continue
+		}
+		out = append(out, bootstrapPatchEvent(conditions.KgatewayReasonBootstrapManagedPathsOverridden,
+			fmt.Sprintf("Applied bootstrap patches that set %s, which the control plane manages.", p)))
+	}
+
+	// Report each GatewayParameters field the patches replace.
+	for _, o := range outcome.CuratedOverrides {
+		out = append(out, bootstrapPatchEvent(curatedFieldOverriddenReason,
+			fmt.Sprintf("The bootstrap patches replace generated configuration: %s.", o)))
+	}
+
+	// Report the runtime keys Envoy ignores.
+	if len(outcome.RemovedRuntimeGuards) > 0 {
+		out = append(out, bootstrapPatchEvent(removedRuntimeGuardsReason,
+			fmt.Sprintf("Envoy no longer has the runtime guard(s) %s, so their values have no effect; remove them from the bootstrap patches.",
+				strings.Join(outcome.RemovedRuntimeGuards, ", "))))
+	}
+	return out
+}
+
+func bootstrapPatchEvent(reason, note string) deployer.ReportEvent {
+	return deployer.ReportEvent{
+		Type:   corev1.EventTypeWarning,
+		Reason: reason,
+		Action: applyBootstrapPatchesAction,
+		Note:   note,
+	}
 }
 
 func joinManagedPaths(paths []bootstrappatch.ManagedPath) string {

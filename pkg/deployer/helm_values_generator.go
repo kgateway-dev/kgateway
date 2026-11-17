@@ -46,4 +46,19 @@ type PostProcessReport struct {
 	// OwnedConditionTypes are the condition types the post-processor manages. A type
 	// listed here and absent from Conditions is removed from the object's status.
 	OwnedConditionTypes []string
+	// Events are recorded on the object when the reported conditions change its status.
+	Events []ReportEvent
+}
+
+// ReportEvent is a Kubernetes Event to record on the object the rendered objects
+// belong to.
+type ReportEvent struct {
+	// Type is corev1.EventTypeNormal or corev1.EventTypeWarning.
+	Type string
+	// Reason is a short CamelCase reason.
+	Reason string
+	// Action is what the controller did, or failed to do, to the object.
+	Action string
+	// Note is the human-readable message.
+	Note string
 }
