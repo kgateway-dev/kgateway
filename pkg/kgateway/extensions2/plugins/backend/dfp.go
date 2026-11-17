@@ -3,6 +3,7 @@ package backend
 import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_dfp_cluster "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dynamic_forward_proxy/v3"
 	envoydfp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
@@ -41,23 +42,24 @@ func (u *DfpIr) Equals(other *DfpIr) bool {
 	})
 }
 
-func buildDfpIr(in *kgateway.DynamicForwardProxyBackend) (*DfpIr, error) {
+func buildDfpIr(in *kgateway.DynamicForwardProxyBackend, defaultFamily envoycommondnsv3.DnsLookupFamily) (*DfpIr, error) {
 	ir := &DfpIr{}
 
-	subClusters := &envoy_dfp_cluster.SubClustersConfig{
-		LbPolicy: envoyclusterv3.Cluster_LEAST_REQUEST,
-	}
+	family := defaultFamily
 	if in.DNSLookupFamily != nil {
-		family, err := pluginutils.ToEnvoyDNSLookupFamily(*in.DNSLookupFamily)
+		var err error
+		family, err = pluginutils.ToEnvoyDNSLookupFamily(*in.DNSLookupFamily)
 		if err != nil {
 			return nil, err
 		}
-		subClusters.DnsClusterConfig = &envoydnsv3.DnsCluster{DnsLookupFamily: family}
 	}
 
 	c := &envoy_dfp_cluster.ClusterConfig{
 		ClusterImplementationSpecifier: &envoy_dfp_cluster.ClusterConfig_SubClustersConfig{
-			SubClustersConfig: subClusters,
+			SubClustersConfig: &envoy_dfp_cluster.SubClustersConfig{
+				LbPolicy:         envoyclusterv3.Cluster_LEAST_REQUEST,
+				DnsClusterConfig: &envoydnsv3.DnsCluster{DnsLookupFamily: family},
+			},
 		},
 	}
 	anyCluster, err := utils.MessageToAny(c)

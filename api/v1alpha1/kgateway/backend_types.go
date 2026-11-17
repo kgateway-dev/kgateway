@@ -124,7 +124,7 @@ type DynamicForwardProxyBackend struct {
 	EnableTls *bool `json:"enableTls,omitempty"`
 
 	// DNSLookupFamily selects which IP address families Envoy resolves for upstream hosts.
-	// When unset, Envoy uses its default DNS lookup family (IPv6Preferred).
+	// When unset, the controller's KGW_DNS_LOOKUP_FAMILY setting applies.
 	// Envoy shares subclusters by host and port within a proxy. Use the same lookup
 	// family for Dynamic Forward Proxy backends that can reach the same destination.
 	// +optional

@@ -14,7 +14,6 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -790,20 +789,9 @@ var h2Options = func() *anypb.Any {
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
 // 2. override to value defined in kgateway global setting if present
 func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonCollections) {
-	lookupFamily := envoyclusterv3.Cluster_V4_PREFERRED
+	var family apisettings.DnsLookupFamily
 	if cc != nil {
-		switch cc.Settings.DnsLookupFamily {
-		case apisettings.DnsLookupFamilyV4Preferred:
-			lookupFamily = envoyclusterv3.Cluster_V4_PREFERRED
-		case apisettings.DnsLookupFamilyV4Only:
-			lookupFamily = envoyclusterv3.Cluster_V4_ONLY
-		case apisettings.DnsLookupFamilyV6Only:
-			lookupFamily = envoyclusterv3.Cluster_V6_ONLY
-		case apisettings.DnsLookupFamilyAuto:
-			lookupFamily = envoyclusterv3.Cluster_AUTO
-		case apisettings.DnsLookupFamilyAll:
-			lookupFamily = envoyclusterv3.Cluster_ALL
-		}
+		family = cc.Settings.DnsLookupFamily
 	}
 
 	switch cdt := out.GetClusterDiscoveryType().(type) {
@@ -817,7 +805,7 @@ func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonC
 			logger.Error("failed to unpack dns cluster config", "cluster", out.GetName(), "error", err)
 			return
 		}
-		dnsCluster.DnsLookupFamily = toExtensionDnsLookupFamily(lookupFamily)
+		dnsCluster.DnsLookupFamily = pluginutils.EnvoyDNSLookupFamilyFromSettings(family)
 		typedConfig, err := utils.MessageToAny(dnsCluster)
 		if err != nil {
 			logger.Error("failed to pack dns cluster config", "cluster", out.GetName(), "error", err)
@@ -826,23 +814,6 @@ func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonC
 		cdt.ClusterType.TypedConfig = typedConfig
 	default:
 		return
-	}
-}
-
-func toExtensionDnsLookupFamily(family envoyclusterv3.Cluster_DnsLookupFamily) envoycommondnsv3.DnsLookupFamily {
-	switch family {
-	case envoyclusterv3.Cluster_AUTO:
-		return envoycommondnsv3.DnsLookupFamily_AUTO
-	case envoyclusterv3.Cluster_V6_ONLY:
-		return envoycommondnsv3.DnsLookupFamily_V6_ONLY
-	case envoyclusterv3.Cluster_V4_ONLY:
-		return envoycommondnsv3.DnsLookupFamily_V4_ONLY
-	case envoyclusterv3.Cluster_V4_PREFERRED:
-		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED
-	case envoyclusterv3.Cluster_ALL:
-		return envoycommondnsv3.DnsLookupFamily_ALL
-	default:
-		return envoycommondnsv3.DnsLookupFamily_AUTO
 	}
 }
 
