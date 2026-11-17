@@ -148,17 +148,27 @@ own (see Alternatives for the envoyinit overlay, `OVERLAY_CONF`). Until Phase 1
 ships, `-c` covers settings kgateway does not set, and full bootstrap replacement
 remains the documented option for anything else.
 
-Layer 2 of the Phase 1 API (the overlay) is strictly more general than Layer 1
-(curated fields): anything a curated field does, the overlay can already express. So
-we ship the overlay first and curate later.
+The overlay is strictly more general than curated fields: anything a curated field
+does, the overlay can already express. So we ship the overlay first and curate
+later.
 
 ### Phase 1: API, controller merge, guardrails
 
 #### Configuration
 
-Extend `EnvoyBootstrap` in `api/v1alpha1/kgateway/gateway_parameters_types.go` with
-a `patches` field, structured in two layers. Phase 1 ships Layer 2 only; Layer 1
-fields arrive in Phase 2.
+The bootstrap API is `GatewayParameters.spec.kube.envoyContainer.bootstrap`
+(`EnvoyBootstrap` in `api/v1alpha1/kgateway/gateway_parameters_types.go`), a
+kgateway type that already holds curated fields. Some become Envoy command-line
+flags (`logLevel`, `componentLogLevels`, `logFormat`); the rest are rendered into
+the bootstrap by the Helm template (`dnsResolver`, `maxDownstreamConnections`,
+`enableReadinessProbeProxyProtocol`). Stats settings that render into the bootstrap
+are on `spec.kube.stats` (`matcher` renders `stats_config.stats_matcher`).
+
+This EP adds a `patches` field to `EnvoyBootstrap`. Everything under `patches` is
+applied as a proto patch on top of the generated bootstrap, and its result is
+reported on the `kgateway.dev/BootstrapPatchApplied` condition. Fields directly on
+`bootstrap` keep being rendered by the Helm template. `patches` has two layers.
+Phase 1 ships Layer 2 only; Layer 1 fields arrive in Phase 2.
 
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -169,8 +179,10 @@ spec:
   kube:
     envoyContainer:
       bootstrap:
+        dnsResolver:                           # existing field, rendered by Helm
+          udpMaxQueries: 50
         patches:
-          # Layer 1 (Phase 2): curated, strongly-typed fields for common cases.
+          # Layer 1 (Phase 2): curated, strongly-typed patches for common cases.
           runtime:
             envoy.reloadable_features.http_reject_path_with_fragment: false
           statsConfig:
@@ -180,8 +192,8 @@ spec:
 
           # Layer 2 (Phase 1): typed proto merge for everything else.
           overlay:
-            mergeStrategy: StructuredMerge   # default, and the only value in Phase 1
-            value:                           # a partial envoy.config.bootstrap.v3.Bootstrap
+            mergeStrategy: StructuredMerge     # default, and the only value in Phase 1
+            value:                             # a partial envoy.config.bootstrap.v3.Bootstrap
               stats_flush_interval: 10s
               layered_runtime:
                 layers:
@@ -194,17 +206,24 @@ The `runtime` entry and the `layered_runtime` overlay set the same flag; a user
 writes one or the other. The overlay form works in Phase 1; `runtime` is its Phase 2
 replacement (see Phase 2).
 
-1. **Curated typed fields** (`runtime`, `statsConfig.histogramBucketSettings`,
-   `statsFlushInterval`, `dnsResolver`, ...). These give CRD validation,
-   documentation, and a stable contract. `runtime` (the motivating case) and
-   #14088 are the first candidates for promotion (Phase 2); until then they go
-   through the overlay.
-2. **A typed proto overlay** (`overlay.value`), stored with
+1. **Curated patches** (Layer 1: `runtime`, `statsConfig.histogramBucketSettings`,
+   ...). These give CRD validation, documentation, and a stable contract. Each one
+   is Go code that builds a partial `Bootstrap` from the typed field, applied to
+   the parsed base before the overlay (see Pipeline).
+2. **A typed proto overlay** (Layer 2, `overlay.value`), stored with
    `+kubebuilder:pruning:PreserveUnknownFields` and parsed by the controller as a
    *partial* `envoy.config.bootstrap.v3.Bootstrap`. The API server does not validate
    under `PreserveUnknownFields`, so typos and bad types are caught by the controller
    and reported on status. Because it is keyed by proto field, it survives
    base-template changes.
+
+The existing fields stay where they are: moving or removing one is a breaking
+change. So some settings can be written two ways, as an existing field or through
+the overlay (for example `dnsResolver.udpMaxQueries` and
+`typed_dns_resolver_config`). As with `deploymentOverlay`, the docs recommend the
+typed field where one exists, because it gives better validation and error
+messages and a simpler upgrade path. See Open Questions for whether existing
+fields should also be offered under `patches`.
 
 #### Worked example: reloadable feature flags
 
@@ -332,7 +351,7 @@ reporting live in one place.
 
 ```mermaid
 flowchart TD
-    A[Render base bootstrap from Helm, parse to Bootstrap proto] --> B[Apply curated typed fields]
+    A[Render base bootstrap from Helm, parse to Bootstrap proto] --> B[Apply curated patches]
     O[Parse user overlay to partial Bootstrap proto] --> P{Overlay touches a managed path?}
     P -->|no| M
     P -->|yes, WARN default| R[Record each path] --> M
@@ -351,18 +370,47 @@ envoyinit already performs (`pkg/envoyinit/run.go`). The existing `pkg/xds/boots
 `ConfigBuilder` cannot generate the base bootstrap: it builds a bootstrap only for
 validating translated xDS.
 
+Parsing needs every `@type` in the base and the overlay to be registered in the
+controller binary. `protojson` resolves each `Any` through Go's global type
+registry, which holds only the proto packages linked into the binary. envoyinit
+links all 429 Envoy proto packages (`pkg/utils/filter_types`); the controller links
+106, the ones its translation code imports. Four types the generated bootstrap uses
+are not among them: `CaresDnsResolverConfig`, `DownstreamConnectionsConfig`,
+`CredentialInjector`, and the generic injected credential
+(`envoy.extensions.http.injected_credentials.generic.v3.Generic`). Phase 1 links
+these four. An overlay `@type` that the controller does not link fails with
+`InvalidOverlay`, and the message names the type, even if Envoy would accept it.
+This is a known gap (see Open Questions).
+
 #### Guardrails
 
 ##### Managed paths
 
-The controller maintains a list of proto paths the control plane owns, all present
-in the generated bootstrap (`pkg/kgateway/helm/envoy/templates/configmap.yaml`):
+A path is managed if kgateway generates it and something outside the overlay
+depends on its name or value: the controller, the proxy `Deployment`, envoyinit,
+translated xDS, or another managed path. The controller keeps the list of managed
+paths, all present in the generated bootstrap
+(`pkg/kgateway/helm/envoy/templates/configmap.yaml`):
 
-- `node`
-- `dynamic_resources`
-- `admin.address`
-- `static_resources.clusters[name=xds_cluster]` (which also carries the xDS JWT
-  credential injector)
+| Path | What depends on it |
+|---|---|
+| `node` | The controller selects the proxy's xDS snapshot by `node.metadata.role` ([`xds/utils.go`](https://github.com/kgateway-dev/kgateway/blob/851bfc9c3cf37139586e82c1c0081ff718c02799/pkg/kgateway/xds/utils.go#L64-L79)). envoyinit sets `node.locality`. |
+| `dynamic_resources` | The proxy receives all translated config through it. |
+| `admin.address` | The `Deployment`'s `preStop` hook calls `127.0.0.1:19000/healthcheck/fail`, and `admin_port_cluster` points at it. |
+| `static_resources.clusters[name=xds_cluster]` | The proxy's connection to the controller, including the xDS JWT credential injector. |
+| `cluster_manager.local_cluster_name`, and the static cluster with that name | The controller sends that cluster's endpoints by name (`pkg/kgateway/proxy_syncer/local_cluster.go`), and translated clusters use it for zone-aware routing. |
+| `static_resources.clusters[name=admin_port_cluster]` | `readiness_listener` and `prometheus_listener` route to it. |
+| `static_resources.clusters[name=gateway_proxy_sds]` (Istio integration only) | Translated listeners and clusters get Istio certificates through it (`wellknown.SdsClusterName`). |
+| `static_resources.listeners[name=readiness_listener]` | The `Deployment`'s default readiness and startup probes target its port, 8082. |
+| `static_resources.listeners[name=prometheus_listener]` | The pod's `prometheus.io/port: "9091"` scrape annotation targets its port. |
+
+Two names are protected in other ways, because overriding them breaks the proxy
+under every mode:
+
+- The secret name `SYSTEM_CA_CERT` is reserved, and the controller rejects an
+  overlay that defines it (see Changes envoyinit makes in the pod).
+- `admin_layer` cannot be overridden: an overlay layer cannot share its name, and
+  runtime layers are never replaced (see Lists).
 
 Paths are matched on the **parsed proto** (field descriptors, with list entries
 identified by key), never on raw YAML keys, because the proto JSON mapping accepts
@@ -443,9 +491,72 @@ The validator cannot be reused unchanged. Its preparation step drops
 ([`validator.go`](https://github.com/kgateway-dev/kgateway/blob/851bfc9c3cf37139586e82c1c0081ff718c02799/pkg/validator/validator.go#L302-L308)),
 which is right for xDS validation but would let an invalid log config in an overlay
 through. Bootstrap validation needs its own mode that keeps it, and that defines how
-proxy-only inputs are handled: the xDS token file, and the system CA secret
-envoyinit adds at startup
-([`run.go`](https://github.com/kgateway-dev/kgateway/blob/851bfc9c3cf37139586e82c1c0081ff718c02799/pkg/envoyinit/run.go#L44-L67)).
+inputs that exist only in the proxy pod are handled: the xDS token file
+(`xds_service_account_token.json`), the xDS CA files used when xDS TLS is enabled
+(`xds_ca_sds.json` and `ca.crt`, read through file-based SDS), and the changes
+envoyinit makes at startup (below).
+
+##### Changes envoyinit makes in the pod
+
+The `ConfigMap` is not exactly what Envoy runs. When the proxy pod starts, after the
+controller has merged, validated and written the bootstrap, envoyinit changes it
+([`run.go`](https://github.com/kgateway-dev/kgateway/blob/851bfc9c3cf37139586e82c1c0081ff718c02799/pkg/envoyinit/run.go#L44-L67),
+`internal/envoyinit/pkg/downward/transform.go`) and passes the result to Envoy with
+`--config-yaml`. Each change is handled as follows:
+
+- **Template pass.** envoyinit runs Go `text/template` over the whole file, filling
+  in Kubernetes Downward API values such as `{{.PodName}}`, `{{.PodIp}}` and
+  `{{.NodeName}}`. The generated bootstrap contains no templates, so the pass only
+  affects overlay content. The controller does not know these values before the pod
+  exists, so it never validates the text the pod runs, and a malformed template
+  makes envoyinit exit and the pod crash-loop. The controller therefore rejects an
+  overlay that contains `{{` anywhere, with reason `InvalidOverlay`, under every
+  mode (see Open Questions).
+- **System CA secret.** When the pod has an OS CA bundle, envoyinit appends a static
+  secret named `SYSTEM_CA_CERT`. An overlay secret with that name would pass the
+  controller's merge and validation, and then the pod would have two secrets with
+  that name, which Envoy rejects at startup. The name is reserved: the controller
+  rejects an overlay that defines it, with reason `InvalidOverlay`, under every mode.
+- **Node locality.** envoyinit sets `node.locality.region`, `zone` and `sub_zone`
+  from the `KGATEWAY_NODE_*` environment variables or the pod's topology labels,
+  overwriting each key it finds a value for. `node` is a managed path, so an overlay that sets
+  `node.locality` is reported; the docs state that envoyinit overwrites the keys it
+  derives.
+
+##### Listener ports
+
+`envoy --mode validate` does not bind ports, so it does not catch a static listener
+on a port that a Gateway listener also uses. On the proxy, Envoy then rejects the
+second listener (`has duplicate address ... as existing listener`,
+`source/common/listener_manager/listener_manager_impl.cc`), and the controller does
+not see it.
+
+Gateway listener ports do not come from the bootstrap: they come from the Gateway's
+listeners and its ListenerSets' listeners, which the translator turns into dynamic
+listeners sent over xDS. The bootstrap holds only the static listeners and the
+admin address. kgateway already keeps the two apart for the generated bootstrap:
+ports 8082 (`readiness_listener`), 9091 (`prometheus_listener`) and 19000 (admin)
+are reserved as constants (`pkg/kgateway/validate/gateway.go`). The translator
+rejects a Gateway or ListenerSet listener on a reserved port, and the deployer
+leaves that port off the `Service`.
+
+An overlay can add a static listener or move one, so a Gateway's reserved ports
+come from its merged bootstrap instead of the constants:
+
+- The deployer collects the ports of the merged bootstrap's static listeners and of
+  `admin.address`. These are the Gateway's reserved ports.
+- The deployer already has the Gateway's listener ports, from the Gateway and its
+  ListenerSets (`GatewayForDeployer` in `pkg/krtcollections/policy.go`), and that
+  collection is recomputed when a ListenerSet changes. It leaves reserved ports off
+  the `Service` and lists each colliding port in the
+  `kgateway.dev/BootstrapPatchApplied` message.
+- The translator rejects a Gateway or ListenerSet listener on a reserved port, with
+  the existing reserved-port status. It receives the reserved ports with the
+  Gateway's bootstrap subset (see Translator and Proxy Syncer); they are used only
+  for this check and are not added to the validation bootstrap.
+- A collision does not reject the overlay, so a ListenerSet added later cannot make
+  a working overlay fall back. The listener that uses the reserved port is rejected,
+  as it is today for 8082, 9091 and 19000.
 
 ##### Invalid-merge fallback
 
@@ -488,13 +599,36 @@ does not remove this one.
 | `True` | `ManagedPathsOverridden` | `WARN` applied an overlay that sets one or more managed paths. The message lists each path. |
 | `True` | `PathsIgnored` | `PRUNE` dropped one or more managed paths; the rest applied. The message lists each dropped path. |
 | `False` | `PathsDenied` | `REJECT` refused an overlay that touched managed paths. The message lists them. |
-| `False` | `InvalidOverlay` | The overlay does not parse as a partial `Bootstrap`. |
+| `False` | `InvalidOverlay` | The overlay does not parse as a partial `Bootstrap`, contains `{{`, or defines a reserved name. |
 | `False` | `ValidationFailed` | The merged bootstrap failed `envoy --mode validate`. |
 
 `True` with `ManagedPathsOverridden` or `PathsIgnored` is deliberate: the patch did
 apply, and a routine report must not read as a broken Gateway to anyone alerting on
 condition status. `False` is reserved for cases where the overlay could not be
 rolled out at all.
+
+**Overrides of curated fields.** Curated fields are applied before the overlay, so an
+overlay can replace their output. The output is the user's own configuration, not a
+managed path, so the mode does not apply: `PRUNE` and `REJECT` never drop or refuse
+it. But the replacement can drop a value the user did not mean to change. For
+example, `dnsResolver.udpMaxQueries` (default 100) renders into
+`typed_dns_resolver_config.typed_config`, an `Any`. An overlay that sets another
+c-ares option there replaces the whole `Any`, so `udp_max_queries` is no longer set
+and Envoy applies no cap. For a curated patch under `patches`, the controller
+compares the overlay's paths with the patch it built. For the existing
+Helm-rendered fields, it keeps a list of the paths each one renders:
+
+| Curated field | Renders into |
+|---|---|
+| `dnsResolver` | `typed_dns_resolver_config` |
+| `maxDownstreamConnections` | `overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections]` |
+| `stats.matcher` | `stats_config.stats_matcher` |
+
+When the overlay replaces one of them, or switches the `oneof` option it set, the
+condition message names the curated field and the overlay path. The status and
+reason do not change. Curated fields that render onto managed paths
+(`enableReadinessProbeProxyProtocol` onto `readiness_listener`, `stats.enabled` onto
+`prometheus_listener`) are already reported as managed paths.
 
 Also emit a `Warning` event for each overridden, dropped or denied path, and a
 metric labeled by Gateway, namespace and path. The Gateway labels let a platform
@@ -545,23 +679,51 @@ its unknown fields intact.
 
 ### Phase 2: curated fields
 
-When a given overlay shape recurs, promote it into a strongly-typed Layer 1 field for
-CRD validation, documentation, and a stable contract. Promotion is
-backward-compatible: the curated field and the overlay target the same proto path,
-with the curated field applied first and the overlay layered on top. Where a curated
-field renders into an `Any` or a named list entry, the overlay replaces its result
-whole rather than adjusting it (see Merge semantics). For example, the existing
-`dnsResolver.udpMaxQueries` renders into `typed_dns_resolver_config.typed_config`,
-so an overlay that sets that `typed_config` drops `udpMaxQueries` unless it repeats
-it; the same holds for the resource monitor that `maxDownstreamConnections` renders.
-The candidates, in order:
+When a given overlay shape recurs, promote it into a strongly-typed curated patch
+under `patches` for CRD validation, documentation, and a stable contract. A curated
+patch is Go code that builds a partial `Bootstrap` from the typed field. The
+controller applies it to the parsed base before the overlay (see Pipeline), so it
+goes through the same validation and status as the overlay.
 
-1. `runtime`, for the motivating case (reloadable feature flags) and any other
-   runtime key, below. The issue is the evidence for it, so it can be built
+Each curated patch needs:
+
+- the API field, with CEL rules for its shape;
+- the function that builds its partial `Bootstrap`, with unit and golden tests;
+- a CEL rule rejecting `{{` in its string values. The merged bootstrap is written
+  to the `ConfigMap` as text and goes through envoyinit's template pass (see Changes
+  envoyinit makes in the pod), so a curated string value has the same problem as an
+  overlay string.
+
+Promotion is backward-compatible: the curated patch and the overlay target the same
+proto path, with the curated patch applied first and the overlay merged on top.
+Because the controller holds each curated patch as a proto, it compares the
+overlay's paths with them directly to report an overlay that replaces a curated
+patch's output (see Reporting); only the existing Helm-rendered fields need a
+hand-kept list. Applying curated patches in the controller also lets the merge
+order a list per field, for example putting overlay entries before curated ones.
+
+Where a curated field renders into an `Any` or a named list entry, the overlay
+replaces its result whole rather than adjusting it (see Merge semantics). For
+example, the existing `dnsResolver.udpMaxQueries` renders into
+`typed_dns_resolver_config.typed_config`, so an overlay that sets that
+`typed_config` drops `udpMaxQueries` unless it repeats it; the same holds for the
+resource monitor that `maxDownstreamConnections` renders. The candidates, in order:
+
+1. `patches.runtime`, for the motivating case (reloadable feature flags) and any
+   other runtime key, below. The issue is the evidence for it, so it can be built
    directly after Phase 1 rather than after overlay usage accumulates.
-2. `statsConfig.histogramBucketSettings`, for #14088.
-3. `staticResources.clusters`, if demand warrants. It can reject collisions with
-   managed cluster names up front with a clearer message.
+2. `patches.statsConfig.histogramBucketSettings`, for #14088. Envoy applies the
+   first matching entry, and the overlay's entries are appended after the curated
+   ones, so a curated entry wins over an overlay entry that matches the same stat.
+   That is the opposite of the overlay-on-top rule. Phase 2 decides whether the
+   merge puts overlay entries first for this list.
+3. `patches.staticResources.clusters`, if demand warrants. It can reject
+   collisions with managed cluster names up front with a clearer message.
+
+Settings that extend an existing Helm-rendered field, such as more c-ares options
+next to `dnsResolver.udpMaxQueries`, are added when a use case comes up. Where such
+a setting goes is part of the open question on existing fields (see Open
+Questions).
 
 #### `runtime`
 
@@ -575,12 +737,13 @@ patches:
 - **Shape.** A map from runtime key to a scalar value (boolean, number or string),
   enforced by CEL. Runtime values that are objects, such as a `FractionalPercent`
   (`numerator`/`denominator`), stay in the overlay.
-- **Rendering.** kgateway renders the map into a static layer it owns,
-  `kgateway_runtime`, placed first among the user layers:
+- **Rendering.** The curated patch is a static layer, `kgateway_runtime`, holding
+  the map. The controller inserts it before `admin_layer`, and the overlay merge
+  then inserts overlay layers immediately before `admin_layer`, which gives
   `[kgateway_runtime, <overlay layers>, admin_layer]`. An overlay layer can still
   override a `runtime` entry, matching the curated-first rule above, and
-  `/runtime_modify` still overrides both. The merge rejects an overlay layer named
-  `kgateway_runtime` as a duplicate.
+  `/runtime_modify` still overrides both. The name `kgateway_runtime` is reserved:
+  the merge rejects an overlay layer with that name as a duplicate.
 - **Strict validation.** `kgateway_runtime` is a static `layered_runtime` layer, which
   the validation allowlist already includes (see Translator and Proxy Syncer). A
   runtime key that changes what Envoy accepts, such as the RE2 limit, takes effect in
@@ -688,7 +851,17 @@ own, with a node, a cluster manager and static resources but no `layered_runtime
   managed path; `PRUNE` strips exactly the managed paths and leaves the rest;
   `REJECT` applies nothing; the settings decoder accepts only
   `WARN`/`PRUNE`/`REJECT`; each status reason; a translator status update keeps
-  `kgateway.dev/BootstrapPatchApplied`.
+  `kgateway.dev/BootstrapPatchApplied`; an overlay that replaces the output of each
+  curated field in the table under Reporting is applied under every mode and named
+  in the condition message; an overlay containing `{{` or defining a
+  `SYSTEM_CA_CERT` secret is rejected under every mode; a static listener on a
+  Gateway or ListenerSet listener's port leaves the overlay applied, rejects that
+  listener, and leaves its port off the `Service`.
+- **Phase 1 parsing:** the generated bootstrap parses in the controller with every
+  option that adds a `@type` turned on (`maxDownstreamConnections`, `dnsResolver`,
+  `enableReadinessProbeProxyProtocol`, xDS TLS, Istio integration), so a template change that adds an unlinked
+  type fails the test; an overlay with an unlinked `@type` fails with
+  `InvalidOverlay` and names the type.
 - **Phase 1 golden:** `GatewayParameters` inputs with overlays produce the expected
   merged bootstrap; a base-bootstrap change does not change the user's settings
   (regression guard for "survives version change"); an overlay touching a managed
@@ -727,8 +900,9 @@ own, with a node, a cluster manager and static resources but no `layered_runtime
 - **Phase 2 `runtime`:** golden output places `kgateway_runtime` before the overlay
   layers and `admin_layer`; an overlay layer overrides a `runtime` entry for the same
   key; an overlay layer named `kgateway_runtime` is rejected; CEL rejects object
-  values; the feature flag e2e case above passes with `runtime` in place of the
-  overlay.
+  values and string values containing `{{`; an overlay layer that overrides a
+  `runtime` key is named in the condition message; the feature flag e2e case above
+  passes with `runtime` in place of the overlay.
 
 ## Alternatives
 
@@ -809,6 +983,35 @@ own, with a node, a cluster manager and static resources but no `layered_runtime
   objects: it sets `Accepted=False` with reason `InvalidParameters` and deploys
   nothing. Should an invalid overlay follow that behavior, or hold back only the
   `ConfigMap`?
+- **Existing fields and `patches`.** Curated fields now live in two places:
+  existing ones directly on `bootstrap` (rendered by Helm) and new ones under
+  `patches` (applied as proto patches). Existing fields cannot move without a
+  breaking change. Should an existing field that grows, such as `dnsResolver` with
+  more c-ares options, keep growing on `bootstrap` through Helm, or get a curated
+  patch under `patches` that coexists with the old field? And should existing
+  fields eventually be re-implemented as proto patches, keeping their API location,
+  so that every curated field is applied and reported the same way?
+- **Envoy types the controller does not link.** An overlay can use only the
+  `@type`s the controller binary links (see Pipeline), so an overlay that Envoy
+  would accept can still fail with `InvalidOverlay`. Linking every Envoy proto
+  package, as envoyinit does, grows the controller binary from 150 MB to 163 MB
+  (about 9%, measured on a stripped darwin/arm64 build). Should Phase 1 link all of
+  them, link the extension types an overlay is likely to use (stats sinks, resource
+  monitors, access loggers, DNS resolvers), or document the gap and link types as
+  users report them?
+- **Templates in an overlay.** The controller rejects an overlay that contains `{{`
+  (see Changes envoyinit makes in the pod), which also rejects a string that needs
+  `{{` literally. The alternative is to support templates: the controller fills in
+  the values it knows before the pod exists (`PodNamespace`, `PodSvcAccount`),
+  validates with placeholders for per-pod values (`PodName`, `PodIp`, `NodeName`),
+  and checks that the template parses. Does any user need a per-pod value in the
+  bootstrap, such as the pod name in a stats tag, or is rejecting `{{` enough?
+- **Which paths are managed.** The rule in Managed paths gives nine entries. Under
+  `WARN` an entry only adds a report, but under `PRUNE` and `REJECT` it decides what
+  applies: a user who replaces `readiness_listener` to add a listener filter loses
+  that change under `PRUNE`. Is the rule right, and is any entry too broad? For
+  example, `node` covers `node.locality`, which a user may want to set when the
+  pod's topology labels are missing.
 - **A static cluster with the name of a translated cluster.** Envoy does not let CDS
   update a cluster defined in the bootstrap: the CDS entry is skipped and logged
   only at debug level (`source/common/upstream/cluster_manager_impl.cc`,
