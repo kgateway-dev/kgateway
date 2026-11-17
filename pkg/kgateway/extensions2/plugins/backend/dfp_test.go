@@ -15,9 +15,7 @@ import (
 )
 
 func TestDynamicForwardProxyDNSLookupFamily(t *testing.T) {
-	t.Setenv("KGW_DNS_LOOKUP_FAMILY", string(apisettings.DnsLookupFamilyV6Only))
-	settings, err := apisettings.BuildSettings()
-	require.NoError(t, err)
+	settings := &apisettings.Settings{DnsLookupFamily: apisettings.DnsLookupFamilyV6Only}
 	translate := buildTranslateFunc(nil, nil, settings)
 	backend := &kgateway.Backend{
 		Spec: kgateway.BackendSpec{
