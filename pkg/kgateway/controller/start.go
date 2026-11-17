@@ -270,6 +270,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		CommonCollections:        c.commoncol,
 		GatewayClassName:         c.cfg.GatewayClassName,
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
+		BootstrapValidator:       validator.BootstrapValidatorFor(c.cfg.Validator),
 	}
 
 	setupLog.Info("creating base gateway controller")

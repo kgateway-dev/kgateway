@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 // rateLimiter uses token bucket for overall rate limiting and exponential backoff for per-item rate limiting
@@ -50,6 +51,9 @@ type GatewayConfig struct {
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
 	CertWatcher *certwatcher.CertWatcher
+	// BootstrapValidator validates a proxy bootstrap that GatewayParameters bootstrap
+	// patches change. When nil, the patched bootstrap is not validated.
+	BootstrapValidator validator.BootstrapValidator
 }
 
 type HelmValuesGeneratorOverrideFunc func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -94,6 +98,7 @@ func watchGw(
 		ImageInfo:            cfg.ImageInfo,
 		CommonCollections:    cfg.CommonCollections,
 		GatewayClassName:     cfg.GatewayClassName,
+		BootstrapValidator:   cfg.BootstrapValidator,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)

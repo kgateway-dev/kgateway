@@ -47,7 +47,7 @@ var (
 
 // systemCASecretName is the static secret envoyinit adds in the pod when it finds an
 // OS CA bundle. It must match utils.SystemCaSecretName in internal/envoyinit.
-const systemCASecretName = "SYSTEM_CA_CERT"
+const systemCASecretName = "SYSTEM_CA_CERT" //nolint:gosec // G101: the name of a secret, not a credential
 
 // managedPaths returns each managed path overlay sets, in a fixed order. Matching
 // uses the parsed proto, so both the snake_case and lowerCamelCase spellings of a

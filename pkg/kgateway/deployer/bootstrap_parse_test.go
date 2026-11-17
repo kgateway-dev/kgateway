@@ -3,6 +3,7 @@ package deployer
 import (
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	corev1 "k8s.io/api/core/v1"
@@ -11,6 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 // The controller parses the generated bootstrap to apply overlays, which needs every
@@ -23,7 +25,32 @@ func TestGeneratedBootstrapParses(t *testing.T) {
 	require.ErrorIs(t, err, protoregistry.NotFound,
 		"this test binary links pkg/utils/filter_types; keep its imports out of pkg/kgateway/deployer tests")
 
-	// Render the chart with every option that adds a `@type` to the bootstrap.
+	// Parse the bootstrap rendered with every option.
+	bs := renderFullBootstrap(t)
+
+	// Check that the options took effect, so the test covers their `@type`s.
+	require.NotNil(t, bs.GetTypedDnsResolverConfig(), "dnsResolver should render")
+	require.NotEmpty(t, bs.GetOverloadManager().GetResourceMonitors(), "maxDownstreamConnections should render")
+	require.Len(t, bs.GetStaticResources().GetListeners(), 2, "stats should render prometheus_listener")
+}
+
+// The controller validates a patched bootstrap with Envoy, prepared as the proxy pod
+// runs it. The generated bootstrap with every option, including xDS TLS with its
+// file-based SDS and a JSON log format, must pass.
+func TestGeneratedBootstrapValidates(t *testing.T) {
+	// Validate the bootstrap rendered with every option with the bundled Envoy.
+	bs := renderFullBootstrap(t)
+	result, err := validator.NewDocker().(validator.BootstrapValidator).ValidateBootstrap(t.Context(), bs)
+	require.NoError(t, err)
+	require.Empty(t, result.RemovedRuntimeGuards, "the generated bootstrap should set no removed runtime guard")
+}
+
+// renderFullBootstrap renders the envoy chart with every option that adds a `@type`
+// or a file reference to the bootstrap, and parses the bootstrap.
+func renderFullBootstrap(t *testing.T) *envoybootstrapv3.Bootstrap {
+	t.Helper()
+
+	// Render the chart.
 	chart, err := loadChart(helm.EnvoyHelmChart)
 	require.NoError(t, err)
 	d := pkgdeployer.NewDeployer("test-controller", schemes.GatewayScheme(), nil, chart, nil, nil)
@@ -53,9 +80,5 @@ func TestGeneratedBootstrapParses(t *testing.T) {
 	require.NotEmpty(t, envoyYaml, "no ConfigMap with envoy.yaml rendered")
 	bs, err := bootstrappatch.ParseBootstrap([]byte(envoyYaml))
 	require.NoError(t, err, "the generated bootstrap must parse in the controller; link the missing type in pkg/kgateway/bootstrappatch/types.go")
-
-	// Check that the options took effect, so the test covers their `@type`s.
-	require.NotNil(t, bs.GetTypedDnsResolverConfig(), "dnsResolver should render")
-	require.NotEmpty(t, bs.GetOverloadManager().GetResourceMonitors(), "maxDownstreamConnections should render")
-	require.Len(t, bs.GetStaticResources().GetListeners(), 2, "stats should render prometheus_listener")
+	return bs
 }

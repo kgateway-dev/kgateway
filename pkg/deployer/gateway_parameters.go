@@ -8,6 +8,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 // DefaultIstioProxyImageTag is the default Istio proxyv2 image tag used for auto mTLS cert-agent sidecars.
@@ -21,6 +22,9 @@ type Inputs struct {
 	ImageInfo            *ImageInfo
 	CommonCollections    *collections.CommonCollections
 	GatewayClassName     string
+	// BootstrapValidator validates a proxy bootstrap that GatewayParameters bootstrap
+	// patches change. When nil, the patched bootstrap is not validated.
+	BootstrapValidator validator.BootstrapValidator
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.

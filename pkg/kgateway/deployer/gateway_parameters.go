@@ -126,9 +126,12 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 	// Merge the bootstrap patches first, so the object overlays can still change any object.
 	var outcome *BootstrapPatchOutcome
 	if overlays := resolved.bootstrapOverlays(); len(overlays) > 0 {
-		listenerPorts := deployer.GetGatewayIR(gw, gp.inputs.CommonCollections).Ports.List()
 		var err error
-		outcome, err = ApplyBootstrapPatches(rendered, overlays, listenerPorts, apisettings.BootstrapPatchManagedPathsWarn)
+		outcome, err = ApplyBootstrapPatches(ctx, rendered, overlays, BootstrapPatchConfig{
+			ListenerPorts: deployer.GetGatewayIR(gw, gp.inputs.CommonCollections).Ports.List(),
+			ManagedPaths:  apisettings.BootstrapPatchManagedPathsWarn,
+			Validator:     gp.inputs.BootstrapValidator,
+		})
 		if err != nil {
 			return nil, nil, err
 		}

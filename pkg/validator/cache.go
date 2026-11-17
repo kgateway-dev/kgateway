@@ -28,7 +28,37 @@ type cachingValidator struct {
 	inner Validator
 	cache *lru.Cache[string, cachedResult]
 	sf    singleflight.Group
+
+	// bootstrapCache holds proxy bootstrap verdicts, keyed by the bootstrap's
+	// ContentKey. It is separate from cache because a proxy bootstrap is validated
+	// as the proxy runs it, not as an xDS validation bootstrap.
+	bootstrapCache *lru.Cache[ContentKey, cachedBootstrapResult]
+	bootstrapSF    singleflight.Group
 }
+
+// bootstrapCacheSize is the LRU capacity for proxy bootstrap verdicts. Each Gateway
+// with bootstrap patches has one current bootstrap, plus one per recent change.
+const bootstrapCacheSize = 1024
+
+// cachedBootstrapResult holds a memoized proxy bootstrap verdict. msg is the
+// rejection's text verbatim, empty when Envoy accepted the bootstrap.
+type cachedBootstrapResult struct {
+	result BootstrapResult
+	msg    string
+}
+
+func (r cachedBootstrapResult) get() (BootstrapResult, error) {
+	if r.msg != "" {
+		return BootstrapResult{}, &cachedInvalidBootstrapError{msg: r.msg}
+	}
+	return r.result, nil
+}
+
+// cachedInvalidBootstrapError rehydrates a memoized ErrInvalidBootstrap verdict.
+type cachedInvalidBootstrapError struct{ msg string }
+
+func (e *cachedInvalidBootstrapError) Error() string { return e.msg }
+func (e *cachedInvalidBootstrapError) Unwrap() error { return ErrInvalidBootstrap }
 
 // cachedResult holds a memoized validation outcome. msg is the inner error's
 // text verbatim (empty on success); it is rehydrated as an error that
@@ -66,7 +96,53 @@ func NewCaching(v Validator, size int) Validator {
 		// Fall back to a passthrough validator rather than panicking.
 		return v
 	}
-	return &cachingValidator{inner: v, cache: cache}
+	bootstrapCache, err := lru.New[ContentKey, cachedBootstrapResult](bootstrapCacheSize)
+	if err != nil {
+		return v
+	}
+	return &cachingValidator{inner: v, cache: cache, bootstrapCache: bootstrapCache}
+}
+
+var _ BootstrapValidator = &cachingValidator{}
+
+// ValidateBootstrap validates bs with the inner validator, which must implement
+// BootstrapValidator, and memoizes acceptance and ErrInvalidBootstrap verdicts. Like
+// Validate, it does not memoize errors from running Envoy.
+func (c *cachingValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
+	// Find the inner validator and the key.
+	inner, ok := c.inner.(BootstrapValidator)
+	if !ok {
+		return BootstrapResult{}, errors.New("the configured validator cannot validate proxy bootstraps")
+	}
+	key, err := ContentKeyOf(bs)
+	if err != nil {
+		return inner.ValidateBootstrap(ctx, bs)
+	}
+
+	// Return a memoized verdict.
+	if hit, ok := c.bootstrapCache.Get(key); ok {
+		return hit.get()
+	}
+
+	// Validate once for concurrent misses on the same content.
+	res, sfErr, _ := c.bootstrapSF.Do(string(key[:]), func() (any, error) {
+		result, innerErr := inner.ValidateBootstrap(ctx, bs)
+		var r cachedBootstrapResult
+		switch {
+		case innerErr == nil:
+			r = cachedBootstrapResult{result: result}
+		case errors.Is(innerErr, ErrInvalidBootstrap):
+			r = cachedBootstrapResult{msg: innerErr.Error()}
+		default:
+			return nil, innerErr
+		}
+		c.bootstrapCache.Add(key, r)
+		return r, nil
+	})
+	if sfErr != nil {
+		return BootstrapResult{}, sfErr
+	}
+	return res.(cachedBootstrapResult).get()
 }
 
 func (c *cachingValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {

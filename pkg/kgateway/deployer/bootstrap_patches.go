@@ -1,11 +1,13 @@
 package deployer
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,6 +21,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 const (
@@ -39,7 +42,10 @@ const (
 type BootstrapPatchError struct {
 	// Reason is the kgateway.dev/BootstrapPatchApplied reason to report.
 	Reason string
-	Err    error
+	// ConfigMapName is the name of the Gateway's generated bootstrap ConfigMap. When it
+	// does not exist yet, the Gateway has no proxy.
+	ConfigMapName string
+	Err           error
 }
 
 func (e *BootstrapPatchError) Error() string {
@@ -59,19 +65,37 @@ type BootstrapPatchOutcome struct {
 	// RemovedServicePorts lists the Gateway listener ports left off the Service because
 	// a static listener in the patched bootstrap uses them.
 	RemovedServicePorts []int32
+	// RemovedRuntimeGuards lists the runtime keys in the patched bootstrap that Envoy
+	// reports as removed guards. Envoy ignores their values.
+	RemovedRuntimeGuards []string
+}
+
+// BootstrapPatchConfig is what ApplyBootstrapPatches needs besides the objects and
+// the patches.
+type BootstrapPatchConfig struct {
+	// ListenerPorts are the Gateway's listener ports, which the Service exposes.
+	ListenerPorts []int32
+	// ManagedPaths decides what happens to patches that set paths the control plane
+	// manages.
+	ManagedPaths apisettings.BootstrapPatchManagedPathsMode
+	// Validator validates the patched bootstrap with Envoy. When nil, the patched
+	// bootstrap is not validated.
+	Validator validator.BootstrapValidator
 }
 
 // ApplyBootstrapPatches merges overlays, in order, into the bootstrap in the rendered
-// bootstrap ConfigMap, and sets the Deployment's checksum annotation to match so the
-// pods roll. It removes from the Service each port in listenerPorts that the patched
-// bootstrap also listens on. Call it before applying object overlays, so that they can
-// still change any object. It returns a *BootstrapPatchError when the patches cannot be
-// applied, and ErrNoValidPorts when no Service port is left.
+// bootstrap ConfigMap, validates the result with Envoy, and sets the Deployment's
+// checksum annotation to match so the pods roll. It removes from the Service each
+// listener port that the patched bootstrap also listens on. Call it before applying
+// object overlays, so that they can still change any object. It returns a
+// *BootstrapPatchError when the patches cannot be applied, ErrNoValidPorts when no
+// Service port is left, and another error when Envoy cannot be run, which is worth
+// retrying.
 func ApplyBootstrapPatches(
+	ctx context.Context,
 	rendered []client.Object,
 	overlays []bootstrappatch.Overlay,
-	listenerPorts []int32,
-	mode apisettings.BootstrapPatchManagedPathsMode,
+	cfg BootstrapPatchConfig,
 ) (*BootstrapPatchOutcome, error) {
 	// Parse the generated bootstrap.
 	cm := findBootstrapConfigMap(rendered)
@@ -82,18 +106,33 @@ func ApplyBootstrapPatches(
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the generated bootstrap: %w", err)
 	}
+	patchErr := func(reason string, err error) error {
+		return &BootstrapPatchError{Reason: reason, ConfigMapName: cm.Name, Err: err}
+	}
 
 	// Merge the overlays into it.
-	res, err := bootstrappatch.Apply(base, overlays, mode)
+	res, err := bootstrappatch.Apply(base, overlays, cfg.ManagedPaths)
 	var invalid *bootstrappatch.InvalidOverlayError
 	var denied *bootstrappatch.ManagedPathsDeniedError
 	switch {
 	case errors.As(err, &invalid):
-		return nil, &BootstrapPatchError{Reason: conditions.KgatewayReasonBootstrapInvalidOverlay, Err: err}
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, err)
 	case errors.As(err, &denied):
-		return nil, &BootstrapPatchError{Reason: conditions.KgatewayReasonBootstrapPathsDenied, Err: err}
+		return nil, patchErr(conditions.KgatewayReasonBootstrapPathsDenied, err)
 	case err != nil:
 		return nil, err
+	}
+
+	// Validate the merged bootstrap as the proxy runs it.
+	var validation validator.BootstrapResult
+	if cfg.Validator != nil {
+		validation, err = cfg.Validator.ValidateBootstrap(ctx, res.Bootstrap)
+		switch {
+		case errors.Is(err, validator.ErrInvalidBootstrap):
+			return nil, patchErr(conditions.KgatewayReasonBootstrapValidationFailed, err)
+		case err != nil:
+			return nil, fmt.Errorf("failed to validate the patched bootstrap: %w", err)
+		}
 	}
 
 	// Write the merged bootstrap, and roll the pods when it changes.
@@ -108,7 +147,7 @@ func ApplyBootstrapPatches(
 	// translator rejects those listeners.
 	var colliding []int32
 	for _, port := range bootstrappatch.ListenerPorts(res.Bootstrap) {
-		if slices.Contains(listenerPorts, int32(port)) { //nolint:gosec // G115: Envoy ports fit in int32
+		if slices.Contains(cfg.ListenerPorts, int32(port)) { //nolint:gosec // G115: Envoy ports fit in int32
 			colliding = append(colliding, int32(port)) //nolint:gosec // G115: Envoy ports fit in int32
 		}
 	}
@@ -118,9 +157,10 @@ func ApplyBootstrapPatches(
 	}
 
 	return &BootstrapPatchOutcome{
-		ConfigMapName:       cm.Name,
-		ManagedPaths:        res.ManagedPaths,
-		RemovedServicePorts: removed,
+		ConfigMapName:        cm.Name,
+		ManagedPaths:         res.ManagedPaths,
+		RemovedServicePorts:  removed,
+		RemovedRuntimeGuards: validation.RemovedRuntimeGuards,
 	}, nil
 }
 
@@ -202,11 +242,18 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 	if len(outcome.RemovedServicePorts) > 0 {
 		ports := make([]string, 0, len(outcome.RemovedServicePorts))
 		for _, p := range outcome.RemovedServicePorts {
-			ports = append(ports, fmt.Sprint(p))
+			ports = append(ports, strconv.Itoa(int(p)))
 		}
 		msg = append(msg, fmt.Sprintf(
 			"A static listener in the bootstrap uses Gateway listener port(s) %s, so those ports are left off the Service and the Gateway listeners on them are rejected.",
 			strings.Join(ports, ", ")))
+	}
+
+	// Report each runtime key Envoy ignores.
+	if len(outcome.RemovedRuntimeGuards) > 0 {
+		msg = append(msg, fmt.Sprintf(
+			"Envoy no longer has the runtime guard(s) %s, so their values have no effect; remove them from the patches.",
+			strings.Join(outcome.RemovedRuntimeGuards, ", ")))
 	}
 	cond.Message = strings.Join(msg, " ")
 	return cond

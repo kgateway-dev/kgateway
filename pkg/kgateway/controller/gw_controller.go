@@ -304,21 +304,31 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			// status is reported from translator, so return normally
 			return err
 		}
-		var patchErr *internaldeployer.BootstrapPatchError
-		if errors.As(err, &patchErr) {
-			// The proxy keeps running its current objects. Leave Accepted alone, since
-			// the Gateway keeps serving its last applied configuration, and do not retry:
-			// a change to the GatewayParameters, GatewayClass or controller starts a new
-			// reconcile, and nothing else can make the patches apply.
+		if patchErr, ok := errors.AsType[*internaldeployer.BootstrapPatchError](err); ok {
+			// Do not retry: a change to the GatewayParameters, GatewayClass or controller
+			// starts a new reconcile, and nothing else can make the patches apply.
 			logger.Info("not deploying Gateway: its bootstrap patches cannot be applied", "ref", req, "reason", patchErr.Reason, "error", patchErr)
-			condition := metav1.Condition{
+			conds := []metav1.Condition{{
 				Type:               conditions.KgatewayConditionBootstrapPatchApplied,
 				Status:             metav1.ConditionFalse,
 				ObservedGeneration: gw.Generation,
 				Reason:             patchErr.Reason,
 				Message:            patchErr.Error(),
+			}}
+
+			// An existing proxy keeps running its last applied bootstrap, so Accepted is
+			// left alone. A Gateway whose bootstrap ConfigMap does not exist yet has no
+			// proxy, so it is not accepted.
+			if r.configMapClient.Get(patchErr.ConfigMapName, gw.Namespace) == nil {
+				conds = append(conds, metav1.Condition{
+					Type:               string(gwv1.GatewayConditionAccepted),
+					Status:             metav1.ConditionFalse,
+					ObservedGeneration: gw.Generation,
+					Reason:             string(gwv1.GatewayReasonInvalidParameters),
+					Message:            "No proxy is deployed until the bootstrap patches apply: " + patchErr.Error(),
+				})
 			}
-			if statusErr := r.applyGatewayConditions(ctx, gw, []metav1.Condition{condition}, nil); statusErr != nil {
+			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil); statusErr != nil {
 				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
 			}
 			return nil

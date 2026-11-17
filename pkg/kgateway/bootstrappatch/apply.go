@@ -66,8 +66,8 @@ func (e *ManagedPathsDeniedError) Error() string {
 	for _, p := range e.Paths {
 		paths = append(paths, p.String())
 	}
-	return fmt.Sprintf("the controller is configured to reject bootstrap overlays that set paths it manages; remove these paths from the overlay: %s",
-		strings.Join(paths, ", "))
+	return "the controller is configured to reject bootstrap overlays that set paths it manages; remove these paths from the overlay: " +
+		strings.Join(paths, ", ")
 }
 
 // Apply merges overlays, in order, onto a copy of base, the generated bootstrap. An

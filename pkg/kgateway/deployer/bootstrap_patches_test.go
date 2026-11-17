@@ -1,14 +1,17 @@
 package deployer
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -25,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 const gatewayParamsName = "gw-params"
@@ -37,6 +41,8 @@ type bootstrapTestCase struct {
 	gatewayParams *kgateway.GatewayParameters
 	// listenerPorts are the Gateway's listener ports; defaults to 8080.
 	listenerPorts []gwv1.PortNumber
+	// validator validates the patched bootstrap; nil for none.
+	validator validator.BootstrapValidator
 }
 
 // render renders the Gateway's objects through the full deployer, including post-processing.
@@ -72,7 +78,9 @@ func (tc bootstrapTestCase) render(t *testing.T) ([]client.Object, *deployer.Pos
 
 	// Render through the deployer.
 	fakeClient := fake.NewClient(t, objs...)
-	gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw))
+	inputs := defaultInputs(t, gwc, gw)
+	inputs.BootstrapValidator = tc.validator
+	gwp := NewGatewayParameters(fakeClient, inputs)
 	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, schemes.GatewayScheme(), fakeClient, gwp)
 	require.NoError(t, err)
 	fakeClient.RunAndWait(t.Context().Done())
@@ -253,11 +261,83 @@ func TestBootstrapPatchesInvalid(t *testing.T) {
 			var patchErr *BootstrapPatchError
 			require.ErrorAs(t, err, &patchErr)
 			assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+			assert.Equal(t, "gw", patchErr.ConfigMapName)
 			assert.ErrorContains(t, patchErr, tt.wantErr)
 			assert.Nil(t, objs)
 			assert.Nil(t, report)
 		})
 	}
+}
+
+// fakeBootstrapValidator records the bootstrap it validates and returns a programmed
+// response.
+type fakeBootstrapValidator struct {
+	got    *envoybootstrapv3.Bootstrap
+	result validator.BootstrapResult
+	err    error
+}
+
+func (f *fakeBootstrapValidator) ValidateBootstrap(_ context.Context, bs *envoybootstrapv3.Bootstrap) (validator.BootstrapResult, error) {
+	f.got = bs
+	return f.result, f.err
+}
+
+func TestBootstrapPatchesValidation(t *testing.T) {
+	gwp := func() *kgateway.GatewayParameters {
+		return withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)
+	}
+
+	t.Run("accepted, with removed runtime guards", func(t *testing.T) {
+		// Render a Gateway whose patched bootstrap Envoy accepts with a removed guard.
+		v := &fakeBootstrapValidator{result: validator.BootstrapResult{RemovedRuntimeGuards: []string{"envoy.reloadable_features.a"}}}
+		objs, report, err := bootstrapTestCase{gatewayParams: gwp(), validator: v}.render(t)
+		require.NoError(t, err)
+
+		// Envoy validated the merged bootstrap, which is what the ConfigMap holds.
+		require.NotNil(t, v.got)
+		assert.Equal(t, int64(10), v.got.GetStatsFlushInterval().GetSeconds())
+		_, written := renderedBootstrap(t, objs)
+		assert.True(t, proto.Equal(written, v.got), "the validated bootstrap should be the one written")
+
+		// The patches apply, and the condition names the removed guard.
+		cond := bootstrapCondition(t, report)
+		assert.Equal(t, metav1.ConditionTrue, cond.Status)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
+		assert.Contains(t, cond.Message, "Envoy no longer has the runtime guard(s) envoy.reloadable_features.a")
+	})
+
+	t.Run("rejected", func(t *testing.T) {
+		// Render a Gateway whose patched bootstrap Envoy rejects.
+		v := &fakeBootstrapValidator{err: fmt.Errorf("%w: error initializing configuration '': bad", validator.ErrInvalidBootstrap)}
+		objs, report, err := bootstrapTestCase{gatewayParams: gwp(), validator: v}.render(t)
+
+		// Nothing is rendered, and the error carries the reason and Envoy's message.
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, err, &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapValidationFailed, patchErr.Reason)
+		assert.Equal(t, "gw", patchErr.ConfigMapName)
+		assert.EqualError(t, patchErr, "Envoy rejected the bootstrap: error initializing configuration '': bad")
+		assert.Nil(t, objs)
+		assert.Nil(t, report)
+	})
+
+	t.Run("Envoy cannot be run", func(t *testing.T) {
+		// Render a Gateway when Envoy cannot be run.
+		v := &fakeBootstrapValidator{err: errors.New("envoy validate invocation failed: exec format error")}
+		_, _, err := bootstrapTestCase{gatewayParams: gwp(), validator: v}.render(t)
+
+		// The error is not a verdict on the patches, so the reconcile retries.
+		require.ErrorContains(t, err, "failed to validate the patched bootstrap: envoy validate invocation failed")
+		var patchErr *BootstrapPatchError
+		assert.False(t, errors.As(err, &patchErr))
+	})
+
+	t.Run("not run without patches", func(t *testing.T) {
+		v := &fakeBootstrapValidator{}
+		_, _, err := bootstrapTestCase{gatewayParams: gatewayParams(), validator: v}.render(t)
+		require.NoError(t, err)
+		assert.Nil(t, v.got)
+	})
 }
 
 func TestBootstrapPatchesListenerPortCollision(t *testing.T) {
