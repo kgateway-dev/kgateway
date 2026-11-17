@@ -102,6 +102,35 @@ func (v *ValidatorMode) Decode(value string) error {
 	}
 }
 
+// BootstrapPatchManagedPathsMode determines what the controller does with a
+// GatewayParameters bootstrap overlay that sets a path the control plane manages,
+// such as the node, the xDS cluster or the readiness listener.
+type BootstrapPatchManagedPathsMode string
+
+const (
+	// BootstrapPatchManagedPathsWarn applies the overlay as written and reports each
+	// managed path it sets.
+	BootstrapPatchManagedPathsWarn BootstrapPatchManagedPathsMode = "WARN"
+	// BootstrapPatchManagedPathsPrune drops each managed path from the overlay before
+	// merging, applies the rest, and reports each dropped path.
+	BootstrapPatchManagedPathsPrune BootstrapPatchManagedPathsMode = "PRUNE"
+	// BootstrapPatchManagedPathsReject applies none of the overlay and reports the
+	// managed paths it sets.
+	BootstrapPatchManagedPathsReject BootstrapPatchManagedPathsMode = "REJECT"
+)
+
+// Decode implements envconfig.Decoder.
+func (m *BootstrapPatchManagedPathsMode) Decode(value string) error {
+	mode := BootstrapPatchManagedPathsMode(strings.ToUpper(value))
+	switch mode {
+	case BootstrapPatchManagedPathsWarn, BootstrapPatchManagedPathsPrune, BootstrapPatchManagedPathsReject:
+		*m = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid bootstrap patch managed paths mode: %q", value)
+	}
+}
+
 // ReferenceGrantMode controls how strictly cross-namespace references are validated
 // via ReferenceGrant across the control plane.
 type ReferenceGrantMode string
