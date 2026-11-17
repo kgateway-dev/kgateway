@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
@@ -297,11 +298,30 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 
 	logger.Info("reconciling Gateway", "ref", req)
 	ctx := r.ctx
-	objs, err := r.deployer.GetObjsToDeploy(ctx, gw)
+	objs, report, err := r.deployer.GetObjsToDeployWithReport(ctx, gw)
 	if err != nil {
 		if errors.Is(err, internaldeployer.ErrNoValidPorts) {
 			// status is reported from translator, so return normally
 			return err
+		}
+		var patchErr *internaldeployer.BootstrapPatchError
+		if errors.As(err, &patchErr) {
+			// The proxy keeps running its current objects. Leave Accepted alone, since
+			// the Gateway keeps serving its last applied configuration, and do not retry:
+			// a change to the GatewayParameters, GatewayClass or controller starts a new
+			// reconcile, and nothing else can make the patches apply.
+			logger.Info("not deploying Gateway: its bootstrap patches cannot be applied", "ref", req, "reason", patchErr.Reason, "error", patchErr)
+			condition := metav1.Condition{
+				Type:               conditions.KgatewayConditionBootstrapPatchApplied,
+				Status:             metav1.ConditionFalse,
+				ObservedGeneration: gw.Generation,
+				Reason:             patchErr.Reason,
+				Message:            patchErr.Error(),
+			}
+			if statusErr := r.applyGatewayConditions(ctx, gw, []metav1.Condition{condition}, nil); statusErr != nil {
+				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+			return nil
 		}
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
@@ -342,6 +362,13 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	err = r.deployer.PruneRemovedResources(ctx, gw, objs)
 	if err != nil {
 		return fmt.Errorf("error pruning removed resources for Gateway %s: %w", req, err)
+	}
+
+	// Report what the post-processor found, now that the objects are deployed.
+	if report != nil {
+		if err := r.applyGatewayConditions(ctx, gw, report.Conditions, report.OwnedConditionTypes); err != nil {
+			return fmt.Errorf("error updating status for Gateway %s: %w", req, err)
+		}
 	}
 
 	// find the name/ns of the service we own so we can grab addresses
@@ -504,6 +531,32 @@ func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw
 			newStatus := latest.Status.DeepCopy()
 			meta.SetStatusCondition(&newStatus.Conditions, condition)
 			return *newStatus, true
+		},
+	)
+}
+
+// applyGatewayConditions sets each condition on the Gateway's status, and removes each
+// type in ownedTypes that conds does not set. It writes the status only when it changes.
+func (r *gatewayReconciler) applyGatewayConditions(ctx context.Context, gw *gwv1.Gateway, conds []metav1.Condition, ownedTypes []string) error {
+	return updateGatewayStatusWithRetryFunc(
+		ctx,
+		r.gwClient,
+		client.ObjectKeyFromObject(gw),
+		func(latest *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
+			// Set the reported conditions.
+			newStatus := latest.Status.DeepCopy()
+			changed := false
+			for _, c := range conds {
+				changed = meta.SetStatusCondition(&newStatus.Conditions, c) || changed
+			}
+
+			// Remove the owned conditions that were not reported.
+			for _, t := range ownedTypes {
+				if !slices.ContainsFunc(conds, func(c metav1.Condition) bool { return c.Type == t }) {
+					changed = meta.RemoveStatusCondition(&newStatus.Conditions, t) || changed
+				}
+			}
+			return *newStatus, changed
 		},
 	)
 }

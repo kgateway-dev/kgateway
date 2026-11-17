@@ -316,6 +316,56 @@ spec:
                             maximum: 9007199254740991
                             minimum: 1
                             type: integer
+                          patches:
+                            description: |-
+                              Patches change the generated Envoy bootstrap after the fields above are
+                              rendered into it. The controller merges them into the bootstrap, validates the
+                              result with Envoy, and writes it to the bootstrap ConfigMap, which restarts the
+                              proxy. The result is reported on the Gateway's kgateway.dev/BootstrapPatchApplied
+                              condition. When the patches cannot be applied, the controller leaves the Gateway's
+                              proxy objects as they are until the patches are fixed.
+
+                              When both the GatewayClass and the Gateway reference GatewayParameters with
+                              patches, the GatewayClass patches are applied first and the Gateway patches on top.
+                            properties:
+                              overlay:
+                                description: Overlay is a partial Envoy bootstrap
+                                  merged into the generated one.
+                                properties:
+                                  mergeStrategy:
+                                    default: StructuredMerge
+                                    description: |-
+                                      MergeStrategy selects how Value is merged into the generated bootstrap.
+                                      Defaults to StructuredMerge.
+                                    enum:
+                                    - StructuredMerge
+                                    type: string
+                                  value:
+                                    description: "Value is a partial envoy.config.bootstrap.v3.Bootstrap,
+                                      written in the proto\nJSON mapping: field names
+                                      in snake_case or lowerCamelCase, and each Any
+                                      with an\n`@type`. See\nhttps://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto.\nThe
+                                      API server does not validate it; the controller
+                                      reports a value it cannot\nparse on the Gateway's
+                                      status.\n\nThe value cannot contain two consecutive
+                                      opening braces, which the proxy treats\nas the
+                                      start of a Go template when it starts, or define
+                                      the static secret\nSYSTEM_CA_CERT, which the
+                                      proxy adds itself. Setting a path the control
+                                      plane manages, such as the node, the xDS\ncluster
+                                      or the readiness listener, is reported on the
+                                      Gateway's status, and may be\ndropped or refused
+                                      depending on how the controller is configured.\n\nFor
+                                      example, to set an Envoy runtime feature flag:\n\n\t```yaml\n\tvalue:\n\t
+                                      \ layered_runtime:\n\t    layers:\n\t    - name:
+                                      user_runtime\n\t      static_layer:\n\t        envoy.reloadable_features.http_reject_path_with_fragment:
+                                      false\n\t```"
+                                    type: object
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - value
+                                type: object
+                            type: object
                         type: object
                       env:
                         description: The container environment variables.

@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -86,28 +88,51 @@ func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
 	return gp.kgwParameters.GetCacheSyncHandlers()
 }
 
-// PostProcessObjects implements deployer.ObjectPostProcessor.
-// It applies GatewayParameters overlays to the rendered objects.
-// When both GatewayClass and Gateway have parameters, the overlays
-// are applied in order: GatewayClass first, then Gateway on top.
+// PostProcessObjects implements deployer.ObjectPostProcessor. It is
+// PostProcessObjectsWithReport without the report.
 func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, error) {
+	objs, _, err := gp.PostProcessObjectsWithReport(ctx, obj, rendered)
+	return objs, err
+}
+
+// PostProcessObjectsWithReport implements deployer.ReportingObjectPostProcessor.
+// It merges the GatewayParameters bootstrap patches into the rendered bootstrap, then
+// applies the GatewayParameters object overlays to the rendered objects. Each is
+// applied in order, GatewayClass first and Gateway on top. The report carries the
+// kgateway.dev/BootstrapPatchApplied condition when there are bootstrap patches.
+func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, *deployer.PostProcessReport, error) {
 	// Check if override implements ObjectPostProcessor and delegate to it
 	if gp.helmValuesGeneratorOverride != nil {
 		if postProcessor, ok := gp.helmValuesGeneratorOverride.(deployer.ObjectPostProcessor); ok {
-			return postProcessor.PostProcessObjects(ctx, obj, rendered)
+			objs, err := postProcessor.PostProcessObjects(ctx, obj, rendered)
+			return objs, nil, err
 		}
 	}
 
 	gw, ok := obj.(*gwv1.Gateway)
 	if !ok {
-		return rendered, nil
+		return rendered, nil, nil
 	}
 
 	if gp.kgwParameters == nil {
 		// Envoy not enabled; skip overlays (not an error since overlays are optional).
-		return rendered, nil
+		return rendered, nil, nil
 	}
 	resolved := gp.kgwParameters.resolveParametersForOverlays(gw)
+	report := &deployer.PostProcessReport{
+		OwnedConditionTypes: []string{conditions.KgatewayConditionBootstrapPatchApplied},
+	}
+
+	// Merge the bootstrap patches first, so the object overlays can still change any object.
+	var outcome *BootstrapPatchOutcome
+	if overlays := resolved.bootstrapOverlays(); len(overlays) > 0 {
+		listenerPorts := deployer.GetGatewayIR(gw, gp.inputs.CommonCollections).Ports.List()
+		var err error
+		outcome, err = ApplyBootstrapPatches(rendered, overlays, listenerPorts, apisettings.BootstrapPatchManagedPathsWarn)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 
 	// Apply overlays in order: GatewayClass first, then Gateway.
 	if resolved.gatewayClassGWP != nil {
@@ -115,7 +140,7 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 		var err error
 		rendered, err = applier.ApplyOverlays(rendered)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if resolved.gatewayGWP != nil {
@@ -123,11 +148,15 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 		var err error
 		rendered, err = applier.ApplyOverlays(rendered)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	return rendered, nil
+	// Report the bootstrap patches against the final objects.
+	if outcome != nil {
+		report.Conditions = append(report.Conditions, bootstrapPatchAppliedCondition(gw, outcome, rendered))
+	}
+	return rendered, report, nil
 }
 
 func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
