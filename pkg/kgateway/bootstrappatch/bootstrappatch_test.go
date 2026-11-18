@@ -290,6 +290,39 @@ func TestApplyInvalidOverlay(t *testing.T) {
 			overlays: []Overlay{overlay(t, gwParams, `{static_resources: {clusters: [{name: c}, {name: c}]}}`)},
 			wantErr:  `static_resources.clusters has more than one entry named "c"`,
 		},
+		{
+			name:     "RTDS layer through ADS",
+			overlays: []Overlay{overlay(t, gwParams, `{layered_runtime: {layers: [{name: rt, rtds_layer: {name: rt, rtds_config: {ads: {}}}}]}}`)},
+			wantErr:  `RTDS runtime layer "rt" requests its values from the kgateway control plane through ADS`,
+		},
+		{
+			name: "RTDS layer through the xds_cluster over gRPC",
+			overlays: []Overlay{overlay(t, gwParams, `
+layered_runtime:
+  layers:
+  - name: rt
+    rtds_layer:
+      name: rt
+      rtds_config:
+        api_config_source:
+          api_type: GRPC
+          grpc_services: [{envoy_grpc: {cluster_name: xds_cluster}}]
+`)},
+			wantErr: `RTDS runtime layer "rt" requests its values from the kgateway control plane through the xds_cluster cluster`,
+		},
+		{
+			name: "RTDS layer through the xds_cluster over REST",
+			overlays: []Overlay{overlay(t, gwParams, `
+layered_runtime:
+  layers:
+  - name: rt
+    rtds_layer:
+      name: rt
+      rtds_config:
+        api_config_source: {api_type: REST, cluster_names: [xds_cluster]}
+`)},
+			wantErr: `RTDS runtime layer "rt" requests its values from the kgateway control plane through the xds_cluster cluster`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -465,6 +498,51 @@ overload_manager:
 		})
 		assert.Len(t, res.CuratedOverrides, 3)
 	})
+}
+
+func TestApplyUnvalidatedRuntimeLayers(t *testing.T) {
+	// The GatewayClass adds a disk layer, and the Gateway a static layer and an RTDS
+	// layer that reads from its own server.
+	overlays := []Overlay{
+		overlay(t, gcParams, `{layered_runtime: {layers: [{name: from_disk, disk_layer: {symlink_root: /etc/runtime}}]}}`),
+		overlay(t, gwParams, `
+static_resources:
+  clusters: [{name: runtime_server, connect_timeout: 1s}]
+layered_runtime:
+  layers:
+  - {name: static, static_layer: {a: 1}}
+  - name: from_rtds
+    rtds_layer:
+      name: from_rtds
+      rtds_config:
+        resource_api_version: V3
+        api_config_source:
+          api_type: GRPC
+          transport_api_version: V3
+          grpc_services: [{envoy_grpc: {cluster_name: runtime_server}}]
+`),
+	}
+
+	// Both layers apply under every mode and are reported in order, each with its
+	// GatewayParameters. The static layer is not reported: its values are validated.
+	for _, mode := range []apisettings.BootstrapPatchManagedPathsMode{
+		apisettings.BootstrapPatchManagedPathsWarn,
+		apisettings.BootstrapPatchManagedPathsPrune,
+		apisettings.BootstrapPatchManagedPathsReject,
+	} {
+		res, err := Apply(parseBase(t), overlays, mode)
+		require.NoError(t, err, "mode %s", mode)
+		assert.Equal(t, []RuntimeLayer{
+			{Name: "from_disk", Kind: RuntimeLayerDisk, Source: gcParams},
+			{Name: "from_rtds", Kind: RuntimeLayerRTDS, Source: gwParams},
+		}, res.UnvalidatedLayers, "mode %s", mode)
+		assert.Equal(t, []string{"from_disk", "static", "from_rtds", "admin_layer"},
+			names(res.Bootstrap.GetLayeredRuntime().GetLayers()), "mode %s", mode)
+	}
+
+	// Each layer is named with its kind and GatewayParameters.
+	assert.Equal(t, `RTDS layer "from_rtds" (GatewayParameters default/gw-params)`,
+		RuntimeLayer{Name: "from_rtds", Kind: RuntimeLayerRTDS, Source: gwParams}.String())
 }
 
 func TestListenerPorts(t *testing.T) {

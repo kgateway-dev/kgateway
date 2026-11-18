@@ -42,6 +42,9 @@ type Result struct {
 	// CuratedOverrides lists each path the overlays replace that a GatewayParameters
 	// field generated. They apply under every mode.
 	CuratedOverrides []CuratedOverride
+	// UnvalidatedLayers lists each disk and RTDS runtime layer the overlays add. Route
+	// validation uses Envoy's defaults for the values they set.
+	UnvalidatedLayers []RuntimeLayer
 }
 
 // InvalidOverlayError reports an overlay that cannot be applied under any mode.
@@ -94,6 +97,7 @@ func Apply(
 	parsed := make([]*envoybootstrapv3.Bootstrap, 0, len(overlays))
 	var managed []ManagedPath
 	var curated []CuratedOverride
+	var unvalidated []RuntimeLayer
 	for _, o := range overlays {
 		ov, err := parseOverlay(o.Raw)
 		if err != nil {
@@ -105,7 +109,11 @@ func Apply(
 		if err := claimLayers(ov, o.Source.String(), layerOwners); err != nil {
 			return nil, &InvalidOverlayError{Source: o.Source, Err: err}
 		}
+		if err := checkRTDSLayers(ov); err != nil {
+			return nil, &InvalidOverlayError{Source: o.Source, Err: err}
+		}
 
+		unvalidated = append(unvalidated, unvalidatedRuntimeLayers(ov, o.Source)...)
 		for _, p := range managedPaths(base, ov) {
 			managed = append(managed, ManagedPath{Path: p, Source: o.Source})
 		}
@@ -126,7 +134,7 @@ func Apply(
 	for _, ov := range parsed {
 		mergeOverlay(merged, ov)
 	}
-	return &Result{Bootstrap: merged, ManagedPaths: managed, CuratedOverrides: curated}, nil
+	return &Result{Bootstrap: merged, ManagedPaths: managed, CuratedOverrides: curated, UnvalidatedLayers: unvalidated}, nil
 }
 
 // checkReserved rejects names the proxy reserves and lists entries Envoy requires to

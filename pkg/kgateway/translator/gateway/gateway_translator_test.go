@@ -28,8 +28,11 @@ import (
 	// Register the UuidRequestIdConfig proto type so that it can be unmarshaled from Any in tests
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	backendplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backend"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -3562,6 +3565,43 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// Strict validation runs under the bootstrap of every proxy pod, so a route that
+	// only the raised RE2 limit in the patched bootstrap accepts is rejected while a
+	// pod with Envoy's defaults still runs, naming that pod, and accepted once every
+	// pod runs the patched bootstrap. The patched bootstrap's static listener port is
+	// rejected for Gateway listeners either way.
+	t.Run("bootstrap patches during a rollout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"bootstrap-validation/gateway.yaml", "bootstrap-validation/pods-rolling.yaml"},
+			outputFile: "bootstrap-validation/rolling.yaml",
+			gwNN:       types.NamespacedName{Namespace: "gwtest", Name: "example-gateway"},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
+	t.Run("bootstrap patches after a rollout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"bootstrap-validation/gateway.yaml", "bootstrap-validation/pods-rolled-out.yaml"},
+			outputFile: "bootstrap-validation/rolled-out.yaml",
+			gwNN:       types.NamespacedName{Namespace: "gwtest", Name: "example-gateway"},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
+	// Every validation call of a route configuration with several virtual hosts uses
+	// the patched bootstrap: each long regex is accepted under the raised limit.
+	t.Run("bootstrap patches with several virtual hosts", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"bootstrap-validation/gateway.yaml", "bootstrap-validation/pods-rolled-out.yaml", "bootstrap-validation/multi-vhost.yaml"},
+			outputFile: "bootstrap-validation/multi-vhost.yaml",
+			gwNN:       types.NamespacedName{Namespace: "gwtest", Name: "example-gateway"},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
 	t.Run("HTTP RequestRedirect filter", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/request-redirect.yaml"},
@@ -4182,6 +4222,104 @@ func claAddressesFor(t *testing.T, assignments []*envoyendpointv3.ClusterLoadAss
 		}
 	}
 	return addresses
+}
+
+// A Gateway without bootstrap patches validates routes against Envoy's defaults, even
+// a route that another Gateway's patches accept. The route attaches to both Gateways,
+// and only the Gateway without patches drops it.
+func TestBootstrapPatchesStayGatewayScoped(t *testing.T) {
+	ctx := t.Context()
+	dir := fsutils.MustGetThisDir()
+
+	// Translate example-gateway, whose patches raise RE2's program size limit, and
+	// plain-gateway, which has no patches, in strict validation mode.
+	tc := translatortest.TestCase{
+		InputFiles: []string{
+			filepath.Join(dir, "testutils/inputs/bootstrap-validation/gateway.yaml"),
+			filepath.Join(dir, "testutils/inputs/bootstrap-validation/pods-rolled-out.yaml"),
+			filepath.Join(dir, "testutils/inputs/bootstrap-validation/second-gateway.yaml"),
+		},
+	}
+	results, err := tc.Run(
+		t,
+		ctx,
+		translatortest.NewScheme(runtime.SchemeBuilder{}),
+		translatortest.ExtraConfig{},
+		func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		},
+	)
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+
+	patched := types.NamespacedName{Namespace: "gwtest", Name: "example-gateway"}
+	plain := types.NamespacedName{Namespace: "gwtest", Name: "plain-gateway"}
+	route := types.NamespacedName{Namespace: "gwtest", Name: "long-regex-both"}
+	const regex = "/both/(abcdefgh){20}"
+
+	// example-gateway serves the route and reports no dropped rule for it.
+	patchedResult, ok := results[patched]
+	require.True(t, ok, "expected a result for example-gateway")
+	assert.Contains(t, routeRegexes(patchedResult.Proxy.Routes), regex, "example-gateway's patches accept the regex")
+	patchedCond := routeParentCondition(t, patchedResult, route, patched.Name, conditions.KgatewayConditionProgrammed)
+	if patchedCond != nil {
+		assert.NotEqual(t, metav1.ConditionFalse, patchedCond.Status, "example-gateway does not drop the rule: %s", patchedCond.Message)
+	}
+
+	// plain-gateway drops the route and reports why, for its own parent only.
+	plainResult, ok := results[plain]
+	require.True(t, ok, "expected a result for plain-gateway")
+	assert.NotContains(t, routeRegexes(plainResult.Proxy.Routes), regex, "Envoy's default limit rejects the regex")
+	plainCond := routeParentCondition(t, plainResult, route, plain.Name, conditions.KgatewayConditionProgrammed)
+	require.NotNil(t, plainCond, "plain-gateway reports the dropped rule")
+	assert.Equal(t, metav1.ConditionFalse, plainCond.Status)
+	assert.Equal(t, string(reportssdk.RouteRuleDroppedReason), plainCond.Reason)
+	assert.Contains(t, plainCond.Message, "max program size of 100")
+	assert.Nil(t, routeParentCondition(t, plainResult, route, patched.Name, conditions.KgatewayConditionProgrammed),
+		"plain-gateway's report carries no condition for example-gateway's parent")
+}
+
+// routeRegexes returns the safe regex of every route match in routes.
+func routeRegexes(routes []*envoyroutev3.RouteConfiguration) []string {
+	var regexes []string
+	for _, routeConfig := range routes {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				if regex := route.GetMatch().GetSafeRegex().GetRegex(); regex != "" {
+					regexes = append(regexes, regex)
+				}
+			}
+		}
+	}
+	return regexes
+}
+
+// routeParentCondition returns the condition of type condType that result reports for
+// the HTTPRoute route on its parent Gateway parentName, or nil if there is none.
+func routeParentCondition(
+	t *testing.T,
+	result translatortest.ActualTestResult,
+	route types.NamespacedName,
+	parentName string,
+	condType string,
+) *metav1.Condition {
+	t.Helper()
+
+	// Build the route's status from this Gateway's reports.
+	status := result.ReportsMap.BuildRouteStatus(&gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Namespace: route.Namespace, Name: route.Name},
+	}, wellknown.DefaultGatewayClassName)
+	if status == nil {
+		return nil
+	}
+
+	// Find the condition on the parent that names parentName.
+	for _, parent := range status.Parents {
+		if string(parent.ParentRef.Name) == parentName {
+			return meta.FindStatusCondition(parent.Conditions, condType)
+		}
+	}
+	return nil
 }
 
 func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {

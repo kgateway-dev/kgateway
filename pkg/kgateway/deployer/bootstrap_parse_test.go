@@ -5,6 +5,7 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	corev1 "k8s.io/api/core/v1"
 
@@ -15,15 +16,22 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-// The controller parses the generated bootstrap to apply overlays, which needs every
-// `@type` in it linked into the controller. Render the bootstrap with every option that
-// adds a `@type` and parse it; a template change that adds an unlinked type fails here.
+// The controller parses the generated bootstrap and overlays, which needs every `@type`
+// they use linked into the controller. bootstrappatch links every go-control-plane type
+// and the cncf/xds TypedStruct wrappers. Check that a type from each source is linked,
+// then render the bootstrap with every option that adds a `@type` and parse it.
 func TestGeneratedBootstrapParses(t *testing.T) {
-	// This test proves nothing if the test binary links every Envoy type, as
-	// pkg/utils/filter_types does. A contrib type is linked only through it.
-	_, err := protoregistry.GlobalTypes.FindMessageByName("envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker")
-	require.ErrorIs(t, err, protoregistry.NotFound,
-		"this test binary links pkg/utils/filter_types; keep its imports out of pkg/kgateway/deployer tests")
+	// A contrib type, an extension the generated bootstrap does not use, and both
+	// TypedStruct wrappers are linked.
+	for _, name := range []protoreflect.FullName{
+		"envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker",
+		"envoy.extensions.stat_sinks.open_telemetry.v3.SinkConfig",
+		"udpa.type.v1.TypedStruct",
+		"xds.type.v3.TypedStruct",
+	} {
+		_, err := protoregistry.GlobalTypes.FindMessageByName(name)
+		require.NoError(t, err, "%s should be linked through pkg/utils/filter_types", name)
+	}
 
 	// Parse the bootstrap rendered with every option.
 	bs := renderFullBootstrap(t)
@@ -79,6 +87,6 @@ func renderFullBootstrap(t *testing.T) *envoybootstrapv3.Bootstrap {
 	}
 	require.NotEmpty(t, envoyYaml, "no ConfigMap with envoy.yaml rendered")
 	bs, err := bootstrappatch.ParseBootstrap([]byte(envoyYaml))
-	require.NoError(t, err, "the generated bootstrap must parse in the controller; link the missing type in pkg/kgateway/bootstrappatch/types.go")
+	require.NoError(t, err, "the generated bootstrap must parse in the controller")
 	return bs
 }

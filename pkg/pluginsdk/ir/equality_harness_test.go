@@ -287,6 +287,13 @@ func TestHarnessGatewayEquals(t *testing.T) {
 				}
 			},
 		},
+		{
+			// Per-field mutations are covered by TestHarnessGatewayValidationBootstrapsEquals.
+			Field: "ValidationBootstraps",
+			Mutate: func(g *Gateway) {
+				g.ValidationBootstraps = &GatewayValidationBootstraps{ReservedPorts: []uint32{8080}}
+			},
+		},
 	}
 
 	// ObjectSource is an embedded struct; the harness flattens its exported
@@ -300,6 +307,55 @@ func TestHarnessGatewayEquals(t *testing.T) {
 		cases,
 		[]string{"Group", "Kind", "Namespace", "Name"}, // embedded ObjectSource fields covered by "ObjectSource" case
 	)
+}
+
+func TestHarnessGatewayValidationBootstrapsEquals(t *testing.T) {
+	// Start from a Gateway whose proxies run two subsets.
+	base := func() GatewayValidationBootstraps {
+		return GatewayValidationBootstraps{
+			Subsets: []ValidationBootstrap{
+				{Subset: `{"current":true}`},
+				{Subset: `{"earlier":true}`, Pod: "proxy-a"},
+			},
+			ReservedPorts: []uint32{8082, 9091, 19000},
+		}
+	}
+	eq := func(a, b GatewayValidationBootstraps) bool { return a.Equals(&b) }
+
+	// Each field change must be detected.
+	equalstest.Run(t, base, eq, []equalstest.Case[GatewayValidationBootstraps]{
+		{
+			Field:  "Subsets",
+			Mutate: func(g *GatewayValidationBootstraps) { g.Subsets = g.Subsets[:1] },
+		},
+		{
+			Field:  "ReservedPorts",
+			Mutate: func(g *GatewayValidationBootstraps) { g.ReservedPorts = append(g.ReservedPorts, 8443) },
+		},
+	}, nil)
+}
+
+func TestHarnessValidationBootstrapEquals(t *testing.T) {
+	// ValidationBootstrap is compared inside GatewayValidationBootstraps.Equals.
+	eq := func(a, b ValidationBootstrap) bool {
+		return (&GatewayValidationBootstraps{Subsets: []ValidationBootstrap{a}}).
+			Equals(&GatewayValidationBootstraps{Subsets: []ValidationBootstrap{b}})
+	}
+	base := func() ValidationBootstrap {
+		return ValidationBootstrap{Subset: `{"earlier":true}`, Pod: "proxy-a"}
+	}
+
+	// Bootstrap is parsed from Subset, so only Subset and Pod are compared.
+	equalstest.Run(t, base, eq, []equalstest.Case[ValidationBootstrap]{
+		{
+			Field:  "Subset",
+			Mutate: func(v *ValidationBootstrap) { v.Subset = `{"later":true}` },
+		},
+		{
+			Field:  "Pod",
+			Mutate: func(v *ValidationBootstrap) { v.Pod = "proxy-b" },
+		},
+	}, []string{"Bootstrap"})
 }
 
 func TestHarnessListenerSetEquals(t *testing.T) {

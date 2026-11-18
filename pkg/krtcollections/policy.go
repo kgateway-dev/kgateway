@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/smallset"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -483,6 +484,11 @@ type GatewayIndexConfig struct {
 	ListenerSets        krt.Collection[*gwv1.ListenerSet]
 	GatewayClasses      krt.Collection[*gwv1.GatewayClass]
 	Namespaces          krt.Collection[NamespaceMetadata]
+	// ConfigMaps and Pods supply each Gateway's ValidationBootstraps: the subsets of
+	// the bootstraps its proxies run. When either is nil, every Gateway is validated
+	// against Envoy's defaults.
+	ConfigMaps krt.Collection[*corev1.ConfigMap]
+	Pods       krt.Collection[WrappedPod]
 
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
@@ -520,9 +526,24 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	gatewaySpecs := krt.NewCollection(config.Gateways, func(_ krt.HandlerContext, gw *gwv1.Gateway) *gatewaySpec {
 		return &gatewaySpec{gw: gw}
 	}, config.KrtOpts.ToOptions("GatewaySpecs")...)
+	// Each Gateway's validation bootstraps are built in a collection of their own, so a
+	// pod change that leaves them alone does not re-run the Envoy transformation.
+	var validationBootstraps krt.Collection[gatewayValidationBootstraps]
+	if config.ConfigMaps != nil && config.Pods != nil {
+		validationBootstraps = newGatewayValidationBootstraps(gatewaySpecs, config.ConfigMaps, config.Pods, config.KrtOpts)
+	}
 	envoyTransformation := config.gatewaysForEnvoyTransformationFunc(&config)
 	h.Gateways = krt.NewCollection(gatewaySpecs, func(kctx krt.HandlerContext, gw gatewaySpec) *ir.Gateway {
-		return envoyTransformation(kctx, gw.gw)
+		// Set the validation bootstraps here rather than in the transformation, so they
+		// apply to a transformation passed with WithGatewayForEnvoyTransformationFunc.
+		out := envoyTransformation(kctx, gw.gw)
+		if out == nil || validationBootstraps == nil {
+			return out
+		}
+		if vb := krt.FetchOne(kctx, validationBootstraps, krt.FilterKey(krt.GetKey(gw.gw))); vb != nil {
+			out.ValidationBootstraps = vb.bootstraps
+		}
+		return out
 	}, config.KrtOpts.ToOptions("gateways")...)
 
 	return h

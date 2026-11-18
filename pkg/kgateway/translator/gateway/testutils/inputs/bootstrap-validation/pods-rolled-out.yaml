@@ -1,0 +1,33 @@
+# Every proxy pod started with the patched bootstrap.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-gateway-new-a
+  namespace: gwtest
+  labels:
+    gateway.networking.k8s.io/gateway-name: example-gateway
+  annotations:
+    kgateway.dev/validation-bootstrap: '{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}}'
+spec:
+  containers:
+  - name: kgateway-proxy
+    image: envoy
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-gateway-new-b
+  namespace: gwtest
+  labels:
+    gateway.networking.k8s.io/gateway-name: example-gateway
+  annotations:
+    kgateway.dev/validation-bootstrap: '{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}}'
+spec:
+  containers:
+  - name: kgateway-proxy
+    image: envoy
+status:
+  phase: Running

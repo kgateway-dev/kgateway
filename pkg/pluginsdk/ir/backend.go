@@ -578,6 +578,11 @@ type Gateway struct {
 	PerConnectionBufferLimitBytes *uint32
 	FrontendTLSConfig             *FrontendTLSConfigIR
 	BackendTLSConfig              *GatewayBackendTLSConfigIR
+
+	// ValidationBootstraps holds what translation validates the Gateway's xDS
+	// configuration against, from the bootstraps its proxies run. Nil means Envoy's
+	// defaults.
+	ValidationBootstraps *GatewayValidationBootstraps
 }
 
 // FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
@@ -648,7 +653,8 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
 		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
 		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig) &&
-		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig)
+		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig) &&
+		c.ValidationBootstraps.Equals(in.ValidationBootstraps)
 }
 
 func equalsFrontendTLSConfig(a, b *FrontendTLSConfigIR) bool {

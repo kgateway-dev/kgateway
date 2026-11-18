@@ -135,9 +135,14 @@ func renderedBootstrap(t *testing.T, objs []client.Object) (string, *envoybootst
 
 func checksum(t *testing.T, objs []client.Object) string {
 	t.Helper()
+	return podTemplateAnnotations(t, objs)[bootstrapChecksumAnnotation]
+}
+
+func podTemplateAnnotations(t *testing.T, objs []client.Object) map[string]string {
+	t.Helper()
 	deps := objectsOf[*appsv1.Deployment](objs)
 	require.Len(t, deps, 1)
-	return deps[0].Spec.Template.Annotations[bootstrapChecksumAnnotation]
+	return deps[0].Spec.Template.Annotations
 }
 
 func bootstrapCondition(t *testing.T, report *deployer.PostProcessReport) metav1.Condition {
@@ -158,6 +163,11 @@ func TestBootstrapPatchesNotSet(t *testing.T) {
 	sum := sha256.Sum256([]byte(envoyYaml))
 	assert.Equal(t, hex.EncodeToString(sum[:]), checksum(t, objs), "checksum should be Helm's SHA-256 of the rendered bootstrap")
 	assert.Contains(t, envoyYaml, "port_value: 19000\n", "the bootstrap should keep the Helm template's formatting")
+
+	// Without patches the translator validates against Envoy's defaults, so there is no
+	// validation data to write.
+	assert.NotContains(t, findBootstrapConfigMap(objs).Data, bootstrappatch.ValidationKey)
+	assert.NotContains(t, podTemplateAnnotations(t, objs), bootstrappatch.ValidationAnnotation)
 
 	// The report clears the condition, sets none, and records no events.
 	require.NotNil(t, report)
@@ -203,6 +213,52 @@ layered_runtime:
 	changed, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)}.render(t)
 	require.NoError(t, err)
 	assert.NotEqual(t, checksum(t, objs), checksum(t, changed), "different patches should change the checksum")
+}
+
+func TestBootstrapPatchesValidationData(t *testing.T) {
+	// Render a Gateway whose patches add a static runtime layer and a static listener.
+	overlay := `
+layered_runtime:
+  layers:
+  - name: limits
+    static_layer: {re2.max_program_size.error_level: 1000}
+static_resources:
+  listeners:
+  - name: user_listener
+    address: {socket_address: {address: 0.0.0.0, port_value: 9000}}`
+	objs, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), overlay)}.render(t)
+	require.NoError(t, err)
+
+	// The ConfigMap holds the static layer, and the static reserved ports with the new
+	// listener's port.
+	data, err := bootstrappatch.DecodeValidationData(findBootstrapConfigMap(objs).Data[bootstrappatch.ValidationKey])
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}}`, string(data.Bootstrap))
+	assert.Equal(t, []uint32{8082, 9000, 9091, 19000}, data.ReservedPorts)
+
+	// The pod template carries the same subset, byte for byte.
+	assert.Equal(t, string(data.Bootstrap), podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
+
+	// Patches without a static layer write the empty subset, which the translator
+	// treats as Envoy's defaults.
+	objs, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)}.render(t)
+	require.NoError(t, err)
+	assert.Equal(t, bootstrappatch.EmptyValidationSubset, podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
+}
+
+func TestBootstrapPatchesValidationSubsetTooLarge(t *testing.T) {
+	// Render a Gateway whose patches set a static runtime layer larger than the
+	// annotation limit.
+	overlay := fmt.Sprintf(`{layered_runtime: {layers: [{name: big, static_layer: {key: %q}}]}}`,
+		strings.Repeat("x", bootstrappatch.MaxValidationSubsetSize))
+	objs, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), overlay)}.render(t)
+
+	// Nothing is rendered, and the error names the limit.
+	var patchErr *BootstrapPatchError
+	require.ErrorAs(t, err, &patchErr)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+	assert.ErrorContains(t, patchErr, "the static runtime layers of the patched bootstrap take")
+	assert.Nil(t, objs)
 }
 
 func TestBootstrapPatchesGatewayClassThenGateway(t *testing.T) {
@@ -527,6 +583,78 @@ typed_dns_resolver_config:
 		Action: applyBootstrapPatchesAction,
 		Note:   "The bootstrap patches replace generated configuration: typed_dns_resolver_config replaces what envoyContainer.bootstrap.dnsResolver generates (GatewayParameters default/gw-params).",
 	}}, report.Events)
+}
+
+func TestBootstrapPatchesUnvalidatedRuntimeLayers(t *testing.T) {
+	// Render a Gateway whose patches add a disk layer and an RTDS layer that reads from
+	// a cluster of their own, validated by Envoy.
+	overlay := `
+static_resources:
+  clusters:
+  - name: runtime_server
+    connect_timeout: 1s
+    type: STATIC
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config: {http2_protocol_options: {}}
+    load_assignment:
+      cluster_name: runtime_server
+      endpoints: [{lb_endpoints: [{endpoint: {address: {socket_address: {address: 127.0.0.1, port_value: 18000}}}}]}]
+layered_runtime:
+  layers:
+  - {name: from_disk, disk_layer: {symlink_root: /etc/runtime, subdirectory: envoy}}
+  - name: from_rtds
+    rtds_layer:
+      name: from_rtds
+      rtds_config:
+        resource_api_version: V3
+        api_config_source:
+          api_type: GRPC
+          transport_api_version: V3
+          grpc_services: [{envoy_grpc: {cluster_name: runtime_server}}]`
+	_, report, err := bootstrapTestCase{
+		gatewayParams: withOverlay(t, gatewayParams(), overlay),
+		validator:     validator.NewDocker().(validator.BootstrapValidator),
+	}.render(t)
+	require.NoError(t, err)
+
+	// The layers apply, and the condition keeps its reason and names both.
+	cond := bootstrapCondition(t, report)
+	assert.Equal(t, metav1.ConditionTrue, cond.Status)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
+	assert.Equal(t, "The bootstrap patches are applied. "+
+		"The proxy loads the values of these runtime layers while it runs, so route validation uses Envoy's defaults for the keys they set: "+
+		`disk layer "from_disk" (GatewayParameters default/gw-params), RTDS layer "from_rtds" (GatewayParameters default/gw-params).`,
+		cond.Message)
+
+	// A Warning event names each layer.
+	assert.Equal(t, []deployer.ReportEvent{
+		{
+			Type:   corev1.EventTypeWarning,
+			Reason: unvalidatedRuntimeLayerReason,
+			Action: applyBootstrapPatchesAction,
+			Note:   `The bootstrap patches add disk layer "from_disk" (GatewayParameters default/gw-params). The proxy loads its values while it runs, so route validation uses Envoy's defaults for the keys it sets.`,
+		},
+		{
+			Type:   corev1.EventTypeWarning,
+			Reason: unvalidatedRuntimeLayerReason,
+			Action: applyBootstrapPatchesAction,
+			Note:   `The bootstrap patches add RTDS layer "from_rtds" (GatewayParameters default/gw-params). The proxy loads its values while it runs, so route validation uses Envoy's defaults for the keys it sets.`,
+		},
+	}, report.Events)
+}
+
+func TestBootstrapPatchesRTDSLayerFromControlPlane(t *testing.T) {
+	// Render a Gateway whose patches add an RTDS layer that reads through ADS.
+	_, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(),
+		`{layered_runtime: {layers: [{name: rt, rtds_layer: {name: rt, rtds_config: {ads: {}}}}]}}`)}.render(t)
+
+	// None of the patches apply, with reason InvalidOverlay.
+	patchErr, ok := errors.AsType[*BootstrapPatchError](err)
+	require.True(t, ok, "expected a *BootstrapPatchError, got %v", err)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+	assert.ErrorContains(t, patchErr, `RTDS runtime layer "rt" requests its values from the kgateway control plane through ADS, which serves no runtime values`)
 }
 
 func TestBootstrapPatchEvents(t *testing.T) {

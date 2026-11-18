@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -45,6 +46,9 @@ const (
 	// removedRuntimeGuardsReason is the event reason for bootstrap patches that set
 	// runtime guards Envoy no longer has.
 	removedRuntimeGuardsReason = "RemovedRuntimeGuards"
+	// unvalidatedRuntimeLayerReason is the event reason for a disk or RTDS runtime layer
+	// the bootstrap patches add, whose values route validation does not see.
+	unvalidatedRuntimeLayerReason = "UnvalidatedRuntimeLayer"
 )
 
 // BootstrapPatchError reports bootstrap patches that cannot be applied as written.
@@ -102,6 +106,9 @@ type BootstrapPatchOutcome struct {
 	// RemovedRuntimeGuards lists the runtime keys in the patched bootstrap that Envoy
 	// reports as removed guards. Envoy ignores their values.
 	RemovedRuntimeGuards []string
+	// UnvalidatedLayers lists each disk and RTDS runtime layer the patches add. Route
+	// validation uses Envoy's defaults for the values they set.
+	UnvalidatedLayers []bootstrappatch.RuntimeLayer
 }
 
 // BootstrapPatchConfig is what ApplyBootstrapPatches needs besides the objects and
@@ -119,7 +126,9 @@ type BootstrapPatchConfig struct {
 
 // ApplyBootstrapPatches merges overlays, in order, into the bootstrap in the rendered
 // bootstrap ConfigMap, validates the result with Envoy, and sets the Deployment's
-// checksum annotation to match so the pods roll. It removes from the Service each
+// checksum annotation to match so the pods roll. It writes the bootstrap's validation
+// subset and listener ports to the ConfigMap's validation key, and the subset to the
+// pod template, for the translator to validate against. It removes from the Service each
 // listener port that the patched bootstrap also listens on. Call it before applying
 // object overlays, so that they can still change any object. It returns a
 // *BootstrapPatchError when the patches cannot be applied, ErrNoValidPorts when no
@@ -157,6 +166,18 @@ func ApplyBootstrapPatches(
 		return nil, err
 	}
 
+	// Encode the subset of the merged bootstrap that the translator validates xDS
+	// configuration against. It goes on the pod template, so it has a size limit.
+	subset, err := bootstrappatch.EncodeValidationSubset(bootstrappatch.ValidationSubset(res.Bootstrap))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode the validation subset of the patched bootstrap: %w", err)
+	}
+	if len(subset) > bootstrappatch.MaxValidationSubsetSize {
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, fmt.Errorf(
+			"the static runtime layers of the patched bootstrap take %d bytes as JSON, more than the limit of %d; set fewer runtime values in static layers",
+			len(subset), bootstrappatch.MaxValidationSubsetSize))
+	}
+
 	// Validate the merged bootstrap as the proxy runs it.
 	var validation validator.BootstrapResult
 	if cfg.Validator != nil {
@@ -175,12 +196,24 @@ func ApplyBootstrapPatches(
 		return nil, fmt.Errorf("failed to marshal the patched bootstrap: %w", err)
 	}
 	cm.Data[bootstrapConfigKey] = string(merged)
-	setBootstrapChecksum(rendered, merged)
+	sum := sha256.Sum256(merged)
+	setPodTemplateAnnotation(rendered, bootstrapChecksumAnnotation, hex.EncodeToString(sum[:]))
+
+	// Write what the translator validates against: the subset, on the ConfigMap for
+	// the pods to come and on the pod template for the pods that start with it, and
+	// the ports the bootstrap listens on, where Gateway listeners are rejected.
+	bootstrapPorts := bootstrappatch.ListenerPorts(res.Bootstrap)
+	data, err := bootstrappatch.EncodeValidationData(subset, append(validate.StaticReservedPorts(), bootstrapPorts...))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode the bootstrap validation data: %w", err)
+	}
+	cm.Data[bootstrappatch.ValidationKey] = data
+	setPodTemplateAnnotation(rendered, bootstrappatch.ValidationAnnotation, subset)
 
 	// Leave Gateway listener ports the bootstrap listens on off the Service. The
 	// translator rejects those listeners.
 	var colliding []int32
-	for _, port := range bootstrappatch.ListenerPorts(res.Bootstrap) {
+	for _, port := range bootstrapPorts {
 		if slices.Contains(cfg.ListenerPorts, int32(port)) { //nolint:gosec // G115: Envoy ports fit in int32
 			colliding = append(colliding, int32(port)) //nolint:gosec // G115: Envoy ports fit in int32
 		}
@@ -197,6 +230,7 @@ func ApplyBootstrapPatches(
 		CuratedOverrides:     res.CuratedOverrides,
 		RemovedServicePorts:  removed,
 		RemovedRuntimeGuards: validation.RemovedRuntimeGuards,
+		UnvalidatedLayers:    res.UnvalidatedLayers,
 	}, nil
 }
 
@@ -311,14 +345,25 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 			"Envoy no longer has the runtime guard(s) %s, so their values have no effect; remove them from the patches.",
 			strings.Join(outcome.RemovedRuntimeGuards, ", ")))
 	}
+
+	// Report each runtime layer whose values route validation does not see.
+	if len(outcome.UnvalidatedLayers) > 0 {
+		layers := make([]string, 0, len(outcome.UnvalidatedLayers))
+		for _, l := range outcome.UnvalidatedLayers {
+			layers = append(layers, l.String())
+		}
+		msg = append(msg, fmt.Sprintf(
+			"The proxy loads the values of these runtime layers while it runs, so route validation uses Envoy's defaults for the keys they set: %s.",
+			strings.Join(layers, ", ")))
+	}
 	cond.Message = strings.Join(msg, " ")
 	return cond
 }
 
 // bootstrapPatchEvents returns the Warning events that go with the
 // kgateway.dev/BootstrapPatchApplied condition cond: one for each managed path the
-// patches set, each GatewayParameters field they replace, and the runtime guards Envoy
-// ignores.
+// patches set, each GatewayParameters field they replace, the runtime guards Envoy
+// ignores, and each disk or RTDS runtime layer they add.
 func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome) []deployer.ReportEvent {
 	// Patches that are not mounted have no other effect to report.
 	if cond.Reason == conditions.KgatewayReasonBootstrapNotMounted {
@@ -348,6 +393,12 @@ func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome)
 		out = append(out, bootstrapPatchEvent(removedRuntimeGuardsReason,
 			fmt.Sprintf("Envoy no longer has the runtime guard(s) %s, so their values have no effect; remove them from the bootstrap patches.",
 				strings.Join(outcome.RemovedRuntimeGuards, ", "))))
+	}
+
+	// Report each runtime layer whose values route validation does not see.
+	for _, l := range outcome.UnvalidatedLayers {
+		out = append(out, bootstrapPatchEvent(unvalidatedRuntimeLayerReason,
+			fmt.Sprintf("The bootstrap patches add %s. The proxy loads its values while it runs, so route validation uses Envoy's defaults for the keys it sets.", l)))
 	}
 	return out
 }
@@ -381,10 +432,9 @@ func findBootstrapConfigMap(objs []client.Object) *corev1.ConfigMap {
 	return nil
 }
 
-// setBootstrapChecksum sets the checksum annotation on each rendered Deployment's pod
-// template to the SHA-256 of bootstrap, the same value the Helm template computes.
-func setBootstrapChecksum(objs []client.Object, bootstrap []byte) {
-	sum := sha256.Sum256(bootstrap)
+// setPodTemplateAnnotation sets an annotation on each rendered Deployment's pod
+// template.
+func setPodTemplateAnnotation(objs []client.Object, key, value string) {
 	for _, obj := range objs {
 		dep, ok := obj.(*appsv1.Deployment)
 		if !ok {
@@ -393,7 +443,7 @@ func setBootstrapChecksum(objs []client.Object, bootstrap []byte) {
 		if dep.Spec.Template.Annotations == nil {
 			dep.Spec.Template.Annotations = map[string]string{}
 		}
-		dep.Spec.Template.Annotations[bootstrapChecksumAnnotation] = hex.EncodeToString(sum[:])
+		dep.Spec.Template.Annotations[key] = value
 	}
 }
 

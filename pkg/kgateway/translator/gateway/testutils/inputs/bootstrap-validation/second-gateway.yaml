@@ -1,0 +1,55 @@
+# A second Gateway without bootstrap patches, so its proxy runs Envoy's defaults. A
+# route with a long regex attaches to it and to example-gateway, whose patches raise
+# RE2's program size limit.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: plain-gateway
+  namespace: gwtest
+  uid: plain-gateway-uid
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: plain-gateway-a
+  namespace: gwtest
+  labels:
+    gateway.networking.k8s.io/gateway-name: plain-gateway
+spec:
+  containers:
+  - name: kgateway-proxy
+    image: envoy
+status:
+  phase: Running
+---
+# The path regex compiles to an RE2 program of 205 instructions: over Envoy's
+# default limit of 100, and under example-gateway's raised limit of 1000.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: long-regex-both
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http
+  - name: plain-gateway
+    sectionName: http
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: "/both/(abcdefgh){20}"
+    backendRefs:
+    - name: example-svc
+      port: 80
