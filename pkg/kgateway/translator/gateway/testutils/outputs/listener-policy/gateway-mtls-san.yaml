@@ -90,7 +90,9 @@ Statuses:
         message: |-
           Some listeners are not programmed: admin: verify-subject-alt-names annotation requires a trusted CA to be configured
           ListenerPolicy default/admin-mtls: failed to fetch CA certificate Secret missing-ca/default: Secret default/missing-ca not found
-          failed to fetch CA certificate Secret old-ca/default: Secret default/old-ca not found
+          failed to fetch CA certificate Secret old-ca/default: Secret default/old-ca not found; ops: verify-subject-alt-names annotation requires a trusted CA to be configured
+          ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/no-ca-key: ca.crt key missing
+          ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/malformed-ca: invalid ca.crt in ConfigMap default/malformed-ca: data does not contain any valid RSA or ECDSA certificates
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -170,6 +172,43 @@ Statuses:
           status: "False"
           type: Conflicted
         name: admin
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: |-
+            verify-subject-alt-names annotation requires a trusted CA to be configured
+            ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/no-ca-key: ca.crt key missing
+            ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/malformed-ca: invalid ca.crt in ConfigMap default/malformed-ca: data does not contain any valid RSA or ECDSA certificates
+          reason: InvalidCertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: |-
+            verify-subject-alt-names annotation requires a trusted CA to be configured
+            ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/no-ca-key: ca.crt key missing
+            ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/malformed-ca: invalid ca.crt in ConfigMap default/malformed-ca: data does not contain any valid RSA or ECDSA certificates
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: |-
+            verify-subject-alt-names annotation requires a trusted CA to be configured
+            ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/no-ca-key: ca.crt key missing
+            ListenerPolicy default/ops-mtls: failed to extract CA certificate from Secret default/malformed-ca: invalid ca.crt in ConfigMap default/malformed-ca: data does not contain any valid RSA or ECDSA certificates
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: ops
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute

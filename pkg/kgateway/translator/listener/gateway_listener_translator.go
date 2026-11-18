@@ -1590,10 +1590,10 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
 		// verify-subject-alt-names without a trusted CA is a TLS configuration issue, not a reference
-		// problem, unless the CA certificates that would have provided one were not found. Keep the full
-		// message either way, so it says why the listener needs those CA certificates.
-		_, caNotFound := errors.AsType[*krtcollections.NotFoundError](err)
-		resolvedRefsOK = !caNotFound
+		// problem, unless it comes with the errors of certificates that could not be resolved, such as CA
+		// certificates that are missing or hold no valid certificate. Keep the full message either way, so
+		// it says why the listener needs those CA certificates.
+		resolvedRefsOK = !joinedWithOtherErrors(err, sslutils.ErrVerifySubjectAltNamesRequiresCA)
 		message = err.Error()
 		keepMessage = true
 	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
@@ -1644,6 +1644,20 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		Reason:  acceptedReason,
 		Message: message,
 	})
+}
+
+// joinedWithOtherErrors reports whether err joins target with other errors.
+func joinedWithOtherErrors(err, target error) bool {
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return false
+	}
+	for _, e := range joined.Unwrap() {
+		if !errors.Is(e, target) {
+			return true
+		}
+	}
+	return false
 }
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
