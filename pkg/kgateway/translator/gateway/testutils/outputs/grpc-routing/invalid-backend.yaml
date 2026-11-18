@@ -91,7 +91,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: unknown backend kind
+          message: unknown backend kind "ConfigMap" in the core API group
           reason: InvalidKind
           status: "False"
           type: ResolvedRefs

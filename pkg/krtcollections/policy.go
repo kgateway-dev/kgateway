@@ -352,7 +352,10 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 	}
 	if col == nil && errors.Is(err, ErrUnknownBackendKind) {
 		// no collection and no aliases: nothing serves this kind at all
-		return nil, err
+		if gk.Group == "" {
+			return nil, fmt.Errorf("%w %q in the core API group", err, gk.Kind)
+		}
+		return nil, fmt.Errorf("%w %q in API group %q", err, gk.Kind, gk.Group)
 	}
 	// getBackendFromAlias reports on the alias key, so build the error against the referenced key.
 	return nil, i.notFoundErr(kctx, gk, key, gwport)
