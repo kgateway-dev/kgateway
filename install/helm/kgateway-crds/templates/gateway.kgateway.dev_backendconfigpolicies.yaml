@@ -1361,6 +1361,10 @@ spec:
                       only the system certificate pool is supported via SDS.
                       When sni is set and verifySubjectAltNames is empty, the certificate must also
                       be valid for the sni.
+                      WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+                      chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+                      whatever name it was issued for. Dynamic forward proxy backends are the exception:
+                      they always check the certificate against the request's host.
                     maxLength: 253
                     minLength: 1
                     pattern: ^(System|([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/([A-Za-z0-9][-A-Za-z0-9_.]{0,61})?[A-Za-z0-9]))$

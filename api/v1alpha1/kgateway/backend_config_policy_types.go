@@ -602,6 +602,10 @@ type TLS struct {
 	// only the system certificate pool is supported via SDS.
 	// When sni is set and verifySubjectAltNames is empty, the certificate must also
 	// be valid for the sni.
+	// WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+	// chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+	// whatever name it was issued for. Dynamic forward proxy backends are the exception:
+	// they always check the certificate against the request's host.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self == 'System'",message="wellKnownCACertificates only supports System"
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
