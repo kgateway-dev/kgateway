@@ -109,6 +109,14 @@ func withOverlay(t *testing.T, gwp *kgateway.GatewayParameters, overlayYAML stri
 	return gwp
 }
 
+// testOverlay returns the given YAML as an overlay from the Gateway's GatewayParameters.
+func testOverlay(t *testing.T, overlayYAML string) bootstrappatch.Overlay {
+	t.Helper()
+	raw, err := yaml.YAMLToJSON([]byte(overlayYAML))
+	require.NoError(t, err)
+	return bootstrappatch.Overlay{Source: types.NamespacedName{Namespace: defaultNamespace, Name: gatewayParamsName}, Raw: raw}
+}
+
 func gatewayParams() *kgateway.GatewayParameters {
 	return &kgateway.GatewayParameters{ObjectMeta: metav1.ObjectMeta{Name: gatewayParamsName, Namespace: defaultNamespace}}
 }
@@ -216,7 +224,8 @@ layered_runtime:
 }
 
 func TestBootstrapPatchesValidationData(t *testing.T) {
-	// Render a Gateway whose patches add a static runtime layer and a static listener.
+	// Render a Gateway whose patches add a static runtime layer and a static listener,
+	// and move the readiness listener from 8082 to 8083.
 	overlay := `
 layered_runtime:
   layers:
@@ -225,16 +234,18 @@ layered_runtime:
 static_resources:
   listeners:
   - name: user_listener
-    address: {socket_address: {address: 0.0.0.0, port_value: 9000}}`
+    address: {socket_address: {address: 0.0.0.0, port_value: 9000}}
+  - name: readiness_listener
+    address: {socket_address: {address: 0.0.0.0, port_value: 8083}}`
 	objs, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), overlay)}.render(t)
 	require.NoError(t, err)
 
-	// The ConfigMap holds the static layer, and the static reserved ports with the new
-	// listener's port.
+	// The ConfigMap holds the static layer, and exactly the ports the patched bootstrap
+	// listens on: 8082 is no longer one of them.
 	data, err := bootstrappatch.DecodeValidationData(findBootstrapConfigMap(objs).Data[bootstrappatch.ValidationKey])
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}}`, string(data.Bootstrap))
-	assert.Equal(t, []uint32{8082, 9000, 9091, 19000}, data.ReservedPorts)
+	assert.Equal(t, []uint32{8083, 9000, 9091, 19000}, data.ReservedPorts)
 
 	// The pod template carries the same subset, byte for byte.
 	assert.Equal(t, string(data.Bootstrap), podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
@@ -387,15 +398,60 @@ func TestBootstrapPatchesValidation(t *testing.T) {
 		assert.Nil(t, report)
 	})
 
-	t.Run("Envoy cannot be run", func(t *testing.T) {
-		// Render a Gateway when Envoy cannot be run.
-		v := &fakeBootstrapValidator{err: errors.New("envoy validate invocation failed: exec format error")}
+	t.Run("Envoy did not finish", func(t *testing.T) {
+		// Render a Gateway when Envoy is killed while validating.
+		v := &fakeBootstrapValidator{err: errors.New("Envoy was killed while validating the bootstrap")}
 		_, _, err := bootstrapTestCase{gatewayParams: gwp(), validator: v}.render(t)
 
-		// The error is not a verdict on the patches, so the reconcile retries.
-		require.ErrorContains(t, err, "failed to validate the patched bootstrap: envoy validate invocation failed")
+		// The patches are reported as not validated, and the reconcile retries.
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, err, &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapValidationUnavailable, patchErr.Reason)
+		assert.True(t, patchErr.Retry, "validating again can succeed")
+		assert.EqualError(t, patchErr, "could not validate the patched bootstrap: Envoy was killed while validating the bootstrap; the controller retries")
+	})
+
+	t.Run("the controller cannot run Envoy", func(t *testing.T) {
+		// Render a Gateway when the Envoy binary is missing.
+		v := &fakeBootstrapValidator{err: fmt.Errorf("%w: exec: no such file", validator.ErrBootstrapValidatorUnavailable)}
+		_, _, err := bootstrapTestCase{gatewayParams: gwp(), validator: v}.render(t)
+
+		// The patches are reported as not validated, without a retry: the restart that
+		// a change to the controller's Deployment causes reconciles the Gateway again.
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, err, &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapValidationUnavailable, patchErr.Reason)
+		assert.False(t, patchErr.Retry)
+		assert.EqualError(t, patchErr, "the controller cannot run Envoy to validate the bootstrap: exec: no such file; the controller retries after its Deployment or settings change")
+	})
+
+	t.Run("the controller is stopping", func(t *testing.T) {
+		// Render a Gateway's objects without patches, then apply patches with a context
+		// that has ended.
+		objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
+		require.NoError(t, err)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		v := &fakeBootstrapValidator{err: context.Canceled}
+		_, err = ApplyBootstrapPatches(ctx, objs, []bootstrappatch.Overlay{testOverlay(t, `{stats_flush_interval: 10s}`)}, BootstrapPatchConfig{Validator: v})
+
+		// The error is the context's, not a report on the patches.
+		require.ErrorIs(t, err, context.Canceled)
 		var patchErr *BootstrapPatchError
 		assert.False(t, errors.As(err, &patchErr))
+	})
+
+	t.Run("a controller failure", func(t *testing.T) {
+		// Apply patches to rendered objects that have no bootstrap ConfigMap.
+		_, err := ApplyBootstrapPatches(t.Context(), nil, []bootstrappatch.Overlay{testOverlay(t, `{stats_flush_interval: 10s}`)}, BootstrapPatchConfig{})
+
+		// The failure is reported as the controller's, without a retry or a ConfigMap name.
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, err, &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapControllerError, patchErr.Reason)
+		assert.False(t, patchErr.Retry)
+		assert.Empty(t, patchErr.ConfigMapName)
+		assert.EqualError(t, patchErr, "the controller failed to apply the bootstrap patches; this is a kgateway defect, not a problem with the patches: no bootstrap ConfigMap was rendered")
 	})
 
 	t.Run("not run without patches", func(t *testing.T) {
@@ -438,6 +494,44 @@ static_resources:
 		listenerPorts: []gwv1.PortNumber{8443},
 	}.render(t)
 	assert.ErrorIs(t, err, ErrNoValidPorts)
+}
+
+func TestBootstrapPatchesDefaultListenerPorts(t *testing.T) {
+	// Render a Gateway with listeners on 8080 and 8082, whose patches leave the
+	// readiness listener on 8082.
+	serviceOf := func(objs []client.Object) []int32 {
+		svcs := objectsOf[*corev1.Service](objs)
+		require.Len(t, svcs, 1)
+		var ports []int32
+		for _, p := range svcs[0].Spec.Ports {
+			ports = append(ports, p.Port)
+		}
+		return ports
+	}
+	objs, report, err := bootstrapTestCase{
+		gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`),
+		listenerPorts: []gwv1.PortNumber{8080, 8082},
+	}.render(t)
+	require.NoError(t, err)
+
+	// 8082 is left off the Service, as without patches, and the condition says so.
+	assert.Equal(t, []int32{8080}, serviceOf(objs))
+	assert.Contains(t, bootstrapCondition(t, report).Message, "uses Gateway listener port(s) 8082")
+
+	// Patches that move the readiness listener to 8083 free 8082 for the Gateway
+	// listener, so the Service exposes it.
+	moved := `
+static_resources:
+  listeners:
+  - name: readiness_listener
+    address: {socket_address: {address: 0.0.0.0, port_value: 8083}}`
+	objs, report, err = bootstrapTestCase{
+		gatewayParams: withOverlay(t, gatewayParams(), moved),
+		listenerPorts: []gwv1.PortNumber{8080, 8082},
+	}.render(t)
+	require.NoError(t, err)
+	assert.Equal(t, []int32{8080, 8082}, serviceOf(objs))
+	assert.NotContains(t, bootstrapCondition(t, report).Message, "Gateway listener port")
 }
 
 func TestBootstrapPatchesNotMounted(t *testing.T) {

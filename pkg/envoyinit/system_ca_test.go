@@ -114,8 +114,8 @@ func TestAddSystemCASecretKeepsUnknownFieldsAndNumbers(t *testing.T) {
 	g := NewWithT(t)
 
 	// A field no Envoy proto has, an unregistered extension type, and an integer too
-	// large for a float64 all pass through unchanged, because the bootstrap is never
-	// parsed as a proto.
+	// large for a float64 all keep their values, because the bootstrap is never parsed
+	// as a proto and integers are not rounded through float64.
 	in := []byte(`
 field_from_a_newer_envoy: 9007199254740993
 bootstrap_extensions:

@@ -465,8 +465,8 @@ type BootstrapMergeStrategy string
 const (
 	// BootstrapMergeStrategyStructuredMerge merges the overlay as a protobuf merge:
 	// a scalar replaces the generated value, a message merges field by field, an Any or
-	// a map entry replaces the generated value whole, and a list appends. Two kinds of
-	// list are exceptions. Static clusters, listeners and secrets, and overload manager
+	// a map entry replaces the generated value whole, and a list puts the overlay's
+	// entries before the generated ones. Two kinds of list are exceptions. Static clusters, listeners and secrets, and overload manager
 	// resource monitors merge by name: an overlay entry replaces the generated entry
 	// with the same name whole. Runtime layers are inserted before the admin layer, so
 	// values set through the admin endpoint /runtime_modify still take precedence.

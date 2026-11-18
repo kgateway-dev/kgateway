@@ -23,7 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -51,19 +50,24 @@ const (
 	unvalidatedRuntimeLayerReason = "UnvalidatedRuntimeLayer"
 )
 
-// BootstrapPatchError reports bootstrap patches that cannot be applied as written.
-// None of the Gateway's objects are deployed, and retrying cannot succeed until the
-// patches or the controller's configuration change.
+// BootstrapPatchError reports bootstrap patches that were not applied. None of the
+// Gateway's objects are deployed. Unless Retry is set, retrying cannot succeed until
+// the patches, the controller's Deployment or its settings change.
 type BootstrapPatchError struct {
 	// Reason is the kgateway.dev/BootstrapPatchApplied reason to report.
 	Reason string
 	// ConfigMapName is the name of the Gateway's generated bootstrap ConfigMap. When it
-	// does not exist yet, the Gateway has no proxy.
+	// does not exist yet, the Gateway has no proxy. It is empty when no bootstrap
+	// ConfigMap was rendered.
 	ConfigMapName string
 	// ManagedPaths lists each path the control plane manages that the patches set.
-	// It is nil when an overlay is invalid, since its paths are then unknown.
+	// It is nil when the paths are unknown: when an overlay is invalid, or the
+	// controller failed before merging the patches.
 	ManagedPaths []bootstrappatch.ManagedPath
-	Err          error
+	// Retry is set when applying the patches again can succeed without a change, for
+	// example after Envoy was killed for memory or timed out while validating them.
+	Retry bool
+	Err   error
 }
 
 // Events returns the Warning events that report the failure.
@@ -78,6 +82,12 @@ func (e *BootstrapPatchError) Events() []deployer.ReportEvent {
 		return out
 	}
 	return []deployer.ReportEvent{bootstrapPatchEvent(e.Reason, "Applied none of the bootstrap patches: "+e.Error())}
+}
+
+// pathsKnown reports whether ManagedPaths lists the paths the patches set.
+func (e *BootstrapPatchError) pathsKnown() bool {
+	return e.Reason != conditions.KgatewayReasonBootstrapInvalidOverlay &&
+		e.Reason != conditions.KgatewayReasonBootstrapControllerError
 }
 
 func (e *BootstrapPatchError) Error() string {
@@ -130,26 +140,37 @@ type BootstrapPatchConfig struct {
 // subset and listener ports to the ConfigMap's validation key, and the subset to the
 // pod template, for the translator to validate against. It removes from the Service each
 // listener port that the patched bootstrap also listens on. Call it before applying
-// object overlays, so that they can still change any object. It returns a
-// *BootstrapPatchError when the patches cannot be applied, ErrNoValidPorts when no
-// Service port is left, and another error when Envoy cannot be run, which is worth
-// retrying.
+// object overlays, so that they can still change any object. It returns ctx.Err()
+// when ctx ends, ErrNoValidPorts when no Service port is left, and otherwise a
+// *BootstrapPatchError when the patches are not applied.
 func ApplyBootstrapPatches(
 	ctx context.Context,
 	rendered []client.Object,
 	overlays []bootstrappatch.Overlay,
 	cfg BootstrapPatchConfig,
 ) (*BootstrapPatchOutcome, error) {
+	// Report a failure of the controller's own processing, which no change to the
+	// patches fixes.
+	cmName := ""
+	controllerErr := func(err error) error {
+		return &BootstrapPatchError{
+			Reason:        conditions.KgatewayReasonBootstrapControllerError,
+			ConfigMapName: cmName,
+			Err:           fmt.Errorf("the controller failed to apply the bootstrap patches; this is a kgateway defect, not a problem with the patches: %w", err),
+		}
+	}
+
 	// Parse the generated bootstrap.
 	cm := findBootstrapConfigMap(rendered)
 	if cm == nil {
-		return nil, errors.New("no bootstrap ConfigMap was rendered")
+		return nil, controllerErr(errors.New("no bootstrap ConfigMap was rendered"))
 	}
+	cmName = cm.Name
 	base, err := bootstrappatch.ParseBootstrap([]byte(cm.Data[bootstrapConfigKey]))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse the generated bootstrap: %w", err)
+		return nil, controllerErr(fmt.Errorf("failed to parse the generated bootstrap: %w", err))
 	}
-	patchErr := func(reason string, paths []bootstrappatch.ManagedPath, err error) error {
+	patchErr := func(reason string, paths []bootstrappatch.ManagedPath, err error) *BootstrapPatchError {
 		return &BootstrapPatchError{Reason: reason, ConfigMapName: cm.Name, ManagedPaths: paths, Err: err}
 	}
 
@@ -163,14 +184,14 @@ func ApplyBootstrapPatches(
 		return nil, patchErr(conditions.KgatewayReasonBootstrapPathsDenied, denied.Paths, denied)
 	}
 	if err != nil {
-		return nil, err
+		return nil, controllerErr(err)
 	}
 
 	// Encode the subset of the merged bootstrap that the translator validates xDS
 	// configuration against. It goes on the pod template, so it has a size limit.
 	subset, err := bootstrappatch.EncodeValidationSubset(bootstrappatch.ValidationSubset(res.Bootstrap))
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode the validation subset of the patched bootstrap: %w", err)
+		return nil, controllerErr(fmt.Errorf("failed to encode the validation subset of the patched bootstrap: %w", err))
 	}
 	if len(subset) > bootstrappatch.MaxValidationSubsetSize {
 		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, fmt.Errorf(
@@ -178,22 +199,32 @@ func ApplyBootstrapPatches(
 			len(subset), bootstrappatch.MaxValidationSubsetSize))
 	}
 
-	// Validate the merged bootstrap as the proxy runs it.
+	// Validate the merged bootstrap as the proxy runs it. When ctx has ended, the
+	// controller is stopping, and the result says nothing about the patches.
 	var validation validator.BootstrapResult
 	if cfg.Validator != nil {
 		validation, err = cfg.Validator.ValidateBootstrap(ctx, res.Bootstrap)
 		switch {
+		case err == nil:
 		case errors.Is(err, validator.ErrInvalidBootstrap):
 			return nil, patchErr(conditions.KgatewayReasonBootstrapValidationFailed, res.ManagedPaths, err)
-		case err != nil:
-			return nil, fmt.Errorf("failed to validate the patched bootstrap: %w", err)
+		case ctx.Err() != nil:
+			return nil, fmt.Errorf("stopped validating the patched bootstrap: %w", ctx.Err())
+		case errors.Is(err, validator.ErrBootstrapValidatorUnavailable):
+			return nil, patchErr(conditions.KgatewayReasonBootstrapValidationUnavailable, res.ManagedPaths, fmt.Errorf(
+				"%w; the controller retries after its Deployment or settings change", err))
+		default:
+			unavailable := patchErr(conditions.KgatewayReasonBootstrapValidationUnavailable, res.ManagedPaths, fmt.Errorf(
+				"could not validate the patched bootstrap: %w; the controller retries", err))
+			unavailable.Retry = true
+			return nil, unavailable
 		}
 	}
 
 	// Write the merged bootstrap, and roll the pods when it changes.
 	merged, err := bootstrappatch.Marshal(res.Bootstrap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal the patched bootstrap: %w", err)
+		return nil, controllerErr(fmt.Errorf("failed to marshal the patched bootstrap: %w", err))
 	}
 	cm.Data[bootstrapConfigKey] = string(merged)
 	sum := sha256.Sum256(merged)
@@ -203,9 +234,9 @@ func ApplyBootstrapPatches(
 	// the pods to come and on the pod template for the pods that start with it, and
 	// the ports the bootstrap listens on, where Gateway listeners are rejected.
 	bootstrapPorts := bootstrappatch.ListenerPorts(res.Bootstrap)
-	data, err := bootstrappatch.EncodeValidationData(subset, append(validate.StaticReservedPorts(), bootstrapPorts...))
+	data, err := bootstrappatch.EncodeValidationData(subset, bootstrapPorts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode the bootstrap validation data: %w", err)
+		return nil, controllerErr(fmt.Errorf("failed to encode the bootstrap validation data: %w", err))
 	}
 	cm.Data[bootstrappatch.ValidationKey] = data
 	setPodTemplateAnnotation(rendered, bootstrappatch.ValidationAnnotation, subset)

@@ -1,8 +1,6 @@
 package envoyinit
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"sigs.k8s.io/yaml"
@@ -15,25 +13,16 @@ import (
 // bootstrap as YAML.
 //
 // It edits the bootstrap as a generic document rather than an Envoy Bootstrap proto, so
-// a field or extension type this binary does not know reaches Envoy unchanged, and Envoy
-// alone decides whether the bootstrap is valid. Numbers are kept as written, not
-// converted to float64. A bootstrap may spell the field static_resources or
-// staticResources; the secret goes into whichever is present, and into a new
-// static_resources when neither is.
+// a field or extension type this binary does not know reaches Envoy with its values, and
+// Envoy alone decides whether the bootstrap is valid. Re-encoding can change key order
+// and number formatting, but not values: integers are not rounded through float64. A
+// bootstrap may spell the field static_resources or staticResources; the secret goes
+// into whichever is present, and into a new static_resources when neither is.
 func addSystemCASecret(bootstrapYAML []byte, caPath string) ([]byte, error) {
-	// Decode the bootstrap into a generic map, keeping numbers exact.
-	bootstrapJSON, err := yaml.YAMLToJSON(bootstrapYAML)
+	// Decode the bootstrap into a generic map without rounding integers.
+	bootstrap, err := utils.DecodeYAMLMap(bootstrapYAML)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse the bootstrap as YAML: %w", err)
-	}
-	var bootstrap map[string]any
-	decoder := json.NewDecoder(bytes.NewReader(bootstrapJSON))
-	decoder.UseNumber()
-	if err := decoder.Decode(&bootstrap); err != nil {
-		return nil, fmt.Errorf("the bootstrap is not a YAML mapping: %w", err)
-	}
-	if bootstrap == nil {
-		bootstrap = map[string]any{}
+		return nil, fmt.Errorf("the bootstrap %w", err)
 	}
 
 	// Find static_resources under either spelling, creating it when neither is set.
@@ -67,9 +56,9 @@ func addSystemCASecret(bootstrapYAML []byte, caPath string) ([]byte, error) {
 	})
 
 	// Encode the result as YAML.
-	out, err := json.Marshal(bootstrap)
+	out, err := yaml.Marshal(bootstrap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode the bootstrap: %w", err)
 	}
-	return yaml.JSONToYAML(out)
+	return out, nil
 }

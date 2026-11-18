@@ -11,8 +11,18 @@ const DefaultXdsService = "kgateway"
 // - the `controller.service.ports.grpc` value in install/helm/kgateway/values.yaml
 var DefaultXdsPort uint32 = 9977
 
-// EnvoyAdminPort is the default envoy admin port
+// EnvoyAdminPort is the default envoy admin port. This value should stay in sync with
+// pkg/kgateway/helm/envoy/templates/configmap.yaml and deployment.yaml.
 var EnvoyAdminPort uint32 = 19000
+
+// EnvoyReadinessPort is the default port of the envoy readiness listener. This value
+// should stay in sync with pkg/kgateway/helm/envoy/templates/configmap.yaml.
+var EnvoyReadinessPort uint32 = 8082
+
+// EnvoyMetricsPort is the default port of the envoy Prometheus listener. This value
+// should stay in sync with pkg/kgateway/helm/envoy/templates/configmap.yaml and
+// deployment.yaml.
+var EnvoyMetricsPort uint32 = 9091
 
 // KgatewayAdminPort is the kgateway admin server port
 var KgatewayAdminPort uint32 = 9095

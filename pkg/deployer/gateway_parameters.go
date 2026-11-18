@@ -112,7 +112,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/ready",
-								Port: intstr.FromInt(8082),
+								Port: intstr.FromInt(int(wellknown.EnvoyReadinessPort)),
 							},
 						},
 						InitialDelaySeconds: 0,
@@ -122,7 +122,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/ready",
-								Port: intstr.FromInt(8082),
+								Port: intstr.FromInt(int(wellknown.EnvoyReadinessPort)),
 							},
 						},
 						InitialDelaySeconds: 0,

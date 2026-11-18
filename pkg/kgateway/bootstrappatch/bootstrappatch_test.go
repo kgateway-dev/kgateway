@@ -5,6 +5,7 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycaresv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/cares/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/types"
@@ -71,6 +72,14 @@ func names[T namedEntry](entries []T) []string {
 	var out []string
 	for _, e := range entries {
 		out = append(out, e.GetName())
+	}
+	return out
+}
+
+func prefixes(patterns []*envoymatcherv3.StringMatcher) []string {
+	var out []string
+	for _, p := range patterns {
+		out = append(out, p.GetPrefix())
 	}
 	return out
 }
@@ -170,13 +179,11 @@ layered_runtime:
 			},
 		},
 		{
-			name:    "other lists append",
-			overlay: `{stats_config: {stats_matcher: {inclusion_list: {patterns: [{prefix: http.}]}}}}`,
+			name:    "other lists put the overlay's entries first",
+			overlay: `{stats_config: {stats_matcher: {inclusion_list: {patterns: [{prefix: http.}, {prefix: listener.}]}}}}`,
 			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
 				patterns := merged.GetStatsConfig().GetStatsMatcher().GetInclusionList().GetPatterns()
-				require.Len(t, patterns, 2)
-				assert.Equal(t, "cluster.", patterns[0].GetPrefix())
-				assert.Equal(t, "http.", patterns[1].GetPrefix())
+				assert.Equal(t, []string{"http.", "listener.", "cluster."}, prefixes(patterns))
 			},
 		},
 	}
@@ -201,6 +208,8 @@ func TestApplyGatewayClassThenGateway(t *testing.T) {
 	res, err := Apply(parseBase(t), []Overlay{
 		overlay(t, gcParams, `
 stats_flush_interval: 10s
+stats_config:
+  stats_matcher: {inclusion_list: {patterns: [{prefix: class.}]}}
 static_resources:
   clusters:
   - {name: shared, connect_timeout: 1s}
@@ -209,6 +218,8 @@ layered_runtime:
   - {name: class_runtime, static_layer: {a: 1}}`),
 		overlay(t, gwParams, `
 stats_flush_interval: 20s
+stats_config:
+  stats_matcher: {inclusion_list: {patterns: [{prefix: gateway.}]}}
 static_resources:
   clusters:
   - {name: shared, connect_timeout: 2s}
@@ -225,6 +236,10 @@ layered_runtime:
 	assert.Equal(t, "shared", shared.GetName())
 	assert.Equal(t, int64(2), shared.GetConnectTimeout().GetSeconds())
 	assert.Len(t, merged.GetStaticResources().GetClusters(), 4, "the Gateway's cluster should replace the GatewayClass's")
+
+	// A list holds the Gateway's entries, then the GatewayClass's, then the base's.
+	patterns := merged.GetStatsConfig().GetStatsMatcher().GetInclusionList().GetPatterns()
+	assert.Equal(t, []string{"gateway.", "class.", "cluster."}, prefixes(patterns))
 
 	// The Gateway layer comes after the GatewayClass layer, so it wins per key.
 	assert.Equal(t, []string{"class_runtime", "gateway_runtime", "admin_layer"}, names(merged.GetLayeredRuntime().GetLayers()))

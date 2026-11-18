@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -112,7 +113,7 @@ func (c *cachingValidator) ValidateBootstrap(ctx context.Context, bs *envoyboots
 	// Find the inner validator and the key.
 	inner, ok := c.inner.(BootstrapValidator)
 	if !ok {
-		return BootstrapResult{}, errors.New("the configured validator cannot validate proxy bootstraps")
+		return BootstrapResult{}, fmt.Errorf("%w: the configured validator cannot validate proxy bootstraps", ErrBootstrapValidatorUnavailable)
 	}
 	key, err := ContentKeyOf(bs)
 	if err != nil {

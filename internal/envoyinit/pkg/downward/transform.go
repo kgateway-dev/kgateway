@@ -3,12 +3,15 @@ package downward
 import (
 	"bytes"
 	"cmp"
+	"fmt"
 	"io"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 )
 
 // Transform reads an Envoy bootstrap config from in, interpolates any Kubernetes
@@ -40,16 +43,18 @@ func Transform(in io.Reader, out io.Writer) error {
 // into the bootstrap's node.locality. When no locality is configured the input bytes are
 // returned unchanged. When locality is present the bootstrap is decoded into a generic map,
 // merged (preserving unknown fields and any existing locality keys), and re-encoded as YAML;
-// this re-encoding may reorder keys and normalize scalar formatting.
+// this re-encoding may reorder keys and normalize scalar formatting, but keeps every value.
 func AddNodeLocalityToBootstrapYaml(bootstrapBytes []byte, api DownwardAPI) ([]byte, error) {
 	locality := nodeLocalityFromApi(api)
 	if locality == nil {
 		return bootstrapBytes, nil
 	}
 
-	bootstrap := map[string]any{}
-	if err := yaml.Unmarshal(bootstrapBytes, &bootstrap); err != nil {
-		return nil, err
+	// Decode without rounding integers, so every value the locality change does not set
+	// is encoded again with the same value.
+	bootstrap, err := utils.DecodeYAMLMap(bootstrapBytes)
+	if err != nil {
+		return nil, fmt.Errorf("the bootstrap %w", err)
 	}
 
 	node, ok := bootstrap["node"].(map[string]any)

@@ -58,6 +58,17 @@ const (
 	KgatewayReasonBootstrapValidationFailed = "ValidationFailed"
 
 	// This reason is used with "kgateway.dev/BootstrapPatchApplied" when the condition
+	// is false because the controller could not run Envoy to validate the patched
+	// bootstrap. The message says whether the controller retries, or whether its
+	// Deployment or settings must change first.
+	KgatewayReasonBootstrapValidationUnavailable = "ValidationUnavailable"
+
+	// This reason is used with "kgateway.dev/BootstrapPatchApplied" when the condition
+	// is false because the controller failed to process the bootstrap it generated or
+	// the patched result. This is a defect in kgateway, not in the patches.
+	KgatewayReasonBootstrapControllerError = "ControllerError"
+
+	// This reason is used with "kgateway.dev/BootstrapPatchApplied" when the condition
 	// is false because an object overlay mounts a ConfigMap other than the generated
 	// bootstrap ConfigMap, so the proxy does not run the patched bootstrap.
 	KgatewayReasonBootstrapNotMounted = "BootstrapNotMounted"

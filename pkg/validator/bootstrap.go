@@ -5,12 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -22,12 +26,28 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
-// ErrInvalidBootstrap is returned when Envoy rejects a proxy bootstrap.
+// ErrInvalidBootstrap is returned when Envoy rejects a proxy bootstrap, or crashes on
+// it.
 var ErrInvalidBootstrap = errors.New("Envoy rejected the bootstrap") //nolint:staticcheck // ST1005: the message starts with a proper noun
 
-// validationNodeID is the node id the validated copy of a proxy bootstrap gets. The
-// proxy gets its own from --service-node.
-const validationNodeID = "bootstrap-validation"
+// ErrBootstrapValidatorUnavailable is returned when the controller cannot run Envoy
+// to validate any proxy bootstrap until its Deployment or settings change: the Envoy
+// binary, the docker CLI or the Envoy image's entrypoint is missing or cannot be run,
+// the controller cannot write its temporary files, or the configured validator cannot
+// validate bootstraps.
+var ErrBootstrapValidatorUnavailable = errors.New("the controller cannot run Envoy to validate the bootstrap")
+
+const (
+	// validationNodeID is the node id the validated copy of a proxy bootstrap gets. The
+	// proxy gets its own from --service-node.
+	validationNodeID = "bootstrap-validation"
+	// binaryValidationTimeout bounds one run of the Envoy binary. Envoy validates a
+	// bootstrap in well under a second; the rest is room for a busy controller.
+	binaryValidationTimeout = 30 * time.Second
+	// dockerValidationTimeout bounds one run of Envoy in docker, which can include
+	// pulling the image.
+	dockerValidationTimeout = 5 * time.Minute
+)
 
 // removedGuardRe matches the message Envoy logs for a runtime guard it no longer
 // knows, in any log format.
@@ -36,8 +56,14 @@ var removedGuardRe = regexp.MustCompile(`Using a removed guard (\S+?)\. In futur
 // BootstrapValidator validates the bootstrap a managed proxy starts with.
 type BootstrapValidator interface {
 	// ValidateBootstrap runs bootstrap through envoy --mode validate, prepared to
-	// match what the proxy pod runs. It returns an error wrapping ErrInvalidBootstrap
-	// when Envoy rejects the bootstrap, and another error when Envoy cannot be run.
+	// match what the proxy pod runs. It returns an error wrapping:
+	//   - ErrInvalidBootstrap when Envoy rejects or crashes on the bootstrap;
+	//   - ErrBootstrapValidatorUnavailable when the controller cannot run Envoy for
+	//     any bootstrap until its Deployment or settings change;
+	//   - ctx.Err() when ctx ends first.
+	// Any other error means Envoy did not finish, for a reason that can pass, such as
+	// a full disk, the timeout, or Envoy being killed for memory; validating again can
+	// succeed.
 	ValidateBootstrap(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) (BootstrapResult, error)
 }
 
@@ -56,7 +82,7 @@ var (
 
 // ValidateBootstrap validates bootstrap with the Envoy binary.
 func (b *binaryValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
-	return validateProxyBootstrap(ctx, bs, func(ctx context.Context, _ string, args []string, config []byte) (string, error) {
+	return validateProxyBootstrap(ctx, bs, binaryValidationTimeout, func(ctx context.Context, _ string, args []string, config []byte) (string, error) {
 		cmd := exec.CommandContext(ctx, b.path, args...) //nolint:gosec // G204: envoy binary with controlled args for config validation
 		cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
 		return runEnvoy(cmd, config)
@@ -66,14 +92,29 @@ func (b *binaryValidator) ValidateBootstrap(ctx context.Context, bs *envoybootst
 // ValidateBootstrap validates bootstrap with Envoy in the validator's image, mounting
 // the placeholder files at the same path in the container.
 func (d *dockerValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
-	return validateProxyBootstrap(ctx, bs, func(ctx context.Context, dir string, args []string, config []byte) (string, error) {
+	return validateProxyBootstrap(ctx, bs, dockerValidationTimeout, func(ctx context.Context, dir string, args []string, config []byte) (string, error) {
+		// Run Envoy in the image, with the placeholder files mounted.
 		dockerArgs := []string{"run", "--rm", "-i"}
 		if d.pull != "" {
 			dockerArgs = append(dockerArgs, "--pull", d.pull)
 		}
 		dockerArgs = append(dockerArgs, "-v", dir+":"+dir+":ro", "--entrypoint", "/usr/local/bin/envoy", d.img)
 		cmd := exec.CommandContext(ctx, "docker", append(dockerArgs, args...)...) //nolint:gosec // G204: docker command with controlled args for config validation
-		return runEnvoy(cmd, config)
+		stderr, err := runEnvoy(cmd, config)
+
+		// Exit codes 125 to 127 come from docker, not Envoy: 125 when docker cannot run
+		// the container, for example when the daemon is unreachable or the pull fails,
+		// and 126 or 127 when the image's Envoy cannot be run or is missing.
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			msg := strings.TrimSpace(stderr)
+			switch exitErr.ExitCode() {
+			case 125:
+				return stderr, fmt.Errorf("docker could not run the Envoy container: %s", msg)
+			case 126, 127:
+				return stderr, fmt.Errorf("%w: the image %s cannot run /usr/local/bin/envoy: %s", ErrBootstrapValidatorUnavailable, d.img, msg)
+			}
+		}
+		return stderr, err
 	})
 }
 
@@ -91,12 +132,12 @@ func runEnvoy(cmd *exec.Cmd, config []byte) (string, error) {
 type envoyRunner func(ctx context.Context, dir string, args []string, config []byte) (string, error)
 
 // validateProxyBootstrap prepares a copy of bs to match what the proxy pod runs,
-// validates it with run, and interprets Envoy's output.
-func validateProxyBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap, run envoyRunner) (BootstrapResult, error) {
+// validates it with run within timeout, and interprets Envoy's output.
+func validateProxyBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap, timeout time.Duration, run envoyRunner) (BootstrapResult, error) {
 	// Prepare the copy, with its placeholder files in a temporary directory.
 	dir, err := os.MkdirTemp("", "kgateway-bootstrap-validation-")
 	if err != nil {
-		return BootstrapResult{}, fmt.Errorf("failed to create a directory for bootstrap validation: %w", err)
+		return BootstrapResult{}, fileError("failed to create a directory for bootstrap validation", err)
 	}
 	defer os.RemoveAll(dir)
 	config, err := prepareProxyBootstrap(bs, dir)
@@ -111,24 +152,74 @@ func validateProxyBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap,
 	if bs.GetApplicationLogConfig().GetLogFormat() == nil {
 		args = append(args, "--log-format", "%v")
 	}
-	stderr, err := run(ctx, dir, args, config)
-
-	// Report Envoy's rejection, or the removed guards in a bootstrap it accepts.
-	exitErr, exited := errors.AsType[*exec.ExitError](err)
-	switch {
-	case exited:
-		msg := extractEnvoyError(stderr)
-		if msg == "" {
-			msg = stderr
-		}
-		if msg = normalizeEnvoyError(msg); msg == "" {
-			msg = exitErr.Error()
-		}
-		return BootstrapResult{}, fmt.Errorf("%w: %s", ErrInvalidBootstrap, msg)
-	case err != nil:
-		return BootstrapResult{}, fmt.Errorf("envoy validate invocation failed: %w", err)
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	stderr, err := run(runCtx, dir, args, config)
+	if err == nil {
+		return BootstrapResult{RemovedRuntimeGuards: removedRuntimeGuards(stderr)}, nil
 	}
-	return BootstrapResult{RemovedRuntimeGuards: removedRuntimeGuards(stderr)}, nil
+	return BootstrapResult{}, classifyRunError(ctx, runCtx, timeout, stderr, err)
+}
+
+// classifyRunError returns the error to report for a run of Envoy that failed with
+// err. ctx is the caller's context and runCtx the run's, which adds the timeout.
+// Context checks come first, because the process killed when a context ends exits
+// with SIGKILL.
+func classifyRunError(ctx, runCtx context.Context, timeout time.Duration, stderr string, err error) error {
+	// The caller stopped waiting, or the run took too long.
+	if ctx.Err() != nil {
+		return fmt.Errorf("bootstrap validation stopped: %w", ctx.Err())
+	}
+	if runCtx.Err() != nil {
+		return fmt.Errorf("Envoy did not finish validating the bootstrap within %s", timeout) //nolint:staticcheck // ST1005: the message starts with a proper noun
+	}
+
+	// Envoy did not start, or docker failed before running it.
+	exitErr, exited := errors.AsType[*exec.ExitError](err)
+	if !exited {
+		switch {
+		case errors.Is(err, ErrBootstrapValidatorUnavailable):
+			return err
+		case errors.Is(err, exec.ErrNotFound), errors.Is(err, fs.ErrNotExist), errors.Is(err, fs.ErrPermission):
+			return fmt.Errorf("%w: %w", ErrBootstrapValidatorUnavailable, err)
+		}
+		return fmt.Errorf("failed to run Envoy to validate the bootstrap: %w", err)
+	}
+
+	// Envoy exited on its own, with its reason in stderr.
+	msg := extractEnvoyError(stderr)
+	if msg == "" {
+		msg = stderr
+	}
+	msg = normalizeEnvoyError(msg)
+
+	// SIGKILL comes from outside Envoy, most likely the out-of-memory killer, so the
+	// bootstrap may be fine. Another signal is a crash, which the proxy would hit too.
+	if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+		if status.Signal() == syscall.SIGKILL {
+			return errors.New("Envoy was killed while validating the bootstrap, possibly because the controller ran out of memory") //nolint:staticcheck // ST1005: the message starts with a proper noun
+		}
+		if msg == "" {
+			return fmt.Errorf("%w: Envoy crashed with signal %q", ErrInvalidBootstrap, status.Signal())
+		}
+		return fmt.Errorf("%w: Envoy crashed with signal %q: %s", ErrInvalidBootstrap, status.Signal(), msg)
+	}
+
+	// Otherwise Envoy rejected the bootstrap.
+	if msg == "" {
+		msg = exitErr.Error()
+	}
+	return fmt.Errorf("%w: %s", ErrInvalidBootstrap, msg)
+}
+
+// fileError wraps err from writing the validator's temporary files. A directory the
+// controller may not write to fails the same way every time; another failure, such as
+// a full disk, can pass.
+func fileError(msg string, err error) error {
+	if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.EROFS) {
+		return fmt.Errorf("%w: %s: %w", ErrBootstrapValidatorUnavailable, msg, err)
+	}
+	return fmt.Errorf("%s: %w", msg, err)
 }
 
 // prepareProxyBootstrap returns a copy of bs, as proto JSON, with the changes that
@@ -157,7 +248,7 @@ func prepareProxyBootstrap(bs *envoybootstrapv3.Bootstrap, dir string) ([]byte, 
 		}
 		p := filepath.Join(dir, strconv.Itoa(len(placeholders))+filepath.Ext(path))
 		if err := os.WriteFile(p, nil, 0o600); err != nil {
-			return "", fmt.Errorf("failed to write a placeholder for %s: %w", path, err)
+			return "", fileError("failed to write a placeholder for "+path, err)
 		}
 		placeholders[path] = p
 		return p, nil

@@ -12,11 +12,13 @@ import (
 
 const (
 	// ValidationKey is the key in a Gateway's generated bootstrap ConfigMap that holds
-	// the validation subset of its bootstrap and the ports the bootstrap listens on.
-	ValidationKey = "validation.json"
+	// the translator's inputs for validating the Gateway's xDS: the validation subset of
+	// its bootstrap and the ports the bootstrap listens on. Envoy does not read it.
+	ValidationKey = "xds_validation.json"
 	// ValidationAnnotation is the pod-template annotation that holds the validation
-	// subset of the bootstrap the pod starts with.
-	ValidationAnnotation = "kgateway.dev/validation-bootstrap"
+	// subset of the bootstrap the pod starts with, which the translator uses to validate
+	// xDS for that pod.
+	ValidationAnnotation = "kgateway.dev/xds-validation-bootstrap"
 	// MaxValidationSubsetSize is the largest encoded validation subset the deployer
 	// writes. It keeps the pod annotation well under the 256 KiB limit on all of a
 	// pod's annotations.
@@ -30,8 +32,8 @@ const (
 type ValidationData struct {
 	// Bootstrap is the validation subset, as EncodeValidationSubset writes it.
 	Bootstrap json.RawMessage `json:"bootstrap"`
-	// ReservedPorts are the ports the bootstrap listens on, together with the ports
-	// the generated bootstrap always reserves, sorted.
+	// ReservedPorts are the ports the bootstrap listens on, sorted. They replace the
+	// static reserved ports for the Gateway.
 	ReservedPorts []uint32 `json:"reservedPorts"`
 }
 

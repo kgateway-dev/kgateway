@@ -38,16 +38,31 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
+// A Gateway listener port the generated bootstrap listens on is left out.
 func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) []HelmPort {
+	return getPortsValues(gw, gwp, true)
+}
+
+// GetPortsValuesForBootstrapPatches is GetPortsValues for a Gateway with bootstrap
+// patches. Patches can move the generated bootstrap's listeners, so it keeps Gateway
+// listener ports the generated bootstrap listens on; applying the patches removes from
+// the Service each port the patched bootstrap listens on.
+func GetPortsValuesForBootstrapPatches(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) []HelmPort {
+	return getPortsValues(gw, gwp, false)
+}
+
+func getPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters, skipReserved bool) []HelmPort {
 	gwPorts := []HelmPort{}
 
 	// Add ports from Gateway listeners
 	for _, port := range gw.Ports.List() {
 		portName := listener.GenerateListenerNameFromPort(port)
-		if err := validate.ListenerPort(ir.Listener{Listener: gwv1.Listener{Port: port}}, port); err != nil {
-			// skip invalid ports; statuses are handled in the translator
-			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
-			continue
+		if skipReserved {
+			if err := validate.ListenerPort(ir.Listener{Listener: gwv1.Listener{Port: port}}, port); err != nil {
+				// skip invalid ports; statuses are handled in the translator
+				logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
+				continue
+			}
 		}
 		gwPorts = AppendPortValue(gwPorts, port, portName, gwp)
 	}

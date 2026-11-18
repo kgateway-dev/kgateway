@@ -134,10 +134,8 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 			Validator:     gp.inputs.BootstrapValidator,
 		})
 
-		// The managed paths of an invalid overlay are unknown, so its series stay as
-		// they were.
-		if patchErr, ok := errors.AsType[*BootstrapPatchError](err); ok &&
-			patchErr.Reason != conditions.KgatewayReasonBootstrapInvalidOverlay {
+		// When the managed paths are unknown, the series stay as they were.
+		if patchErr, ok := errors.AsType[*BootstrapPatchError](err); ok && patchErr.pathsKnown() {
 			recordBootstrapPatchManagedPaths(gwNN, patchErr.ManagedPaths)
 		}
 		if err != nil {
@@ -373,8 +371,14 @@ func (k *kgatewayParameters) mergeWithDefaults(gwc *gwv1.GatewayClass, gwp *kgat
 }
 
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {
+	// Choose the Service ports. With bootstrap patches, PostProcessObjects removes the
+	// ports the patched bootstrap listens on, since the patches can move the generated
+	// bootstrap's listeners.
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 	ports := deployer.GetPortsValues(irGW, gwParam)
+	if len(k.resolveParametersForOverlays(gw).bootstrapOverlays()) > 0 {
+		ports = deployer.GetPortsValuesForBootstrapPatches(irGW, gwParam)
+	}
 	if len(ports) == 0 {
 		return nil, ErrNoValidPorts
 	}

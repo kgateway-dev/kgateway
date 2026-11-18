@@ -310,10 +310,12 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			// status is reported from translator, so return normally
 			return err
 		}
+		if ctx.Err() != nil {
+			// The controller is stopping; the error says nothing about the Gateway.
+			return err
+		}
 		if patchErr, ok := errors.AsType[*internaldeployer.BootstrapPatchError](err); ok {
-			// Do not retry: a change to the GatewayParameters, GatewayClass or controller
-			// starts a new reconcile, and nothing else can make the patches apply.
-			logger.Info("not deploying Gateway: its bootstrap patches cannot be applied", "ref", req, "reason", patchErr.Reason, "error", patchErr)
+			logger.Info("not deploying Gateway: its bootstrap patches were not applied", "ref", req, "reason", patchErr.Reason, "retry", patchErr.Retry, "error", patchErr)
 			conds := []metav1.Condition{{
 				Type:               conditions.KgatewayConditionBootstrapPatchApplied,
 				Status:             metav1.ConditionFalse,
@@ -324,8 +326,9 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 
 			// An existing proxy keeps running its last applied bootstrap, so Accepted is
 			// left alone. A Gateway whose bootstrap ConfigMap does not exist yet has no
-			// proxy, so it is not accepted.
-			if r.configMapClient.Get(patchErr.ConfigMapName, gw.Namespace) == nil {
+			// proxy, so it is not accepted. Without the ConfigMap's name, which only a
+			// controller defect leaves out, Accepted is left alone.
+			if patchErr.ConfigMapName != "" && r.configMapClient.Get(patchErr.ConfigMapName, gw.Namespace) == nil {
 				conds = append(conds, metav1.Condition{
 					Type:               string(gwv1.GatewayConditionAccepted),
 					Status:             metav1.ConditionFalse,
@@ -336,6 +339,14 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			}
 			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil, patchErr.Events()); statusErr != nil {
 				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+
+			// Retry only when applying the patches again can succeed. Otherwise a change
+			// to the GatewayParameters or GatewayClass starts a new reconcile, and so
+			// does the controller restart that a change to its Deployment or settings
+			// causes.
+			if patchErr.Retry {
+				return patchErr
 			}
 			return nil
 		}

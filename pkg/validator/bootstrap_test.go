@@ -3,9 +3,13 @@ package validator
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/stretchr/testify/assert"
@@ -200,9 +204,124 @@ exit 1
 
 	t.Run("Envoy cannot be run", func(t *testing.T) {
 		_, err := NewBinary("/nonexistent/envoy").(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
-		require.Error(t, err)
+		require.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
 		assert.NotErrorIs(t, err, ErrInvalidBootstrap, "a failure to run Envoy is not a verdict on the bootstrap")
 	})
+}
+
+func TestBinaryValidator_ValidateBootstrapFailures(t *testing.T) {
+	validate := func(t *testing.T, ctx context.Context, script string) error {
+		t.Helper()
+		_, err := NewBinary(createMockBinary(t, script)).(BootstrapValidator).ValidateBootstrap(ctx, &envoybootstrapv3.Bootstrap{})
+		return err
+	}
+
+	t.Run("a crash rejects the bootstrap", func(t *testing.T) {
+		// Envoy crashes on a signal after logging why.
+		err := validate(t, t.Context(), "#!/bin/sh\necho 'caught Segmentation fault' >&2\nkill -SEGV $$\n")
+
+		// The crash is a verdict on the bootstrap, since the proxy would crash too.
+		require.ErrorIs(t, err, ErrInvalidBootstrap)
+		assert.Equal(t, `Envoy rejected the bootstrap: Envoy crashed with signal "segmentation fault": caught Segmentation fault`, err.Error())
+	})
+
+	t.Run("SIGKILL is not a verdict", func(t *testing.T) {
+		// Envoy is killed from outside, as by the out-of-memory killer.
+		err := validate(t, t.Context(), "#!/bin/sh\nkill -KILL $$\n")
+
+		// Validating again can succeed, so the error is neither a rejection nor permanent.
+		require.EqualError(t, err, "Envoy was killed while validating the bootstrap, possibly because the controller ran out of memory")
+		assert.NotErrorIs(t, err, ErrInvalidBootstrap)
+		assert.NotErrorIs(t, err, ErrBootstrapValidatorUnavailable)
+	})
+
+	t.Run("the caller's context ending is not a verdict", func(t *testing.T) {
+		// The caller stops waiting while Envoy runs; Envoy is killed with SIGKILL.
+		ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+		defer cancel()
+		err := validate(t, ctx, "#!/bin/sh\nsleep 5\n")
+
+		// The error is the context's.
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.NotErrorIs(t, err, ErrInvalidBootstrap)
+	})
+
+	t.Run("the validation timeout is not a verdict", func(t *testing.T) {
+		// Run an Envoy that outlasts the timeout.
+		path := createMockBinary(t, "#!/bin/sh\nsleep 5\n")
+		_, err := validateProxyBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{}, 200*time.Millisecond,
+			func(ctx context.Context, _ string, args []string, config []byte) (string, error) {
+				return runEnvoy(exec.CommandContext(ctx, path, args...), config)
+			})
+
+		// The timeout can pass on a less busy controller, so it is neither a rejection
+		// nor permanent, and not the caller's context.
+		require.EqualError(t, err, "Envoy did not finish validating the bootstrap within 200ms")
+		assert.NotErrorIs(t, err, ErrInvalidBootstrap)
+		assert.NotErrorIs(t, err, ErrBootstrapValidatorUnavailable)
+		assert.NotErrorIs(t, err, context.DeadlineExceeded)
+	})
+
+	t.Run("a temporary directory that cannot be created is permanent", func(t *testing.T) {
+		// Point the temporary directory at a path that does not exist, after writing
+		// the mock Envoy.
+		path := createMockBinary(t, "#!/bin/sh\nexit 0\n")
+		t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "missing"))
+		_, err := NewBinary(path).(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
+
+		// Validating again fails the same way until the controller's Deployment changes.
+		require.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
+	})
+}
+
+func TestDockerValidator_ValidateBootstrapDockerFailures(t *testing.T) {
+	tests := []struct {
+		name     string
+		exitCode int
+		// permanent is whether validating again fails the same way.
+		permanent bool
+		wantErr   string
+	}{
+		{
+			name:     "docker cannot run the container",
+			exitCode: 125,
+			wantErr:  "failed to run Envoy to validate the bootstrap: docker could not run the Envoy container: Cannot connect to the Docker daemon",
+		},
+		{
+			name:      "the image cannot run Envoy",
+			exitCode:  126,
+			permanent: true,
+		},
+		{
+			name:      "the image has no Envoy",
+			exitCode:  127,
+			permanent: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Put a docker CLI on PATH that fails with the exit code.
+			bin := t.TempDir()
+			script := fmt.Sprintf("#!/bin/sh\necho 'Cannot connect to the Docker daemon' >&2\nexit %d\n", tt.exitCode)
+			require.NoError(t, os.WriteFile(filepath.Join(bin, "docker"), []byte(script), 0o755)) //nolint:gosec // G306: the script must be executable
+			t.Setenv("PATH", bin)
+
+			// Validate with it.
+			_, err := NewDocker().(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
+
+			// Docker's failure is never a verdict on the bootstrap.
+			require.Error(t, err)
+			assert.NotErrorIs(t, err, ErrInvalidBootstrap)
+			if tt.permanent {
+				assert.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
+			} else {
+				assert.NotErrorIs(t, err, ErrBootstrapValidatorUnavailable)
+			}
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			}
+		})
+	}
 }
 
 // stubBootstrapValidator is an inner validator that counts proxy bootstrap
@@ -266,7 +385,8 @@ func TestCachingValidator_ValidateBootstrap(t *testing.T) {
 
 	t.Run("refuses when the inner validator cannot validate bootstraps", func(t *testing.T) {
 		_, err := NewCaching(&stubValidator{}, 0).(BootstrapValidator).ValidateBootstrap(t.Context(), bootstrapForNode("a"))
-		require.EqualError(t, err, "the configured validator cannot validate proxy bootstraps")
+		require.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
+		require.EqualError(t, err, "the controller cannot run Envoy to validate the bootstrap: the configured validator cannot validate proxy bootstraps")
 	})
 }
 

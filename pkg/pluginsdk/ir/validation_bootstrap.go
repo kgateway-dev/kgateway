@@ -16,8 +16,8 @@ type GatewayValidationBootstraps struct {
 	// Subsets are the distinct validation subsets of the Gateway's bootstraps:
 	// first the current one, then one for each other subset a running pod carries.
 	Subsets []ValidationBootstrap
-	// ReservedPorts are the ports the Gateway's current bootstrap listens on. Empty
-	// means the static reserved ports only.
+	// ReservedPorts are the ports the Gateway's current bootstrap listens on, which
+	// replace the static reserved ports. Empty means the static reserved ports.
 	ReservedPorts []uint32
 }
 
