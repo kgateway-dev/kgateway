@@ -1,0 +1,490 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-extauth
+  namespace: infra
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+---
+# A backendRef policy whose GatewayExtension is missing must fail closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: broken-policy
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /broken-policy
+    backendRefs:
+    - name: example-svc
+      port: 80
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+---
+# A backendRef ExtensionRef to a policy that does not exist must fail closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: missing-policy
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /missing-policy
+    backendRefs:
+    - name: example-svc
+      port: 80
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: does-not-exist
+---
+# A valid backendRef policy is applied to the route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: valid-policy
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /valid-policy
+    backendRefs:
+    - name: example-svc
+      port: 80
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-valid
+---
+# Only the weighted backends whose policies fail are routed to the blackhole cluster;
+# the other backend keeps its share of traffic and its policy.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-partial
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-partial
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 80
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-valid
+    - name: example-svc-2
+      port: 80
+      weight: 10
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: example-svc-2
+      port: 80
+      weight: 10
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: does-not-exist
+---
+# When every weighted backend's policy fails, the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-all-broken
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-all-broken
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: example-svc-2
+      port: 80
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: does-not-exist
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-missing-extension
+  namespace: infra
+spec:
+  extAuth:
+    extensionRef:
+      name: does-not-exist
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: extauth-valid
+  namespace: infra
+spec:
+  extAuth:
+    extensionRef:
+      name: basic-extauth
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: infra
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc-2
+  namespace: infra
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ext-authz
+  namespace: infra
+spec:
+  ports:
+  - protocol: TCP
+    port: 9000
+    targetPort: 9000
+---
+# The other backendRef does not resolve, so no backend is left once the failing one is cut off:
+# the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-broken-and-missing-service
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-broken-and-missing-service
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: missing-svc
+      port: 80
+      weight: 50
+---
+# The other backendRef has zero weight, so no backend is left once the failing one is cut off:
+# the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-broken-and-zero-weight
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-broken-and-zero-weight
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: example-svc-2
+      port: 80
+      weight: 0
+---
+# The GCP backend's policy fails, so its backend plugin does not run: the route gets no host
+# rewrite, and its blackholed share still gets a 500.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-broken-gcp
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-broken-gcp
+    backendRefs:
+    - name: gcp-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: example-svc
+      port: 80
+      weight: 50
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: gcp-backend
+  namespace: infra
+spec:
+  type: GCP
+  gcp:
+    host: example.googleapis.com
+---
+# A backendRef filter error on a delegated backendRef fails the parent's match closed, and the
+# delegated routes are not translated, so they do not serve without the filter.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: delegating-broken
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /delegated
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: delegated
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: does-not-exist
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: delegated-child
+  namespace: delegated
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /delegated/child
+    backendRefs:
+    - name: child-svc
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: child-svc
+  namespace: delegated
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+
+---
+# Built-in filters that cannot apply to a single weighted backend (URLRewrite, RequestRedirect,
+# RequestMirror) are not attachable to a backendRef, so that backend fails closed instead of
+# forwarding without the filter.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-backendref-url-rewrite
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-backendref-url-rewrite
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /rewritten
+    - name: example-svc-2
+      port: 80
+      weight: 50
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-backendref-request-redirect
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-backendref-request-redirect
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: RequestRedirect
+        requestRedirect:
+          hostname: redirect.example.com
+    - name: example-svc-2
+      port: 80
+      weight: 50
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-backendref-request-mirror
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-backendref-request-mirror
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: RequestMirror
+        requestMirror:
+          backendRef:
+            name: example-svc-2
+            port: 80
+    - name: example-svc-2
+      port: 80
+      weight: 50
+---
+# With a single backend, the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backendref-url-rewrite
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /backendref-url-rewrite
+    backendRefs:
+    - name: example-svc
+      port: 80
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /rewritten
