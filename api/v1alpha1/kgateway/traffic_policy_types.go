@@ -46,7 +46,7 @@ type TrafficPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))))",message="httpUpgrade can only be used when targeting Gateway, HTTPRoute, or ListenerSet resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || self.httpUpgrade.all(x, self.httpUpgrade.exists_one(y, y.type.lowerAscii() == x.type.lowerAscii()))",message="httpUpgrade types must be unique ignoring ASCII case"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
+// +kubebuilder:validation:XValidation:rule="!(has(self.retry) && has(self.retry.perTryTimeout) && has(self.timeouts) && has(self.timeouts.request) && duration(self.timeouts.request) != duration('0s') && duration(self.retry.perTryTimeout) > duration(self.timeouts.request))",message="retry.perTryTimeout cannot be longer than timeouts.request unless timeouts.request is 0s"
 // +kubebuilder:validation:XValidation:rule="!has(self.buffer) || has(self.buffer.disable) || !has(self.httpUpgrade) || self.httpUpgrade.size() == 0",message="buffer cannot be used together with httpUpgrade unless buffering is disabled"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
@@ -208,7 +208,7 @@ type TrafficPolicySpec struct {
 	FaultInjection *FaultInjectionPolicy `json:"faultInjection,omitempty"`
 
 	// ACL configures IP-based access control for HTTP requests.
-	// Rules are evaluated using longest-prefix matching on the effictive client IP
+	// Rules are evaluated using longest-prefix matching on the effective client IP
 	// from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
 	// XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
 	//
@@ -478,6 +478,29 @@ type RateLimit struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"
 type LocalRateLimitPolicy struct {
 	// TokenBucket configures the local rate limiter's token bucket.
+	//
+	// Each Envoy pod keeps its own token buckets. The number of buckets depends on
+	// the resource that the policy targets:
+	//   - HTTPRoute: one bucket for each path match of the route. The maxTokens
+	//     value applies to each path match separately, and not to the route as a
+	//     whole. Path matches in the same rule also get separate buckets, so adding
+	//     a path match to the route increases the total that the route admits. If
+	//     the route matches more than one hostname, each hostname also gets its own
+	//     bucket for each path match.
+	//   - Gateway: one bucket for each generated Envoy route configuration, which
+	//     covers one HTTP port or one HTTPS filter chain. All routes and hostnames
+	//     on that port or filter chain share the bucket. Listeners on different
+	//     ports, and separate HTTPS filter chains, get separate buckets, so the
+	//     policy does not enforce a single limit across the whole Gateway.
+	//   - HTTP listener (sectionName): one bucket for each hostname on the
+	//     listener. Routes that share a hostname share a bucket.
+	//   - HTTPS listener (sectionName): one bucket for the listener, which all of
+	//     its hostnames share.
+	//
+	// To enforce one limit across many routes on the same port, target the
+	// Gateway. If the Gateway has more than one port or HTTPS filter chain, each
+	// one enforces the limit separately. To share the bucket across the replicas
+	// of a Gateway, set shareAcrossGateway.
 	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
 
@@ -726,8 +749,16 @@ type APIKeyAuth struct {
 	// +optional
 	SecretRef *gwv1.SecretObjectReference `json:"secretRef,omitempty"`
 
-	// secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
-	// behavior is undefined.
+	// secretSelector selects multiple secrets containing API Keys.
+	//
+	// Each API key value must identify one client. Envoy rejects a configuration that contains the same
+	// key value twice, so kgateway handles duplicates before it sends the configuration:
+	//   - If the same entry name and key value appear in more than one selected secret, for example
+	//     because you copied a secret to another namespace, kgateway uses the credential once.
+	//   - If two different entry names share a key value, kgateway cannot tell which client the key
+	//     identifies. The policy reports Accepted=False with the reason Invalid, and the status
+	//     message names both entries and their secrets but not the key value. The routes that the
+	//     policy applies to return a 500 response.
 	//
 	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
 	// The value is a string, representing the API Key.
@@ -942,6 +973,8 @@ type FaultInjectionPolicy struct {
 	// If not specified, defaults to unlimited.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	MaxActiveFaults *uint32 `json:"maxActiveFaults,omitempty"`
 
 	// Disable the fault injection filter.

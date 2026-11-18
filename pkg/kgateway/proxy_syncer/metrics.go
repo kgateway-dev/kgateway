@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 )
 
 const (
@@ -141,9 +140,13 @@ func getDetailsFromXDSClientResourceName(resourceName string) resourceNameDetail
 // ResetMetrics resets the metrics from this package.
 // This is provided for testing purposes only.
 func ResetMetrics() {
-	statussync.ResetMetrics()
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
 	snapshotDeferredClients.Reset()
+	snapshotPerClientWithheldClients.Reset()
+	snapshotPerClientDefersTotal.Reset()
+	snapshotPerClientBoundedPublishesTotal.Reset()
+	snapshotPerClientInconsistentTotal.Reset()
+	snapshotPerClientReclaimedTotal.Reset()
 }

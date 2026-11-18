@@ -1,0 +1,14 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: echo-bcp-override
+  namespace: default
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: echo
+  sessionPersistence:
+    type: Cookie
+    cookie:
+      name: policy-cookie

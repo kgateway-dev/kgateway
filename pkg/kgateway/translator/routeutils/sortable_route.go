@@ -11,20 +11,29 @@ import (
 type SortableRoute struct {
 	Route       ir.HttpRouteRuleMatchIR
 	RouteObject metav1.Object
-	Idx         int
+	// RouteHostname is the route's own hostname that produced the virtual host
+	// this route is sorted in, or "" when the route has no hostnames. Routes
+	// whose hostnames intersect with the listener hostname to the same virtual
+	// host are ordered by the specificity of this hostname.
+	RouteHostname string
+	Idx           int
 }
 
 type SortableRoutes []*SortableRoute
 
 // CompareTo compares two SortableRoutes for ordering.
 // Returns -1 if a should sort before b, 1 if after, 0 if equal.
-// Higher precedence weight sorts first; for equal weight, route specificity is compared.
+// Higher precedence weight sorts first; for equal weight, the more specific
+// route hostname sorts first, and then route match specificity is compared.
 func (a *SortableRoute) CompareTo(b *SortableRoute) int {
 	if a.Route.PrecedenceWeight != b.Route.PrecedenceWeight {
 		if a.Route.PrecedenceWeight > b.Route.PrecedenceWeight {
 			return -1
 		}
 		return 1
+	}
+	if c := CompareHostnameSpecificity(a.RouteHostname, b.RouteHostname); c != 0 {
+		return c
 	}
 	// routeWrapperLessFunc returns true if a is lower priority than b
 	if routeWrapperLessFunc(a, b) {
@@ -44,13 +53,14 @@ func (a SortableRoutes) ToRoutes() []ir.HttpRouteRuleMatchIR {
 	return routes
 }
 
-func ToSortable(obj metav1.Object, routes []ir.HttpRouteRuleMatchIR) SortableRoutes {
+func ToSortable(obj metav1.Object, routeHostname string, routes []ir.HttpRouteRuleMatchIR) SortableRoutes {
 	var wrappers SortableRoutes
 	for i, route := range routes {
 		wrappers = append(wrappers, &SortableRoute{
-			Route:       route,
-			RouteObject: obj,
-			Idx:         i,
+			Route:         route,
+			RouteObject:   obj,
+			RouteHostname: routeHostname,
+			Idx:           i,
 		})
 	}
 	return wrappers

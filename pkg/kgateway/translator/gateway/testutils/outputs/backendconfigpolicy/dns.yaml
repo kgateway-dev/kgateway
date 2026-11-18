@@ -21,8 +21,6 @@ Clusters:
             hostname: example.com
           hostname: example.com
   name: backend_default_example-backend_0
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -45,7 +43,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080

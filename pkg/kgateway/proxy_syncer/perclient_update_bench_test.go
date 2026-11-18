@@ -159,9 +159,9 @@ func newUpdateBenchFixture(b *testing.B, v validator.Validator) *updateBenchFixt
 			rules = append(rules, benchRule{Backend: fmt.Sprintf("b%d", i), Generation: 1})
 		}
 	}
-	f.finalBackends = krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
-	f.rules = krt.NewStaticCollection(nil, rules, krtopts.ToOptions("Rules")...)
-	f.clusters = NewPerClientEnvoyClusters(ctx, krtopts, updateBenchTranslator(f.rules, v), f.finalBackends, uccs)
+	f.finalBackends = krt.NewMutableCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
+	f.rules = krt.NewMutableCollection(nil, rules, krtopts.ToOptions("Rules")...)
+	f.clusters = NewPerClientEnvoyClusters(ctx, krtopts, updateBenchTranslator(f.rules.AsCollection(), v), f.finalBackends.AsCollection(), uccs)
 
 	f.waitFor(b, f.clients, func(row *clustersWithErrors) bool {
 		return row != nil && len(row.clusters.Items) == updateBenchBackends

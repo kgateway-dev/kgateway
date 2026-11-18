@@ -73,11 +73,14 @@ func TestUnsupportedBackendTranslationIsRecordedAsErrored(t *testing.T) {
 	require.Eventuallyf(t, func() bool {
 		return pcc.HasSynced() && len(krt.Fetch(krt.TestingDummyContext{}, pcc.base)) == len(all)
 	}, 5*time.Second, 10*time.Millisecond, "expected a base row per backend")
+	// Wait for the row built from every base row. One built before the last
+	// bases arrived can also hold just the healthy cluster, but not every
+	// errored one.
 	var row *clustersWithErrors
 	require.Eventually(t, func() bool {
 		row = pcc.perClient.GetKey(ucc.ResourceName())
-		return row != nil && len(row.clusters.Items) == 1
-	}, 5*time.Second, 10*time.Millisecond, "the client's payload must contain exactly the healthy cluster")
+		return row != nil && len(row.clusters.Items) == 1 && len(row.erroredClusters) == 3
+	}, 5*time.Second, 10*time.Millisecond, "the client's payload must contain exactly the healthy cluster and track three errored ones")
 
 	require.Contains(t, row.clusters.Items, healthy.ClusterName())
 	require.NoError(t, pcc.base.GetKey(healthy.ClusterName()).Error)
@@ -90,8 +93,13 @@ func TestUnsupportedBackendTranslationIsRecordedAsErrored(t *testing.T) {
 		require.Equal(t, unsupported.GetObjectSource(), base.BackendSource, "status attribution needs the source Backend")
 		require.Equal(t, envoyclusterv3.Cluster_STATIC, base.Cluster.Clone().GetType(), "errored rows carry the blackhole cluster")
 
-		status := pcc.StatusClusters().GetKey("/" + unsupported.ClusterName())
-		require.NotNil(t, status, "status must see the unsupported backend's error")
+		// The status collection is derived from the base rows, and synced base
+		// rows do not mean it has caught up.
+		var status *uccWithCluster
+		require.Eventually(t, func() bool {
+			status = pcc.StatusClusters().GetKey("/" + unsupported.ClusterName())
+			return status != nil
+		}, 5*time.Second, 10*time.Millisecond, "status must see the unsupported backend's error")
 		require.Error(t, status.Error)
 		require.Equal(t, unsupported.GetObjectSource(), status.BackendSource)
 	}
@@ -111,7 +119,7 @@ func TestUnsupportedBackendTranslationIsRecordedAsErrored(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: noInit.ClusterName()}},
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: unregistered.ClusterName()}},
 	})
-	filtered := filterEndpointResourcesForErroredClusters(endpoints, row.erroredClusters)
+	filtered, _, _ := filterEndpointResourcesForClusters(row.clusters, endpoints, nil, "")
 	require.Len(t, filtered.Items, 1, "CLAs of unsupported backends must be filtered with the other errored clusters")
 	require.Contains(t, filtered.Items, healthy.ClusterName())
 	require.NotEqual(t, endpoints.Version, filtered.Version, "filtering must move the EDS version so the client is pushed the narrowed set")

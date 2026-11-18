@@ -29,8 +29,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_remote_remote-jwks_8080
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -125,7 +123,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -250,7 +248,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
-            jwt: jwt: remote jwks: unresolved backend ref: missing reference grant'
+            jwt: denied/denied-jwt-ext: jwt: remote jwks: unresolved backend ref:
+            missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -298,8 +297,8 @@ Statuses:
           namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'jwt: jwt: remote jwks: unresolved backend ref: missing reference
-            grant'
+          message: 'jwt: denied/denied-jwt-ext: jwt: remote jwks: unresolved backend
+            ref: missing reference grant'
           reason: Invalid
           status: "False"
           type: Accepted

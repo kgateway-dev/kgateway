@@ -40,7 +40,7 @@ func serviceEntryWithStatusAddrs(generation int64, statusAddrs ...string) *netwo
 func backendFor(se *networkingclient.ServiceEntry) interface {
 	Equals(any) bool
 } {
-	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil)
+	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "")
 	return be.ObjIr
 }
 

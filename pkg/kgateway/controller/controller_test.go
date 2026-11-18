@@ -390,7 +390,6 @@ func (s *ControllerSuite) TestMetrics() {
 
 		gathered := metricstest.MustGatherMetricsContext(ctx, t,
 			"kgateway_controller_reconciliations_total",
-			"kgateway_controller_reconciliations_running",
 			"kgateway_controller_reconcile_duration_seconds")
 
 		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
@@ -423,33 +422,6 @@ func (s *ControllerSuite) TestMetrics() {
 			},
 		})
 
-		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gateway"},
-					{Name: "name", Value: gw.Name},
-					{Name: "namespace", Value: defaultNamespace},
-				},
-				Test: metricstest.Between(0, 1),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gatewayclass"},
-					{Name: "name", Value: gw.Name},
-					{Name: "namespace", Value: defaultNamespace},
-				},
-				Test: metricstest.Between(0, 1),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gatewayclass-provisioner"},
-					{Name: "name", Value: gw.Name},
-					{Name: "namespace", Value: defaultNamespace},
-				},
-				Test: metricstest.Between(0, 1),
-			},
-		})
-
 		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
 			{Name: "name", Value: gw.Name},
@@ -476,7 +448,6 @@ func (s *ControllerSuite) TestMetrics() {
 
 		gathered := metricstest.MustGatherMetrics(t)
 		gathered.AssertMetricNotExists("kgateway_controller_reconciliations_total")
-		gathered.AssertMetricNotExists("kgateway_controller_reconciliations_running")
 		gathered.AssertMetricNotExists("kgateway_controller_reconcile_duration_seconds")
 	})
 }
@@ -557,7 +528,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}
 	})
 
-	s.Run("default GatewayClass should not be overwritten when it is updated", func() {
+	s.Run("default GatewayClass managed fields should be restored and user fields kept when it is updated", func() {
 		t := s.T()
 		r := require.New(t)
 		gwc := &gwv1.GatewayClass{}
@@ -568,19 +539,25 @@ func (s *ControllerSuite) TestGatewayClass() {
 			assert.NoError(c, err)
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be created", gatewayClassName)
 
-		// Update it
+		// Update a field the controller manages (description) and one it does not (a user annotation)
 		original := gwc.DeepCopy()
-		updatedDesc := "updated description"
-		gwc.Spec.Description = new(updatedDesc)
+		userAnnotation := "example.com/user-annotation"
+		if gwc.Annotations == nil {
+			gwc.Annotations = map[string]string{}
+		}
+		gwc.Annotations[userAnnotation] = "kept"
+		gwc.Spec.Description = new("updated description")
 		err := s.client.Patch(ctx, gwc, client.MergeFrom(original))
 		r.NoError(err)
 
-		// Verify it is not overwritten
+		// The generation bump makes the controller re-apply its desired spec via SSA, which restores
+		// the description. Waiting for that proves the re-apply ran, so the user annotation must have survived it.
 		r.EventuallyWithTf(func(c *assert.CollectT) {
 			err := s.client.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gwc)
 			assert.NoError(c, err)
 			assert.NotNil(c, gwc.Spec.Description)
-			assert.Equal(c, updatedDesc, *gwc.Spec.Description)
+			assert.Equal(c, "default GatewayClass", *gwc.Spec.Description)
+			assert.Equal(c, "kept", gwc.Annotations[userAnnotation])
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s", gatewayClassName)
 	})
 

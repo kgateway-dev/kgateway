@@ -80,7 +80,7 @@ func convertFiltersToHTTP(filters []gwv1.GRPCRouteFilter) []gwv1.HTTPRouteFilter
 
 func convertRulesToHTTP(r gwv1.GRPCRouteRule) gwv1.HTTPRouteRule {
 	return gwv1.HTTPRouteRule{
-		SessionPersistence: r.SessionPersistence,
+		SessionPersistence: r.SessionPersistence, //nolint:staticcheck // SA1019: route-level session persistence is still supported
 	}
 }
 

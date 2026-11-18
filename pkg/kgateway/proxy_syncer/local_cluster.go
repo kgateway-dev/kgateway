@@ -39,8 +39,9 @@ func gatewayPodIndexKey(namespace, gatewayName string) string {
 
 // NewPerClientLocalClusterEndpoints builds each gateway's local-cluster CLA
 // from its pods for Envoy's zone-aware routing. Rows are per client, not per backend.
-// Clients that have not subscribed are skipped: publishing an unrequested CLA
-// would cause go-control-plane to withhold their ADS endpoint responses.
+// Clients that have not subscribed are skipped. newSnapshotCache serves EDS per
+// request, so an unrequested CLA would no longer withhold their other endpoints
+// (#14471), but there is no reason to build and publish one they never request.
 func NewPerClientLocalClusterEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -57,9 +58,9 @@ func NewPerClientLocalClusterEndpoints(
 	endpoints := krt.NewCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *UccWithEndpoints {
 		if !ucc.KnowsLocalCluster {
 			// Client's own EDS subscription has never named this resource (old Envoy with
-			// no matching static bootstrap cluster). Never emit it for this client: an
-			// unrequested resource in the snapshot makes go-control-plane's ADS "superset"
-			// check withhold the client's *entire* EDS response. See issue #14471.
+			// no matching static bootstrap cluster), so it would never be sent. Before
+			// newSnapshotCache served EDS per request, publishing it withheld the client's
+			// entire EDS response (#14471).
 			return nil
 		}
 		localClusterName, gatewayName, gatewayNamespace := ucc.LocalClusterInfo()

@@ -19,8 +19,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_ls-2-ns_foo-svc_8080
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -46,7 +44,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: ls-2-ns/ls-2/tls-ls2
-        statPrefix: http
+        statPrefix: https_443_ls-2-ns_ls-2_tls-ls2
         useRemoteAddress: true
     name: ls-2-ns/ls-2/tls-ls2
     transportSocket:
@@ -81,7 +79,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tls-gw
-        statPrefix: http
+        statPrefix: https_443_tls-gw
         useRemoteAddress: true
     name: tls-gw
     transportSocket:
@@ -124,7 +122,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -149,7 +147,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080
@@ -174,7 +172,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~9090
-        statPrefix: http
+        statPrefix: http_9090
         useRemoteAddress: true
     name: listener~9090
   name: listener~9090

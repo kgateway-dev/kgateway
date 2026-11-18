@@ -33,11 +33,12 @@ import (
 var _ apiclient.Client = (*cli)(nil)
 
 func init() {
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	scheme := kube.FakeIstioScheme.MustGet()
+	_ = apiextensionsv1.AddToScheme(scheme)
 
 	// Register the legacy XListenerSet list kind so the fake dynamic client can
 	// back the delayed legacy informer used by older Gateway API versions.
-	kube.FakeIstioScheme.AddKnownTypeWithName(
+	scheme.AddKnownTypeWithName(
 		wellknown.XListenerSetGVK.GroupVersion().WithKind("XListenerSetList"),
 		&unstructured.UnstructuredList{},
 	)

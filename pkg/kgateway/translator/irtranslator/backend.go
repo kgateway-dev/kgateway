@@ -13,6 +13,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
@@ -65,51 +66,41 @@ type BackendTranslator struct {
 	overlayOnce    sync.Once
 	overlayPlugins []overlayPlugin
 
-	// baseClusterHooks is the (Group, Kind)-ordered set of ProcessBaseCluster
-	// hooks, computed once on first use for the same reason as overlayPlugins.
-	baseClusterOnce  sync.Once
-	baseClusterHooks []sdk.ProcessBaseCluster
+	// Base hooks are cached in (Group, Kind) order.
+	baseHooksOnce     sync.Once
+	baseClusterHooks  []sdk.ProcessBaseCluster
+	baseResourceHooks []sdk.ProcessBaseClusterResources
 }
 
-// overlayPlugin is one policy plugin's per-client cluster hook: either the
-// self-gating overlay or, for plugins not yet migrated, the legacy eager
-// mutator, which is treated as applicable to every client. inputsHash is the
-// plugin's declaration of what that hook reads from the backend, and is never
-// nil: a hook that did not declare gets wholeObjectInputsHash.
+// overlayPlugin is one policy plugin's self-gating per-client cluster overlay.
+// inputsHash is the plugin's declaration of what the overlay reads from the
+// backend, and is never nil: an overlay that did not declare gets
+// wholeObjectInputsHash.
 type overlayPlugin struct {
 	gk               schema.GroupKind
 	overlay          sdk.PerClientClusterOverlay
-	legacy           sdk.PerClientProcessBackend
 	inputsHash       sdk.OverlayInputsHash
 	undeclaredInputs bool
 }
 
 // orderedOverlayPlugins returns the plugins with a per-client cluster hook in
-// (Group, Kind) order. A plugin registering both hooks is treated as migrated:
-// only PerClientClusterOverlay is kept, so its nil (decline) is honored rather
-// than overridden by the always-applicable legacy adapter.
+// (Group, Kind) order.
 func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 	t.overlayOnce.Do(func() {
 		for gk, policyPlugin := range t.ContributedPolicies {
-			switch {
-			case policyPlugin.PerClientClusterOverlay != nil:
-				inputsHash := policyPlugin.OverlayInputsHash
-				if inputsHash == nil {
-					// A plugin bug: the framework cannot know what the overlay
-					// reads, so it must assume everything. Never stale, only
-					// expensive; see sdk.OverlayInputsHash.
-					logger.Error("per-client cluster overlay registered without OverlayInputsHash; every write to a backend will rerun every client for it",
-						"group", gk.Group, "kind", gk.Kind, "plugin", policyPlugin.Name)
-					inputsHash = wholeObjectInputsHash
-				}
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil})
-			case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-				inputsHash := policyPlugin.OverlayInputsHash
-				if inputsHash == nil {
-					inputsHash = wholeObjectInputsHash
-				}
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil}) //nolint:staticcheck // compatibility boundary
+			if policyPlugin.PerClientClusterOverlay == nil {
+				continue
 			}
+			inputsHash := policyPlugin.OverlayInputsHash
+			if inputsHash == nil {
+				// A plugin bug: the framework cannot know what the overlay
+				// reads, so it must assume everything. Never stale, only
+				// expensive; see sdk.OverlayInputsHash.
+				logger.Error("per-client cluster overlay registered without OverlayInputsHash; every write to a backend will rerun every client for it",
+					"group", gk.Group, "kind", gk.Kind, "plugin", policyPlugin.Name)
+				inputsHash = wholeObjectInputsHash
+			}
+			t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil})
 		}
 		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
 			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
@@ -121,16 +112,12 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 	return t.overlayPlugins
 }
 
-// orderedBaseClusterHooks returns the contributed ProcessBaseCluster hooks in
-// (Group, Kind) order. applyBasePolicies iterates the policy map, which leaves
-// its hooks unordered; these run after all of them, in a stable order.
-func (t *BackendTranslator) orderedBaseClusterHooks() []sdk.ProcessBaseCluster {
-	t.baseClusterOnce.Do(func() {
+// orderBaseHooks caches cluster and resource hooks in (Group, Kind) order.
+func (t *BackendTranslator) orderBaseHooks() {
+	t.baseHooksOnce.Do(func() {
 		gks := make([]schema.GroupKind, 0, len(t.ContributedPolicies))
-		for gk, policyPlugin := range t.ContributedPolicies {
-			if policyPlugin.ProcessBaseCluster != nil {
-				gks = append(gks, gk)
-			}
+		for gk := range t.ContributedPolicies {
+			gks = append(gks, gk)
 		}
 		slices.SortFunc(gks, func(a, b schema.GroupKind) int {
 			if c := cmp.Compare(a.Group, b.Group); c != 0 {
@@ -139,10 +126,45 @@ func (t *BackendTranslator) orderedBaseClusterHooks() []sdk.ProcessBaseCluster {
 			return cmp.Compare(a.Kind, b.Kind)
 		})
 		for _, gk := range gks {
-			t.baseClusterHooks = append(t.baseClusterHooks, t.ContributedPolicies[gk].ProcessBaseCluster)
+			policyPlugin := t.ContributedPolicies[gk]
+			if policyPlugin.ProcessBaseCluster != nil {
+				t.baseClusterHooks = append(t.baseClusterHooks, policyPlugin.ProcessBaseCluster)
+			}
+			if policyPlugin.ProcessBaseClusterResources != nil {
+				t.baseResourceHooks = append(t.baseResourceHooks, policyPlugin.ProcessBaseClusterResources)
+			}
 		}
 	})
-	return t.baseClusterHooks
+}
+
+// applyBaseClusterResources collects generated listeners and secrets in hook
+// order and fails the base on the first hook error.
+func (t *BackendTranslator) applyBaseClusterResources(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	backend *ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+) ([]*envoylistenerv3.Listener, []*envoytlsv3.Secret, error) {
+	var (
+		listeners []*envoylistenerv3.Listener
+		secrets   []*envoytlsv3.Secret
+	)
+	t.orderBaseHooks()
+	for _, hook := range t.baseResourceHooks {
+		resources, err := hook(kctx, ctx, *backend, out)
+		if err == nil {
+			err = t.validateListeners(ctx, resources.Listeners)
+		}
+		if err != nil {
+			if resources.Policy != nil {
+				err = &ir.PolicyError{Ref: resources.Policy, Err: err}
+			}
+			return nil, nil, err
+		}
+		listeners = append(listeners, resources.Listeners...)
+		secrets = append(secrets, resources.Secrets...)
+	}
+	return listeners, secrets, nil
 }
 
 // HasUndeclaredOverlayInputs reports whether a cached base must also compare
@@ -236,7 +258,11 @@ type BaseCluster struct {
 	// ApplyPerClient clears it in that case. A LoadAssignment set by a backend
 	// plugin or an overlay is theirs and is left alone.
 	GeneratedInlineCLA bool
-	Error              error
+	// Listeners and Secrets accompany Cluster to every client and are shared
+	// read-only.
+	Listeners []*envoylistenerv3.Listener
+	Secrets   []*envoytlsv3.Secret
+	Error     error
 }
 
 // NeedsInlineCLA reports whether this base cluster is incomplete without a
@@ -275,6 +301,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 	gk := backend.GetGroupKind()
 	process, ok := t.ContributedBackends[gk]
 	if !ok {
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error("backend has no contributed translator", "backend", backend.GetName(), "groupKind", gk.String())
 		return &BaseCluster{
 			Cluster: buildBlackholeCluster(backend),
@@ -282,6 +309,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 		}
 	}
 	if process.InitEnvoyBackend == nil {
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error("backend plugin has no cluster initializer", "backend", backend.GetName(), "groupKind", gk.String())
 		return &BaseCluster{
 			Cluster: buildBlackholeCluster(backend),
@@ -310,8 +338,14 @@ func (t *BackendTranslator) TranslateBackendBase(
 	}
 	// Client-independent hooks that apply to every backend run after the
 	// attached policies, so they can build on what those policies set.
-	for _, hook := range t.orderedBaseClusterHooks() {
+	t.orderBaseHooks()
+	for _, hook := range t.baseClusterHooks {
 		hook(kctx, ctx, *backend, out)
+	}
+	listeners, secrets, err := t.applyBaseClusterResources(kctx, ctx, backend, out)
+	if err != nil {
+		logger.Error("failed to generate base cluster resources", "cluster", out.GetName(), "error", err)
+		return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
 	}
 	defaultedLocality := defaultLocalityConfig(out)
 	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
@@ -330,6 +364,8 @@ func (t *BackendTranslator) TranslateBackendBase(
 		EndpointInputs:          endpointInputs,
 		SupportsInlineCLA:       clusterSupportsInlineCLA(out),
 		DefaultedLocalityConfig: defaultedLocality,
+		Listeners:               listeners,
+		Secrets:                 secrets,
 	}
 
 	// An inline CLA that no client can influence is built once, here, so the
@@ -390,18 +426,8 @@ func (t *BackendTranslator) ApplyPerClient(
 	// across recomputes without a sort per pair.
 	var overlays []*sdk.ClusterOverlay
 	for _, plugin := range t.orderedOverlayPlugins() {
-		switch {
-		case plugin.overlay != nil:
-			if ov := plugin.overlay(kctx, ctx, ucc, *backend); ov != nil {
-				overlays = append(overlays, ov)
-			}
-		case plugin.legacy != nil:
-			legacy := plugin.legacy
-			overlays = append(overlays, &sdk.ClusterOverlay{
-				Mutate: func(out *envoyclusterv3.Cluster) {
-					legacy(kctx, ctx, ucc, *backend, out)
-				},
-			})
+		if ov := plugin.overlay(kctx, ctx, ucc, *backend); ov != nil {
+			overlays = append(overlays, ov)
 		}
 	}
 
@@ -459,9 +485,8 @@ func (t *BackendTranslator) ApplyPerClient(
 		}
 		// Gather endpoint plugins lazily — only inline-CLA clusters consume them,
 		// so the common EDS path (which returns early above) never pays for this.
-		// Resolve through the copy-on-write editor. Modern plugins clone only
-		// endpoint protos they modify; legacy raw mutators receive a one-time
-		// defensive deep copy of the entire nested input graph.
+		// Resolve through the copy-on-write editor, which clones only the
+		// endpoint protos plugins modify.
 		epIn, _ := ResolveEndpointInputs(kctx, ctx, ucc, *base.EndpointInputs, t.orderedEndpointPlugins())
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
 	}
@@ -595,6 +620,7 @@ func (t *BackendTranslator) applyBasePolicies(
 		}
 		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
+				//nolint:sloglint // keep the existing log key; renaming it would break log queries
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)
 				continue
@@ -670,6 +696,37 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 		return run(ctx)
 	}
 	return t.ValidationMemo.Validate(ctx, key, run)
+}
+
+// validateListeners validates generated listeners in strict mode, memoized like
+// clusters. Secrets are not validated: listeners reference them over SDS, which
+// Envoy's validate mode does not resolve.
+func (t *BackendTranslator) validateListeners(ctx context.Context, listeners []*envoylistenerv3.Listener) error {
+	if t.Mode != apisettings.ValidationStrict || t.Validator == nil {
+		return nil
+	}
+	ctx = validator.WithValidationCaller(ctx, validator.CallerBackend)
+	for _, l := range listeners {
+		run := func(ctx context.Context) error {
+			builder := bootstrap.New()
+			builder.AddListener(l)
+			bootstrap, err := builder.Build()
+			if err != nil {
+				return err
+			}
+			return t.Validator.Validate(ctx, bootstrap)
+		}
+		key, err := validator.ContentKeyOf(l)
+		if t.ValidationMemo == nil || err != nil {
+			err = run(ctx)
+		} else {
+			err = t.ValidationMemo.Validate(ctx, key, run)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var inlineCLAClusterTypes = sets.New(

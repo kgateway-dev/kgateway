@@ -94,6 +94,9 @@ func BuildGWStatus(gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[
 				}
 			}
 		}
+		if oldLisStatusIndex != -1 {
+			finalConditions = appendForeignListenerConditions(finalConditions, gw.Status.Listeners[oldLisStatusIndex].Conditions)
+		}
 		listenerStatus.Conditions = finalConditions
 
 		finalListeners = append(finalListeners, listenerStatus)
@@ -275,6 +278,31 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
 }
 
+func isReporterOwnedListenerConditionType(conditionType gwv1.ListenerConditionType) bool {
+	switch conditionType {
+	case gwv1.ListenerConditionAccepted,
+		gwv1.ListenerConditionProgrammed,
+		gwv1.ListenerConditionResolvedRefs,
+		gwv1.ListenerConditionConflicted:
+		return true
+	default:
+		return false
+	}
+}
+
+// appendForeignListenerConditions appends the conditions from the existing listener status
+// whose type is not owned by our reporter, so conditions set by other controllers are preserved.
+func appendForeignListenerConditions(finalConditions, oldConditions []metav1.Condition) []metav1.Condition {
+	for _, condition := range oldConditions {
+		if meta.FindStatusCondition(finalConditions, condition.Type) != nil ||
+			isReporterOwnedListenerConditionType(gwv1.ListenerConditionType(condition.Type)) {
+			continue
+		}
+		finalConditions = append(finalConditions, condition)
+	}
+	return finalConditions
+}
+
 func (r *ReportMap) BuildListenerSetStatus(ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	return BuildListenerSetStatus(r.ListenerSet(&ls), ls)
 }
@@ -326,6 +354,9 @@ func BuildListenerSetStatus(lsReport *ListenerSetReport, ls gwv1.ListenerSet) *g
 						invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", lis.Name, lisCondition.Message))
 					}
 				}
+			}
+			if oldLisStatusIndex != -1 {
+				finalConditions = appendForeignListenerConditions(finalConditions, ls.Status.Listeners[oldLisStatusIndex].Conditions)
 			}
 			listenerStatus.Conditions = finalConditions
 			finalListeners = append(finalListeners, listenerStatus)
@@ -581,9 +612,9 @@ func BuildRouteStatus(
 	// from its own authoritative read of the live object. existingStatus is still read
 	// above, for LastTransitionTime continuity.
 	//
-	// The sort is not redundant with the merge's: it makes this function's output
-	// deterministic for callers that consume the desired status directly, such as the
-	// golden-output translator tests.
+	// The sort only makes this function's output deterministic for callers that consume the
+	// desired status directly, such as the golden-output translator tests. It does not decide
+	// the published order: the merge keeps the live order and appends new entries.
 	//
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:

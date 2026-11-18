@@ -68,6 +68,18 @@ func TestHarnessUccWithClusterEquals(t *testing.T) {
 			Mutate: func(u *uccWithCluster) { u.ClusterVersion++ },
 		},
 		{
+			Field: "Listeners",
+			Mutate: func(u *uccWithCluster) {
+				u.Listeners = wrapBaseResources([]*envoylistenerv3.Listener{{Name: "tunnel-listener"}})
+			},
+		},
+		{
+			Field: "Secrets",
+			Mutate: func(u *uccWithCluster) {
+				u.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "tunnel-secret"}})
+			},
+		},
+		{
 			Field:  "PerClientError",
 			Mutate: func(u *uccWithCluster) { u.PerClientError = true },
 		},
@@ -225,6 +237,12 @@ func TestHarnessGatewayXdsResourcesEquals(t *testing.T) {
 			},
 		},
 		{
+			Field: "EmittedClusters",
+			Mutate: func(r *GatewayXdsResources) {
+				r.EmittedClusters.Names = map[string]struct{}{"cluster-a": {}}
+			},
+		},
+		{
 			Field: "Secrets",
 			Mutate: func(r *GatewayXdsResources) {
 				r.Secrets = sliceToResources([]*envoytlsv3.Secret{{Name: "other-secret"}})
@@ -239,7 +257,8 @@ func TestHarnessGatewayXdsResourcesEquals(t *testing.T) {
 		cases,
 		// Clusters is +noKrtEquals (covered by ClustersHash); Namespace/Name are the
 		// flattened fields of the embedded NamespacedName, covered by that case.
-		[]string{"Clusters", "Namespace", "Name"},
+		// ReferencedClusters is derived from Routes and Listeners and covered by their versions.
+		[]string{"Clusters", "Namespace", "Name", "ReferencedClusters"},
 	)
 }
 

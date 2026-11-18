@@ -3,6 +3,7 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"time"
@@ -11,12 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -46,7 +48,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) checkPodsRunning() {
-	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, metav1.ListOptions{
 		LabelSelector: e2edefaults.WellKnownAppLabel + "=kgateway",
 	})
 }
@@ -56,39 +58,28 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 	s.checkPodsRunning()
 
 	// Verify the test services are created and working.
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		e2edefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("example1.com"),
-			curl.WithPort(8080),
-		},
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
+	gw.Send(
+		s.T(),
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(e2edefaults.NginxResponse),
-		})
+		},
+		curl.WithHostHeader("example1.com"),
+		curl.WithPort(8080),
+	)
 
 	// Verify the control plane metrics are generating as expected.
 	s.TestInstallation.AssertionsT(s.T()).Assert.EventuallyWithT(func(c *assert.CollectT) {
-		resp := s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlReturnResponse(
-			s.Ctx,
-			e2edefaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(kubeutils.ServiceFQDN(kgatewayMetricsObjectMeta)),
-				curl.WithPort(9092),
-				curl.WithPath("/metrics"),
-			},
-			&testmatchers.HttpResponse{StatusCode: http.StatusOK},
-		)
+		body, err := common.ScrapeControllerMetrics(s.Ctx, s.TestInstallation)
+		if !assert.NoError(c, err, "can scrape controller metrics") {
+			return
+		}
 
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				c.Errorf("unable to close response body: %v", err)
-			}
-		}()
-
-		gathered := metricstest.MustParseGatheredMetrics(c, resp.Body)
+		gathered := metricstest.MustParseGatheredMetrics(c, bytes.NewReader(body))
 
 		// Assert xDS auth metrics
 		var expectedGateways float64 = 2
@@ -113,17 +104,6 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			{Name: "namespace", Value: "default"},
 			{Name: "result", Value: "success"},
 		}})
-
-		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gateway"},
-					{Name: "name", Value: "gw1"},
-					{Name: "namespace", Value: "default"},
-				},
-				Test: metricstest.Equal(0),
-			},
-		})
 
 		gathered.AssertMetricsInclude("kgateway_resources_managed", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
@@ -189,75 +169,29 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			})
 		}
 
-		gathered.AssertMetricsInclude("kgateway_resources_status_syncs_started_total", []metricstest.ExpectMetric{
+		gathered.AssertMetricsInclude("kgateway_status_writes_total", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
-					{Name: "gateway", Value: "gw2"},
-					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "Gateway"},
+					{Name: "kind", Value: "Gateway"},
+					{Name: "result", Value: "written"},
 				},
-				Test: metricstest.Between(1, 6),
+				Test: metricstest.GreaterOrEqual(1),
 			},
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
-					{Name: "gateway", Value: "gw2"},
-					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "HTTPRoute"},
+					{Name: "kind", Value: "HTTPRoute"},
+					{Name: "result", Value: "written"},
 				},
-				Test: metricstest.Between(1, 3),
+				Test: metricstest.GreaterOrEqual(1),
 			},
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
-					{Name: "gateway", Value: ""},
-					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "ListenerPolicy"},
+					{Name: "kind", Value: "ListenerPolicy"},
+					{Name: "result", Value: "written"},
 				},
-				Test: metricstest.Between(1, 2),
+				Test: metricstest.GreaterOrEqual(1),
 			},
 		})
-
-		gathered.AssertMetricsInclude("kgateway_resources_status_syncs_completed_total", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "gateway", Value: "gw2"},
-					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "Gateway"},
-				},
-				Test: metricstest.Between(1, 6),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "gateway", Value: "gw2"},
-					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "HTTPRoute"},
-				},
-				Test: metricstest.Between(1, 3),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "gateway", Value: ""},
-					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "ListenerPolicy"},
-				},
-				Test: metricstest.Between(1, 2),
-			},
-		})
-
-		gathered.AssertMetricsLabelsInclude("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
-			{Name: "gateway", Value: "gw2"},
-			{Name: "namespace", Value: "default"},
-			{Name: "resource", Value: "Gateway"},
-		}, {
-			{Name: "gateway", Value: "gw2"},
-			{Name: "namespace", Value: "default"},
-			{Name: "resource", Value: "HTTPRoute"},
-		}, {
-			{Name: "gateway", Value: ""},
-			{Name: "namespace", Value: "default"},
-			{Name: "resource", Value: "ListenerPolicy"},
-		}})
-
-		gathered.AssertHistogramPopulated("kgateway_resources_status_sync_duration_seconds")
 
 		gathered.AssertMetricsInclude("kgateway_xds_snapshot_syncs_total", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
@@ -339,41 +273,17 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			},
 		})
 
-		gathered.AssertMetricsLabelsInclude("kgateway_status_syncer_status_syncs_total", [][]metrics.Label{{
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "result", Value: "success"},
-			{Name: "syncer", Value: "GatewayStatusSyncer"},
-		}})
-
-		gathered.AssertMetricsLabelsInclude("kgateway_status_syncer_status_sync_duration_seconds", [][]metrics.Label{{
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "syncer", Value: "GatewayStatusSyncer"},
-		}})
-
-		gathered.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")
-
 		gathered.AssertMetricsLabelsInclude("kgateway_translator_translations_total", [][]metrics.Label{{
 			{Name: "name", Value: "gw1"},
 			{Name: "namespace", Value: "default"},
 			{Name: "result", Value: "success"},
 			{Name: "translator", Value: "TranslateGateway"},
-		}, {
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "result", Value: "success"},
-			{Name: "translator", Value: "TranslateHTTPRoute"},
 		}})
 
 		gathered.AssertMetricsLabelsInclude("kgateway_translator_translation_duration_seconds", [][]metrics.Label{{
 			{Name: "name", Value: "gw1"},
 			{Name: "namespace", Value: "default"},
 			{Name: "translator", Value: "TranslateGateway"},
-		}, {
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "translator", Value: "TranslateHTTPRoute"},
 		}})
 
 		gathered.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")

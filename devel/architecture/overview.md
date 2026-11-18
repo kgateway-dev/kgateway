@@ -133,8 +133,7 @@ The translation to xDS has 2 phases:
 Having these 2 phases has these advantages:
 - The second phase is simple and fast, as all the dependencies are resolved in
   the previous phases.
-- We can create alternative translators for the Gateway IR, for example, to
-  translate a waypoint.
+- We can create alternative translators for the Gateway IR.
 
 
 At the beginning of the translation of the Gateway IR to xDS, we take all the

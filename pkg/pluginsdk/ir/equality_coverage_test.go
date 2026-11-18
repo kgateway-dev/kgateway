@@ -477,7 +477,8 @@ func TestHarnessSecretEquals(t *testing.T) {
 		baseHarnessSecret,
 		func(a, b Secret) bool { return a.Equals(b) },
 		cases,
-		embeddedObjectSourceFields,
+		// TLSValidation caches a result derived from Data, which has its own case.
+		append(embeddedObjectSourceFields, "TLSValidation"),
 	)
 }
 

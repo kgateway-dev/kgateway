@@ -8,6 +8,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -95,7 +98,7 @@ func TestBackendPolicyStatus(t *testing.T) {
 	backends := []*ir.BackendObjectIR{&backend1, &backend2}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport(backends)
+	rm := GenerateBackendPolicyReport(backends, nil)
 
 	// assert 3 unique policies: conn-policy-1, conn-policy-2, tls-policy
 	a.Len(rm.Policies, 3)
@@ -241,7 +244,7 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 	backends := []*ir.BackendObjectIR{&backend}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport(backends)
+	rm := GenerateBackendPolicyReport(backends, nil)
 
 	a.Len(rm.Policies, 1)
 
@@ -328,7 +331,7 @@ func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
 	}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend})
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
 	a.Len(rm.Policies, 2)
 
 	targetKey := reports.ParentRefKey{
@@ -416,7 +419,7 @@ func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t 
 	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{btpGK: {newerValid, olderInvalid}}}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend})
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
 	targetKey := reports.ParentRefKey{Group: "", Kind: "Service", NamespacedName: types.NamespacedName{Namespace: "default", Name: "svc"}}
 
 	older := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "older-invalid"}].Ancestors[targetKey]
@@ -439,6 +442,59 @@ func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t 
 	a.NotNil(accepted, "newer policy should carry an Accepted condition")
 	a.Equal(metav1.ConditionFalse, accepted.Status, "a valid policy that loses to an older invalid one is not applied and must not report Accepted=True")
 	a.Equal(string(gwv1.PolicyReasonConflicted), accepted.Reason)
+}
+
+// TestBackendPolicyStatusReportsAttributedTranslationErrors checks that only
+// the policy responsible for a backend translation failure is rejected.
+func TestBackendPolicyStatusReportsAttributedTranslationErrors(t *testing.T) {
+	const tunnelErr = "tunnel: only Static Backends can be tunneled"
+	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+	policyRef := func(name string) *ir.AttachedPolicyRef {
+		return &ir.AttachedPolicyRef{Group: bcpGK.Group, Kind: bcpGK.Kind, Namespace: "default", Name: name}
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     wellknown.BackendGVK.Group,
+		Kind:      wellknown.BackendGVK.Kind,
+		Namespace: "default",
+		Name:      "external",
+	}, 0, "", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+		bcpGK: {
+			{GroupKind: bcpGK, PolicyRef: policyRef("tunnel")},
+			{GroupKind: bcpGK, PolicyRef: policyRef("timeouts")},
+		},
+	}}
+	backends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend})
+	statusClusters := krt.NewStaticCollection(nil, []uccWithCluster{{
+		Name:  backend.ClusterName(),
+		Error: &ir.PolicyError{Ref: policyRef("tunnel"), Err: errors.New(tunnelErr)},
+	}})
+
+	contributions := backendPolicyStatusContributions(backends, statusClusters, krtutil.KrtOptions{})
+
+	ancestor := reports.ParentRefKey{
+		Group:          wellknown.BackendGVK.Group,
+		Kind:           wellknown.BackendGVK.Kind,
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "external"},
+	}
+	accepted := func(policy string) *metav1.Condition {
+		for _, c := range contributions.List() {
+			if c.Target.Name != policy || c.Policy == nil || c.Policy.Ancestors[ancestor] == nil {
+				continue
+			}
+			return findCondition(c.Policy.Ancestors[ancestor].Conditions, string(shared.PolicyConditionAccepted))
+		}
+		return nil
+	}
+	require.Eventually(t, func() bool {
+		return accepted("tunnel") != nil && accepted("timeouts") != nil
+	}, 5*time.Second, 10*time.Millisecond, "both policies should be reported for the backend")
+
+	tunnel := accepted("tunnel")
+	assert.Equal(t, metav1.ConditionFalse, tunnel.Status, "the policy the error is attributed to must not be accepted")
+	assert.Equal(t, string(shared.PolicyReasonInvalid), tunnel.Reason)
+	assert.Equal(t, tunnelErr, tunnel.Message, "the message is the error, without repeating the policy")
+	assert.Equal(t, metav1.ConditionTrue, accepted("timeouts").Status, "a policy the error is not attributed to stays accepted")
 }
 
 func findCondition(conds []metav1.Condition, condType string) *metav1.Condition {

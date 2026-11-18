@@ -24,8 +24,7 @@ type endpointPluginFunc func(
 
 // EndpointPlugin is a normalized internal endpoint hook together with its
 // stable policy identity. Editor plugins use the resolver's restricted
-// copy-on-write surface. Legacy plugins are adapted by requesting a one-time
-// deep-cloned mutable input graph from the resolver.
+// copy-on-write surface.
 type EndpointPlugin struct {
 	groupKind schema.GroupKind
 	name      string
@@ -53,20 +52,12 @@ type endpointPluginEntry struct {
 func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
 	entries := make([]endpointPluginEntry, 0, len(policies))
 	for groupKind, policyPlugin := range policies {
-		var plugin endpointPluginFunc
-		switch {
-		case policyPlugin.PerClientEditEndpoints != nil:
-			edit := policyPlugin.PerClientEditEndpoints
-			plugin = func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-				return edit(kctx, ctx, ucc, out)
-			}
-		case policyPlugin.PerClientProcessEndpoints != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-			legacy := policyPlugin.PerClientProcessEndpoints //nolint:staticcheck // isolated below through LegacyMutableInputs
-			plugin = func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-				return legacy(kctx, ctx, ucc, out.LegacyMutableInputs())
-			}
-		default:
+		edit := policyPlugin.PerClientEditEndpoints
+		if edit == nil {
 			continue
+		}
+		plugin := func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
+			return edit(kctx, ctx, ucc, out)
 		}
 		entries = append(entries, endpointPluginEntry{
 			groupKind: groupKind,

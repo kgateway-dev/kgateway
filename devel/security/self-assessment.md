@@ -47,7 +47,7 @@ _This document provides a self-assessment of the kgateway project following the 
 
 ## Overview
 
-kgateway is an Envoy-powered, Kubernetes-native API Gateway that serves as a comprehensive ingress controller, advanced API gateway, AI gateway, and service mesh waypoint proxy. Built on the Kubernetes Gateway API, kgateway provides production-ready traffic management, security, and observability features for modern cloud-native applications.
+kgateway is an Envoy-powered, Kubernetes-native API Gateway that serves as a comprehensive ingress controller, advanced API gateway, and AI gateway. Built on the Kubernetes Gateway API, kgateway provides production-ready traffic management, security, and observability features for modern cloud-native applications.
 
 ### Background
 

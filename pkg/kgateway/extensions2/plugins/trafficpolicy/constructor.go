@@ -205,7 +205,7 @@ func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerConte
 		return nil, fmt.Errorf("%s: %w", gwExtNN.String(), pluginutils.ErrGatewayExtensionNotFound)
 	}
 	if gatewayExtension.Err != nil {
-		return gatewayExtension, gatewayExtension.Err
+		return gatewayExtension, fmt.Errorf("%s: %w", gwExtNN.String(), gatewayExtension.Err)
 	}
 	return gatewayExtension, nil
 }

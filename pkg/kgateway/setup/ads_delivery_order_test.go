@@ -2,7 +2,11 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"io"
+	"slices"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +22,8 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	kgwxds "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -64,16 +70,54 @@ func (s *mockAdsStream) Recv() (*discoveryv3.DiscoveryRequest, error) {
 }
 
 type adsHarness struct {
-	t      *testing.T
-	ctx    context.Context
-	cancel context.CancelFunc
-	cache  envoycache.SnapshotCache
-	stream *mockAdsStream
-	done   chan error
-	node   *envoycorev3.Node
+	t       *testing.T
+	ctx     context.Context
+	cancel  context.CancelFunc
+	cache   envoycache.SnapshotCache
+	watches *watchRecorder
+	stream  *mockAdsStream
+	done    chan error
+	node    *envoycorev3.Node
+}
+
+// watchRecorder counts the CreateWatch calls the server has completed, by type
+// and resource names, so a test can wait until the cache has handled one
+// particular request. A call counts once it returns: the cache has registered,
+// answered or declined the watch.
+type watchRecorder struct {
+	envoycache.Cache
+
+	mu      sync.Mutex
+	handled map[string]int
+}
+
+func (r *watchRecorder) CreateWatch(request *envoycache.Request, sub envoycache.Subscription, value chan envoycache.Response) (func(), error) {
+	cancel, err := r.Cache.CreateWatch(request, sub, value)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.handled[watchKey(request.GetTypeUrl(), request.GetResourceNames())]++
+	return cancel, err
+}
+
+// count returns how many requests for typeURL naming exactly names, in any
+// order, the cache has handled.
+func (r *watchRecorder) count(typeURL string, names []string) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.handled[watchKey(typeURL, names)]
+}
+
+func watchKey(typeURL string, names []string) string {
+	return typeURL + " " + strings.Join(slices.Sorted(slices.Values(names)), ",")
 }
 
 func newADSHarness(t *testing.T, ordered bool) *adsHarness {
+	t.Helper()
+	return newADSHarnessWithCallbacks(t, ordered, nil)
+}
+
+// newADSHarnessWithCallbacks is newADSHarness with server callbacks.
+func newADSHarnessWithCallbacks(t *testing.T, ordered bool, callbacks xdsserver.Callbacks) *adsHarness {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -82,22 +126,24 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 		sent: make(chan *discoveryv3.DiscoveryResponse, 16),
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
-	cache := envoycache.NewSnapshotCache(true, kgwxds.NewNodeRoleHasher(), nil)
+	cache := newSnapshotCache(kgwxds.NewNodeRoleHasher(), nil)
+	watches := &watchRecorder{Cache: cache, handled: map[string]int{}}
 
 	var opts []serverconfig.XDSOption
 	if ordered {
 		opts = append(opts, sotwv3.WithOrderedADS())
 	}
-	srv := xdsserver.NewServer(ctx, cache, nil, opts...)
+	srv := xdsserver.NewServer(ctx, watches, callbacks, opts...)
 
 	h := &adsHarness{
-		t:      t,
-		ctx:    ctx,
-		cancel: cancel,
-		cache:  cache,
-		stream: stream,
-		done:   make(chan error, 1),
-		node:   adsTestNode(t),
+		t:       t,
+		ctx:     ctx,
+		cancel:  cancel,
+		cache:   cache,
+		watches: watches,
+		stream:  stream,
+		done:    make(chan error, 1),
+		node:    adsTestNode(t),
 	}
 	go func() {
 		h.done <- srv.StreamAggregatedResources(stream)
@@ -108,7 +154,7 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 		select {
 		case err := <-h.done:
 			if err != nil {
-				require.ErrorIs(t, err, context.Canceled)
+				require.Truef(t, isCancellation(err), "ADS stream ended with %v, not the test's cancellation", err)
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatal("ADS stream did not stop after test cancellation")
@@ -116,6 +162,19 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 	})
 
 	return h
+}
+
+// isCancellation reports whether err is how the ADS server reports the test
+// cancelling the stream. Ordered ADS turns a failed send into an Unavailable
+// status that keeps only the cause's message, so a response still in flight at
+// cancellation, such as the resend of a NACKed version, ends the stream with
+// Unavailable "context canceled" instead of an error wrapping context.Canceled.
+func isCancellation(err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	s, ok := status.FromError(err)
+	return ok && s.Code() == codes.Unavailable && s.Message() == context.Canceled.Error()
 }
 
 func adsTestNode(t *testing.T) *envoycorev3.Node {
@@ -135,21 +194,23 @@ func (h *adsHarness) setSnapshot(snapshot envoycache.ResourceSnapshot) {
 	require.NoError(h.t, h.cache.SetSnapshot(h.ctx, adsTestNodeID, snapshot))
 }
 
-func (h *adsHarness) subscribe(typeURL string) {
+func (h *adsHarness) subscribe(typeURL string, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
-		Node:    h.node,
-		TypeUrl: typeURL,
+		Node:          h.node,
+		TypeUrl:       typeURL,
+		ResourceNames: names,
 	})
 }
 
-func (h *adsHarness) ack(resp *discoveryv3.DiscoveryResponse) {
+func (h *adsHarness) ack(resp *discoveryv3.DiscoveryResponse, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
 		Node:          h.node,
 		TypeUrl:       resp.GetTypeUrl(),
+		ResourceNames: names,
 		VersionInfo:   resp.GetVersionInfo(),
 		ResponseNonce: resp.GetNonce(),
 	})
@@ -205,8 +266,8 @@ func (h *adsHarness) waitForOpenWatches(count int) {
 	h.t.Helper()
 
 	require.Eventually(h.t, func() bool {
-		info := h.cache.GetStatusInfo(adsTestNodeID)
-		return info != nil && info.GetNumWatches() == count
+		n, ok := openWatches(h.cache, adsTestNodeID)
+		return ok && n == count
 	}, 2*time.Second, 10*time.Millisecond)
 }
 

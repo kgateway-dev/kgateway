@@ -2,10 +2,12 @@ apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TLSRoute
 metadata:
   name: single-tls-route
+  namespace: single-tls-route
 spec:
   parentRefs:
-  - name: single-tls-gateway
-    sectionName: listener-443
+  - name: tls-gateway
+    namespace: tls-route
+    sectionName: listener-6443
   hostnames:
   - "example.com"
   rules:
