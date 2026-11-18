@@ -719,17 +719,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
-		if err != nil {
-			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
-			// An error and a non-nil validation means that the listener is partially valid,
-			// and we should continue to translate the listener after writing the error to status
-			if resolvedValidation == nil {
-				return nil
-			}
-		}
-
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace, gatewayPolicies)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, frontendTLSConfig, gatewayNamespace, gatewayPolicies)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -803,18 +793,8 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		// Resolve and translate TLS config for TLS termination (same as TCPRoute)
-		resolvedValidation, err := resolveFrontendTLSConfig(tc.parents.listener.Port, frontendTLSConfig)
-		if err != nil {
-			// An error and a non-nil validation means that the listener is partially valid,
-			// and we should continue to translate the listener after writing the error to status
-			reportTLSConfigError(err, tc.listenerReporter, resolvedValidation != nil)
-			if resolvedValidation == nil {
-				return nil
-			}
-		}
-
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace, gatewayPolicies)
+		// Translate TLS config for TLS termination (same as TCPRoute)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, frontendTLSConfig, gatewayNamespace, gatewayPolicies)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -1120,23 +1100,13 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		matcher.SniDomains = []string{string(*hfc.sniDomain)}
 	}
 
-	resolvedValidation, err := resolveFrontendTLSConfig(hfc.listener.Port, frontendTLSConfig)
-	if err != nil {
-		reportTLSConfigError(err, hfc.listenerReporter, resolvedValidation != nil)
-		// An error and a non-nil validation means that the listener is partially valid,
-		// and we should continue to translate the listener after writing the error to status
-		if resolvedValidation == nil {
-			return nil, err
-		}
-	}
-
 	tlsConfig, err := translateTLSConfig(
 		kctx,
 		ctx,
 		hfc.listener,
 		hfc.tls,
 		queries,
-		resolvedValidation,
+		frontendTLSConfig,
 		gatewayNamespace,
 		gatewayPolicies,
 	)
@@ -1267,10 +1237,28 @@ func translateTLSConfig(
 	listener ir.Listener,
 	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
-	resolvedValidation *ir.ClientCertificateValidationIR,
+	frontendTLSConfig *ir.FrontendTLSConfigIR,
 	gatewayNamespace string,
 	gatewayPolicies ir.AttachedPolicies,
 ) (*ir.TLSConfig, error) {
+	// ListenerPolicy clientCertificateValidation overrides the Gateway's spec.tls.frontend validation, so it
+	// is chosen first: frontend validation, and its errors, only matter when no policy applies or when an
+	// optional policy's CA certificates cannot be fetched.
+	// Like the other ListenerPolicy fields, the most specific value wins: a policy targeting the listener
+	// (via sectionName) replaces a policy targeting the whole Gateway, even when its CA certificates cannot
+	// be fetched. ListenerPolicies can only target Gateways, so a ListenerSet listener only has the
+	// Gateway-wide policy.
+	certVal := getCertValidationFromAttached(listener.AttachedPolicies, listener.Parent.GetNamespace())
+	if certVal == nil {
+		certVal = getCertValidationFromAttached(gatewayPolicies, gatewayNamespace)
+	}
+	// frontendErr holds invalid frontend CA refs (an unsupported kind). resolvedValidation is nil when no
+	// frontend CA ref is valid.
+	resolvedValidation, frontendErr := resolveFrontendTLSConfig(listener.Port, frontendTLSConfig)
+	if frontendErr != nil && resolvedValidation == nil && certVal == nil {
+		return nil, frontendErr
+	}
+
 	if tls == nil {
 		return nil, nil
 	}
@@ -1344,16 +1332,6 @@ func translateTLSConfig(
 		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
 	}
 
-	// ListenerPolicy clientCertificateValidation overrides the Gateway's spec.tls.frontend validation, so it
-	// is chosen first: frontend validation, and its errors, only matter when no policy applies.
-	// Like the other ListenerPolicy fields, the most specific value wins: a policy targeting the listener
-	// (via sectionName) replaces a policy targeting the whole Gateway, even when its CA certificates cannot
-	// be fetched. ListenerPolicies can only target Gateways, so a ListenerSet listener only has the
-	// Gateway-wide policy.
-	certVal := getCertValidationFromAttached(listener.AttachedPolicies, listener.Parent.GetNamespace())
-	if certVal == nil {
-		certVal = getCertValidationFromAttached(gatewayPolicies, gatewayNamespace)
-	}
 	var policyErr error
 	if certVal != nil {
 		var generated bool
@@ -1380,13 +1358,19 @@ func translateTLSConfig(
 	}
 
 	// Apply the Gateway's spec.tls.frontend client certificate validation if present.
+	if frontendErr != nil && resolvedValidation == nil {
+		// None of the frontend CA refs is valid, so the listener cannot be served with it. Only the frontend
+		// error is returned: it is what fails the listener, and a NotFound in policyErr would take over the
+		// status message. policyErr is logged above.
+		return nil, errors.Join(certErr, frontendErr)
+	}
 	// Skip if CA cert refs are empty (no validation possible)
-	var caErr error
+	caErr := frontendErr
 	if hasTrustedCA {
 		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
-		var generated bool
-		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, resolvedValidation, tlsConfig, wellknown.GatewayGVK, gatewayNamespace)
+		generated, fetchErr := applyClientCertificateValidation(kctx, ctx, queries, resolvedValidation, tlsConfig, wellknown.GatewayGVK, gatewayNamespace)
+		caErr = errors.Join(caErr, fetchErr)
 		if !generated {
 			if resolvedValidation.RequireClientCertificate {
 				// If client certs are required (AllowValidOnly), fail the listener
