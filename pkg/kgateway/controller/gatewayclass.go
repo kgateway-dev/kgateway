@@ -107,9 +107,8 @@ func (r *gatewayClassReconciler) Start(ctx context.Context) error {
 }
 
 func (r *gatewayClassReconciler) reconcile(req types.NamespacedName) (rErr error) {
-	finishMetrics := collectReconciliationMetrics("gatewayclass", req)
 	defer func() {
-		finishMetrics(rErr)
+		recordReconciliation("gatewayclass", rErr)
 	}()
 
 	if req == emptyGatewayClass {

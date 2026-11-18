@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.6
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.40.2
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -436,6 +436,14 @@ E2E_SHARED_IMAGE_TAGS = \
 	$(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) \
 	$(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) \
 	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+
+# Load prebuilt kgateway images into the kind or k3d cluster named by CLUSTER_NAME.
+.PHONY: cluster-load
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load: k3d-load
+else
+cluster-load: kind-load
+endif
 
 .PHONY: cluster-load-extproc-server
 ifeq ($(CLUSTER_TYPE),k3d)

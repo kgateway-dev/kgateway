@@ -19,6 +19,7 @@ var (
 	setupManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	validListenerSetManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset.yaml")
 	validListenerSetManifest2 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset-2.yaml")
+	deniedListenerSetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "denied-listenerset.yaml")
 	policyManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
 	gwListener1Port  = 80
@@ -52,6 +53,7 @@ var (
 			ManifestsWithTransform: map[string]func(string) string{
 				validListenerSetManifest:  base.TransformListenerSetManifest,
 				validListenerSetManifest2: base.TransformListenerSetManifest,
+				deniedListenerSetManifest: base.TransformListenerSetManifest,
 				policyManifest:            base.TransformListenerSetManifest,
 			},
 		},

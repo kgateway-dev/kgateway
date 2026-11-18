@@ -2,6 +2,7 @@ package httproute
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -185,6 +186,12 @@ func setRouteAction(
 		// for which delegated routes are recursively flattened and translated
 		if backend.Delegate != nil {
 			outputRoute.Delegates = true
+			if backend.FiltersErr != nil {
+				// The delegated routes would serve without the backendRef's filters, so they are
+				// not translated; the rule fails closed on its own match, which covers theirs.
+				outputRoute.RouteAcceptanceError = errors.Join(outputRoute.RouteAcceptanceError, backend.FiltersErr)
+				continue
+			}
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
 				ctx,
@@ -212,6 +219,7 @@ func setRouteAction(
 		httpBackend := ir.HttpBackend{
 			Backend:          *backend.Backend, // TODO: Nil check?
 			AttachedPolicies: backend.AttachedPolicies,
+			FiltersErr:       backend.FiltersErr,
 		}
 		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
 	}

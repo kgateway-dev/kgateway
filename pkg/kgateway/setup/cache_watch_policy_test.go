@@ -377,6 +377,8 @@ func TestParkedNackIsRetried(t *testing.T) {
 			require.NotEqual(t, first.GetNonce(), again.GetNonce(), "the retry is a new response")
 
 			// Rejected again: parked again, and a correction still goes out at once.
+			// A long delay keeps the retry from answering the parked watch first.
+			shortenNackRetry(t, time.Minute, time.Minute)
 			h.nack(again, "")
 			h.waitForOpenWatches(1)
 			h.setSnapshot(nackSnapshot("2"))

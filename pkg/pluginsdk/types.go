@@ -45,17 +45,6 @@ type (
 		ucc ir.UniquelyConnectedClient,
 		out EndpointInputsEditor,
 	) uint64
-	// EndpointPlugin is the legacy mutable endpoint hook. Its returned hash must
-	// capture every per-client effect not reflected by the resolved endpoint or
-	// load-balancing-context hashes because those hashes key CLA interning.
-	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
-	// mutable nested state before invoking this hook.
-	EndpointPlugin func(
-		kctx krt.HandlerContext,
-		ctx context.Context,
-		ucc ir.UniquelyConnectedClient,
-		out *EndpointsInputs,
-	) uint64
 )
 
 // ClusterOverlay carries per-client cluster mutations. Returning nil from a
@@ -105,11 +94,10 @@ type PerClientClusterOverlay func(
 // Inputs fetched through krt.Fetch are tracked separately. Extra hash inputs
 // are safe but cause unnecessary client recomputation.
 //
-// Register it beside PerClientClusterOverlay or PerClientProcessBackend. Hooks
-// without this declaration fall back to comparing backend IR and backing-object
-// version, rerunning clients on every object write. Hooks may apply globally,
-// so the framework cannot infer their applicability from policy attachments.
-// Declaring inputs avoids that fanout without migrating the mutation hook.
+// Register it beside PerClientClusterOverlay. An overlay without this
+// declaration falls back to comparing backend IR and backing-object version,
+// rerunning clients on every object write. Overlays may apply globally, so the
+// framework cannot infer their applicability from policy attachments.
 // Use pkg/pluginsdk/overlaytest to check the declaration against the hook.
 type OverlayInputsHash func(in ir.BackendObjectIR) uint64
 
@@ -265,17 +253,6 @@ type ClaimedDestinations struct {
 // destinations the configuration names.
 type ClaimEmittedClusters func() ClusterEmissionClaim
 
-// PerClientProcessBackend is the legacy eager cluster mutation hook.
-// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
-// applicable to every client because they cannot report a no-op cheaply.
-type PerClientProcessBackend func(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	ucc ir.UniquelyConnectedClient,
-	in ir.BackendObjectIR,
-	out *envoyclusterv3.Cluster,
-)
-
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
@@ -301,19 +278,15 @@ type PolicyPlugin struct {
 	ProcessBaseCluster          ProcessBaseCluster
 	ProcessBaseClusterResources ProcessBaseClusterResources
 	PerClientClusterOverlay     PerClientClusterOverlay
-	// OverlayInputsHash declares the backend fields the per-client hook reads.
-	// Required for efficient change detection with either hook; absent a
-	// declaration, consumers compare backend IR and backing-object version.
+	// OverlayInputsHash declares the backend fields the per-client overlay
+	// reads. Required for efficient change detection; absent a declaration,
+	// consumers compare backend IR and backing-object version.
 	OverlayInputsHash OverlayInputsHash
 	// ClaimEmittedClusters declares destinations the configuration never names;
 	// only plugins that pick a destination at request time need it. See
 	// ClusterEmissionClaim.
-	ClaimEmittedClusters ClaimEmittedClusters
-	// Deprecated: use PerClientClusterOverlay.
-	PerClientProcessBackend PerClientProcessBackend
-	PerClientEditEndpoints  EndpointEditorPlugin
-	// Deprecated: use PerClientEditEndpoints.
-	PerClientProcessEndpoints EndpointPlugin
+	ClaimEmittedClusters   ClaimEmittedClusters
+	PerClientEditEndpoints EndpointEditorPlugin
 	// PerClientEndpointsMayApply reports whether the endpoint hook can contribute
 	// to this backend for any client. False skips the hook: it must return zero
 	// and leave inputs unchanged for every client. Nil assumes it may apply.

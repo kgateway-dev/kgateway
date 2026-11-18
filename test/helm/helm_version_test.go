@@ -358,6 +358,28 @@ func lookupContainerEnvVar(container corev1.Container, name string) (corev1.EnvV
 	return corev1.EnvVar{}, false
 }
 
+func TestControllerGOMAXPROCS(t *testing.T) {
+	t.Run("uses the Go runtime's container-aware default", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", "", nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		_, found := lookupContainerEnvVar(container, "GOMAXPROCS")
+		require.False(t, found, "the chart should not set GOMAXPROCS, so the runtime can follow the cgroup CPU quota")
+	})
+
+	t.Run("preserves an explicit extraEnv value", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  extraEnv:
+    GOMAXPROCS: "4"
+`, nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		value := findContainerEnvVar(t, container, "GOMAXPROCS")
+		require.Equal(t, "4", value.Value)
+		require.Nil(t, value.ValueFrom)
+	})
+}
+
 func TestControllerGoMemLimitPercent(t *testing.T) {
 	for _, test := range []struct {
 		percent int
