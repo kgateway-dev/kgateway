@@ -27,6 +27,8 @@ const (
 	// E.g., kgateway.dev/http-redirect-status-code: "307" will set the status code to 307 for all RequestRedirect filters on the HTTPRoute.
 	// To set a different status code for individual route rules, the value must be a comma-separated list of rule-name=status-code pairs.
 	// E.g., kgateway.dev/http-redirect-status-code: "rule1=307,rule2=308" will set the status code to 307 for filter on rule1 and 308 for filter on rule2.
+	// A rule-scoped value only applies to a rule whose name field is set to that name. Each rule uses the first entry that applies to it.
+	// Entries that no rule uses are reported on the route's kgateway.dev/Programmed condition with the HTTPRedirectStatusCodeIgnored reason.
 	HTTPRedirectStatusCode = "kgateway.dev/http-redirect-status-code"
 )
 
