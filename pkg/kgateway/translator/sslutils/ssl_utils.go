@@ -10,6 +10,7 @@ import (
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/cert"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -22,6 +23,13 @@ const (
 	ListenerReasonInvalidCACertificateRef  gwv1.ListenerConditionReason = "InvalidCACertificateRef"
 	ListenerReasonInvalidCACertificateKind gwv1.ListenerConditionReason = "InvalidCACertificateKind"
 	ListenerReasonNoValidCACertificate     gwv1.ListenerConditionReason = "NoValidCACertificate"
+)
+
+const (
+	// maxAlpnProtocolLength is the longest protocol name the ALPN wire format can carry.
+	maxAlpnProtocolLength = 255
+	// maxAlpnProtocolsLength is the longest comma-joined protocol list Envoy accepts.
+	maxAlpnProtocolsLength = 65534
 )
 
 var (
@@ -45,12 +53,86 @@ var (
 
 	ErrUnknownTLSExtensionOption = errors.New("unknown tls option")
 
+	// ErrInvalidTLSParameter ends up in status conditions, whose size is limited, so the errors
+	// that wrap it quote no more of a rejected name than the longest valid name would need.
+	ErrInvalidTLSParameter = errors.New("invalid tls parameter")
+
 	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
 	tlsProtocolMap = map[string]envoytlsv3.TlsParameters_TlsProtocol{
 		"1.0": envoytlsv3.TlsParameters_TLSv1_0,
 		"1.1": envoytlsv3.TlsParameters_TLSv1_1,
 		"1.2": envoytlsv3.TlsParameters_TLSv1_2,
 		"1.3": envoytlsv3.TlsParameters_TLSv1_3,
+	}
+
+	// The names below are the ones accepted by the BoringSSL that Envoy is built with. Envoy
+	// refuses a TLS context that uses any other name, and with it the whole listener or cluster
+	// that the context is part of, so keep them in step with the Envoy version in use.
+
+	// validCipherSuites holds the OpenSSL and the IANA name of every TLS 1.0-1.2 cipher suite.
+	validCipherSuites = sets.New(
+		"ECDHE-ECDSA-AES128-GCM-SHA256", "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+		"ECDHE-RSA-AES128-GCM-SHA256", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+		"ECDHE-ECDSA-AES256-GCM-SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+		"ECDHE-RSA-AES256-GCM-SHA384", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+		"ECDHE-ECDSA-CHACHA20-POLY1305", "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+		"ECDHE-RSA-CHACHA20-POLY1305", "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+		"ECDHE-PSK-CHACHA20-POLY1305", "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256",
+		"ECDHE-ECDSA-AES128-SHA256", "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+		"ECDHE-RSA-AES128-SHA256", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+		"ECDHE-ECDSA-AES128-SHA", "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+		"ECDHE-RSA-AES128-SHA", "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+		"ECDHE-PSK-AES128-CBC-SHA", "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA",
+		"ECDHE-ECDSA-AES256-SHA", "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+		"ECDHE-RSA-AES256-SHA", "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+		"ECDHE-PSK-AES256-CBC-SHA", "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA",
+		"AES128-GCM-SHA256", "TLS_RSA_WITH_AES_128_GCM_SHA256",
+		"AES256-GCM-SHA384", "TLS_RSA_WITH_AES_256_GCM_SHA384",
+		"AES128-SHA", "TLS_RSA_WITH_AES_128_CBC_SHA",
+		"AES256-SHA", "TLS_RSA_WITH_AES_256_CBC_SHA",
+		"PSK-AES128-CBC-SHA", "TLS_PSK_WITH_AES_128_CBC_SHA",
+		"PSK-AES256-CBC-SHA", "TLS_PSK_WITH_AES_256_CBC_SHA",
+		"DES-CBC3-SHA", "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+	)
+
+	// tls13CipherSuites are recognized in a cipher list but add nothing to it, and a list that
+	// ends up empty is refused.
+	tls13CipherSuites = sets.New(
+		"TLS_AES_128_GCM_SHA256",
+		"TLS_AES_256_GCM_SHA384",
+		"TLS_CHACHA20_POLY1305_SHA256",
+	)
+
+	// validEcdhCurves maps every spelling of a curve to a single one, since repeating a curve is
+	// refused as well.
+	validEcdhCurves = map[string]string{
+		"P-256": "P-256", "prime256v1": "P-256",
+		"P-384": "P-384", "secp384r1": "P-384",
+		"P-521": "P-521", "secp521r1": "P-521",
+		"X25519": "X25519", "x25519": "X25519",
+		"X25519MLKEM768": "X25519MLKEM768",
+		"MLKEM1024":      "MLKEM1024",
+	}
+
+	// validSignatureAlgorithms maps every spelling of a signature algorithm to a single one, since
+	// repeating an algorithm is refused as well.
+	validSignatureAlgorithms = map[string]string{
+		"rsa_pkcs1_sha1": "rsa_pkcs1_sha1", "RSA+SHA1": "rsa_pkcs1_sha1",
+		"rsa_pkcs1_sha256": "rsa_pkcs1_sha256", "RSA+SHA256": "rsa_pkcs1_sha256",
+		"rsa_pkcs1_sha384": "rsa_pkcs1_sha384", "RSA+SHA384": "rsa_pkcs1_sha384",
+		"rsa_pkcs1_sha512": "rsa_pkcs1_sha512", "RSA+SHA512": "rsa_pkcs1_sha512",
+		"ecdsa_sha1": "ecdsa_sha1", "ECDSA+SHA1": "ecdsa_sha1",
+		"ecdsa_secp256r1_sha256": "ecdsa_secp256r1_sha256", "ECDSA+SHA256": "ecdsa_secp256r1_sha256",
+		"ecdsa_secp384r1_sha384": "ecdsa_secp384r1_sha384", "ECDSA+SHA384": "ecdsa_secp384r1_sha384",
+		"ecdsa_secp521r1_sha512": "ecdsa_secp521r1_sha512", "ECDSA+SHA512": "ecdsa_secp521r1_sha512",
+		"rsa_pss_rsae_sha256": "rsa_pss_rsae_sha256", "RSA-PSS+SHA256": "rsa_pss_rsae_sha256", "PSS+SHA256": "rsa_pss_rsae_sha256",
+		"rsa_pss_rsae_sha384": "rsa_pss_rsae_sha384", "RSA-PSS+SHA384": "rsa_pss_rsae_sha384", "PSS+SHA384": "rsa_pss_rsae_sha384",
+		"rsa_pss_rsae_sha512": "rsa_pss_rsae_sha512", "RSA-PSS+SHA512": "rsa_pss_rsae_sha512", "PSS+SHA512": "rsa_pss_rsae_sha512",
+		"rsa_pkcs1_sha256_legacy": "rsa_pkcs1_sha256_legacy",
+		"ed25519":                 "ed25519",
+		"mldsa44":                 "mldsa44",
+		"mldsa65":                 "mldsa65",
+		"mldsa87":                 "mldsa87",
 	}
 
 	ErrInvalidCACertificateRef  = errors.New(string(ListenerReasonInvalidCACertificateRef))
@@ -108,39 +190,122 @@ func getCACertFromBytes(caCrtBytes []byte, name, namespace string) (string, erro
 
 type TLSExtensionOptionFunc = func(in string, out *ir.TLSConfig) error
 
+// splitCommaSeparated splits a comma separated option value into its whitespace-trimmed,
+// non-empty entries.
+func splitCommaSeparated(in string) []string {
+	var out []string
+	for entry := range strings.SplitSeq(in, ",") {
+		if entry = strings.TrimSpace(entry); entry != "" {
+			out = append(out, entry)
+		}
+	}
+	return out
+}
+
 func ApplyCipherSuites(in string, out *ir.TLSConfig) error {
-	cipherSuites := strings.Split(in, ",")
-	for i, suite := range cipherSuites {
-		cipherSuites[i] = strings.TrimSpace(suite)
+	cipherSuites := splitCommaSeparated(in)
+	if err := ValidateCipherSuites(cipherSuites); err != nil {
+		return err
 	}
 	out.CipherSuites = cipherSuites
 	return nil
 }
 
 func ApplyEcdhCurves(in string, out *ir.TLSConfig) error {
-	ecdhCurves := strings.Split(in, ",")
-	for i, curve := range ecdhCurves {
-		ecdhCurves[i] = strings.TrimSpace(curve)
+	ecdhCurves := splitCommaSeparated(in)
+	if err := ValidateEcdhCurves(ecdhCurves); err != nil {
+		return err
 	}
 	out.EcdhCurves = ecdhCurves
 	return nil
 }
 
 func ApplySignatureAlgorithms(in string, out *ir.TLSConfig) error {
-	signatureAlgorithms := strings.Split(in, ",")
-	for i, suite := range signatureAlgorithms {
-		signatureAlgorithms[i] = strings.TrimSpace(suite)
+	signatureAlgorithms := splitCommaSeparated(in)
+	if err := ValidateSignatureAlgorithms(signatureAlgorithms); err != nil {
+		return err
 	}
 	out.SignatureAlgorithms = signatureAlgorithms
 	return nil
 }
 
 func ApplyAlpnProtocols(in string, out *ir.TLSConfig) error {
-	alpnProtocols := strings.Split(in, ",")
-	for i, protocol := range alpnProtocols {
-		alpnProtocols[i] = strings.TrimSpace(protocol)
+	alpnProtocols := splitCommaSeparated(in)
+	if err := ValidateAlpnProtocols(alpnProtocols); err != nil {
+		return err
 	}
 	out.AlpnProtocols = alpnProtocols
+	return nil
+}
+
+// ValidateCipherSuites checks that Envoy will accept cipherSuites as TlsParameters.cipher_suites.
+// An entry is a cipher suite name or an equal-preference group of names, "[name1|name2]". The
+// operators and aliases of the BoringSSL cipher list syntax are not supported, because whether
+// Envoy accepts them depends on what the list as a whole evaluates to.
+func ValidateCipherSuites(cipherSuites []string) error {
+	configurable := false
+	for _, entry := range cipherSuites {
+		names := []string{entry}
+		if strings.HasPrefix(entry, "[") && strings.HasSuffix(entry, "]") {
+			names = strings.Split(entry[1:len(entry)-1], "|")
+		}
+		for _, name := range names {
+			switch {
+			case validCipherSuites.Has(name):
+				configurable = true
+			case tls13CipherSuites.Has(name):
+			default:
+				return fmt.Errorf("%w: unknown cipher suite: %.64s", ErrInvalidTLSParameter, name)
+			}
+		}
+	}
+	if len(cipherSuites) > 0 && !configurable {
+		return fmt.Errorf("%w: cipher suites need at least one TLS 1.2 cipher suite, TLS 1.3 cipher suites are not configurable", ErrInvalidTLSParameter)
+	}
+	return nil
+}
+
+// ValidateEcdhCurves checks that Envoy will accept ecdhCurves as TlsParameters.ecdh_curves.
+func ValidateEcdhCurves(ecdhCurves []string) error {
+	return validateUniqueNames("ecdh curve", ecdhCurves, validEcdhCurves)
+}
+
+// ValidateSignatureAlgorithms checks that Envoy will accept signatureAlgorithms as
+// TlsParameters.signature_algorithms.
+func ValidateSignatureAlgorithms(signatureAlgorithms []string) error {
+	return validateUniqueNames("signature algorithm", signatureAlgorithms, validSignatureAlgorithms)
+}
+
+// validateUniqueNames checks that every name is a key of valid, and that no two names map to the
+// same value, i.e. that none repeats an earlier one under the same or another spelling.
+func validateUniqueNames(kind string, names []string, valid map[string]string) error {
+	seen := sets.New[string]()
+	for _, name := range names {
+		canonical, ok := valid[name]
+		if !ok {
+			return fmt.Errorf("%w: unknown %s: %.64s", ErrInvalidTLSParameter, kind, name)
+		}
+		if seen.Has(canonical) {
+			return fmt.Errorf("%w: duplicate %s: %s", ErrInvalidTLSParameter, kind, name)
+		}
+		seen.Insert(canonical)
+	}
+	return nil
+}
+
+// ValidateAlpnProtocols checks that Envoy will accept alpnProtocols as
+// CommonTlsContext.alpn_protocols. Envoy joins the list with commas and splits it again, so a
+// comma in an entry is not preserved and can produce the empty protocol that an upstream TLS
+// context asserts on.
+func ValidateAlpnProtocols(alpnProtocols []string) error {
+	for _, protocol := range alpnProtocols {
+		if len(protocol) == 0 || len(protocol) > maxAlpnProtocolLength || strings.Contains(protocol, ",") {
+			return fmt.Errorf("%w: an alpn protocol must be 1 to %d bytes long and must not contain a comma", ErrInvalidTLSParameter, maxAlpnProtocolLength)
+		}
+	}
+	if len(strings.Join(alpnProtocols, ",")) > maxAlpnProtocolsLength {
+		return fmt.Errorf("%w: alpn protocols must not be longer than %d bytes in total", ErrInvalidTLSParameter, maxAlpnProtocolsLength)
+	}
 	return nil
 }
 
