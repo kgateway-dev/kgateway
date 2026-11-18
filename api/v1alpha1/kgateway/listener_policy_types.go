@@ -142,6 +142,13 @@ type ListenerDefaultConfig struct {
 	// allowing different listeners on the same port to enforce different mTLS trust boundaries.
 	// When configured on a ListenerPolicy targeting a specific listener (via sectionName),
 	// it overrides any Gateway-level mTLS configuration for that listener.
+	// When configured on a ListenerPolicy targeting the whole Gateway (no sectionName), it applies to
+	// every TLS-terminating listener of the Gateway, including those of attached ListenerSets, and it
+	// overrides the Gateway's spec.tls.frontend validation (default and perPort) for those listeners.
+	// A ListenerPolicy targeting a specific listener takes precedence over it, even when that policy's CA
+	// certificates cannot be fetched: if it requires client certificates the listener fails, otherwise the
+	// Gateway's spec.tls.frontend validation applies to the listener.
+	// CA certificate references without a namespace are resolved in the ListenerPolicy's namespace.
 	//
 	// Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
 	// wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,
@@ -460,8 +467,8 @@ type LocalReplyMapper struct {
 	// A filter that determines if this mapper should apply.
 	// +required
 	Filter AccessLogFilter `json:"filter"`
-	// New response status code for the reply if specified.
-	// +kubebuilder:validation:Minimum=100
+	// New response status code for the reply if specified. Must be between 200 and 599.
+	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
 	// +optional
 	StatusCode *uint32 `json:"statusCode,omitempty"`
@@ -484,13 +491,13 @@ type LocalReplyMapper struct {
 type ListenerHTTP2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Defaults to 16777216 (16 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-	// Same range and default value as InitialStreamWindowSize.
+	// Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
@@ -626,11 +633,12 @@ type RetryPolicy struct {
 // Configuration defining a jittered exponential back off strategy.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/backoff.proto#envoy-v3-api-msg-config-core-v3-backoffstrategy
 type BackoffStrategy struct {
-	// The base interval to be used for the next back off computation. It should be greater than zero and less than or equal to max_interval.
+	// The base interval to be used for the next back off computation. Must be at least 1ms and less than or equal to max_interval.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the base_interval if set. The default is 10 times the base_interval.
@@ -1225,7 +1233,9 @@ type ClientCertificateValidationConfig struct {
 
 	// CACertificateRefs contains references to Kubernetes Secrets or ConfigMaps containing
 	// CA certificates. Multiple references will be combined into a single trusted CA pool for the listener.
-	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data
+	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data.
+	// A reference without a namespace is resolved in the ListenerPolicy's namespace. A reference to another
+	// namespace requires a ReferenceGrant in that namespace that allows references from ListenerPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=8
 	// +required

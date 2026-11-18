@@ -55,11 +55,12 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend') || (r.group == 'networking.istio.io' && r.kind == 'Hostname'))",message="TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
-	// The timeout for new network connections to hosts in the cluster.
+	// The timeout for new network connections to hosts in the cluster. Must be at least 1ms.
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
 	// DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
@@ -337,7 +338,7 @@ type CircuitBreakers struct {
 type DNS struct {
 	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 	//
-	// Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+	// Must be greater than 1ms. If unset, Envoy's default of 5s is used.
 	// When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
 	// so RefreshRate acts as the maximum polling interval.
 	// Recommended value for large-scale deployments is 60s or higher.
@@ -345,7 +346,7 @@ type DNS struct {
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
+	// +kubebuilder:validation:XValidation:rule="duration(self) > duration('1ms')",message="refreshRate must be greater than 1ms"
 	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
 
 	// Jitter adds a random delay of up to this duration before each DNS refresh,
@@ -460,11 +461,11 @@ type CommonHttpProtocolOptions struct {
 	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
 
 	// Specifies the maximum number of response headers that the upstream connection will accept
-	// from the backend. If not specified, the default of 100 is used.
+	// from the backend. Must be at least 1. If not specified, the default of 100 is used.
 	// To configure the maximum number of headers accepted in downstream requests, use
 	// ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
 
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
@@ -484,14 +485,14 @@ type CommonHttpProtocolOptions struct {
 type Http2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Defaults to 16777216 (16 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-	// Same range and default value as InitialStreamWindowSize.
+	// Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
@@ -577,7 +578,12 @@ type TCPKeepalive struct {
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
-	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
+	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
+	//   - tls.crt: the client certificate chain, used for mTLS.
+	//   - tls.key: the client private key, used for mTLS.
+	//   - ca.crt: the root CA used to validate the backend's certificate. If omitted, the
+	//     backend's certificate is not verified, and verifySubjectAltNames cannot be used.
+	// tls.crt and tls.key must be set together or both omitted. Other keys are ignored.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
@@ -748,9 +754,10 @@ type LoadBalancer struct {
 // LoadBalancerLeastRequestConfig configures the least request load balancer type.
 type LoadBalancerLeastRequestConfig struct {
 	// How many choices to take into account.
-	// Defaults to 2.
+	// Defaults to 2. Must be at least 2.
 	// +optional
 	// +kubebuilder:default=2
+	// +kubebuilder:validation:Minimum=2
 	ChoiceCount int32 `json:"choiceCount,omitempty"`
 
 	// SlowStart configures the slow start configuration for the load balancer.
@@ -766,15 +773,19 @@ type LoadBalancerRoundRobinConfig struct {
 }
 
 // LoadBalancerRingHashConfig configures the ring hash load balancer type.
+// +kubebuilder:validation:XValidation:rule="(has(self.minimumRingSize) ? self.minimumRingSize : 1024) <= (has(self.maximumRingSize) ? self.maximumRingSize : 8388608)",message="minimumRingSize (default 1024) must be less than or equal to maximumRingSize (default 8388608)"
 type LoadBalancerRingHashConfig struct {
-	// MinimumRingSize is the minimum size of the ring.
+	// MinimumRingSize is the minimum size of the ring. Must be between 1 and 8388608.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=8388608
 	MinimumRingSize *int64 `json:"minimumRingSize,omitempty"`
 
-	// MaximumRingSize is the maximum size of the ring.
+	// MaximumRingSize is the maximum size of the ring. Must be at most 8388608, and at least
+	// minimumRingSize (default 1024).
 	// +optional
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=8388608
 	MaximumRingSize *int64 `json:"maximumRingSize,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
@@ -906,6 +917,8 @@ type ZoneAwareForce struct {
 	// Defaults to 1.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	// +kubebuilder:default=1
 	MinEndpointsInZoneThreshold *uint32 `json:"minEndpointsInZoneThreshold,omitempty"`
 }
@@ -916,18 +929,21 @@ type ZoneAwareForce struct {
 // +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
-	// health check attempt will be considered a failure.
+	// health check attempt will be considered a failure. Must be at least 1ms.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	Timeout metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks after the backend receives its first request.
+	// Must be at least 1ms.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	Interval metav1.Duration `json:"interval"`
 
 	// NoTrafficInterval is the time between health checks before the backend receives

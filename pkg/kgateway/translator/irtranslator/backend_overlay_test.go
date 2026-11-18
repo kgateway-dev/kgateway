@@ -545,53 +545,6 @@ func upstreamTLSTransportSocket(t *testing.T, sni, sdsSecret string) *envoycorev
 	}
 }
 
-func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T) {
-	endpointGK := schema.GroupKind{Group: "test", Kind: "LegacyEndpoints"}
-	locality := ir.PodLocality{Region: "r1"}
-	bt := &irtranslator.BackendTranslator{
-		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
-			{Group: "group", Kind: "kind"}: {
-				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
-					eps := ir.NewEndpointsForBackend(in)
-					eps.BackendLabels = map[string]string{"owner": "base"}
-					eps.Add(locality, endpointWithLabels("10.0.0.1", map[string]string{"owner": "base"}))
-					return eps
-				},
-			},
-		},
-		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
-			endpointGK: {
-				PerClientProcessEndpoints: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, out *sdk.EndpointsInputs) uint64 {
-					if ucc.Role != "mutate" {
-						return 0
-					}
-					out.EndpointsForBackend.BackendLabels["owner"] = "mutated"
-					out.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["owner"] = "mutated"
-					out.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().Address = "127.0.0.1"
-					return 1
-				},
-			},
-		},
-	}
-	backend := overlayBackend()
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), backend)
-	require.NotNil(t, base)
-	require.NotNil(t, base.EndpointInputs)
-
-	mutated, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "mutate"}, backend, base)
-	require.NoError(t, err)
-	require.Equal(t, "127.0.0.1", mutated.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
-
-	assert.Equal(t, "base", base.EndpointInputs.EndpointsForBackend.BackendLabels["owner"])
-	assert.Equal(t, "base", base.EndpointInputs.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["owner"])
-	assert.Equal(t, "10.0.0.1", base.EndpointInputs.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
-
-	pristine, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "pristine"}, backend, base)
-	require.NoError(t, err)
-	require.Equal(t, "10.0.0.1", pristine.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
-}
-
 // TestTranslateBackendBase_ErroredBlackholeForUnsupportedBackendKinds pins the
 // contract that TranslateBackendBase never returns nil: a backend whose
 // GroupKind has no contributed translator, or whose translator has no
@@ -846,71 +799,6 @@ func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
 			},
 		},
 	}
-}
-
-// TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable pins the
-// compatibility adapter for the deprecated PerClientProcessBackend hook. A legacy
-// hook cannot report a no-op, so the framework treats it as applicable to every
-// client: it must not run during base translation, it must force a per-client
-// cluster to materialize, and it must receive a clone rather than the shared base.
-func TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable(t *testing.T) {
-	legacyGK := schema.GroupKind{Group: "test", Kind: "Legacy"}
-	calls := 0
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		legacyGK: {
-			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
-				calls++
-				out.AltStatName = "legacy-" + ucc.Role
-			},
-		},
-	})
-	backend := overlayBackend()
-	ctx := context.Background()
-
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
-	require.NotNil(t, base)
-	require.NoError(t, base.Error)
-	require.Equal(t, 0, calls, "a per-client hook must not run during base translation")
-
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
-	require.NoError(t, err)
-	require.NotNil(t, perClient, "a legacy hook cannot decline, so every client must materialize a cluster")
-	assert.Equal(t, 1, calls, "the legacy hook must run exactly once per client")
-	assert.Equal(t, "legacy-role", perClient.GetAltStatName(), "the legacy hook's mutation must land on the per-client cluster")
-	assert.NotSame(t, base.Cluster, perClient)
-	assert.Empty(t, base.Cluster.GetAltStatName(), "the legacy hook must have mutated a clone, not the shared base")
-}
-
-// TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook: a plugin that
-// registers both hooks is treated as migrated. Only PerClientClusterOverlay runs,
-// so its nil (decline) is honored instead of being overridden by the
-// always-applicable legacy adapter, and the pair keeps the sparse fast path.
-func TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook(t *testing.T) {
-	gk := schema.GroupKind{Group: "test", Kind: "Migrated"}
-	legacyCalls := 0
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		gk: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return nil
-			},
-			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
-				legacyCalls++
-			},
-		},
-	})
-	backend := overlayBackend()
-	ctx := context.Background()
-
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
-	require.NotNil(t, base)
-	require.NoError(t, base.Error)
-
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
-	require.NoError(t, err)
-	assert.Nil(t, perClient, "the migrated hook declined, so the pair must take the fast path")
-	assert.Equal(t, 0, legacyCalls, "the legacy hook must not run when the plugin also registers PerClientClusterOverlay")
 }
 
 // TestApplyPerClient_AppliesOverlaysInGroupKindOrder: ContributedPolicies is a

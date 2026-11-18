@@ -28,24 +28,16 @@ RUN rustup target add ${RUST_BUILD_ARCH}-unknown-linux-gnu
 # target is run. Do not edit by hand.
 # __CRATE_CACHE_BUST_RUN__
 
-# Stage 2: build envoy dynamic module
-FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_builder
-WORKDIR /build
-RUN sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list 2>/dev/null || true \
-    && sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true \
-    && apt-get -o Acquire::Retries=5 update \
-    && apt-get -o Acquire::Retries=5 install --no-install-recommends -y clang
-
-# Copy cached cargo, rustup toolchain, and build target from rust_build_deps
-COPY --from=rust_build_deps /usr/local/cargo /usr/local/cargo
-COPY --from=rust_build_deps /usr/local/rustup /usr/local/rustup
-COPY --from=rust_build_deps /build/target /build/target
+# Stage 2: build envoy dynamic module. Continue from the dependency stage so
+# BuildKit does not reinstall clang or copy cargo, rustup, and target into new
+# layers before compiling the real source.
+FROM rust_build_deps AS rust_builder
 
 # Copy the source code and build the module.
 ARG ENVOY_MODULES_DIR=.
 COPY ${ENVOY_MODULES_DIR} .
 ARG RUST_BUILD_ARCH=x86_64 # set this to "aarch64" for local arm build
-RUN cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu
+RUN cargo zigbuild --locked --target ${RUST_BUILD_ARCH}-unknown-linux-gnu
 
 RUN cp /build/target/${RUST_BUILD_ARCH}-unknown-linux-gnu/debug/librust_module.so /build/librust_module.so
 

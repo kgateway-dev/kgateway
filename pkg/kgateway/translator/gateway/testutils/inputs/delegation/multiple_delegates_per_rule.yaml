@@ -1,0 +1,97 @@
+# This test contains a parent route with a rule that delegates to two namespaces, one of which
+# is also delegated to exclusively by another rule. The routes resolved for one backendRef must
+# not be attached via another backendRef, so a child in namespace "b" cannot claim a path under
+# the prefix that is only delegated to namespace "a".
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace
+#   - Delegate /shared to routes in "b" and "a" namespaces
+# - Child a/route-a:
+#   - /a goes to a/svc-a
+#   - /shared/a goes to a/svc-a
+# - Child b/route-b:
+#   - /shared/b goes to b/svc-b
+#   - /a/1 goes to b/svc-b
+#
+# Expected output routes:
+# - /a -> a/svc-a
+# - /shared/a -> a/svc-a
+# - /shared/b -> b/svc-b
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /shared
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - name: svc-a
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /shared/a
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: b
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /shared/b
+    backendRefs:
+    - name: svc-b
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-b
+      port: 8080

@@ -29,6 +29,7 @@ Uses the upstream [Kubernetes Gateway API Conformance suite](https://github.com/
 
 ### [Kubernetes End-to-End Tests](./e2e.yaml)
 Runs the suite of [Kubernetes End-To-End Tests](/test/e2e).
+Shard runner preparation, test compilation, and cluster creation run alongside the shared image build. Each shard waits for the image build in the same workflow run to upload its images before downloading and loading them; a build that fails or is cancelled first fails the waiting shards.
 
 ## Scheduled Workflows
 

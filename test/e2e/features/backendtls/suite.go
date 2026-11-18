@@ -189,7 +189,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	})
 
 	// delete configmap so we can assert status updates correctly
-	err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, configMapManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, configMapManifest)
 	s.Require().NoError(err)
 
 	s.assertPolicyStatus(metav1.Condition{
@@ -451,10 +451,7 @@ func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing service target
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
-		s.Ctx,
-		backendTLSPolicyMissingTargetManifest,
-	)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(backendTLSPolicyMissingTargetManifest)
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains

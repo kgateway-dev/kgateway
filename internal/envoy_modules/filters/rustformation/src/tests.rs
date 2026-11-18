@@ -4,6 +4,75 @@ use super::*;
 use mockall::*;
 
 #[test]
+fn local_reply_can_reenter_response_headers() {
+    use std::rc::Rc;
+
+    let mut envoy_filter = MockEnvoyHttpFilter::default();
+    let config = FilterConfig::new(
+        r#"{
+            "request": { "body": { "parseAs": "AsJson" } },
+            "response": {
+                "set": [{ "name": "X-Original", "value": "{{ request_header(\"x-original\") }}" }]
+            }
+        }"#,
+    )
+    .expect("valid filter config");
+    let filter: Rc<dyn HttpFilter<MockEnvoyHttpFilter>> =
+        Rc::from(config.new_http_filter(&mut envoy_filter));
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+    envoy_filter.expect_get_request_headers().returning(|| {
+        vec![(
+            EnvoyBuffer::new(b"x-original"),
+            EnvoyBuffer::new(b"original"),
+        )]
+    });
+    envoy_filter
+        .expect_get_buffered_request_body()
+        .returning(|| None);
+    envoy_filter
+        .expect_get_received_request_body()
+        .returning(|| {
+            let body = Box::leak(b"invalid json".to_vec().into_boxed_slice());
+            // SAFETY: each call owns a fresh allocation that outlives the buffer.
+            Some(vec![unsafe { EnvoyMutBuffer::new(body) }])
+        });
+    let reentrant_filter = Rc::clone(&filter);
+    envoy_filter
+        .expect_send_response()
+        .times(1)
+        .returning_st(move |status, _, _, _| {
+            assert_eq!(status, 400);
+            let mut response_filter = MockEnvoyHttpFilter::default();
+            response_filter
+                .expect_get_most_specific_route_config()
+                .returning(|| None);
+            // A nested callback must retain the original request header snapshot.
+            response_filter
+                .expect_get_request_headers()
+                .returning(Vec::new);
+            response_filter
+                .expect_get_response_headers()
+                .returning(Vec::new);
+            response_filter
+                .expect_set_response_header()
+                .withf(|key, value| key == "X-Original" && value == b"original")
+                .times(1)
+                .return_const(true);
+            assert_eq!(
+                reentrant_filter.on_response_headers(&mut response_filter, true),
+                abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
+            );
+        });
+
+    assert_eq!(
+        filter.on_request_body(&mut envoy_filter, true),
+        abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer
+    );
+}
+
+#[test]
 fn test_injected_functions() {
     // get envoy's mockall impl for httpfilter
     let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
@@ -31,7 +100,7 @@ fn test_injected_functions() {
     "#;
     let filter_conf =
         FilterConfig::new(json_str).expect("Failed to parse filter config json: {json_str}");
-    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+    let filter = filter_conf.new_http_filter(&mut envoy_filter);
 
     envoy_filter
         .expect_get_most_specific_route_config()
@@ -139,7 +208,7 @@ fn test_minininja_functionality() {
     "#;
     let filter_conf =
         FilterConfig::new(json_str).expect("Failed to parse filter config json: {json_str}");
-    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+    let filter = filter_conf.new_http_filter(&mut envoy_filter);
 
     envoy_filter
         .expect_get_most_specific_route_config()
@@ -214,7 +283,7 @@ fn test_metadata_transformation() {
     "#;
     let filter_conf = FilterConfig::new(json_str)
         .unwrap_or_else(|| panic!("Failed to parse filter config json: {}", json_str));
-    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+    let filter = filter_conf.new_http_filter(&mut envoy_filter);
 
     envoy_filter
         .expect_get_most_specific_route_config()
@@ -274,7 +343,7 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
     }
     "#;
     let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
-    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+    let filter = filter_conf.new_http_filter(&mut envoy_filter);
 
     // No per-route config — use the base config.
     envoy_filter

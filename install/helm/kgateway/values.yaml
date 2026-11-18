@@ -187,7 +187,7 @@ controller:
   # Probe settings are deep merged with the above config. Custom `exec`, `grpc`,
   # or `tcpSocket` handlers replace the default `httpGet` handler.
   startupProbe: {}
-  # -- Add extra environment variables to the controller container.
+  # -- Add extra environment variables to the controller container. An explicit `GOMAXPROCS` here overrides the Go runtime's container-aware default and disables its automatic updates when the CPU limit changes.
   extraEnv: {}
   admin:
     # -- Bind host for the controller admin/debug server on port 9095.
