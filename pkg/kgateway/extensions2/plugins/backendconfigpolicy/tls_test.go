@@ -230,6 +230,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
 						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
 					},
+					ValidationContextType: systemCAContext().ValidationContextType,
 				},
 			},
 		},
@@ -247,6 +248,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
 						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_3,
 					},
+					ValidationContextType: systemCAContext().ValidationContextType,
 				},
 			},
 		},
@@ -454,6 +456,66 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "should error with unsupported well-known ca set",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesType("example.com/corporate-roots")),
+				Sni:                     new("test.example.com"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "TLS config with system ca pins SAN to SNI",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),
+				Sni:                     new("test.example.com"),
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("test.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
+			name: "TLS config with system ca prefers explicit SANs over SNI",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),
+				Sni:                     new("test.example.com"),
+				VerifySubjectAltNames:   []string{"api.example.com"},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("api.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
+			name:      "TLS config with no trust source and no SNI, stored before CEL required SNI, defaults to system ca",
+			tlsConfig: &kgateway.TLS{},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext(),
+			},
+		},
+		{
+			name: "TLS config with only SNI defaults to system ca pinned to SNI",
+			tlsConfig: &kgateway.TLS{
+				Sni:       new("test.example.com"),
+				SimpleTLS: new(true),
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("test.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
+			name: "TLS config with insecure skip verify false defaults to system ca",
+			tlsConfig: &kgateway.TLS{
+				InsecureSkipVerify: new(false),
+				Sni:                new("test.example.com"),
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("test.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
 			name: "TLS config with insecure skip verify",
 			tlsConfig: &kgateway.TLS{
 				InsecureSkipVerify: new(true),
@@ -492,6 +554,19 @@ func TestTranslateTLSConfig(t *testing.T) {
 			diff := cmp.Diff(tt.expected, result, protocmp.Transform())
 			assert.Empty(t, diff)
 		})
+	}
+}
+
+func systemCAContext(sans ...string) *envoytlsv3.CommonTlsContext {
+	return &envoytlsv3.CommonTlsContext{
+		ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+			CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+				DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
+					MatchTypedSubjectAltNames: verifySanListToTypedMatchSanList(sans),
+				},
+				ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{Name: eiutils.SystemCaSecretName},
+			},
+		},
 	}
 }
 
