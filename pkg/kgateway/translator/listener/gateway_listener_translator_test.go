@@ -88,6 +88,9 @@ func tlsToIr(tlsRoute *gwv1a2.TLSRoute) *ir.TlsRouteIR {
 		SourceObject: tlsRoute,
 		ParentRefs:   tlsRoute.Spec.ParentRefs,
 	}
+	for _, h := range tlsRoute.Spec.Hostnames {
+		routeir.Hostnames = append(routeir.Hostnames, string(h))
+	}
 	if len(tlsRoute.Spec.Rules) == 0 {
 		return routeir
 	}
@@ -1234,7 +1237,6 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				newerTLSRoute.CreationTimestamp = metav1.Now()
 				newerTLSRoute.Spec = gwv1a2.TLSRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
-					Hostnames:       []gwv1a2.Hostname{"example.com"},
 					Rules:           []gwv1a2.TLSRouteRule{{BackendRefs: backendRefs}},
 				}
 
