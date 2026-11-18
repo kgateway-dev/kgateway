@@ -3824,6 +3824,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with mTLS needs a ReferenceGrant from ListenerPolicy for CA refs to other namespaces", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-refgrant.yaml"},
+			outputFile: "listener-policy/gateway-mtls-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation whose CA is missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-missing-ca.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-missing-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy merge happens in the default and perPort fields", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/deep-merge.yaml"},

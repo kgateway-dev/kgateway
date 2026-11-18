@@ -1233,7 +1233,9 @@ type ClientCertificateValidationConfig struct {
 
 	// CACertificateRefs contains references to Kubernetes Secrets or ConfigMaps containing
 	// CA certificates. Multiple references will be combined into a single trusted CA pool for the listener.
-	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data
+	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data.
+	// A reference without a namespace is resolved in the ListenerPolicy's namespace. A reference to another
+	// namespace requires a ReferenceGrant in that namespace that allows references from ListenerPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=8
 	// +required
