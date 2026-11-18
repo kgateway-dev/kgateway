@@ -8,7 +8,6 @@ import (
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -49,12 +48,12 @@ dynamic_resources:
 `
 
 var (
-	gcParams = types.NamespacedName{Namespace: "kgateway-system", Name: "class-params"}
-	gwParams = types.NamespacedName{Namespace: "default", Name: "gw-params"}
+	gcParams = Source{Namespace: "kgateway-system", Name: "class-params"}
+	gwParams = Source{Namespace: "default", Name: "gw-params"}
 )
 
 // overlay converts a YAML overlay to the JSON GatewayParameters stores.
-func overlay(t *testing.T, source types.NamespacedName, y string) Overlay {
+func overlay(t *testing.T, source Source, y string) Overlay {
 	t.Helper()
 	raw, err := yaml.YAMLToJSON([]byte(y))
 	require.NoError(t, err)
@@ -602,4 +601,18 @@ func TestMarshal(t *testing.T) {
 	again, err := Marshal(reparsed)
 	require.NoError(t, err)
 	assert.Equal(t, string(out), string(again))
+}
+
+func TestSourceKind(t *testing.T) {
+	// A source without a kind is a GatewayParameters.
+	assert.Equal(t, "GatewayParameters default/gw-params", gwParams.String())
+
+	// Messages name a source of another kind by that kind.
+	proxyParams := Source{Kind: "ProxyParameters", Namespace: "default", Name: "proxy-params"}
+	_, err := Apply(parseBase(t), []Overlay{overlay(t, proxyParams, `{node: {id: x}, layered_runtime: {layers: [{name: admin_layer, static_layer: {}}]}}`)}, apisettings.BootstrapPatchManagedPathsWarn)
+	assert.ErrorContains(t, err, "bootstrap overlay in ProxyParameters default/proxy-params: ")
+	res, err := Apply(parseBase(t), []Overlay{overlay(t, proxyParams, `{node: {id: x}}`)}, apisettings.BootstrapPatchManagedPathsWarn)
+	require.NoError(t, err)
+	require.Len(t, res.ManagedPaths, 1)
+	assert.Equal(t, "node (ProxyParameters default/proxy-params)", res.ManagedPaths[0].String())
 }

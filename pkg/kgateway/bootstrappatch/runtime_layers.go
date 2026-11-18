@@ -6,7 +6,6 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // xdsClusterName is the generated static cluster that connects the proxy to the
@@ -27,16 +26,16 @@ type RuntimeLayer struct {
 	Name string
 	// Kind is RuntimeLayerDisk or RuntimeLayerRTDS.
 	Kind string
-	// Source is the GatewayParameters whose overlay adds the layer.
-	Source types.NamespacedName
+	// Source is the resource whose overlay adds the layer.
+	Source Source
 }
 
 func (l RuntimeLayer) String() string {
-	return fmt.Sprintf("%s layer %q (GatewayParameters %s)", l.Kind, l.Name, l.Source)
+	return fmt.Sprintf("%s layer %q (%s)", l.Kind, l.Name, l.Source)
 }
 
 // unvalidatedRuntimeLayers returns the overlay's disk and RTDS runtime layers, in order.
-func unvalidatedRuntimeLayers(ov *envoybootstrapv3.Bootstrap, source types.NamespacedName) []RuntimeLayer {
+func unvalidatedRuntimeLayers(ov *envoybootstrapv3.Bootstrap, source Source) []RuntimeLayer {
 	var out []RuntimeLayer
 	for _, l := range ov.GetLayeredRuntime().GetLayers() {
 		switch {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // downstreamConnectionsMonitor is the resource monitor the
@@ -19,12 +18,12 @@ type CuratedOverride struct {
 	Field string
 	// Path is the bootstrap path the field generates and the overlay sets.
 	Path string
-	// Source is the GatewayParameters whose overlay sets the path.
-	Source types.NamespacedName
+	// Source is the resource whose overlay sets the path.
+	Source Source
 }
 
 func (o CuratedOverride) String() string {
-	return fmt.Sprintf("%s replaces what %s generates (GatewayParameters %s)", o.Path, o.Field, o.Source)
+	return fmt.Sprintf("%s replaces what %s generates (%s)", o.Path, o.Field, o.Source)
 }
 
 // curatedPaths lists the bootstrap paths each GatewayParameters field generates.
@@ -55,7 +54,7 @@ var curatedPaths = []struct {
 
 // curatedOverrides returns each path overlay sets that a GatewayParameters field
 // generated in base.
-func curatedOverrides(base, overlay *envoybootstrapv3.Bootstrap, source types.NamespacedName) []CuratedOverride {
+func curatedOverrides(base, overlay *envoybootstrapv3.Bootstrap, source Source) []CuratedOverride {
 	var out []CuratedOverride
 	for _, c := range curatedPaths {
 		if c.present(base) && c.present(overlay) {

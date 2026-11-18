@@ -14,7 +14,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -49,6 +48,33 @@ const (
 	// the bootstrap patches add, whose values route validation does not see.
 	unvalidatedRuntimeLayerReason = "UnvalidatedRuntimeLayer"
 )
+
+// BootstrapPatchProvider is an optional interface for a HelmValuesGenerator set with
+// GatewayParameters.WithHelmValuesGeneratorOverride. It chooses the bootstrap overlays
+// for a Gateway. The controller then applies them as it does without an override:
+// it merges them into the rendered bootstrap, validates the result, removes the ports
+// the bootstrap listens on from the Service, writes the xDS validation data, and
+// reports the kgateway.dev/BootstrapPatchApplied condition, events and metric.
+//
+// The merge runs before the override's PostProcessObjects, when the override
+// implements deployer.ObjectPostProcessor, so the post-processor sees the patched
+// bootstrap. An override that implements deployer.ObjectPostProcessor without this
+// interface replaces all of the post-processing: no bootstrap patches are applied,
+// and no condition is reported.
+//
+// When a Gateway has bootstrap overlays, the override's GetValues should build the
+// Service ports with deployer.GetPortsValuesForBootstrapPatches rather than
+// deployer.GetPortsValues. Otherwise a listener on a default proxy port, such as
+// 8082, is dropped from the Service even when a patch moves the proxy listener off
+// that port.
+type BootstrapPatchProvider interface {
+	// BootstrapOverlays returns the overlays to merge into gw's bootstrap, in order; a
+	// later overlay wins a conflict. fromGatewayParameters are the overlays of the
+	// GatewayParameters that gw's GatewayClass and gw reference, GatewayClass first.
+	// An overlay from another kind of resource sets Source.Kind, so status
+	// messages and events name that resource.
+	BootstrapOverlays(ctx context.Context, gw *gwv1.Gateway, fromGatewayParameters []bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error)
+}
 
 // BootstrapPatchError reports bootstrap patches that were not applied. None of the
 // Gateway's objects are deployed. Unless Retry is set, retrying cannot succeed until
@@ -298,7 +324,7 @@ func (r *resolvedKgatewayParameters) bootstrapOverlays() []bootstrappatch.Overla
 		}
 
 		// A GatewayParameters referenced by both the GatewayClass and the Gateway applies once.
-		source := types.NamespacedName{Namespace: gwp.Namespace, Name: gwp.Name}
+		source := bootstrappatch.Source{Namespace: gwp.Namespace, Name: gwp.Name}
 		if slices.ContainsFunc(out, func(o bootstrappatch.Overlay) bool { return o.Source == source }) {
 			continue
 		}

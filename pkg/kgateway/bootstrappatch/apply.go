@@ -1,20 +1,33 @@
 package bootstrappatch
 
 import (
+	"cmp"
 	"fmt"
 	"strings"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"google.golang.org/protobuf/proto"
-	"k8s.io/apimachinery/pkg/types"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 )
 
-// Overlay is a partial bootstrap from one GatewayParameters.
+// Source is the resource that holds an overlay. Status messages and events name it.
+type Source struct {
+	// Kind is the resource's kind. Empty means GatewayParameters.
+	Kind      string
+	Namespace string
+	Name      string
+}
+
+// String returns the source as "<kind> <namespace>/<name>".
+func (s Source) String() string {
+	return fmt.Sprintf("%s %s/%s", cmp.Or(s.Kind, "GatewayParameters"), s.Namespace, s.Name)
+}
+
+// Overlay is a partial bootstrap from one resource.
 type Overlay struct {
-	// Source is the GatewayParameters that holds the overlay.
-	Source types.NamespacedName
+	// Source is the resource that holds the overlay.
+	Source Source
 	// Raw is the overlay as JSON.
 	Raw []byte
 }
@@ -24,12 +37,12 @@ type ManagedPath struct {
 	// Path is the field path, with list entries identified by name, for example
 	// static_resources.clusters[name=xds_cluster].
 	Path string
-	// Source is the GatewayParameters whose overlay sets the path.
-	Source types.NamespacedName
+	// Source is the resource whose overlay sets the path.
+	Source Source
 }
 
 func (p ManagedPath) String() string {
-	return fmt.Sprintf("%s (GatewayParameters %s)", p.Path, p.Source)
+	return fmt.Sprintf("%s (%s)", p.Path, p.Source)
 }
 
 // Result is the outcome of applying overlays to a generated bootstrap.
@@ -49,12 +62,12 @@ type Result struct {
 
 // InvalidOverlayError reports an overlay that cannot be applied under any mode.
 type InvalidOverlayError struct {
-	Source types.NamespacedName
+	Source Source
 	Err    error
 }
 
 func (e *InvalidOverlayError) Error() string {
-	return fmt.Sprintf("bootstrap overlay in GatewayParameters %s: %v", e.Source, e.Err)
+	return fmt.Sprintf("bootstrap overlay in %s: %v", e.Source, e.Err)
 }
 
 func (e *InvalidOverlayError) Unwrap() error {
@@ -86,7 +99,7 @@ func Apply(
 	mode apisettings.BootstrapPatchManagedPathsMode,
 ) (*Result, error) {
 	// Record which runtime layer names the generated bootstrap uses. An empty owner
-	// means the generated bootstrap; otherwise it is the GatewayParameters.
+	// means the generated bootstrap; otherwise it is the overlay's source.
 	layerOwners := map[string]string{}
 	for _, l := range base.GetLayeredRuntime().GetLayers() {
 		layerOwners[l.GetName()] = ""
@@ -184,7 +197,7 @@ func claimLayers(ov *envoybootstrapv3.Bootstrap, source string, owners map[strin
 		case owner == source:
 			return fmt.Errorf("layered_runtime.layers has more than one entry named %q", l.GetName())
 		default:
-			return fmt.Errorf("runtime layer %q is also defined in GatewayParameters %s; give one of them another name", l.GetName(), owner)
+			return fmt.Errorf("runtime layer %q is also defined in %s; give one of them another name", l.GetName(), owner)
 		}
 	}
 	return nil

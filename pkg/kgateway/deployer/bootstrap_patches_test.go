@@ -50,6 +50,8 @@ type bootstrapTestCase struct {
 	validator validator.BootstrapValidator
 	// managedPaths is the KGW_BOOTSTRAP_PATCH_MANAGED_PATHS mode; empty means WARN.
 	managedPaths apisettings.BootstrapPatchManagedPathsMode
+	// override builds the override HelmValuesGenerator from kgateway's own; nil for none.
+	override func(kgatewayValues deployer.HelmValuesGenerator) deployer.HelmValuesGenerator
 }
 
 // render renders the Gateway's objects through the full deployer, including post-processing.
@@ -89,6 +91,9 @@ func (tc bootstrapTestCase) render(t *testing.T) ([]client.Object, *deployer.Pos
 	inputs.BootstrapValidator = tc.validator
 	inputs.BootstrapPatchManagedPaths = tc.managedPaths
 	gwp := NewGatewayParameters(fakeClient, inputs)
+	if tc.override != nil {
+		gwp.WithHelmValuesGeneratorOverride(tc.override(gwp.kgwParameters))
+	}
 	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, schemes.GatewayScheme(), fakeClient, gwp)
 	require.NoError(t, err)
 	fakeClient.RunAndWait(t.Context().Done())
@@ -114,7 +119,7 @@ func testOverlay(t *testing.T, overlayYAML string) bootstrappatch.Overlay {
 	t.Helper()
 	raw, err := yaml.YAMLToJSON([]byte(overlayYAML))
 	require.NoError(t, err)
-	return bootstrappatch.Overlay{Source: types.NamespacedName{Namespace: defaultNamespace, Name: gatewayParamsName}, Raw: raw}
+	return bootstrappatch.Overlay{Source: gatewayParamsSource(), Raw: raw}
 }
 
 func gatewayParams() *kgateway.GatewayParameters {
@@ -289,6 +294,166 @@ func TestBootstrapPatchesGatewayClassThenGateway(t *testing.T) {
 	}
 	assert.Equal(t, []string{"class_layer", "gateway_layer", "admin_layer"}, layerNames)
 	assert.Equal(t, metav1.ConditionTrue, bootstrapCondition(t, report).Status)
+}
+
+// postProcessingOverride is an override HelmValuesGenerator with its own post-processor.
+// It renders kgateway's own values, records the bootstrap its post-processor is given,
+// and labels the Deployment.
+type postProcessingOverride struct {
+	deployer.HelmValuesGenerator
+	seenBootstrap string
+}
+
+func (o *postProcessingOverride) PostProcessObjects(_ context.Context, _ client.Object, rendered []client.Object) ([]client.Object, error) {
+	// Record the bootstrap the post-processor sees.
+	if cm := findBootstrapConfigMap(rendered); cm != nil {
+		o.seenBootstrap = cm.Data[bootstrapConfigKey]
+	}
+
+	// Change an object, as a post-processor would.
+	for _, dep := range objectsOf[*appsv1.Deployment](rendered) {
+		if dep.Labels == nil {
+			dep.Labels = map[string]string{}
+		}
+		dep.Labels["post-processed"] = "true"
+	}
+	return rendered, nil
+}
+
+// patchProvidingOverride is a postProcessingOverride that also chooses the bootstrap
+// overlays, and records the GatewayParameters overlays it is given.
+type patchProvidingOverride struct {
+	postProcessingOverride
+	overlays              func(fromGatewayParameters []bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error)
+	fromGatewayParameters []bootstrappatch.Overlay
+}
+
+func (o *patchProvidingOverride) BootstrapOverlays(_ context.Context, _ *gwv1.Gateway, fromGatewayParameters []bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error) {
+	o.fromGatewayParameters = fromGatewayParameters
+	return o.overlays(fromGatewayParameters)
+}
+
+// runtimeLayerNames returns the names of the bootstrap's runtime layers, in order.
+func runtimeLayerNames(bs *envoybootstrapv3.Bootstrap) []string {
+	var names []string
+	for _, l := range bs.GetLayeredRuntime().GetLayers() {
+		names = append(names, l.GetName())
+	}
+	return names
+}
+
+func TestBootstrapPatchesOverridePostProcessor(t *testing.T) {
+	// Render a Gateway with bootstrap patches through an override that post-processes
+	// the objects without choosing bootstrap patches.
+	override := &postProcessingOverride{}
+	objs, report, err := bootstrapTestCase{
+		gatewayParams: withOverlay(t, gatewayParams(), `{layered_runtime: {layers: [{name: user_runtime, static_layer: {}}]}}`),
+		override: func(kgatewayValues deployer.HelmValuesGenerator) deployer.HelmValuesGenerator {
+			override.HelmValuesGenerator = kgatewayValues
+			return override
+		},
+	}.render(t)
+	require.NoError(t, err)
+
+	// The override's post-processor ran.
+	deps := objectsOf[*appsv1.Deployment](objs)
+	require.Len(t, deps, 1)
+	assert.Equal(t, "true", deps[0].Labels["post-processed"])
+
+	// It replaced the bootstrap patches: none are merged, and nothing is reported.
+	_, bs := renderedBootstrap(t, objs)
+	assert.Equal(t, []string{"admin_layer"}, runtimeLayerNames(bs))
+	assert.Nil(t, report)
+}
+
+func TestBootstrapPatchProvider(t *testing.T) {
+	const gatewayOverlay = `{layered_runtime: {layers: [{name: user_runtime, static_layer: {}}]}}`
+
+	// render renders a Gateway with bootstrap patches through a patch-providing
+	// override whose overlays come from the given function.
+	render := func(t *testing.T, overlays func([]bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error)) (*patchProvidingOverride, []client.Object, *deployer.PostProcessReport, error) {
+		override := &patchProvidingOverride{overlays: overlays}
+		objs, report, err := bootstrapTestCase{
+			gatewayParams: withOverlay(t, gatewayParams(), gatewayOverlay),
+			override: func(kgatewayValues deployer.HelmValuesGenerator) deployer.HelmValuesGenerator {
+				override.HelmValuesGenerator = kgatewayValues
+				return override
+			},
+		}.render(t)
+		return override, objs, report, err
+	}
+
+	t.Run("the GatewayParameters patches, unchanged", func(t *testing.T) {
+		// Return the GatewayParameters overlays as given.
+		override, objs, report, err := render(t, func(from []bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error) {
+			return from, nil
+		})
+		require.NoError(t, err)
+
+		// The override was given the Gateway's GatewayParameters overlay.
+		require.Len(t, override.fromGatewayParameters, 1)
+		want := testOverlay(t, gatewayOverlay)
+		assert.Equal(t, want.Source, override.fromGatewayParameters[0].Source)
+		assert.JSONEq(t, string(want.Raw), string(override.fromGatewayParameters[0].Raw))
+
+		// The patches are merged, and the post-processor ran on the patched bootstrap.
+		envoyYaml, bs := renderedBootstrap(t, objs)
+		assert.Equal(t, []string{"user_runtime", "admin_layer"}, runtimeLayerNames(bs))
+		assert.Equal(t, envoyYaml, override.seenBootstrap, "the post-processor should see the patched bootstrap")
+		assert.Equal(t, "true", objectsOf[*appsv1.Deployment](objs)[0].Labels["post-processed"])
+
+		// The condition reports the patches as applied.
+		cond := bootstrapCondition(t, report)
+		assert.Equal(t, metav1.ConditionTrue, cond.Status)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
+	})
+
+	t.Run("the override's own patches", func(t *testing.T) {
+		// Return an overlay from another kind of resource in place of the GatewayParameters
+		// overlay. It also sets a managed path, so the condition names its source.
+		own := testOverlay(t, `{node: {id: x}, layered_runtime: {layers: [{name: provider_runtime, static_layer: {}}]}}`)
+		own.Source = bootstrappatch.Source{Kind: "ProxyParameters", Namespace: defaultNamespace, Name: "provider-params"}
+		_, objs, report, err := render(t, func([]bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error) {
+			return []bootstrappatch.Overlay{own}, nil
+		})
+		require.NoError(t, err)
+
+		// Only the override's overlay is merged.
+		_, bs := renderedBootstrap(t, objs)
+		assert.Equal(t, []string{"provider_runtime", "admin_layer"}, runtimeLayerNames(bs))
+
+		// The condition names the override's resource by its kind.
+		cond := bootstrapCondition(t, report)
+		assert.Equal(t, metav1.ConditionTrue, cond.Status)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapManagedPathsOverridden, cond.Reason)
+		assert.Contains(t, cond.Message, "node (ProxyParameters default/provider-params)")
+	})
+
+	t.Run("no patches", func(t *testing.T) {
+		// Return no overlays.
+		_, objs, report, err := render(t, func([]bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error) {
+			return nil, nil
+		})
+		require.NoError(t, err)
+
+		// Nothing is merged, and the report clears the condition.
+		_, bs := renderedBootstrap(t, objs)
+		assert.Equal(t, []string{"admin_layer"}, runtimeLayerNames(bs))
+		require.NotNil(t, report)
+		assert.Empty(t, report.Conditions)
+		assert.Equal(t, []string{conditions.KgatewayConditionBootstrapPatchApplied}, report.OwnedConditionTypes)
+	})
+
+	t.Run("an error", func(t *testing.T) {
+		// Fail to choose the overlays.
+		_, objs, _, err := render(t, func([]bootstrappatch.Overlay) ([]bootstrappatch.Overlay, error) {
+			return nil, errors.New("the provider's parameters are missing")
+		})
+
+		// Nothing is rendered, and the error names the Gateway and the cause.
+		assert.ErrorContains(t, err, fmt.Sprintf("failed to get the bootstrap patches for Gateway %s/gw: the provider's parameters are missing", defaultNamespace))
+		assert.Nil(t, objs)
+	})
 }
 
 func TestBootstrapPatchesManagedPath(t *testing.T) {
@@ -624,7 +789,7 @@ func TestBootstrapPatchesManagedPathModes(t *testing.T) {
 		assert.Equal(t, conditions.KgatewayReasonBootstrapPathsDenied, patchErr.Reason)
 		assert.Equal(t, []bootstrappatch.ManagedPath{{
 			Path:   "static_resources.clusters[name=xds_cluster]",
-			Source: gatewayParamsKey(),
+			Source: gatewayParamsSource(),
 		}}, patchErr.ManagedPaths)
 
 		// A Warning event names each denied path.
@@ -863,6 +1028,6 @@ kgateway_controller_bootstrap_patch_managed_paths{name="gw",namespace="default",
 	assertSeries(t, "")
 }
 
-func gatewayParamsKey() types.NamespacedName {
-	return types.NamespacedName{Namespace: defaultNamespace, Name: gatewayParamsName}
+func gatewayParamsSource() bootstrappatch.Source {
+	return bootstrappatch.Source{Namespace: defaultNamespace, Name: gatewayParamsName}
 }
