@@ -518,10 +518,22 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 			vhostNameCounts[name]++
 		}
 	}
+	// Envoy rejects the whole RouteConfiguration over one bad header mutation at
+	// any level, so check the shared levels here too, not only in strict mode.
+	if err := validateSharedHeaderMutations(cfg.GetRequestHeadersToAdd(), cfg.GetRequestHeadersToRemove(),
+		cfg.GetResponseHeadersToAdd(), cfg.GetResponseHeadersToRemove()); err != nil {
+		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+		return
+	}
 	contexts := make([]vhostRouteValidationContext, len(cfg.GetVirtualHosts()))
 	for i, vhost := range cfg.GetVirtualHosts() {
 		name := vhost.GetName()
 		contexts[i] = validationCtx.forVirtualHost(vhost, name != "" && vhostNameCounts[name] == 1)
+		if err := validateSharedHeaderMutations(vhost.GetRequestHeadersToAdd(), vhost.GetRequestHeadersToRemove(),
+			vhost.GetResponseHeadersToAdd(), vhost.GetResponseHeadersToRemove()); err != nil {
+			cfg.VirtualHosts[i] = h.replaceInvalidVirtualHost(contexts[i].virtualHost, vhost, err)
+			continue
+		}
 		h.validateRouteBatchPreEnvoy(vhost, contexts[i])
 	}
 	if h.validationLevel != apisettings.ValidationStrict {
@@ -756,7 +768,7 @@ func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHost
 func replacementMessage(subject string, policies []string, err error) string {
 	var b strings.Builder
 	b.WriteString(subject)
-	b.WriteString(" was replaced with a 500 direct response because Envoy rejected its configuration")
+	b.WriteString(" was replaced with a 500 direct response because Envoy rejects its configuration")
 	if len(policies) > 0 {
 		b.WriteString(" (settings from ")
 		b.WriteString(strings.Join(policies, ", "))

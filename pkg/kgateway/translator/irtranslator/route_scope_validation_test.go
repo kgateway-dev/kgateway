@@ -631,3 +631,115 @@ func TestHTTPSReplacementReportsFilterChainListener(t *testing.T) {
 		})
 	}
 }
+
+// Envoy rejects the whole RouteConfiguration over a header mutation its
+// HeaderParser refuses at any level. Standard mode never runs Envoy, so shared
+// virtual host and route configuration mutations must be checked in-process,
+// replacing only the scope that carries them.
+func TestStandardModeRejectsSharedHeaderMutations(t *testing.T) {
+	hostHeader := []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "Host", Value: "a.example.com"}}}
+	badValue := []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "x-id", Value: "%REQ(x-id"}}}
+	for _, tc := range []struct {
+		name        string
+		mutate      func(*envoyroutev3.RouteConfiguration)
+		wholeConfig bool
+		message     string
+	}{
+		{
+			name:    "virtual host request host header",
+			mutate:  func(cfg *envoyroutev3.RouteConfiguration) { cfg.VirtualHosts[0].RequestHeadersToAdd = hostHeader },
+			message: `cannot set header "Host"`,
+		},
+		{
+			name:    "virtual host response header value",
+			mutate:  func(cfg *envoyroutev3.RouteConfiguration) { cfg.VirtualHosts[0].ResponseHeadersToAdd = badValue },
+			message: `invalid value for header "x-id"`,
+		},
+		{
+			name: "virtual host pseudo-header removal",
+			mutate: func(cfg *envoyroutev3.RouteConfiguration) {
+				cfg.VirtualHosts[0].RequestHeadersToRemove = []string{":authority"}
+			},
+			message: `cannot remove header ":authority"`,
+		},
+		{
+			name:        "route configuration request host header",
+			mutate:      func(cfg *envoyroutev3.RouteConfiguration) { cfg.RequestHeadersToAdd = hostHeader },
+			wholeConfig: true,
+			message:     `cannot set header "Host"`,
+		},
+		{
+			name:        "route configuration response header value",
+			mutate:      func(cfg *envoyroutev3.RouteConfiguration) { cfg.ResponseHeadersToAdd = badValue },
+			wholeConfig: true,
+			message:     `invalid value for header "x-id"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+				t.Fatal("standard mode must not invoke Envoy")
+				return nil
+			}}
+			h := testHTTPRouteTranslator(v, apisettings.ValidationStandard)
+			h.routeConfigName = "original-route-config"
+			attachRouteConfigPass(h, routeConfigPassFunc{apply: tc.mutate})
+			inputs := scopeTestVirtualHosts()
+			rm := reports.NewReportMap()
+			h.reporter = reports.NewReporter(&rm)
+			for _, vh := range inputs {
+				vh.ParentRef = ir.Listener{Parent: &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: vh.Name}}, Listener: gwv1.Listener{Name: "http"}}
+			}
+			cfg := h.ComputeRouteConfiguration(context.Background(), inputs)
+
+			assert.Equal(t, h.routeConfigName, cfg.Name, "RDS identity must survive fallback")
+			for _, scope := range append([]headerScope{cfg}, virtualHostScopes(cfg)...) {
+				require.NoError(t, validateSharedHeaderMutations(scope.GetRequestHeadersToAdd(), scope.GetRequestHeadersToRemove(),
+					scope.GetResponseHeadersToAdd(), scope.GetResponseHeadersToRemove()), "invalid mutations must not survive fallback")
+			}
+			if tc.wholeConfig {
+				require.Len(t, cfg.VirtualHosts, 1)
+				assert.Equal(t, []string{"*"}, cfg.VirtualHosts[0].Domains)
+			} else {
+				require.Len(t, cfg.VirtualHosts, 2)
+				assert.Equal(t, []string{"one.example.com"}, cfg.VirtualHosts[0].Domains, "replacement keeps the virtual host's domains")
+				assert.Equal(t, "shared-cluster", cfg.VirtualHosts[1].Routes[0].GetRoute().GetCluster(), "healthy virtual host must remain unchanged")
+			}
+			assert.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[0].GetDirectResponse().GetStatus())
+
+			for i, vh := range inputs {
+				report := rm.Gateway(vh.ParentRef.Parent.(*gwv1.Gateway))
+				affected := i == 0 || tc.wholeConfig
+				if report == nil {
+					require.False(t, affected, "affected listener must have a report")
+					continue
+				}
+				listener := report.Listener(&vh.ParentRef.Listener).(*reports.ListenerReport)
+				condition := meta.FindStatusCondition(listener.Status.Conditions, string(gwv1.ListenerConditionAccepted))
+				if !affected {
+					if condition != nil {
+						assert.NotEqual(t, string(reportssdk.ListenerReplacedReason), condition.Reason, "healthy listener must not report replacement")
+					}
+					continue
+				}
+				require.NotNil(t, condition, "affected listener must report replacement")
+				assert.Equal(t, string(reportssdk.ListenerReplacedReason), condition.Reason)
+				assert.Contains(t, condition.Message, tc.message)
+			}
+		})
+	}
+}
+
+type headerScope interface {
+	GetRequestHeadersToAdd() []*envoycorev3.HeaderValueOption
+	GetRequestHeadersToRemove() []string
+	GetResponseHeadersToAdd() []*envoycorev3.HeaderValueOption
+	GetResponseHeadersToRemove() []string
+}
+
+func virtualHostScopes(cfg *envoyroutev3.RouteConfiguration) []headerScope {
+	scopes := make([]headerScope, 0, len(cfg.GetVirtualHosts()))
+	for _, vh := range cfg.GetVirtualHosts() {
+		scopes = append(scopes, vh)
+	}
+	return scopes
+}

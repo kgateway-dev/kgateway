@@ -9,12 +9,14 @@ import (
 	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyheaders"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
@@ -128,14 +130,45 @@ func validateEnvoyRoute(r *envoyroutev3.Route) error {
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
 	validatePrefixRewrite(re.GetPrefixRewrite(), &errs)
+	validateHostRewriteLiteral(route.GetHostRewriteLiteral(), &errs)
 	validateWeightedClusters(route.GetWeightedClusters().GetClusters(), &errs)
+	// Envoy rejects the entire RouteConfiguration over one bad header mutation,
+	// so catch these in standard mode and cost only the offending route.
+	validateHeaderMutations(r.GetRequestHeadersToAdd(), r.GetRequestHeadersToRemove(), &errs)
+	validateHeaderMutations(r.GetResponseHeadersToAdd(), r.GetResponseHeadersToRemove(), &errs)
 	if len(errs) == 0 {
 		return nil
 	}
 	return fmt.Errorf("error %s: %w", r.GetName(), errors.Join(errs...))
 }
 
-// validateWeightedClusters validates that at least one cluster has a non-zero weight
+// validateHeaderMutations applies Envoy's HeaderParser checks; see envoyheaders.
+func validateHeaderMutations(add []*envoycorev3.HeaderValueOption, remove []string, errs *[]error) {
+	if err := envoyheaders.ValidateMutations(add, remove); err != nil {
+		*errs = append(*errs, err)
+	}
+}
+
+// validateSharedHeaderMutations checks the header mutations a virtual host or
+// route configuration applies to every route beneath it.
+func validateSharedHeaderMutations(
+	requestAdd []*envoycorev3.HeaderValueOption, requestRemove []string,
+	responseAdd []*envoycorev3.HeaderValueOption, responseRemove []string,
+) error {
+	return errors.Join(
+		envoyheaders.ValidateMutations(requestAdd, requestRemove),
+		envoyheaders.ValidateMutations(responseAdd, responseRemove),
+	)
+}
+
+func validateHostRewriteLiteral(host string, errs *[]error) {
+	if err := envoyheaders.ValidateLiteral(host); err != nil {
+		*errs = append(*errs, fmt.Errorf("invalid host rewrite %q: %w", host, err))
+	}
+}
+
+// validateWeightedClusters validates each weighted cluster's per-backend
+// overrides and that at least one cluster has a non-zero weight.
 func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWeight, errs *[]error) {
 	if len(clusters) == 0 {
 		return
@@ -145,8 +178,10 @@ func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWe
 	for _, cluster := range clusters {
 		if cluster.GetWeight().GetValue() > 0 {
 			allZeroWeight = false
-			break
 		}
+		validateHostRewriteLiteral(cluster.GetHostRewriteLiteral(), errs)
+		validateHeaderMutations(cluster.GetRequestHeadersToAdd(), cluster.GetRequestHeadersToRemove(), errs)
+		validateHeaderMutations(cluster.GetResponseHeadersToAdd(), cluster.GetResponseHeadersToRemove(), errs)
 	}
 	if allZeroWeight {
 		*errs = append(*errs, errors.New("All backend weights are 0. At least one backendRef in the HTTPRoute rule must specify a non-zero weight"))
