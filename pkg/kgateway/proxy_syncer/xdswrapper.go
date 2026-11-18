@@ -64,6 +64,21 @@ type XdsSnapWrapper struct {
 	// emitted) changes nothing published; at worst a graced cluster whose backend
 	// is then deleted stays until its grace ends.
 	translatedClusters map[string]envoycachetypes.ResourceWithTTL
+	// translatedEndpoints are the client's endpoints before scoping filters
+	// them, with their row hashes, shared read-only with the per-client
+	// endpoint row. Set only on a scoped build missing a referenced cluster: a
+	// missing tunnel row hides the listener that keeps its proxy cluster, so the
+	// build leaves out a cluster it still translates, and the carry takes that
+	// cluster's current copy instead of its published one
+	// (resolveDeferredPerCluster).
+	// +noKrtEquals compared through translatedEndpointsVersion
+	translatedEndpoints map[string]envoycachetypes.ResourceWithTTL
+	// +noKrtEquals compared through translatedEndpointsVersion
+	translatedEndpointHashes map[string]uint64
+	// translatedEndpointsVersion is translatedEndpoints' EDS version, so an
+	// endpoint change of a cluster scoping left out reaches the gate while it
+	// can be carried, and only then.
+	translatedEndpointsVersion string
 }
 
 // deferred reports whether some referenced cluster was unready at build
@@ -100,7 +115,8 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
 		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
 		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints) &&
-		slices.Equal(p.erroredClusters, in.erroredClusters)
+		slices.Equal(p.erroredClusters, in.erroredClusters) &&
+		p.translatedEndpointsVersion == in.translatedEndpointsVersion
 }
 
 func (p XdsSnapWrapper) ResourceName() string {
