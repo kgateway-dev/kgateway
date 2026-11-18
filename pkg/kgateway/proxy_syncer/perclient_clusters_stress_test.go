@@ -143,9 +143,9 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 	for _, n := range backendNames {
 		backends = append(backends, clustersTestBackend(n))
 	}
-	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.NewMutableCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
 
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends.AsCollection(), uccs)
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
 
 	stop := make(chan struct{})

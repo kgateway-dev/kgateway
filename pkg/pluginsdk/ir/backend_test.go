@@ -48,9 +48,29 @@ func TestParseAppProtocol(t *testing.T) {
 			expected: WebSocketAppProtocol,
 		},
 		{
+			name:     "kubernetes.io/wss",
+			input:    new("kubernetes.io/wss"),
+			expected: WebSocketAppProtocol,
+		},
+		{
 			name:     "HTTP2",
 			input:    new("HTTP2"),
 			expected: HTTP2AppProtocol,
+		},
+		{
+			name:     "http",
+			input:    new("http"),
+			expected: HTTP1AppProtocol,
+		},
+		{
+			name:     "HTTP",
+			input:    new("HTTP"),
+			expected: HTTP1AppProtocol,
+		},
+		{
+			name:     "https is the default",
+			input:    new("https"),
+			expected: DefaultAppProtocol,
 		},
 		{
 			name:     "(empty)",

@@ -135,3 +135,53 @@ func TestTranslateHealthCheck(t *testing.T) {
 		})
 	}
 }
+
+// Omitting NoTrafficInterval preserves Envoy's default regardless of Interval.
+func TestHealthCheckNoTrafficIntervalDefault(t *testing.T) {
+	for _, interval := range []time.Duration{250 * time.Millisecond, time.Second, 90 * time.Second} {
+		t.Run(interval.String(), func(t *testing.T) {
+			hc := &kgateway.HealthCheck{
+				Timeout:            metav1.Duration{Duration: time.Second},
+				Interval:           metav1.Duration{Duration: interval},
+				UnhealthyThreshold: 1,
+				HealthyThreshold:   1,
+				Http:               &kgateway.HealthCheckHttp{Path: "/health"},
+			}
+			got := translateHealthCheck(hc)
+			if got.GetNoTrafficInterval() != nil {
+				t.Fatalf("want Envoy default, got no-traffic interval %v", got.GetNoTrafficInterval())
+			}
+			if got.GetNoTrafficHealthyInterval() != nil {
+				t.Fatal("healthy hosts must inherit the same no-traffic interval")
+			}
+		})
+	}
+}
+
+func TestHealthCheckNoTrafficIntervalOverride(t *testing.T) {
+	for _, protocol := range []string{"http", "grpc"} {
+		for _, interval := range []time.Duration{250 * time.Millisecond, time.Second, 90 * time.Second} {
+			t.Run(protocol+"/"+interval.String(), func(t *testing.T) {
+				hc := &kgateway.HealthCheck{
+					Interval:          metav1.Duration{Duration: 10 * time.Second},
+					NoTrafficInterval: &metav1.Duration{Duration: interval},
+				}
+				if protocol == "http" {
+					hc.Http = &kgateway.HealthCheckHttp{Path: "/health"}
+				} else {
+					hc.Grpc = &kgateway.HealthCheckGrpc{}
+				}
+				got := translateHealthCheck(hc)
+				if !proto.Equal(got.GetNoTrafficInterval(), durationpb.New(interval)) {
+					t.Fatalf("want no-traffic interval %s, got %v", interval, got.GetNoTrafficInterval())
+				}
+				if !proto.Equal(got.GetInterval(), durationpb.New(10*time.Second)) {
+					t.Fatalf("regular interval changed: %v", got.GetInterval())
+				}
+				if got.GetNoTrafficHealthyInterval() != nil {
+					t.Fatal("healthy hosts must inherit the same no-traffic interval")
+				}
+			})
+		}
+	}
+}

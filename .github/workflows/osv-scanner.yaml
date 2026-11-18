@@ -14,6 +14,7 @@ on:
           - main
           - v2.3.x
           - v2.4.x
+          - v2.5.x
 
 permissions:
   actions: read
@@ -55,7 +56,7 @@ jobs:
           # Branch allowlist, and the single source of truth for which branches
           # get scanned: hack/osvtool parses this assignment out of this file, so
           # keep it a one-line JSON array literal in single quotes.
-          branches='["main","v2.3.x","v2.4.x"]'
+          branches='["main","v2.3.x","v2.4.x","v2.5.x"]'
 
           candidates=()
           while IFS= read -r branch; do

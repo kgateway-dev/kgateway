@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	udpaannontations "github.com/cncf/xds/go/udpa/annotations"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -23,12 +24,53 @@ var UseDetailedUnmarshalling = !envutils.IsEnvTruthy("DISABLE_DETAILED_SNAP_UNMA
 
 type XdsSnapWrapper struct {
 	snap *envoycache.Snapshot
-	// erroredClusters contains clusters that encountered errors during backend translation
-	// TODO: this is not used anywhere, we need surface this somewhere
-	// +noKrtEquals
+	// erroredClusters lists clusters whose translation failed; resolution never
+	// carries them from the published snapshot. Sorted.
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
+	// missingReferenced lists referenced clusters absent from CDS (lagging or
+	// gone). Sorted.
+	missingReferenced []string
+	// missingEndpointsReferenced lists referenced EDS clusters whose CLA is a
+	// synthesized placeholder, so their endpoints are unknown (see
+	// findMissingReferencedEndpointResources). Derived empty CLAs are excluded
+	// (#14352). Sorted.
+	missingEndpointsReferenced []string
+	// synthesizedEndpoints lists placeholder CLAs, referenced or not, whose rows
+	// are on their way; settleSynthesizedEndpoints decides which the client
+	// receives. Source-less placeholders are steady state and excluded. Sorted.
+	synthesizedEndpoints []string
+	// expiredCarry lists clusters whose carry hit the warm withhold bound, so a
+	// held flip's closure must not restore them. Set only on the gate's copy,
+	// never on a KRT row. Sorted.
+	// +noKrtEquals
+	expiredCarry []string
+	// endpointHashes holds each assignment's version contribution for carry-forward
+	// (eds_set_version.go). Equals compares their folded EDS version.
+	// +noKrtEquals
+	endpointHashes map[string]uint64
+	// scopesClusters is set in REFERENCED mode, where a published listener can
+	// name a cluster scoping left out of CDS. The mode is fixed for the process.
+	// +noKrtEquals
+	scopesClusters bool
+	// translatedClusters is the client's translated clusters before scoping
+	// filters them, shared read-only with the per-client cluster row. The
+	// de-reference grace keeps only clusters still in it: one that is no longer
+	// translated (its backend was deleted, or its translation failed) leaves at
+	// once, as with scoping off. Nil means unknown, and graces every
+	// de-referenced cluster.
+	// +noKrtEquals a change here alone (a backend added or removed while not
+	// emitted) changes nothing published; at worst a graced cluster whose backend
+	// is then deleted stays until its grace ends.
+	translatedClusters map[string]envoycachetypes.ResourceWithTTL
+}
+
+// deferred reports whether some referenced cluster was unready at build
+// time. syncXds then resolves the snapshot per cluster (see
+// resolveDeferredPerCluster).
+func (p XdsSnapWrapper) deferred() bool {
+	return len(p.missingReferenced) > 0 || len(p.missingEndpointsReferenced) > 0
 }
 
 func (p XdsSnapWrapper) WithSnapshot(snap *envoycache.Snapshot) XdsSnapWrapper {
@@ -45,7 +87,20 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 			return false
 		}
 	}
-	return true
+	// Compare the gap classification directly instead of inferring it from
+	// versions: a synthesized empty CLA and a derived empty one are identical
+	// protos, yet publish differently. A missed change keeps syncXds holding a
+	// flip (unbounded with the budget off) or omitting a now-derived CLA. An
+	// errored-from-birth cluster also shrinks missingReferenced.
+	//
+	// Compare errored names too. A cluster out of CDS, gone from the build or
+	// filtered out by scoping, moves no version when it errors, yet a held flip
+	// or grace may still carry it; only a new event lets the carry drop it.
+	// Error text alone is ignored.
+	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
+		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
+		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints) &&
+		slices.Equal(p.erroredClusters, in.erroredClusters)
 }
 
 func (p XdsSnapWrapper) ResourceName() string {

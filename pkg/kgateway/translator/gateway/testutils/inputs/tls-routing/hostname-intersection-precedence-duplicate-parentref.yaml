@@ -1,0 +1,66 @@
+# The older wildcard route reaches the listener through two parentRefs (by
+# sectionName and by Gateway name). It loses the SNI domain to the newer
+# exact-hostname route, and the conflict is reported on both parentRefs.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tls
+    protocol: TLS
+    port: 8443
+    hostname: abc.example.com
+    tls:
+      mode: Passthrough
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: wildcard-older
+  creationTimestamp: "2026-01-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tls
+  - name: example-gateway
+  hostnames:
+  - "*.example.com"
+  rules:
+  - backendRefs:
+    - name: wildcard-svc
+      port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: exact-newer
+  creationTimestamp: "2026-02-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "abc.example.com"
+  rules:
+  - backendRefs:
+    - name: exact-svc
+      port: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wildcard-svc
+spec:
+  ports:
+  - protocol: TCP
+    port: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exact-svc
+spec:
+  ports:
+  - protocol: TCP
+    port: 443

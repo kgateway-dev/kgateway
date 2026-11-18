@@ -26,22 +26,22 @@ func TestRunWatcherLoopSerializesDebouncedUpdates(t *testing.T) {
 	firstUpdateStarted := make(chan struct{}, 1)
 	secondUpdateStarted := make(chan struct{}, 1)
 	releaseFirstUpdate := make(chan struct{})
-	var updatesStarted int32
-	var activeUpdates int32
-	var maxActiveUpdates int32
+	var updatesStarted atomic.Int32
+	var activeUpdates atomic.Int32
+	var maxActiveUpdates atomic.Int32
 
 	done := make(chan struct{})
 	go func() {
 		runWatcherLoop(ctx, watcher, logger, func(context.Context) {
-			active := atomic.AddInt32(&activeUpdates, 1)
+			active := activeUpdates.Add(1)
 			for {
-				currentMax := atomic.LoadInt32(&maxActiveUpdates)
-				if active <= currentMax || atomic.CompareAndSwapInt32(&maxActiveUpdates, currentMax, active) {
+				currentMax := maxActiveUpdates.Load()
+				if active <= currentMax || maxActiveUpdates.CompareAndSwap(currentMax, active) {
 					break
 				}
 			}
 
-			updateNumber := atomic.AddInt32(&updatesStarted, 1)
+			updateNumber := updatesStarted.Add(1)
 			switch updateNumber {
 			case 1:
 				firstUpdateStarted <- struct{}{}
@@ -50,7 +50,7 @@ func TestRunWatcherLoopSerializesDebouncedUpdates(t *testing.T) {
 				secondUpdateStarted <- struct{}{}
 			}
 
-			atomic.AddInt32(&activeUpdates, -1)
+			activeUpdates.Add(-1)
 		})
 		close(done)
 	}()
@@ -61,7 +61,7 @@ func TestRunWatcherLoopSerializesDebouncedUpdates(t *testing.T) {
 	triggerWatcherEvent(t, watchedFile, "second")
 	time.Sleep(sdsUpdateDebounce + 200*time.Millisecond)
 
-	if got := atomic.LoadInt32(&updatesStarted); got != 1 {
+	if got := updatesStarted.Load(); got != 1 {
 		t.Fatalf("expected the second update to wait for the first to finish, started=%d", got)
 	}
 
@@ -71,10 +71,10 @@ func TestRunWatcherLoopSerializesDebouncedUpdates(t *testing.T) {
 	cancel()
 	waitForSignal(t, done, "watcher loop shutdown")
 
-	if got := atomic.LoadInt32(&updatesStarted); got != 2 {
+	if got := updatesStarted.Load(); got != 2 {
 		t.Fatalf("expected exactly two debounced updates, got %d", got)
 	}
-	if got := atomic.LoadInt32(&maxActiveUpdates); got != 1 {
+	if got := maxActiveUpdates.Load(); got != 1 {
 		t.Fatalf("expected updates to run serially, max concurrency=%d", got)
 	}
 }
@@ -89,12 +89,12 @@ func TestRunWatcherLoopSkipsPendingUpdateAfterCancel(t *testing.T) {
 	logger := slogDiscard()
 	firstUpdateStarted := make(chan struct{}, 1)
 	releaseFirstUpdate := make(chan struct{})
-	var updatesStarted int32
+	var updatesStarted atomic.Int32
 
 	done := make(chan struct{})
 	go func() {
 		runWatcherLoop(ctx, watcher, logger, func(context.Context) {
-			updateNumber := atomic.AddInt32(&updatesStarted, 1)
+			updateNumber := updatesStarted.Add(1)
 			if updateNumber == 1 {
 				firstUpdateStarted <- struct{}{}
 				<-releaseFirstUpdate
@@ -112,7 +112,7 @@ func TestRunWatcherLoopSkipsPendingUpdateAfterCancel(t *testing.T) {
 
 	waitForSignal(t, done, "watcher loop shutdown")
 
-	if got := atomic.LoadInt32(&updatesStarted); got != 1 {
+	if got := updatesStarted.Load(); got != 1 {
 		t.Fatalf("expected pending debounced update to be dropped on cancel, got %d updates", got)
 	}
 }
@@ -161,11 +161,11 @@ func TestRunWatcherLoopRecoversFromSingleObservedTornRotation(t *testing.T) {
 	certUpdated := make(chan struct{})
 	updateDone := make(chan error, 1)
 	loopDone := make(chan struct{})
-	var updatesStarted int32
+	var updatesStarted atomic.Int32
 
 	go func() {
 		runWatcherLoop(ctx, watcher, logger, func(ctx context.Context) {
-			if atomic.AddInt32(&updatesStarted, 1) == 1 {
+			if updatesStarted.Add(1) == 1 {
 				updateStarted <- struct{}{}
 			}
 			updateDone <- srv.UpdateSDSConfig(ctx)
@@ -207,7 +207,7 @@ func TestRunWatcherLoopRecoversFromSingleObservedTornRotation(t *testing.T) {
 	}
 
 	time.Sleep(sdsUpdateDebounce + 200*time.Millisecond)
-	if got := atomic.LoadInt32(&updatesStarted); got != 1 {
+	if got := updatesStarted.Load(); got != 1 {
 		t.Fatalf("expected exactly one debounced update from a single observed event, got %d", got)
 	}
 

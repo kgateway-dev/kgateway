@@ -46,8 +46,6 @@ type GatewayConfig struct {
 	CommonCollections *collections.CommonCollections
 	// GatewayClassName is the configured gateway class name.
 	GatewayClassName string
-	// WaypointGatewayClassName is the configured waypoint gateway class name.
-	WaypointGatewayClassName string
 	// Additional GatewayClass definitions to support extending to other well-known gateway classes
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
@@ -90,13 +88,12 @@ func watchGw(
 	)
 
 	inputs := &deployer.Inputs{
-		Dev:                      cfg.Dev,
-		IstioAutoMtlsEnabled:     cfg.IstioAutoMtlsEnabled,
-		ControlPlane:             cfg.ControlPlane,
-		ImageInfo:                cfg.ImageInfo,
-		CommonCollections:        cfg.CommonCollections,
-		GatewayClassName:         cfg.GatewayClassName,
-		WaypointGatewayClassName: cfg.WaypointGatewayClassName,
+		Dev:                  cfg.Dev,
+		IstioAutoMtlsEnabled: cfg.IstioAutoMtlsEnabled,
+		ControlPlane:         cfg.ControlPlane,
+		ImageInfo:            cfg.ImageInfo,
+		CommonCollections:    cfg.CommonCollections,
+		GatewayClassName:     cfg.GatewayClassName,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)

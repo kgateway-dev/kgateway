@@ -15,7 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
@@ -63,7 +62,6 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 			},
 			func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-			func(o *gwv1.HTTPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 		))
 	registerStatusWriter(s.statusWriters, wellknown.GRPCRouteGVK,
 		routeWriter(cl, f, s.commonCols.RawGRPCRoutes, grpcRouteReports, wellknown.GRPCRouteGVK, wellknown.GRPCRouteGVR, controllerName,
@@ -71,7 +69,6 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 				return &gwv1.GRPCRoute{ObjectMeta: om, Status: gwv1.GRPCRouteStatus{RouteStatus: st}}
 			},
 			func(o *gwv1.GRPCRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-			func(o *gwv1.GRPCRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 		))
 
 	// One writer per served version. A version we do not watch produces no objects, so it
@@ -80,7 +77,6 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	// Reads are the same for every version -- they all come from the normalized collection --
 	// so only the object the status is written back as differs.
 	tcpStatus := func(o *gwv1a2.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus }
-	tcpParentRefs := func(o *gwv1a2.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs }
 	for _, gvr := range s.commonCols.TCPRouteWriteVersions() {
 		switch gvr {
 		case wellknown.TCPRouteV1GVR:
@@ -89,7 +85,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
 						return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
 					},
-					tcpStatus, tcpParentRefs,
+					tcpStatus,
 				))
 		default:
 			registerStatusWriter(s.statusWriters, wellknown.TCPRouteGVK,
@@ -97,13 +93,12 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
 						return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
 					},
-					tcpStatus, tcpParentRefs,
+					tcpStatus,
 				))
 		}
 	}
 
 	tlsStatus := func(o *gwv1a2.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus }
-	tlsParentRefs := func(o *gwv1a2.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs }
 	for _, gvr := range s.commonCols.TLSRouteWriteVersions() {
 		switch gvr {
 		case wellknown.TLSRouteV1GVR:
@@ -112,7 +107,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
 						return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
 					},
-					tlsStatus, tlsParentRefs,
+					tlsStatus,
 				))
 		case wellknown.TLSRouteV1Alpha3GVR:
 			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1Alpha3GVK,
@@ -120,7 +115,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
 						return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
 					},
-					tlsStatus, tlsParentRefs,
+					tlsStatus,
 				))
 		default:
 			registerStatusWriter(s.statusWriters, wellknown.TLSRouteGVK,
@@ -128,7 +123,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
 						return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
 					},
-					tlsStatus, tlsParentRefs,
+					tlsStatus,
 				))
 		}
 	}
@@ -180,7 +175,6 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 				return &kgateway.Backend{ObjectMeta: om, Status: st}
 			}),
 		GetStatus: func(o *kgateway.Backend) kgateway.BackendStatus { return o.Status },
-		OnSync:    simpleStatusMetricsHook[*kgateway.Backend, kgateway.BackendStatus](wellknown.BackendGVK.Kind),
 	})
 
 	policyStatusInputs := plug.PolicyStatusInputs{
@@ -259,7 +253,6 @@ func gatewayWriter(
 			}),
 		GetStatus: func(o *gwv1.Gateway) gwv1.GatewayStatus { return o.Status },
 		Merge:     mergeGatewayStatusAddresses,
-		OnSync:    gatewayStatusOnSync,
 	}
 }
 
@@ -270,9 +263,9 @@ func gatewayWriter(
 // They differ for TCP and TLS routes, whose collections are normalized to one Go type while
 // the write must go through the API version the object is actually served as.
 //
-// gvk is the identity this writer is registered under; the writer's log name and its metric
-// resource type are both derived from it rather than passed alongside it, so a caller cannot
-// spell the same kind three ways in one call.
+// gvk is the identity this writer is registered under; the writer's log name is derived from
+// it rather than passed alongside it, so a caller cannot spell the same kind two ways in one
+// call.
 func routeWriter[R, W controllers.ComparableObject](
 	cl apiclient.Client,
 	f kclient.Filter,
@@ -283,7 +276,6 @@ func routeWriter[R, W controllers.ComparableObject](
 	controllerName string,
 	build func(om metav1.ObjectMeta, st gwv1.RouteStatus) W,
 	getStatus func(R) gwv1.RouteStatus,
-	parentRefs func(R) []gwv1.ParentReference,
 ) statussync.Writer[R, gwv1.RouteStatus] {
 	return statussync.Writer[R, gwv1.RouteStatus]{
 		Name:    gvk.Kind,
@@ -322,7 +314,6 @@ func routeWriter[R, W controllers.ComparableObject](
 			desired.Parents = statussync.MergeRouteParentStatuses(controllerName, getStatus(current).Parents, desired.Parents)
 			return desired
 		},
-		OnSync: routeStatusMetricsHook(gvk.Kind, parentRefs),
 	}
 }
 
@@ -343,50 +334,6 @@ func routeWriter[R, W controllers.ComparableObject](
 func mergeGatewayStatusAddresses(current *gwv1.Gateway, desired gwv1.GatewayStatus) gwv1.GatewayStatus {
 	desired.Addresses = current.Status.Addresses
 	return desired
-}
-
-// gatewayStatusOnSync closes a Gateway's resource status sync once its status is written.
-func gatewayStatusOnSync(res statussync.Resource, _ *gwv1.Gateway, _ gwv1.GatewayStatus, err error) {
-	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-		Namespace:    res.Namespace,
-		Gateway:      res.Name,
-		ResourceType: wellknown.GatewayKind,
-		ResourceName: res.Name,
-	})
-}
-
-// routeStatusMetricsHook closes a route's resource status sync for each of its parent
-// Gateways once its status is written.
-func routeStatusMetricsHook[T controllers.ComparableObject](
-	kind string,
-	parentRefs func(T) []gwv1.ParentReference,
-) func(res statussync.Resource, current T, status gwv1.RouteStatus, err error) {
-	return func(res statussync.Resource, current T, _ gwv1.RouteStatus, err error) {
-		if controllers.IsNil(current) {
-			return
-		}
-		for _, pr := range parentRefs(current) {
-			statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-				Namespace:    res.Namespace,
-				Gateway:      string(pr.Name),
-				ResourceType: kind,
-				ResourceName: res.Name,
-			})
-		}
-	}
-}
-
-// simpleStatusMetricsHook closes the resource status sync of a kind that is not parented
-// by a Gateway once its status is written.
-func simpleStatusMetricsHook[T controllers.ComparableObject, S any](kind string) func(res statussync.Resource, current T, status S, err error) {
-	return func(res statussync.Resource, _ T, _ S, err error) {
-		statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-			Namespace:    res.Namespace,
-			Gateway:      "",
-			ResourceType: kind,
-			ResourceName: res.Name,
-		})
-	}
 }
 
 // listenerSetWriter constructs the status writer for promoted ListenerSets, which are
@@ -411,7 +358,6 @@ func listenerSetWriter(
 				return &gwv1.ListenerSet{ObjectMeta: om, Status: st}
 			}),
 		GetStatus: func(o *gwv1.ListenerSet) gwv1.ListenerSetStatus { return o.Status },
-		OnSync:    listenerSetStatusOnSync,
 	}
 }
 
@@ -436,26 +382,4 @@ func listenerSetDesired(
 		}
 		return *status, true
 	}
-}
-
-// listenerSetStatusOnSync closes the resource status sync of either ListenerSet flavor once
-// its status is written.
-func listenerSetStatusOnSync(res statussync.Resource, current *gwv1.ListenerSet, _ gwv1.ListenerSetStatus, err error) {
-	parentName := ""
-	if !controllers.IsNil(current) {
-		parentName = string(current.Spec.ParentRef.Name)
-	}
-	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-		Namespace: res.Namespace,
-		Gateway:   parentName,
-		// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
-		// series under the legacy value "XListenerSet", not two -- which is also why
-		// both writers share this hook. This must stay byte-identical to the value the
-		// *gwv1.ListenerSet arm in krtcollections/metrics derives at sync start:
-		// ResourceType is part of the start/end join key, so renaming either site alone
-		// leaves every listener set sync permanently open. See the TODO there for the
-		// coordinated rename.
-		ResourceType: "XListenerSet",
-		ResourceName: res.Name,
-	})
 }

@@ -297,7 +297,6 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 			},
 			func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-			func(o *gwv1.HTTPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 		),
 		queue: &recordingQueue{pushes: map[statussync.Resource]int{}},
 	}

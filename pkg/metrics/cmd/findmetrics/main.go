@@ -171,6 +171,8 @@ func parseFile(filename string) ([]metricInfo, error) {
 							metricType = "counter"
 						case "NewGauge":
 							metricType = "gauge"
+						case "NewInfo":
+							metricType = "info"
 						case "NewHistogram":
 							metricType = "histogram"
 						default:
@@ -207,6 +209,17 @@ func extractMetricInfo(call *ast.CallExpr, metricType string, constants map[stri
 
 	if metric.Namespace == "" {
 		metric.Namespace = defaultNamespace
+	}
+
+	// NewInfo is a gauge whose remaining arguments are metrics.Label values.
+	if metricType == "info" {
+		metric.Type = "gauge"
+		for _, arg := range call.Args[1:] {
+			if comp, ok := arg.(*ast.CompositeLit); ok {
+				extractInfoLabel(&metric, comp, constants)
+			}
+		}
+		return metric
 	}
 
 	// Second argument should be the labels slice.
@@ -268,6 +281,23 @@ func extractMetricLabels(metric *metricInfo, comp *ast.CompositeLit, constants m
 				metric.Labels = append(metric.Labels, val)
 			} else {
 				metric.Labels = append(metric.Labels, ident.Name)
+			}
+		}
+	}
+}
+
+// extractInfoLabel adds the Name of a metrics.Label{Name: ..., Value: ...} literal.
+func extractInfoLabel(metric *metricInfo, comp *ast.CompositeLit, constants map[string]string) {
+	for _, elt := range comp.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		if key, ok := kv.Key.(*ast.Ident); ok && key.Name == "Name" {
+			var name string
+			extractStringField(&name, kv.Value, constants)
+			if name != "" {
+				metric.Labels = append(metric.Labels, name)
 			}
 		}
 	}

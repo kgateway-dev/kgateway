@@ -4,6 +4,7 @@ exclude:
   - "**/testdata/**"
   - "**/testutils/**"
   - "pkg/kgateway/crds/**"
+  - "hack/kind/metallb.yaml"
 formatter:
   type: basic
   retain_line_breaks: true

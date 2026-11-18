@@ -48,6 +48,7 @@ Listeners:
           name: ext_auth/infra/default-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -65,6 +66,7 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             clearRouteCache: true
+            emitFilterStateStats: true
             failureModeAllow: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth

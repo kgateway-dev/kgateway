@@ -48,6 +48,7 @@ Listeners:
           name: ext_auth/default/allowed-extauth-ext
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -112,6 +113,7 @@ Listeners:
           name: ext_auth/default/allowed-extauth-ext
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true

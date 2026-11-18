@@ -72,7 +72,10 @@ type backendTlsPolicy struct {
 	transportSocket *envoycorev3.TransportSocket
 }
 
-var _ ir.PolicyIR = &backendTlsPolicy{}
+var (
+	_ ir.PolicyIR                      = &backendTlsPolicy{}
+	_ ir.UpstreamTLSValidationProvider = &backendTlsPolicy{}
+)
 
 func (d *backendTlsPolicy) CreationTime() time.Time {
 	return d.ct
@@ -84,6 +87,24 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 		return false
 	}
 	return proto.Equal(d.transportSocket, d2.transportSocket)
+}
+
+// UpstreamTLSValidation returns the CA this policy makes Envoy trust, for OIDC discovery. It is
+// read back out of the transport socket so the IR holds no second copy.
+func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
+	if d == nil || d.transportSocket == nil {
+		// The policy failed to translate.
+		return nil
+	}
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	if typed := d.transportSocket.GetTypedConfig(); typed == nil || typed.UnmarshalTo(tlsContext) != nil {
+		// Not reachable for a socket this plugin built; treat it as configuring nothing.
+		return nil
+	}
+	// A policy selecting the system CA set names no trusted CA, so resolves to the system
+	// trust store.
+	caPEM := tlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()
+	return &ir.UpstreamTLSValidation{CAPEM: caPEM}
 }
 
 func (d *backendTlsPolicy) PolicyHash() uint64 {
@@ -126,10 +147,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:           "BackendTLSPolicy",
-				Policies:       tlsPolicyCol,
-				ProcessBackend: processBackend,
-				MergePolicies:  MergePolicies,
+				Name:               "BackendTLSPolicy",
+				Policies:           tlsPolicyCol,
+				ProcessBackend:     processBackend,
+				ProcessBaseCluster: processBaseCluster,
+				MergePolicies:      MergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,

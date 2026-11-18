@@ -573,9 +573,9 @@ func TestRouteValidationStubsMirrorClusters(t *testing.T) {
 	assert.Subset(t, stubbed, []string{"primary", "route-mirror", "vhost-mirror", "config-mirror"})
 }
 
-// HTTPS virtual hosts carry no ParentRef; their route configuration is named for
-// the single listener that owns it. A replacement must still mark that listener
-// and name the policies whose settings were rejected.
+// HTTPS virtual hosts carry no ParentRef; their filter chain records the single
+// listener that owns it. A replacement must still mark that listener and name the
+// policies whose settings were rejected.
 func TestHTTPSReplacementReportsFilterChainListener(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -604,7 +604,7 @@ func TestHTTPSReplacementReportsFilterChainListener(t *testing.T) {
 			}}
 			h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
 			gateway := h.gw.SourceObject.Obj
-			h.gw.SourceObject.Listeners = []ir.Listener{{Parent: gateway, Listener: gwv1.Listener{Name: "https"}}}
+			h.fc.Listener = &ir.Listener{Parent: gateway, Listener: gwv1.Listener{Name: "https"}}
 			h.routeConfigName = "https"
 			rm := reports.NewReportMap()
 			h.reporter = reports.NewReporter(&rm)

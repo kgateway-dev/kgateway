@@ -363,7 +363,7 @@ func TestTranslationWithExtraPlugins(
 			r.NoErrorf(err, "error creating directory %s", dir)
 		}
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
-		os.WriteFile(outputFile, outputYaml, 0o644) //nolint:gosec // G306: Golden test file can be readable
+		r.NoError(writeGoldenFile(outputFile, outputYaml), "error writing output file")
 	}
 
 	expected := &translationResult{}
@@ -378,6 +378,28 @@ func TestTranslationWithExtraPlugins(
 		"unexpected diff in endpoints output; actual result: %s", outputYaml)
 	r.Emptyf(compareStatuses(expected.Statuses, output.Statuses),
 		"unexpected diff in statuses output; actual result: %s", outputYaml)
+}
+
+// writeGoldenFile replaces path with data by renaming a temp file over it. Callers
+// run as parallel subtests and some share a golden, so a concurrent reader must see
+// either the old file or the new one, never a truncated one.
+func writeGoldenFile(path string, data []byte) error {
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(f.Name(), 0o644); err != nil { //nolint:gosec // G302: Golden test file can be readable
+		return err
+	}
+	return os.Rename(f.Name(), path)
 }
 
 type TestCase struct {
@@ -853,7 +875,6 @@ func (tc TestCase) Run(
 	// ensure classes used in tests exist and point at our controller
 	gwClasses := []string{
 		wellknown.DefaultGatewayClassName,
-		wellknown.DefaultWaypointClassName,
 		"example-gateway-class",
 	}
 	for _, className := range gwClasses {
@@ -987,6 +1008,15 @@ func (tc TestCase) Run(
 		}
 	}
 
+	// Status reports read translation errors from the proxy syncer's status
+	// rows; build them for one test client.
+	ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
+	perClientClusters := proxy_syncer.NewPerClientEnvoyClusters(ctx, krtOpts, translator.GetBackendTranslator(),
+		krt.JoinCollection(commoncol.BackendIndex.BackendsWithPolicy(), krtOpts.ToOptions("FinalBackends")...),
+		krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtOpts.ToOptions("UniqueClients")...))
+	perClientClusters.StatusClusters().WaitUntilSynced(ctx.Done())
+	statusRows := perClientClusters.StatusClusters().List()
+
 	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
@@ -999,7 +1029,7 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, statusRows)
 
 		// Merge gateway reports with backend policy reports. A policy can appear in both
 		// (BackendTLSPolicy reports Gateway ancestors from translation and target ancestors
@@ -1019,12 +1049,9 @@ func (tc TestCase) Run(
 		// than replacing the policy's report.
 		mergedReports.MergePolicyReports(proxy_syncer.GeneratePolicyTargetReports(commoncol, extensions, statusSyncerOpts...))
 
-		// Backend Accepted conditions are also generated outside gateway translation
-		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
-		// the kgateway Backend plugin's collections so golden files capture Backend
-		// statuses. Per-client translation errors are not reproducible here (the
-		// uccWithCluster type is internal to proxy_syncer), so only IR errors and
-		// plugin-contributed conditions are reflected.
+		// Backend Accepted conditions are generated outside gateway translation
+		// (see proxy_syncer's backendStatusContributions); reproduce them here so
+		// golden files capture Backend statuses.
 		var kgwBackends []ir.BackendObjectIR
 		var kgwExtraConditions []ir.BackendObjectStatus
 		if kgwBackendPlugin, ok := extensions.ContributesBackends[wellknown.BackendGVK.GroupKind()]; ok {
@@ -1035,7 +1062,7 @@ func (tc TestCase) Run(
 				kgwExtraConditions = kgwBackendPlugin.ExtraConditions.List()
 			}
 		}
-		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, nil, kgwExtraConditions)
+		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, statusRows, kgwExtraConditions)
 		maps.Copy(mergedReports.Backends, backendStatusReports.Backends)
 
 		gwNN := types.NamespacedName{
@@ -1053,7 +1080,6 @@ func (tc TestCase) Run(
 
 		ctx := context.Background()
 		t := translator.GetBackendTranslator()
-		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
 		var endpointAssignments []*envoyendpointv3.ClusterLoadAssignment
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
@@ -1073,7 +1099,7 @@ func (tc TestCase) Run(
 				// Errored translations (including strict-mode validation failures) are
 				// skipped rather than failing the test: snapshotPerClient omits errored
 				// clusters from CDS, so the golden output must omit them too.
-				cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
+				cluster, base, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
 				if err != nil {
 					continue
 				}
@@ -1090,6 +1116,9 @@ func (tc TestCase) Run(
 						appendEndpoints(settledEndpoints[backend.ResourceName()])
 					}
 				}
+				// snapshotPerClient merges generated resources into LDS and SDS.
+				xdsSnap.Listeners = append(xdsSnap.Listeners, base.Listeners...)
+				xdsSnap.Secrets = append(xdsSnap.Secrets, base.Secrets...)
 			}
 		}
 		if clientCertificate, err := gatewaytls.ResolveForGateway(krt.TestingDummyContext{}, ctx, queries, &gw); err == nil && clientCertificate != nil {
@@ -1100,7 +1129,7 @@ func (tc TestCase) Run(
 						continue
 					}
 
-					cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, &clone)
+					cluster, base, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, &clone)
 					if err != nil {
 						continue
 					}
@@ -1119,6 +1148,8 @@ func (tc TestCase) Run(
 							appendEndpoints(proxy_syncer.FinalBackendEndpoints(&clone, variant))
 						}
 					}
+					xdsSnap.Listeners = append(xdsSnap.Listeners, base.Listeners...)
+					xdsSnap.Secrets = append(xdsSnap.Secrets, base.Secrets...)
 				}
 			}
 		}
@@ -1132,27 +1163,28 @@ func (tc TestCase) Run(
 }
 
 // translateBackendForGolden selects the base or per-client cluster using the
-// same translation contract as snapshot assembly. Errored translations return
-// no cluster because snapshotPerClient excludes errored rows from CDS.
+// same translation contract as snapshot assembly, and returns the base, which
+// carries the generated resources. Errored translations return no cluster
+// because snapshotPerClient excludes errored rows from CDS.
 func translateBackendForGolden(
 	ctx context.Context,
 	kctx krt.HandlerContext,
 	backendTranslator *irtranslator.BackendTranslator,
 	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
-) (*envoyclusterv3.Cluster, error) {
+) (*envoyclusterv3.Cluster, *irtranslator.BaseCluster, error) {
 	base := backendTranslator.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	if base.Error != nil {
-		return nil, base.Error
+		return nil, nil, base.Error
 	}
 	perClient, err := backendTranslator.ApplyPerClient(kctx, ctx, ucc, backend, base)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if perClient != nil {
-		return perClient, nil
+		return perClient, base, nil
 	}
-	return base.Cluster, nil
+	return base.Cluster, base, nil
 }
 
 func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteConfiguration) map[string]struct{} {

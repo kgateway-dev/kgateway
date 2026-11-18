@@ -3,7 +3,6 @@
 package multiinstall
 
 import (
-	"fmt"
 	"path/filepath"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,10 +18,6 @@ const (
 
 var (
 	BasicManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "basic.yaml")
-
-	ProxyHostPort = func(ns string) string {
-		return fmt.Sprintf("%s.%s.svc:%d", Gateway(ns).Name, ns, gatewayPort)
-	}
 
 	Gateway = func(ns string) *gwv1.Gateway {
 		return &gwv1.Gateway{

@@ -265,14 +265,13 @@ place (`RetryStatusWrite`: 5 attempts, exponential backoff from 100ms,
 context-aware). Custom `ResourceStatusSyncer` implementations must wrap their
 writes in it for the same reason — the ListenerSet syncer does.
 
-Metrics semantics follow the same line:
-`EndResourceStatusSyncOnWriteSuccess` closes a resource's sync when **no retry
-is pending**, not when a status was persisted. A conflict ends the sync
-without writing (the informer delivery starts a fresh one); a write that
-failed every retry keeps the sync open, so the resources-out-of-sync signal
-keeps telling the truth. Condition-derived error metrics are computed only
-from entries this controller owns — another controller's `Accepted=False` on a
-shared list must not flip our error counters.
+Metrics follow the same line. `kgateway_status_writes_total{kind, result}`
+counts one outcome per `ApplyStatus` call that had a status to write:
+`written`, `unchanged` (the live status already matched, which includes the
+echo of our own write), `conflict` and `not_found` (both self-heal, see above),
+or `error` (the write failed every retry, so nothing will re-fire). Retries are
+not counted separately, and the result reflects only the write: a status that
+publishes `Accepted=False` was still `written`.
 
 ## Route API versions
 

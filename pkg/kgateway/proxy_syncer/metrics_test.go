@@ -1,82 +1,16 @@
 package proxy_syncer
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
 func setupTest() {
 	ResetMetrics()
 	kmetrics.ResetMetrics()
-}
-
-func TestResourceSyncMetrics(t *testing.T) {
-	setupTest()
-
-	testNS := "test-namespace"
-	testName := "test-name"
-	testResource := "test-resource"
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	kmetrics.StartResourceSyncMetricsProcessing(ctx)
-
-	kmetrics.StartResourceStatusSync(kmetrics.ResourceSyncDetails{
-		Gateway:      testName,
-		Namespace:    testNS,
-		ResourceType: testResource,
-		ResourceName: testName,
-	})
-
-	kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
-		Gateway:      testName,
-		Namespace:    testNS,
-		ResourceType: testResource,
-		ResourceName: testName,
-	})
-
-	gathered := metricstest.MustGatherMetricsContext(ctx, t,
-		"kgateway_resources_status_syncs_started_total",
-		"kgateway_resources_status_syncs_completed_total",
-		"kgateway_resources_status_sync_duration_seconds",
-	)
-
-	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_started_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: "gateway", Value: testName},
-				{Name: "namespace", Value: testNS},
-				{Name: "resource", Value: testResource},
-			},
-			Value: 1,
-		},
-	})
-
-	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_completed_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: "gateway", Value: testName},
-				{Name: "namespace", Value: testNS},
-				{Name: "resource", Value: testResource},
-			},
-			Value: 1,
-		},
-	})
-
-	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
-		{Name: "gateway", Value: testName},
-		{Name: "namespace", Value: testNS},
-		{Name: "resource", Value: testResource},
-	}})
-	gathered.AssertHistogramPopulated("kgateway_resources_status_sync_duration_seconds")
 }
 
 func TestGetDetailsFromXDSClientResourceName(t *testing.T) {

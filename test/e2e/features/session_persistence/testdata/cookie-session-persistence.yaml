@@ -27,8 +27,8 @@ spec:
     - name: echo
       port: 8080
     sessionPersistence:
-      sessionName: Session-A
       type: Cookie
       absoluteTimeout: 1h
-      cookieConfig:
+      cookie:
+        name: Session-A
         lifetimeType: Permanent

@@ -12,6 +12,7 @@ const (
 	//
 	// Possible reasons for this condition to be True are:
 	// * Valid
+	// * PartiallyValid
 	//
 	// Possible reasons for this condition to be False are:
 	// * Pending
@@ -57,8 +58,10 @@ const (
 	// PolicyReasonPending is used with the "Accepted" or "Attached" condition when the policy has been referenced but not yet fully processed by the controller.
 	PolicyReasonPending PolicyConditionReason = "Pending"
 
-	// PolicyReasonPartiallyValid is used with the "Accepted" condition when the policy has been accepted by the system,
-	// but some of the referenced resources are not valid.
+	// PolicyReasonPartiallyValid is used with the "Accepted" condition when the policy has been accepted and applied,
+	// but some of its settings are not valid or have no effect, either for all targets or for some of them
+	// (for example because of the kind of targeted backend). The condition message describes which settings
+	// are affected and why.
 	PolicyReasonPartiallyValid PolicyConditionReason = "PartiallyValid"
 
 	// PolicyReasonTargetNotFound is used with the "Accepted" and "Attached" conditions when one or

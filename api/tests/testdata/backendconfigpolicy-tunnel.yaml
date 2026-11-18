@@ -1,0 +1,71 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: service-proxy-with-secret-header
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: external
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      secretRef:
+        name: egress-proxy-credentials
+        key: authorization
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-proxy-with-inline-header
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: external
+  tunnel:
+    proxy:
+      backendRef:
+        group: gateway.kgateway.dev
+        kind: Backend
+        name: egress-proxy
+    headers:
+    - name: Proxy-Authorization
+      value: Basic dXNlcjpwYXNz
+---
+_err: tunnel does not support targetSelectors
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: target-selectors
+spec:
+  targetSelectors:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    matchLabels:
+      app: external
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128
+---
+_err: tunnel requires targetRefs that reference Backends
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: service-target
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: external
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128

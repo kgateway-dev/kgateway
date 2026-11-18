@@ -72,6 +72,7 @@ spec:
                           If you are using an HPA, make sure to not explicitly define this.
                           K8s reference: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#replicas
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       strategy:
@@ -110,6 +111,8 @@ spec:
                                   130% of desired pods. Once old pods have been killed,
                                   new ReplicaSet can be scaled up further, ensuring that total number of pods running
                                   at any time during the update is at most 130% of desired pods.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
                               maxUnavailable:
                                 anyOf:
@@ -126,6 +129,8 @@ spec:
                                   can be scaled down further, followed by scaling up the new ReplicaSet, ensuring
                                   that the total number of pods available at all times during the update is at
                                   least 70% of desired pods.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
                             type: object
                           type:
@@ -254,6 +259,7 @@ spec:
                                   Defaults to 100 if not specified. Set to 0 to disable this limit.
                                   See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto#extensions-network-dns-resolver-cares-v3-caresdnsresolverconfig
                                 format: int32
+                                maximum: 2147483647
                                 minimum: 0
                                 type: integer
                             type: object
@@ -304,7 +310,10 @@ spec:
                             description: |-
                               MaxDownstreamConnections caps active downstream connections across all listeners. Unset by default (no limit).
                               This is bootstrap configuration, so changing it restarts the proxy.
+
+                              Must be at most 9007199254740991 (2^53-1).
                             format: int64
+                            maximum: 9007199254740991
                             minimum: 1
                             type: integer
                         type: object
@@ -339,7 +348,9 @@ spec:
                                   description: Selects a key of a ConfigMap.
                                   properties:
                                     key:
-                                      description: The key to select.
+                                      description: |-
+                                        The key to select from the ConfigMap's Data field.
+                                        Keys in the BinaryData field are not currently propagated to container env vars.
                                       type: string
                                     name:
                                       default: ""
@@ -478,6 +489,11 @@ spec:
                           The following Envoy flags are already managed by kgateway and must not be
                           set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
                           `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
+
+                          By default, kgateway starts Envoy with `--drain-time-s 60` and
+                          `--drain-strategy immediate`. A flag that you set here replaces its default.
+                          For example, set `--drain-time-s 600` and `--drain-strategy gradual` to
+                          restore the Envoy defaults.
                         items:
                           maxLength: 256
                           minLength: 1
@@ -494,10 +510,21 @@ spec:
                           description: VolumeMount describes a mounting of a Volume
                             within a container.
                           properties:
-                            mountPath:
+                            bindMountOptions:
                               description: |-
-                                Path within the container at which the volume should be mounted.  Must
-                                not contain ':'.
+                                bindMountOptions is the list of additional bind mount options to apply when
+                                mounting this volume into the container. Allowed values are noexec,
+                                nodev, and nosuid. These are Linux mount options and have no effect on
+                                Windows nodes.
+                                This field is not supported with image volumes.
+                                This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.
+                              items:
+                                type: string
+                              type: array
+                              x-kubernetes-list-type: set
+                            mountPath:
+                              description: Path within the container at which the
+                                volume should be mounted.
                               type: string
                             mountPropagation:
                               description: |-
@@ -746,6 +773,8 @@ spec:
                               PodSecurityContext, the value specified in SecurityContext takes precedence.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           runAsNonRoot:
                             description: |-
@@ -764,6 +793,8 @@ spec:
                               PodSecurityContext, the value specified in SecurityContext takes precedence.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           seLinuxOptions:
                             description: |-
@@ -1017,7 +1048,9 @@ spec:
                                         description: Selects a key of a ConfigMap.
                                         properties:
                                           key:
-                                            description: The key to select.
+                                            description: |-
+                                              The key to select from the ConfigMap's Data field.
+                                              Keys in the BinaryData field are not currently propagated to container env vars.
                                             type: string
                                           name:
                                             default: ""
@@ -1291,7 +1324,14 @@ spec:
                                             Name or number of the port to access on the container.
                                             Number must be in the range 1 to 65535.
                                             Name must be an IANA_SVC_NAME.
+                                          maximum: 2147483647
+                                          minimum: -2147483648
                                           x-kubernetes-int-or-string: true
+                                        protocol:
+                                          description: |-
+                                            Protocol selects the wire protocol for the probe connection.
+                                            Nil defaults to HTTP/1.1.
+                                          type: string
                                         scheme:
                                           description: |-
                                             Scheme to use for connecting to the host.
@@ -1308,6 +1348,8 @@ spec:
                                           description: Seconds is the number of seconds
                                             to sleep.
                                           format: int64
+                                          maximum: 9223372036854774784
+                                          minimum: -9223372036854774784
                                           type: integer
                                       required:
                                       - seconds
@@ -1330,6 +1372,8 @@ spec:
                                             Number or name of the port to access on the container.
                                             Number must be in the range 1 to 65535.
                                             Name must be an IANA_SVC_NAME.
+                                          maximum: 2147483647
+                                          minimum: -2147483648
                                           x-kubernetes-int-or-string: true
                                       required:
                                       - port
@@ -1405,7 +1449,14 @@ spec:
                                             Name or number of the port to access on the container.
                                             Number must be in the range 1 to 65535.
                                             Name must be an IANA_SVC_NAME.
+                                          maximum: 2147483647
+                                          minimum: -2147483648
                                           x-kubernetes-int-or-string: true
+                                        protocol:
+                                          description: |-
+                                            Protocol selects the wire protocol for the probe connection.
+                                            Nil defaults to HTTP/1.1.
+                                          type: string
                                         scheme:
                                           description: |-
                                             Scheme to use for connecting to the host.
@@ -1422,6 +1473,8 @@ spec:
                                           description: Seconds is the number of seconds
                                             to sleep.
                                           format: int64
+                                          maximum: 9223372036854774784
+                                          minimum: -9223372036854774784
                                           type: integer
                                       required:
                                       - seconds
@@ -1444,6 +1497,8 @@ spec:
                                             Number or name of the port to access on the container.
                                             Number must be in the range 1 to 65535.
                                             Name must be an IANA_SVC_NAME.
+                                          maximum: 2147483647
+                                          minimum: -2147483648
                                           x-kubernetes-int-or-string: true
                                       required:
                                       - port
@@ -1484,14 +1539,25 @@ spec:
                                     Minimum consecutive failures for the probe to be considered failed after having succeeded.
                                     Defaults to 3. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 grpc:
                                   description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
+                                    mode:
+                                      description: |-
+                                        mode specifies the connection mode for the gRPC health probe.
+                                        Set to "TLS" to use TLS without certificate verification.
+                                        Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+                                        If not specified, the probe uses a plaintext (insecure) connection.
+                                      type: string
                                     port:
                                       description: Port number of the gRPC service.
                                         Number must be in the range 1 to 65535.
                                       format: int32
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       type: integer
                                     service:
                                       default: ""
@@ -1545,7 +1611,14 @@ spec:
                                         Name or number of the port to access on the container.
                                         Number must be in the range 1 to 65535.
                                         Name must be an IANA_SVC_NAME.
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       x-kubernetes-int-or-string: true
+                                    protocol:
+                                      description: |-
+                                        Protocol selects the wire protocol for the probe connection.
+                                        Nil defaults to HTTP/1.1.
+                                      type: string
                                     scheme:
                                       description: |-
                                         Scheme to use for connecting to the host.
@@ -1559,18 +1632,24 @@ spec:
                                     Number of seconds after the container has started before liveness probes are initiated.
                                     More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 periodSeconds:
                                   description: |-
                                     How often (in seconds) to perform the probe.
                                     Default to 10 seconds. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 successThreshold:
                                   description: |-
                                     Minimum consecutive successes for the probe to be considered successful after having failed.
                                     Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 tcpSocket:
                                   description: TCPSocket specifies a connection to
@@ -1588,6 +1667,8 @@ spec:
                                         Number or name of the port to access on the container.
                                         Number must be in the range 1 to 65535.
                                         Name must be an IANA_SVC_NAME.
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       x-kubernetes-int-or-string: true
                                   required:
                                   - port
@@ -1605,6 +1686,8 @@ spec:
                                     This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
                                     Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
                                   format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 timeoutSeconds:
                                   description: |-
@@ -1612,6 +1695,8 @@ spec:
                                     Defaults to 1 second. Minimum value is 1.
                                     More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                               type: object
                             name:
@@ -1638,6 +1723,8 @@ spec:
                                       Number of port to expose on the pod's IP address.
                                       This must be a valid port number, 0 < x < 65536.
                                     format: int32
+                                    maximum: 2147483647
+                                    minimum: -2147483648
                                     type: integer
                                   hostIP:
                                     description: What host IP to bind the external
@@ -1650,6 +1737,8 @@ spec:
                                       If HostNetwork is specified, this must match ContainerPort.
                                       Most containers do not need this.
                                     format: int32
+                                    maximum: 2147483647
+                                    minimum: -2147483648
                                     type: integer
                                   name:
                                     description: |-
@@ -1699,14 +1788,25 @@ spec:
                                     Minimum consecutive failures for the probe to be considered failed after having succeeded.
                                     Defaults to 3. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 grpc:
                                   description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
+                                    mode:
+                                      description: |-
+                                        mode specifies the connection mode for the gRPC health probe.
+                                        Set to "TLS" to use TLS without certificate verification.
+                                        Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+                                        If not specified, the probe uses a plaintext (insecure) connection.
+                                      type: string
                                     port:
                                       description: Port number of the gRPC service.
                                         Number must be in the range 1 to 65535.
                                       format: int32
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       type: integer
                                     service:
                                       default: ""
@@ -1760,7 +1860,14 @@ spec:
                                         Name or number of the port to access on the container.
                                         Number must be in the range 1 to 65535.
                                         Name must be an IANA_SVC_NAME.
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       x-kubernetes-int-or-string: true
+                                    protocol:
+                                      description: |-
+                                        Protocol selects the wire protocol for the probe connection.
+                                        Nil defaults to HTTP/1.1.
+                                      type: string
                                     scheme:
                                       description: |-
                                         Scheme to use for connecting to the host.
@@ -1774,18 +1881,24 @@ spec:
                                     Number of seconds after the container has started before liveness probes are initiated.
                                     More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 periodSeconds:
                                   description: |-
                                     How often (in seconds) to perform the probe.
                                     Default to 10 seconds. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 successThreshold:
                                   description: |-
                                     Minimum consecutive successes for the probe to be considered successful after having failed.
                                     Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 tcpSocket:
                                   description: TCPSocket specifies a connection to
@@ -1803,6 +1916,8 @@ spec:
                                         Number or name of the port to access on the container.
                                         Number must be in the range 1 to 65535.
                                         Name must be an IANA_SVC_NAME.
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       x-kubernetes-int-or-string: true
                                   required:
                                   - port
@@ -1820,6 +1935,8 @@ spec:
                                     This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
                                     Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
                                   format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 timeoutSeconds:
                                   description: |-
@@ -1827,6 +1944,8 @@ spec:
                                     Defaults to 1 second. Minimum value is 1.
                                     More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                               type: object
                             resizePolicy:
@@ -1976,6 +2095,8 @@ spec:
                                           At most 255 elements are allowed.
                                         items:
                                           format: int32
+                                          maximum: 2147483647
+                                          minimum: -2147483648
                                           type: integer
                                         type: array
                                         x-kubernetes-list-type: set
@@ -2078,6 +2199,8 @@ spec:
                                     PodSecurityContext, the value specified in SecurityContext takes precedence.
                                     Note that this field cannot be set when spec.os.name is windows.
                                   format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 runAsNonRoot:
                                   description: |-
@@ -2096,6 +2219,8 @@ spec:
                                     PodSecurityContext, the value specified in SecurityContext takes precedence.
                                     Note that this field cannot be set when spec.os.name is windows.
                                   format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 seLinuxOptions:
                                   description: |-
@@ -2212,14 +2337,25 @@ spec:
                                     Minimum consecutive failures for the probe to be considered failed after having succeeded.
                                     Defaults to 3. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 grpc:
                                   description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
+                                    mode:
+                                      description: |-
+                                        mode specifies the connection mode for the gRPC health probe.
+                                        Set to "TLS" to use TLS without certificate verification.
+                                        Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+                                        If not specified, the probe uses a plaintext (insecure) connection.
+                                      type: string
                                     port:
                                       description: Port number of the gRPC service.
                                         Number must be in the range 1 to 65535.
                                       format: int32
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       type: integer
                                     service:
                                       default: ""
@@ -2273,7 +2409,14 @@ spec:
                                         Name or number of the port to access on the container.
                                         Number must be in the range 1 to 65535.
                                         Name must be an IANA_SVC_NAME.
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       x-kubernetes-int-or-string: true
+                                    protocol:
+                                      description: |-
+                                        Protocol selects the wire protocol for the probe connection.
+                                        Nil defaults to HTTP/1.1.
+                                      type: string
                                     scheme:
                                       description: |-
                                         Scheme to use for connecting to the host.
@@ -2287,18 +2430,24 @@ spec:
                                     Number of seconds after the container has started before liveness probes are initiated.
                                     More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 periodSeconds:
                                   description: |-
                                     How often (in seconds) to perform the probe.
                                     Default to 10 seconds. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 successThreshold:
                                   description: |-
                                     Minimum consecutive successes for the probe to be considered successful after having failed.
                                     Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 tcpSocket:
                                   description: TCPSocket specifies a connection to
@@ -2316,6 +2465,8 @@ spec:
                                         Number or name of the port to access on the container.
                                         Number must be in the range 1 to 65535.
                                         Name must be an IANA_SVC_NAME.
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       x-kubernetes-int-or-string: true
                                   required:
                                   - port
@@ -2333,6 +2484,8 @@ spec:
                                     This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
                                     Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
                                   format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 timeoutSeconds:
                                   description: |-
@@ -2340,6 +2493,8 @@ spec:
                                     Defaults to 1 second. Minimum value is 1.
                                     More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                               type: object
                             stdin:
@@ -2415,10 +2570,21 @@ spec:
                                 description: VolumeMount describes a mounting of a
                                   Volume within a container.
                                 properties:
-                                  mountPath:
+                                  bindMountOptions:
                                     description: |-
-                                      Path within the container at which the volume should be mounted.  Must
-                                      not contain ':'.
+                                      bindMountOptions is the list of additional bind mount options to apply when
+                                      mounting this volume into the container. Allowed values are noexec,
+                                      nodev, and nosuid. These are Linux mount options and have no effect on
+                                      Windows nodes.
+                                      This field is not supported with image volumes.
+                                      This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.
+                                    items:
+                                      type: string
+                                    type: array
+                                    x-kubernetes-list-type: set
+                                  mountPath:
+                                    description: Path within the container at which
+                                      the volume should be mounted.
                                     type: string
                                   mountPropagation:
                                     description: |-
@@ -2705,6 +2871,8 @@ spec:
                                   PodSecurityContext, the value specified in SecurityContext takes precedence.
                                   Note that this field cannot be set when spec.os.name is windows.
                                 format: int64
+                                maximum: 9223372036854774784
+                                minimum: -9223372036854774784
                                 type: integer
                               runAsNonRoot:
                                 description: |-
@@ -2723,6 +2891,8 @@ spec:
                                   PodSecurityContext, the value specified in SecurityContext takes precedence.
                                   Note that this field cannot be set when spec.os.name is windows.
                                 format: int64
+                                maximum: 9223372036854774784
+                                minimum: -9223372036854774784
                                 type: integer
                               seLinuxOptions:
                                 description: |-
@@ -3020,6 +3190,8 @@ spec:
                                         the corresponding nodeSelectorTerm, in the
                                         range 1-100.
                                       format: int32
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       type: integer
                                   required:
                                   - preference
@@ -3303,6 +3475,8 @@ spec:
                                         weight associated with matching the corresponding podAffinityTerm,
                                         in the range 1-100.
                                       format: int32
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       type: integer
                                   required:
                                   - podAffinityTerm
@@ -3663,6 +3837,8 @@ spec:
                                         weight associated with matching the corresponding podAffinityTerm,
                                         in the range 1-100.
                                       format: int32
+                                      maximum: 2147483647
+                                      minimum: -2147483648
                                       type: integer
                                   required:
                                   - podAffinityTerm
@@ -3887,6 +4063,8 @@ spec:
                                     Examples: For volume /dev/sda1, you specify the partition as "1".
                                     Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 readOnly:
                                   description: |-
@@ -4076,6 +4254,17 @@ spec:
                                     This might be in conflict with other options that affect the file
                                     mode, like fsGroup, and the result can be other mode bits set.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
+                                  type: integer
+                                defaultUser:
+                                  description: |-
+                                    defaultUser is Optional: The owner UID of the created files by default.
+                                    The defaultUser field is only used as a fallback when the item-level user field is unset.
+                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                  format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 items:
                                   description: |-
@@ -4102,6 +4291,8 @@ spec:
                                           This might be in conflict with other options that affect the file
                                           mode, like fsGroup, and the result can be other mode bits set.
                                         format: int32
+                                        maximum: 2147483647
+                                        minimum: -2147483648
                                         type: integer
                                       path:
                                         description: |-
@@ -4110,6 +4301,15 @@ spec:
                                           May not contain the path element '..'.
                                           May not start with the string '..'.
                                         type: string
+                                      user:
+                                        description: |-
+                                          user is Optional: The owner UID of the created file.
+                                          If specified, the item-level user field takes precedence over defaultUser.
+                                          (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                        format: int64
+                                        maximum: 9223372036854774784
+                                        minimum: -9223372036854774784
+                                        type: integer
                                     required:
                                     - key
                                     - path
@@ -4196,6 +4396,17 @@ spec:
                                     This might be in conflict with other options that affect the file
                                     mode, like fsGroup, and the result can be other mode bits set.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
+                                  type: integer
+                                defaultUser:
+                                  description: |-
+                                    defaultUser is Optional: The owner UID of the created files by default.
+                                    The defaultUser field is only used as a fallback when the item-level user field is unset.
+                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                  format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 items:
                                   description: Items is a list of downward API volume
@@ -4232,6 +4443,8 @@ spec:
                                           This might be in conflict with other options that affect the file
                                           mode, like fsGroup, and the result can be other mode bits set.
                                         format: int32
+                                        maximum: 2147483647
+                                        minimum: -2147483648
                                         type: integer
                                       path:
                                         description: 'Required: Path is  the relative
@@ -4265,6 +4478,15 @@ spec:
                                         - resource
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      user:
+                                        description: |-
+                                          user is Optional: The owner UID of the created file.
+                                          If specified, the item-level user field takes precedence over defaultUser.
+                                          (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                        format: int64
+                                        maximum: 9223372036854774784
+                                        minimum: -9223372036854774784
+                                        type: integer
                                     required:
                                     - path
                                     type: object
@@ -4283,6 +4505,20 @@ spec:
                                     Must be an empty string (default) or Memory.
                                     More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
                                   type: string
+                                mode:
+                                  description: |-
+                                    mode specifies the permission bits for the emptyDir directory, in numeric
+                                    notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+                                    If not specified, defaults to 0777.
+                                    This might be in conflict with other options that affect the file
+                                    mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+                                    will override the mode specified here.
+                                    This field has no effect on Windows.
+                                    This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.
+                                  format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
+                                  type: integer
                                 sizeLimit:
                                   anyOf:
                                   - type: integer
@@ -4376,8 +4612,8 @@ spec:
                                             * An existing PVC (PersistentVolumeClaim)
                                             If the provisioner or an external controller can support the specified data source,
                                             it will create a new volume based on the contents of the specified data source.
-                                            When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-                                            and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+                                            dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+                                            copied to dataSource when dataSourceRef.namespace is not specified.
                                             If the namespace is specified, then dataSourceRef will not be copied to dataSource.
                                           properties:
                                             apiGroup:
@@ -4422,7 +4658,6 @@ spec:
                                               specified.
                                             * While dataSource only allows local objects, dataSourceRef allows objects
                                               in any namespaces.
-                                            (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
                                             (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
                                           properties:
                                             apiGroup:
@@ -4577,6 +4812,8 @@ spec:
                                 lun:
                                   description: 'lun is Optional: FC target lun number'
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 readOnly:
                                   description: |-
@@ -4686,6 +4923,8 @@ spec:
                                     Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).
                                     More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 pdName:
                                   description: |-
@@ -4846,6 +5085,8 @@ spec:
                                 lun:
                                   description: lun represents iSCSI Target Lun number.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
                                   type: integer
                                 portals:
                                   description: |-
@@ -4990,6 +5231,17 @@ spec:
                                     This might be in conflict with other options that affect the file
                                     mode, like fsGroup, and the result can be other mode bits set.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
+                                  type: integer
+                                defaultUser:
+                                  description: |-
+                                    defaultUser is Optional: The owner UID of the created files by default.
+                                    The defaultUser field is only used as a fallback when the item-level user field is unset.
+                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                  format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 sources:
                                   description: |-
@@ -5091,6 +5343,15 @@ spec:
                                               Mutually-exclusive with name.  The contents of all selected
                                               ClusterTrustBundles will be unified and deduplicated.
                                             type: string
+                                          user:
+                                            description: |-
+                                              user is Optional: The owner UID of the created file.
+                                              If specified, the item-level user field takes precedence over defaultUser.
+                                              (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                            format: int64
+                                            maximum: 9223372036854774784
+                                            minimum: -9223372036854774784
+                                            type: integer
                                         required:
                                         - path
                                         type: object
@@ -5123,6 +5384,8 @@ spec:
                                                     This might be in conflict with other options that affect the file
                                                     mode, like fsGroup, and the result can be other mode bits set.
                                                   format: int32
+                                                  maximum: 2147483647
+                                                  minimum: -2147483648
                                                   type: integer
                                                 path:
                                                   description: |-
@@ -5131,6 +5394,15 @@ spec:
                                                     May not contain the path element '..'.
                                                     May not start with the string '..'.
                                                   type: string
+                                                user:
+                                                  description: |-
+                                                    user is Optional: The owner UID of the created file.
+                                                    If specified, the item-level user field takes precedence over defaultUser.
+                                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                                  format: int64
+                                                  maximum: 9223372036854774784
+                                                  minimum: -9223372036854774784
+                                                  type: integer
                                               required:
                                               - key
                                               - path
@@ -5193,6 +5465,8 @@ spec:
                                                     This might be in conflict with other options that affect the file
                                                     mode, like fsGroup, and the result can be other mode bits set.
                                                   format: int32
+                                                  maximum: 2147483647
+                                                  minimum: -2147483648
                                                   type: integer
                                                 path:
                                                   description: 'Required: Path is  the
@@ -5230,6 +5504,15 @@ spec:
                                                   - resource
                                                   type: object
                                                   x-kubernetes-map-type: atomic
+                                                user:
+                                                  description: |-
+                                                    user is Optional: The owner UID of the created file.
+                                                    If specified, the item-level user field takes precedence over defaultUser.
+                                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                                  format: int64
+                                                  maximum: 9223372036854774784
+                                                  minimum: -9223372036854774784
+                                                  type: integer
                                               required:
                                               - path
                                               type: object
@@ -5332,11 +5615,22 @@ spec:
                                               `kubernetes.io` signers will never issue certificates with a lifetime
                                               longer than 24 hours.
                                             format: int32
+                                            maximum: 2147483647
+                                            minimum: -2147483648
                                             type: integer
                                           signerName:
                                             description: Kubelet's generated CSRs
                                               will be addressed to this signer.
                                             type: string
+                                          user:
+                                            description: |-
+                                              user is Optional: The owner UID of the created file.
+                                              If specified, the item-level user field takes precedence over defaultUser.
+                                              (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                            format: int64
+                                            maximum: 9223372036854774784
+                                            minimum: -9223372036854774784
+                                            type: integer
                                           userAnnotations:
                                             additionalProperties:
                                               type: string
@@ -5388,6 +5682,8 @@ spec:
                                                     This might be in conflict with other options that affect the file
                                                     mode, like fsGroup, and the result can be other mode bits set.
                                                   format: int32
+                                                  maximum: 2147483647
+                                                  minimum: -2147483648
                                                   type: integer
                                                 path:
                                                   description: |-
@@ -5396,6 +5692,15 @@ spec:
                                                     May not contain the path element '..'.
                                                     May not start with the string '..'.
                                                   type: string
+                                                user:
+                                                  description: |-
+                                                    user is Optional: The owner UID of the created file.
+                                                    If specified, the item-level user field takes precedence over defaultUser.
+                                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                                  format: int64
+                                                  maximum: 9223372036854774784
+                                                  minimum: -9223372036854774784
+                                                  type: integer
                                               required:
                                               - key
                                               - path
@@ -5437,12 +5742,23 @@ spec:
                                               its time to live or if the token is older than 24 hours.Defaults to 1 hour
                                               and must be at least 10 minutes.
                                             format: int64
+                                            maximum: 9223372036854774784
+                                            minimum: -9223372036854774784
                                             type: integer
                                           path:
                                             description: |-
                                               path is the path relative to the mount point of the file to project the
                                               token into.
                                             type: string
+                                          user:
+                                            description: |-
+                                              user is Optional: The owner UID of the created file.
+                                              If specified, the item-level user field takes precedence over defaultUser.
+                                              (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                            format: int64
+                                            maximum: 9223372036854774784
+                                            minimum: -9223372036854774784
+                                            type: integer
                                         required:
                                         - path
                                         type: object
@@ -5648,6 +5964,17 @@ spec:
                                     This might be in conflict with other options that affect the file
                                     mode, like fsGroup, and the result can be other mode bits set.
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: -2147483648
+                                  type: integer
+                                defaultUser:
+                                  description: |-
+                                    defaultUser is Optional: The owner UID of the created files by default.
+                                    The defaultUser field is only used as a fallback when the item-level user field is unset.
+                                    (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                  format: int64
+                                  maximum: 9223372036854774784
+                                  minimum: -9223372036854774784
                                   type: integer
                                 items:
                                   description: |-
@@ -5674,6 +6001,8 @@ spec:
                                           This might be in conflict with other options that affect the file
                                           mode, like fsGroup, and the result can be other mode bits set.
                                         format: int32
+                                        maximum: 2147483647
+                                        minimum: -2147483648
                                         type: integer
                                       path:
                                         description: |-
@@ -5682,6 +6011,15 @@ spec:
                                           May not contain the path element '..'.
                                           May not start with the string '..'.
                                         type: string
+                                      user:
+                                        description: |-
+                                          user is Optional: The owner UID of the created file.
+                                          If specified, the item-level user field takes precedence over defaultUser.
+                                          (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+                                        format: int64
+                                        maximum: 9223372036854774784
+                                        minimum: -9223372036854774784
+                                        type: integer
                                     required:
                                     - key
                                     - path
@@ -5849,14 +6187,25 @@ spec:
                               Minimum consecutive failures for the probe to be considered failed after having succeeded.
                               Defaults to 3. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           grpc:
                             description: GRPC specifies a GRPC HealthCheckRequest.
                             properties:
+                              mode:
+                                description: |-
+                                  mode specifies the connection mode for the gRPC health probe.
+                                  Set to "TLS" to use TLS without certificate verification.
+                                  Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+                                  If not specified, the probe uses a plaintext (insecure) connection.
+                                type: string
                               port:
                                 description: Port number of the gRPC service. Number
                                   must be in the range 1 to 65535.
                                 format: int32
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 type: integer
                               service:
                                 default: ""
@@ -5910,7 +6259,14 @@ spec:
                                   Name or number of the port to access on the container.
                                   Number must be in the range 1 to 65535.
                                   Name must be an IANA_SVC_NAME.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
+                              protocol:
+                                description: |-
+                                  Protocol selects the wire protocol for the probe connection.
+                                  Nil defaults to HTTP/1.1.
+                                type: string
                               scheme:
                                 description: |-
                                   Scheme to use for connecting to the host.
@@ -5924,18 +6280,24 @@ spec:
                               Number of seconds after the container has started before liveness probes are initiated.
                               More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           periodSeconds:
                             description: |-
                               How often (in seconds) to perform the probe.
                               Default to 10 seconds. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           successThreshold:
                             description: |-
                               Minimum consecutive successes for the probe to be considered successful after having failed.
                               Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           tcpSocket:
                             description: TCPSocket specifies a connection to a TCP
@@ -5953,6 +6315,8 @@ spec:
                                   Number or name of the port to access on the container.
                                   Number must be in the range 1 to 65535.
                                   Name must be an IANA_SVC_NAME.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
                             required:
                             - port
@@ -5970,6 +6334,8 @@ spec:
                               This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
                               Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           timeoutSeconds:
                             description: |-
@@ -5977,6 +6343,8 @@ spec:
                               Defaults to 1 second. Minimum value is 1.
                               More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                         type: object
                       nodeSelector:
@@ -6021,14 +6389,25 @@ spec:
                               Minimum consecutive failures for the probe to be considered failed after having succeeded.
                               Defaults to 3. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           grpc:
                             description: GRPC specifies a GRPC HealthCheckRequest.
                             properties:
+                              mode:
+                                description: |-
+                                  mode specifies the connection mode for the gRPC health probe.
+                                  Set to "TLS" to use TLS without certificate verification.
+                                  Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+                                  If not specified, the probe uses a plaintext (insecure) connection.
+                                type: string
                               port:
                                 description: Port number of the gRPC service. Number
                                   must be in the range 1 to 65535.
                                 format: int32
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 type: integer
                               service:
                                 default: ""
@@ -6082,7 +6461,14 @@ spec:
                                   Name or number of the port to access on the container.
                                   Number must be in the range 1 to 65535.
                                   Name must be an IANA_SVC_NAME.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
+                              protocol:
+                                description: |-
+                                  Protocol selects the wire protocol for the probe connection.
+                                  Nil defaults to HTTP/1.1.
+                                type: string
                               scheme:
                                 description: |-
                                   Scheme to use for connecting to the host.
@@ -6096,18 +6482,24 @@ spec:
                               Number of seconds after the container has started before liveness probes are initiated.
                               More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           periodSeconds:
                             description: |-
                               How often (in seconds) to perform the probe.
                               Default to 10 seconds. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           successThreshold:
                             description: |-
                               Minimum consecutive successes for the probe to be considered successful after having failed.
                               Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           tcpSocket:
                             description: TCPSocket specifies a connection to a TCP
@@ -6125,6 +6517,8 @@ spec:
                                   Number or name of the port to access on the container.
                                   Number must be in the range 1 to 65535.
                                   Name must be an IANA_SVC_NAME.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
                             required:
                             - port
@@ -6142,6 +6536,8 @@ spec:
                               This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
                               Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           timeoutSeconds:
                             description: |-
@@ -6149,6 +6545,8 @@ spec:
                               Defaults to 1 second. Minimum value is 1.
                               More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                         type: object
                       securityContext:
@@ -6193,6 +6591,8 @@ spec:
                               If unset, the Kubelet will not modify the ownership and permissions of any volume.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           fsGroupChangePolicy:
                             description: |-
@@ -6213,6 +6613,8 @@ spec:
                               for that container.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           runAsNonRoot:
                             description: |-
@@ -6232,6 +6634,8 @@ spec:
                               for that container.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           seLinuxChangePolicy:
                             description: |-
@@ -6248,11 +6652,8 @@ spec:
                               Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes
                               whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their
                               CSIDriver instance. Other volumes are always re-labelled recursively.
-                              "MountOption" value is allowed only when SELinuxMount feature gate is enabled.
 
-                              If not specified and SELinuxMount feature gate is enabled, "MountOption" is used.
-                              If not specified and SELinuxMount feature gate is disabled, "MountOption" is used for ReadWriteOncePod volumes
-                              and "Recursive" for all other volumes.
+                              If not specified, "MountOption" is used.
 
                               This field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.
 
@@ -6322,6 +6723,8 @@ spec:
                               Note that this field cannot be set when spec.os.name is windows.
                             items:
                               format: int64
+                              maximum: 9223372036854774784
+                              minimum: -9223372036854774784
                               type: integer
                             type: array
                             x-kubernetes-list-type: atomic
@@ -6415,14 +6818,25 @@ spec:
                               Minimum consecutive failures for the probe to be considered failed after having succeeded.
                               Defaults to 3. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           grpc:
                             description: GRPC specifies a GRPC HealthCheckRequest.
                             properties:
+                              mode:
+                                description: |-
+                                  mode specifies the connection mode for the gRPC health probe.
+                                  Set to "TLS" to use TLS without certificate verification.
+                                  Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+                                  If not specified, the probe uses a plaintext (insecure) connection.
+                                type: string
                               port:
                                 description: Port number of the gRPC service. Number
                                   must be in the range 1 to 65535.
                                 format: int32
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 type: integer
                               service:
                                 default: ""
@@ -6476,7 +6890,14 @@ spec:
                                   Name or number of the port to access on the container.
                                   Number must be in the range 1 to 65535.
                                   Name must be an IANA_SVC_NAME.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
+                              protocol:
+                                description: |-
+                                  Protocol selects the wire protocol for the probe connection.
+                                  Nil defaults to HTTP/1.1.
+                                type: string
                               scheme:
                                 description: |-
                                   Scheme to use for connecting to the host.
@@ -6490,18 +6911,24 @@ spec:
                               Number of seconds after the container has started before liveness probes are initiated.
                               More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           periodSeconds:
                             description: |-
                               How often (in seconds) to perform the probe.
                               Default to 10 seconds. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           successThreshold:
                             description: |-
                               Minimum consecutive successes for the probe to be considered successful after having failed.
                               Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                           tcpSocket:
                             description: TCPSocket specifies a connection to a TCP
@@ -6519,6 +6946,8 @@ spec:
                                   Number or name of the port to access on the container.
                                   Number must be in the range 1 to 65535.
                                   Name must be an IANA_SVC_NAME.
+                                maximum: 2147483647
+                                minimum: -2147483648
                                 x-kubernetes-int-or-string: true
                             required:
                             - port
@@ -6536,6 +6965,8 @@ spec:
                               This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
                               Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           timeoutSeconds:
                             description: |-
@@ -6543,6 +6974,8 @@ spec:
                               Defaults to 1 second. Minimum value is 1.
                               More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                             format: int32
+                            maximum: 2147483647
+                            minimum: -2147483648
                             type: integer
                         type: object
                       terminationGracePeriodSeconds:
@@ -6589,6 +7022,8 @@ spec:
                                 it is not set, which means tolerate the taint forever (do not evict). Zero and
                                 negative values will be treated as 0 (evict immediately) by the system.
                               format: int64
+                              maximum: 9223372036854774784
+                              minimum: -9223372036854774784
                               type: integer
                             value:
                               description: |-
@@ -6691,6 +7126,8 @@ spec:
                                 to topologies that satisfy it.
                                 It's a required field. Default value is 1 and 0 is not allowed.
                               format: int32
+                              maximum: 2147483647
+                              minimum: -2147483648
                               type: integer
                             minDomains:
                               description: |-
@@ -6714,6 +7151,8 @@ spec:
                                 because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
                                 it will violate MaxSkew.
                               format: int32
+                              maximum: 2147483647
+                              minimum: -2147483648
                               type: integer
                             nodeAffinityPolicy:
                               description: |-
@@ -6982,6 +7421,8 @@ spec:
                               PodSecurityContext, the value specified in SecurityContext takes precedence.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           runAsNonRoot:
                             description: |-
@@ -7000,6 +7441,8 @@ spec:
                               PodSecurityContext, the value specified in SecurityContext takes precedence.
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
+                            maximum: 9223372036854774784
+                            minimum: -9223372036854774784
                             type: integer
                           seLinuxOptions:
                             description: |-
@@ -7119,6 +7562,48 @@ spec:
                           Additional labels to add to the Service object metadata.
                           If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
                         type: object
+                      ipFamilies:
+                        description: |-
+                          IPFamilies is the list of IP families (IPv4 and/or IPv6) assigned to the Service,
+                          in order of preference. If unset, the cluster's default is used. See
+                          https://kubernetes.io/docs/concepts/services-networking/dual-stack/
+                          This field is only honored for Services that allocate a cluster IP, and the
+                          families requested here must be configured on the cluster.
+
+                          Kubernetes does not allow the first family to change on an existing Service:
+                          the second family can be added or dropped, but a change to the first one,
+                          including setting it on a Gateway whose Service took a different cluster
+                          default, is rejected. The proxy Service then stops being updated, and so do
+                          the resources applied after it, such as the Deployment. To change the first
+                          family, delete the proxy Service or recreate the Gateway; either gives the
+                          Service new cluster and LoadBalancer addresses.
+
+                          Note: This feature is experimental and subject to breaking changes in future releases.
+                        items:
+                          description: |-
+                            IPFamily represents the IP Family (IPv4 or IPv6). This type is used
+                            to express the family of an IP expressed by a type (e.g. service.spec.ipFamilies).
+                          enum:
+                          - IPv4
+                          - IPv6
+                          type: string
+                        maxItems: 2
+                        type: array
+                        x-kubernetes-list-type: atomic
+                      ipFamilyPolicy:
+                        description: |-
+                          IPFamilyPolicy represents the dual-stack preference of the Service.
+                          `SingleStack` allocates one family, `PreferDualStack` allocates two when the
+                          cluster has dual-stack configured and falls back to one when it does not, and
+                          `RequireDualStack` fails allocation unless two families are available.
+                          If unset, the cluster's default is used.
+
+                          Note: This feature is experimental and subject to breaking changes in future releases.
+                        enum:
+                        - SingleStack
+                        - PreferDualStack
+                        - RequireDualStack
+                        type: string
                       loadBalancerClass:
                         description: |-
                           LoadBalancerClass is the class of the load balancer implementation this Service belongs to.
@@ -7368,8 +7853,13 @@ spec:
                           defaulting to /stats
                         type: boolean
                       enabled:
-                        description: Whether to expose metrics annotations and ports
-                          for scraping metrics.
+                        description: |-
+                          Whether to expose metrics annotations and ports for scraping metrics.
+                          When enabled, the proxy has the http-monitoring container port (9091), and
+                          the pod has the annotations for scraping. If you disable stats, the proxy
+                          has neither. The container port also matters when you set hostNetwork in a
+                          deployment overlay, because the scheduler does not place two pods that use
+                          the same host port on one node.
                         type: boolean
                       matcher:
                         description: |-

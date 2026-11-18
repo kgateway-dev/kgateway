@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -92,9 +93,9 @@ func (r *RouteInfo) Clone() *RouteInfo {
 // and the given indexes.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int, ruleName string) string {
 	if ruleName == "" {
-		return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
+		return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx, ruleName)
+	return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx) + "-" + ruleName
 }
 
 // GetRouteChain recursively resolves all backends for the given route object.
@@ -418,28 +419,6 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 		return listenerName
 	}
 	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
-}
-
-// RouteKeyMatches reports whether key equals GenerateRouteKey(parent, listenerName)
-// without building the key, so callers can scan every listener without allocating.
-func RouteKeyMatches(key string, parent client.Object, listenerName string) bool {
-	if parent == nil {
-		return key == listenerName
-	}
-	if _, ok := parent.(*gwv1.Gateway); ok {
-		return key == listenerName
-	}
-	rest, ok := strings.CutPrefix(key, parent.GetNamespace())
-	if ok {
-		rest, ok = strings.CutPrefix(rest, "/")
-	}
-	if ok {
-		rest, ok = strings.CutPrefix(rest, parent.GetName())
-	}
-	if ok {
-		rest, ok = strings.CutPrefix(rest, "/")
-	}
-	return ok && rest == listenerName
 }
 
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {

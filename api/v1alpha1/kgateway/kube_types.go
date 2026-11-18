@@ -143,6 +143,40 @@ type Service struct {
 	// +optional
 	// +listType=atomic
 	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty"`
+
+	// IPFamilies is the list of IP families (IPv4 and/or IPv6) assigned to the Service,
+	// in order of preference. If unset, the cluster's default is used. See
+	// https://kubernetes.io/docs/concepts/services-networking/dual-stack/
+	// This field is only honored for Services that allocate a cluster IP, and the
+	// families requested here must be configured on the cluster.
+	//
+	// Kubernetes does not allow the first family to change on an existing Service:
+	// the second family can be added or dropped, but a change to the first one,
+	// including setting it on a Gateway whose Service took a different cluster
+	// default, is rejected. The proxy Service then stops being updated, and so do
+	// the resources applied after it, such as the Deployment. To change the first
+	// family, delete the proxy Service or recreate the Gateway; either gives the
+	// Service new cluster and LoadBalancer addresses.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	//
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=2
+	// +kubebuilder:validation:items:Enum=IPv4;IPv6
+	IPFamilies []corev1.IPFamily `json:"ipFamilies,omitempty"`
+
+	// IPFamilyPolicy represents the dual-stack preference of the Service.
+	// `SingleStack` allocates one family, `PreferDualStack` allocates two when the
+	// cluster has dual-stack configured and falls back to one when it does not, and
+	// `RequireDualStack` fails allocation unless two families are available.
+	// If unset, the cluster's default is used.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	//
+	// +optional
+	// +kubebuilder:validation:Enum=SingleStack;PreferDualStack;RequireDualStack
+	IPFamilyPolicy *corev1.IPFamilyPolicy `json:"ipFamilyPolicy,omitempty"`
 }
 
 func (in *Service) GetPorts() []Port {
@@ -230,6 +264,20 @@ func (in *Service) GetLoadBalancerSourceRanges() []string {
 		return nil
 	}
 	return in.LoadBalancerSourceRanges
+}
+
+func (in *Service) GetIPFamilies() []corev1.IPFamily {
+	if in == nil {
+		return nil
+	}
+	return in.IPFamilies
+}
+
+func (in *Service) GetIPFamilyPolicy() *corev1.IPFamilyPolicy {
+	if in == nil {
+		return nil
+	}
+	return in.IPFamilyPolicy
 }
 
 type ServiceAccount struct {
