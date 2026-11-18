@@ -1229,8 +1229,9 @@ func resolveFrontendTLSConfig(port gwv1.PortNumber, frontendTLSConfig *ir.Fronte
 	return frontendTLSConfig.DefaultValidation, frontendTLSConfig.DefaultError
 }
 
-// NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a ClientCertificateValidationIR
-// and an error. The IR respresents the TLS config that could be successfully translated, and the error can be used to write status about the config that couldn't.
+// translateTLSConfig translates a terminating listener's TLS config, including its client certificate validation.
+// NOTE: Because a listener can be partially valid when there are multiple certificate references, this function can return both a TLSConfig
+// and an error. The TLSConfig represents the config that could be successfully translated, and the error can be used to write status about the config that couldn't.
 func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -1241,22 +1242,20 @@ func translateTLSConfig(
 	gatewayNamespace string,
 	gatewayPolicies ir.AttachedPolicies,
 ) (*ir.TLSConfig, error) {
-	// ListenerPolicy clientCertificateValidation overrides the Gateway's spec.tls.frontend validation, so it
-	// is chosen first: frontend validation, and its errors, only matter when no policy applies or when an
-	// optional policy's CA certificates cannot be fetched.
-	// Like the other ListenerPolicy fields, the most specific value wins: a policy targeting the listener
-	// (via sectionName) replaces a policy targeting the whole Gateway, even when its CA certificates cannot
-	// be fetched. ListenerPolicies can only target Gateways, so a ListenerSet listener only has the
+	// Client certificate validation sources, in precedence order. ListenerPolicy clientCertificateValidation
+	// replaces the Gateway's spec.tls.frontend validation. Like the other ListenerPolicy fields, the most
+	// specific value wins: a policy targeting the listener (via sectionName) replaces a policy targeting the
+	// whole Gateway. ListenerPolicies can only target Gateways, so a ListenerSet listener only has the
 	// Gateway-wide policy.
-	certVal := getCertValidationFromAttached(listener.AttachedPolicies, listener.Parent.GetNamespace())
-	if certVal == nil {
-		certVal = getCertValidationFromAttached(gatewayPolicies, gatewayNamespace)
+	policySource := listenerPolicyCertSource(listener.AttachedPolicies)
+	if policySource == nil {
+		policySource = listenerPolicyCertSource(gatewayPolicies)
 	}
-	// frontendErr holds invalid frontend CA refs (an unsupported kind). resolvedValidation is nil when no
-	// frontend CA ref is valid.
-	resolvedValidation, frontendErr := resolveFrontendTLSConfig(listener.Port, frontendTLSConfig)
-	if frontendErr != nil && resolvedValidation == nil && certVal == nil {
-		return nil, frontendErr
+	frontendSource := frontendCertSource(listener.Port, frontendTLSConfig, gatewayNamespace)
+	// A frontend without a valid CA ref fails the listener even when the listener does not terminate TLS,
+	// unless a ListenerPolicy replaces it.
+	if policySource == nil && frontendSource != nil && len(frontendSource.refs) == 0 {
+		return nil, frontendSource.refErr
 	}
 
 	if tls == nil {
@@ -1327,72 +1326,182 @@ func translateTLSConfig(
 	}
 
 	// Validate that VerifySubjectAltNames requires a trusted CA to be configured
-	hasTrustedCA := resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0
+	hasTrustedCA := frontendSource != nil && len(frontendSource.refs) > 0
 	if len(tlsConfig.VerifySubjectAltNames) > 0 && !hasTrustedCA {
 		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
 	}
 
-	var policyErr error
-	if certVal != nil {
-		var generated bool
-		generated, policyErr = applyListenerPolicyCertValidation(kctx, ctx, queries, certVal, tlsConfig)
-		if generated {
-			return tlsConfig, errors.Join(certErr, policyErr)
+	fetchCA := func(r caCertRef) ([]byte, error) {
+		data, err := buildCaCertificateReference(kctx, ctx, queries, r.ref, r.fromGVK, r.fromNamespace)
+		return []byte(data), err
+	}
+	validation, ok, validationErr := selectClientCertValidation(listener, fetchCA, policySource, frontendSource)
+	if !ok {
+		return nil, errors.Join(certErr, validationErr)
+	}
+	tlsConfig.ClientCertificateValidation = validation
+	return tlsConfig, errors.Join(certErr, validationErr)
+}
+
+// clientCertSource is one source of a listener's client certificate validation: the ListenerPolicies
+// attached at one level, or the Gateway's spec.tls.frontend validation for the listener's port.
+type clientCertSource struct {
+	// name identifies the source in logs.
+	name                  string
+	refs                  []caCertRef
+	require               bool
+	allowInsecureFallback bool
+	// refErr reports CA refs that were rejected before any fetch, such as refs of an unsupported kind.
+	refErr error
+}
+
+// caCertRef is a CA certificate ref and the object that holds it. A ref without a namespace resolves in the
+// holder's namespace, and a ref to another namespace needs a ReferenceGrant from the holder's kind in that
+// namespace.
+type caCertRef struct {
+	ref           gwv1.ObjectReference
+	fromGVK       schema.GroupVersionKind
+	fromNamespace string
+	// holder names the object holding ref in errors, which are reported on a listener whose owner may not
+	// own that object. Empty for the Gateway's own refs.
+	holder string
+}
+
+// selectClientCertValidation returns the client certificate validation of the first source, in order, that
+// yields one; nil sources are skipped. A source yields a validation when at least one of its CA certificates
+// can be fetched. When none can:
+//   - a required source fails the listener: the bool is false, and the error holds only that source's errors, since
+//     they are what fails the listener;
+//   - an optional source is skipped, and its errors are returned with the result so the listener reports
+//     them while it keeps serving.
+func selectClientCertValidation(
+	listener ir.Listener,
+	fetchCA func(caCertRef) ([]byte, error),
+	sources ...*clientCertSource,
+) (*ir.ClientCertificateValidation, bool, error) {
+	var skippedErr error
+	for _, s := range sources {
+		if s == nil {
+			continue
 		}
-		if certVal.requireClientCertificate {
-			logger.Error("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
+		validation, err := s.fetch(fetchCA)
+		if validation != nil {
+			return validation, true, errors.Join(skippedErr, err)
+		}
+		if s.require {
+			logger.Error("no CA certificate could be fetched for required client certificate validation, failing listener",
 				"listener", listener.Name,
 				"port", listener.Port,
-				"error", policyErr,
-				"mode", "required")
-			return nil, errors.Join(certErr, policyErr)
+				"validation_source", s.name,
+				"error", err)
+			return nil, false, err
 		}
-		// An optional policy without a fetchable CA certificate leaves the Gateway's spec.tls.frontend
-		// validation in place. Its error is returned with the TLS config, so the listener reports the
-		// broken reference while it keeps serving.
-		logger.Warn("failed to fetch CA certificate for ListenerPolicy client validation override, skipping validation",
+		logger.Warn("no CA certificate could be fetched for optional client certificate validation, skipping it",
 			"listener", listener.Name,
 			"port", listener.Port,
-			"error", policyErr,
-			"mode", "optional")
+			"validation_source", s.name,
+			"error", err)
+		skippedErr = errors.Join(skippedErr, err)
 	}
+	return nil, true, skippedErr
+}
 
-	// Apply the Gateway's spec.tls.frontend client certificate validation if present.
-	if frontendErr != nil && resolvedValidation == nil {
-		// None of the frontend CA refs is valid, so the listener cannot be served with it. Only the frontend
-		// error is returned: it is what fails the listener, and a NotFound in policyErr would take over the
-		// status message. policyErr is logged above.
-		return nil, errors.Join(certErr, frontendErr)
-	}
-	// Skip if CA cert refs are empty (no validation possible)
-	caErr := frontendErr
-	if hasTrustedCA {
-		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
-		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
-		generated, fetchErr := applyClientCertificateValidation(kctx, ctx, queries, resolvedValidation, tlsConfig, wellknown.GatewayGVK, gatewayNamespace)
-		caErr = errors.Join(caErr, fetchErr)
-		if !generated {
-			if resolvedValidation.RequireClientCertificate {
-				// If client certs are required (AllowValidOnly), fail the listener
-				logger.Error("failed to fetch CA certificate for client validation, failing listener",
-					"listener", listener.Name,
-					"port", listener.Port,
-					"error", caErr,
-					"mode", "AllowValidOnly")
-				// The frontend error comes first: it is what fails the listener, and status reports the first.
-				return nil, errors.Join(certErr, caErr, policyErr)
+// fetch returns the source's validation with the CA certificates that could be fetched, or nil if none could,
+// and the errors for the refs that could not.
+func (s *clientCertSource) fetch(fetchCA func(caCertRef) ([]byte, error)) (*ir.ClientCertificateValidation, error) {
+	errs := s.refErr
+	var caCertificates [][]byte
+	for _, r := range s.refs {
+		data, err := fetchCA(r)
+		if err != nil {
+			if r.holder != "" {
+				err = fmt.Errorf("%s: %w", r.holder, err)
 			}
-			// If client certs are not required (AllowInsecureFallback), log the error but don't fail the listener
-			// The listener will still work for connections without client certs
-			logger.Warn("failed to fetch CA certificate for client validation, skipping validation",
-				"listener", listener.Name,
-				"port", listener.Port,
-				"error", caErr,
-				"mode", "AllowInsecureFallback")
+			errs = errors.Join(errs, err)
+			continue
 		}
+		caCertificates = append(caCertificates, data)
 	}
+	if len(caCertificates) == 0 {
+		return nil, errs
+	}
+	return &ir.ClientCertificateValidation{
+		CACertificates:           caCertificates,
+		RequireClientCertificate: s.require,
+		AllowInsecureFallback:    s.allowInsecureFallback,
+	}, errs
+}
 
-	return tlsConfig, errors.Join(certErr, policyErr, caErr)
+// frontendCertSource returns the Gateway's spec.tls.frontend validation for port, or nil if none is configured.
+// A frontend whose CA refs are all invalid is a required source without refs: it fails the listener whatever
+// its mode.
+func frontendCertSource(port gwv1.PortNumber, frontendTLSConfig *ir.FrontendTLSConfigIR, gatewayNamespace string) *clientCertSource {
+	validation, err := resolveFrontendTLSConfig(port, frontendTLSConfig)
+	if validation == nil || len(validation.CACertificateRefs) == 0 {
+		if err == nil {
+			return nil
+		}
+		return &clientCertSource{name: "spec.tls.frontend", require: true, refErr: err}
+	}
+	source := &clientCertSource{
+		name:                  "spec.tls.frontend",
+		require:               validation.RequireClientCertificate,
+		allowInsecureFallback: validation.AllowInsecureFallback,
+		refErr:                err,
+	}
+	for _, ref := range validation.CACertificateRefs {
+		source.refs = append(source.refs, caCertRef{ref: ref, fromGVK: wellknown.GatewayGVK, fromNamespace: gatewayNamespace})
+	}
+	return source
+}
+
+// listenerPolicyCertSource aggregates the clientCertificateValidation of the ListenerPolicies attached at one
+// level (a listener, or the whole Gateway): their unique CA refs, required if any policy requires it.
+// Each ref is held by its own ListenerPolicy. That is not always in the namespace of the listener's parent: a
+// policy in the global policy namespace can select a Gateway by label, and a Gateway-wide policy applies to
+// ListenerSet listeners in other namespaces.
+// Returns nil if no attached ListenerPolicy configures clientCertificateValidation.
+func listenerPolicyCertSource(attachedPolicies ir.AttachedPolicies) *clientCertSource {
+	type refKey struct {
+		fromNamespace, group, kind, name, namespace string
+	}
+	seen := make(map[refKey]bool)
+	source := &clientCertSource{name: "ListenerPolicy"}
+	for _, polAtt := range attachedPolicies.Policies[wellknown.ListenerPolicyGVK.GroupKind()] {
+		listenerPol, ok := polAtt.PolicyIr.(*listenerpolicy.ListenerPolicyIR)
+		if !ok || listenerPol == nil || polAtt.PolicyRef == nil {
+			// Every ListenerPolicy attachment records its policy; only global policies, which are never
+			// ListenerPolicies, do not.
+			continue
+		}
+		certVal := listenerPol.GetClientCertificateValidation()
+		if certVal == nil {
+			continue
+		}
+		policyNamespace := polAtt.PolicyRef.Namespace
+		holder := fmt.Sprintf("ListenerPolicy %s/%s", policyNamespace, polAtt.PolicyRef.Name)
+		for _, ref := range certVal.CACertificateRefs {
+			key := refKey{fromNamespace: policyNamespace, group: string(ref.Group), kind: string(ref.Kind), name: string(ref.Name)}
+			if ref.Namespace != nil {
+				key.namespace = string(*ref.Namespace)
+			}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			source.refs = append(source.refs, caCertRef{
+				ref:           ref,
+				fromGVK:       wellknown.ListenerPolicyGVK,
+				fromNamespace: policyNamespace,
+				holder:        holder,
+			})
+		}
+		source.require = source.require || certVal.RequireClientCertificate
+	}
+	if len(source.refs) == 0 {
+		return nil
+	}
+	return source
 }
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
@@ -1468,169 +1577,6 @@ func buildCaCertificateReference(
 	default:
 		return "", fmt.Errorf("unsupported CA certificate reference type: %s/%s", caCertRef.Group, caCertRef.Kind)
 	}
-}
-
-// listenerPolicyCertValidation is the clientCertificateValidation of the ListenerPolicies attached at one
-// level: a listener, or the whole Gateway.
-type listenerPolicyCertValidation struct {
-	caRefs                   []listenerPolicyCARef
-	requireClientCertificate bool
-}
-
-// listenerPolicyCARef is a CA certificate ref together with the ListenerPolicy it came from.
-type listenerPolicyCARef struct {
-	ref gwv1.ObjectReference
-	// policyNamespace is the namespace of the ListenerPolicy that holds ref. A ref without a namespace
-	// resolves there, and a ref to another namespace needs a ReferenceGrant from ListenerPolicies in that
-	// namespace: the policy holds the reference, not its target. It is not always
-	// the namespace of the listener's parent: a policy in the global policy namespace can select a Gateway
-	// by label, and a Gateway-wide policy applies to ListenerSet listeners in other namespaces.
-	policyNamespace string
-	policyName      string
-}
-
-// getCertValidationFromAttached aggregates ClientCertificateValidation from all attached ListenerPolicies:
-// unique CA cert refs, required if any policy requires it. defaultNamespace is used for an attachment that
-// does not record its policy's namespace.
-// Returns nil if no ListenerPolicy is found or if none have clientCertificateValidation configured.
-func getCertValidationFromAttached(attachedPolicies ir.AttachedPolicies, defaultNamespace string) *listenerPolicyCertValidation {
-	polAttachments := attachedPolicies.Policies[wellknown.ListenerPolicyGVK.GroupKind()]
-	if len(polAttachments) == 0 {
-		return nil
-	}
-
-	type caRefKey struct {
-		policyNamespace, group, kind, name, namespace string
-	}
-	seen := make(map[caRefKey]bool)
-	var out listenerPolicyCertValidation
-	for _, polAtt := range polAttachments {
-		listenerPol, ok := polAtt.PolicyIr.(*listenerpolicy.ListenerPolicyIR)
-		if !ok || listenerPol == nil {
-			continue
-		}
-		certVal := listenerPol.GetClientCertificateValidation()
-		if certVal == nil {
-			continue
-		}
-
-		policyNamespace, policyName := defaultNamespace, ""
-		if polAtt.PolicyRef != nil {
-			policyName = polAtt.PolicyRef.Name
-			if polAtt.PolicyRef.Namespace != "" {
-				policyNamespace = polAtt.PolicyRef.Namespace
-			}
-		}
-		for _, certRef := range certVal.CACertificateRefs {
-			key := caRefKey{
-				policyNamespace: policyNamespace,
-				group:           string(certRef.Group),
-				kind:            string(certRef.Kind),
-				name:            string(certRef.Name),
-			}
-			if certRef.Namespace != nil {
-				key.namespace = string(*certRef.Namespace)
-			}
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			out.caRefs = append(out.caRefs, listenerPolicyCARef{
-				ref:             certRef,
-				policyNamespace: policyNamespace,
-				policyName:      policyName,
-			})
-		}
-		out.requireClientCertificate = out.requireClientCertificate || certVal.RequireClientCertificate
-	}
-
-	if len(out.caRefs) == 0 {
-		return nil
-	}
-	return &out
-}
-
-// applyListenerPolicyCertValidation fetches the CA certificates of a ListenerPolicy client certificate
-// validation, each as a reference from its own ListenerPolicy, and sets them on the TLS config.
-// Returns whether validation was applied, and the errors for any CA certificates that could not be fetched.
-func applyListenerPolicyCertValidation(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	queries query.GatewayQueries,
-	validation *listenerPolicyCertValidation,
-	tlsConfig *ir.TLSConfig,
-) (bool, error) {
-	var caCertificates [][]byte
-	var certErr error
-	for _, r := range validation.caRefs {
-		caCertData, err := buildCaCertificateReference(kctx, ctx, queries, r.ref, wellknown.ListenerPolicyGVK, r.policyNamespace)
-		if err != nil {
-			// Name the policy: the error is reported on the listener, whose owner may not own the policy.
-			certErr = errors.Join(certErr, fmt.Errorf("ListenerPolicy %s/%s: %w", r.policyNamespace, r.policyName, err))
-			continue
-		}
-		caCertificates = append(caCertificates, []byte(caCertData))
-	}
-	if len(caCertificates) == 0 {
-		return false, certErr
-	}
-	tlsConfig.ClientCertificateValidation = &ir.ClientCertificateValidation{
-		CACertificates:           caCertificates,
-		RequireClientCertificate: validation.requireClientCertificate,
-	}
-	return true, certErr
-}
-
-// applyClientCertificateValidation applies the resolved client certificate validation configuration
-// to the TLS config by fetching CA certificates and setting validation parameters.
-// Returns a boolean indicating if any client certificate validation was applied successfully and an error if any errors were encountered.
-func applyClientCertificateValidation(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	queries query.GatewayQueries,
-	validationConfig *ir.ClientCertificateValidationIR,
-	tlsConfig *ir.TLSConfig,
-	parentGVK schema.GroupVersionKind,
-	parentNamespace string,
-) (bool, error) {
-	if validationConfig == nil {
-		return true, nil
-	}
-
-	// Fetch CA certificates from ConfigMaps or Secrets
-	var caCertificates [][]byte
-
-	var certErr error
-	for _, caCertRef := range validationConfig.CACertificateRefs {
-		caCertData, err := buildCaCertificateReference(
-			kctx,
-			ctx,
-			queries,
-			caCertRef,
-			parentGVK,
-			parentNamespace,
-		)
-		if err != nil {
-			certErr = errors.Join(certErr, err)
-			continue
-		}
-
-		caCertificates = append(caCertificates, []byte(caCertData))
-	}
-
-	// Only set ClientCertificateValidation if we successfully fetched at least one CA cert
-	if len(caCertificates) == 0 {
-		return false, certErr
-	}
-
-	// Set client certificate validation in TLS config
-	tlsConfig.ClientCertificateValidation = &ir.ClientCertificateValidation{
-		CACertificates:           caCertificates,
-		RequireClientCertificate: validationConfig.RequireClientCertificate,
-		AllowInsecureFallback:    validationConfig.AllowInsecureFallback,
-	}
-
-	return true, certErr
 }
 
 // reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.
