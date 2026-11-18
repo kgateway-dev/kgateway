@@ -487,14 +487,14 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
-			name:      "TLS config with no trust source and no SNI, stored before CEL required SNI, defaults to system ca",
+			name:      "stored TLS config with no trust source and no SNI defaults to system ca",
 			tlsConfig: &kgateway.TLS{},
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: systemCAContext(),
 			},
 		},
 		{
-			name: "TLS config with only SNI defaults to system ca pinned to SNI",
+			name: "stored TLS config with only SNI defaults to system ca pinned to SNI",
 			tlsConfig: &kgateway.TLS{
 				Sni:       new("test.example.com"),
 				SimpleTLS: new(true),
@@ -505,7 +505,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "TLS config with insecure skip verify false defaults to system ca",
+			name: "stored TLS config with insecure skip verify false defaults to system ca",
 			tlsConfig: &kgateway.TLS{
 				InsecureSkipVerify: new(false),
 				Sni:                new("test.example.com"),

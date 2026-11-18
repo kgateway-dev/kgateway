@@ -1,3 +1,4 @@
+_err: exactly one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] must be set
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
@@ -49,7 +50,7 @@ spec:
   tls:
     insecureSkipVerify: true
 ---
-_err: sni is required when no trust source is set
+_err: exactly one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] must be set
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
@@ -74,7 +75,7 @@ spec:
   tls:
     insecureSkipVerify: false
 ---
-_err: sni is required when no trust source is set
+_err: exactly one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] must be set
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
@@ -88,7 +89,7 @@ spec:
     parameters:
       minVersion: "1.2"
 ---
-_err: at most one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] may be set
+_err: exactly one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] must be set
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
