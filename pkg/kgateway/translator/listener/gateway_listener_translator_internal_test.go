@@ -187,6 +187,62 @@ func TestBuildRoutesPerHostWithHostnamesFilter(t *testing.T) {
 	})
 }
 
+func TestHTTPSListenerIsolation(t *testing.T) {
+	reportMap := reports.NewReportMap()
+	reporter := reports.NewReporter(&reportMap)
+	gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "gw"}}
+
+	ml := &MergedListeners{}
+	appendListener := func(name string, protocol gwv1.ProtocolType, hostname string, routeHostnames ...string) {
+		listener := listenerIsolationParent(name, listenerIsolationHostname(hostname)).gatewayListener
+		listener.Protocol = protocol
+		listener.Port = 443
+		listener.Parent = gw
+		var routes []*query.RouteInfo
+		if len(routeHostnames) > 0 {
+			routes = append(routes, listenerIsolationRouteInfo(routeHostnames))
+		}
+		if err := ml.AppendListener(listener, routes, reporter.Gateway(gw).ListenerName(name)); err != nil {
+			t.Fatalf("failed to append listener %s: %v", name, err)
+		}
+	}
+	appendListener("wildcard", gwv1.HTTPSProtocolType, "*.example.com",
+		"*.example.com", "site.example.com", "admin.example.com", "abc.foo.example.com", "tls.example.com")
+	appendListener("admin", gwv1.HTTPSProtocolType, "admin.example.com", "admin.example.com")
+	appendListener("foo", gwv1.HTTPSProtocolType, "*.foo.example.com")
+	appendListener("tls", gwv1.TLSProtocolType, "tls.example.com")
+	appendListener("other", gwv1.HTTPSProtocolType, "other.com", "other.com")
+
+	listeners := ml.translateListeners(nil, context.Background(), nil, reporter)
+	if len(listeners) != 1 {
+		t.Fatalf("expected the listeners to be merged into one, got %d", len(listeners))
+	}
+
+	// hostname of every vhost -> whether it has routes, per filter chain
+	got := map[string]map[string]bool{}
+	for _, fc := range listeners[0].HttpFilterChain {
+		got[fc.FilterChainName] = map[string]bool{}
+		for _, vhost := range fc.Vhosts {
+			got[fc.FilterChainName][vhost.Hostname] = len(vhost.Rules) > 0
+		}
+	}
+	want := map[string]map[string]bool{
+		"wildcard": {
+			"*.example.com":     true,
+			"site.example.com":  true,
+			"admin.example.com": false,
+			"*.foo.example.com": false,
+			"tls.example.com":   false,
+		},
+		"admin": {"admin.example.com": true},
+		"foo":   {},
+		"other": {"other.com": true},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("vhosts mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func listenerIsolationParent(name string, hostname *gwv1.Hostname) httpFilterChainParent {
 	return httpFilterChainParent{
 		gatewayListenerName: name,
