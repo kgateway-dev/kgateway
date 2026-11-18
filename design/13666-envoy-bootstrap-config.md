@@ -758,6 +758,28 @@ In each case `Accepted` is left alone for an existing Gateway.
   with `patches` the deployer replaces it with the hex SHA-256 of the merged
   `envoy.yaml`, and an overlay-only change rolls the pods. A Gateway without
   `patches` keeps the checksum Helm computes.
+- **Override `HelmValuesGenerator`.** A project that embeds kgateway can replace
+  how Helm values are generated with `WithHelmValuesGeneratorOverride`. When the
+  override also implements `deployer.ObjectPostProcessor`, its `PostProcessObjects`
+  replaces kgateway's post-processing, object overlays included. To keep bootstrap
+  patches, the override implements the optional `BootstrapPatchProvider`
+  interface: `BootstrapOverlays(ctx, gw, fromGatewayParameters)` returns the
+  overlays to merge, in order. `fromGatewayParameters` are the overlays of the
+  `GatewayParameters` the `GatewayClass` and the `Gateway` reference, so returning
+  them unchanged applies the patches as kgateway does. The deployer then runs the
+  same pipeline (merge, validation, Service ports, validation key and annotation,
+  checksum, condition, events and metric) and calls the override's
+  `PostProcessObjects` after the merge, so the post-processor sees the patched
+  bootstrap. Each overlay carries the kind and name of the resource that holds it,
+  so status messages and events name an override's own parameters resource. An
+  override that implements `ObjectPostProcessor` without `BootstrapPatchProvider`
+  applies no bootstrap patches and reports no `BootstrapPatchApplied` condition,
+  including for patches in its own parameters resource, so an override whose
+  resource reuses `envoyContainer` returns those overlays from `BootstrapOverlays`.
+  The override's values code builds the Service
+  ports with `GetPortsValuesForBootstrapPatches` for a Gateway with patches, so a
+  listener on a default proxy port that a patch frees stays on the Service (see
+  Listener ports).
 
 #### Reporting
 
@@ -1233,6 +1255,11 @@ image, and Alternatives for a check of stored overlays before an upgrade.
   patched Gateway when the controller's image tag differs from the default proxy
   tag. A Gateway that changes only the registry does not; one whose overlay
   removes the `kgateway-proxy` container gets the could-not-check message.
+- **Override `HelmValuesGenerator`:** an override with its own post-processor
+  and no `BootstrapPatchProvider` gets no patches and no condition; with
+  `BootstrapPatchProvider`, the `GatewayParameters` overlays returned unchanged
+  are merged and reported, overlays the override supplies replace them, and its
+  post-processor sees the patched bootstrap.
 - **Deprecated fields:** an overlay that sets a deprecated field, a deprecated
   field inside an `Any`, a deprecated enum value, and a field disallowed by
   default is named in the condition message and a `Warning` event, the last with
