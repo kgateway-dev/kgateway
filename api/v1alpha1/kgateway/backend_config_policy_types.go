@@ -613,7 +613,10 @@ type TLS struct {
 	// +kubebuilder:validation:XValidation:rule="self",message="insecureSkipVerify can only be set to true; remove it to verify the backend certificate"
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
-	// The SNI domains that should be considered for TLS connection
+	// Sni is the server name sent in the TLS handshake (Server Name Indication).
+	// When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+	// the backend's certificate must also be valid for this name.
+	// For dynamic forward proxy backends, the request's host is sent instead.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	Sni *string `json:"sni,omitempty"`

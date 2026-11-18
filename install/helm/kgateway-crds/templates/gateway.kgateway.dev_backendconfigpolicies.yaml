@@ -1339,8 +1339,11 @@ spec:
                       If unset, defaults to false.
                     type: boolean
                   sni:
-                    description: The SNI domains that should be considered for TLS
-                      connection
+                    description: |-
+                      Sni is the server name sent in the TLS handshake (Server Name Indication).
+                      When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+                      the backend's certificate must also be valid for this name.
+                      For dynamic forward proxy backends, the request's host is sent instead.
                     minLength: 1
                     type: string
                   verifySubjectAltNames:
