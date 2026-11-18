@@ -1339,8 +1339,11 @@ spec:
                       If unset, defaults to false.
                     type: boolean
                   sni:
-                    description: The SNI domains that should be considered for TLS
-                      connection
+                    description: |-
+                      Sni is the server name sent in the TLS handshake (Server Name Indication).
+                      When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+                      the backend's certificate must also be valid for this name.
+                      For dynamic forward proxy backends, the request's host is sent instead.
                     minLength: 1
                     type: string
                   verifySubjectAltNames:
@@ -1356,8 +1359,12 @@ spec:
                       WellKnownCACertificates specifies whether to use a well-known set of CA
                       certificates for validating the backend's certificate chain. Currently,
                       only the system certificate pool is supported via SDS.
-                      This is the default when no other trust source is set. When sni is set and
-                      verifySubjectAltNames is empty, the certificate must also be valid for the sni.
+                      When sni is set and verifySubjectAltNames is empty, the certificate must also
+                      be valid for the sni.
+                      WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+                      chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+                      whatever name it was issued for. Dynamic forward proxy backends are the exception:
+                      they always check the certificate against the request's host.
                     maxLength: 253
                     minLength: 1
                     pattern: ^(System|([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/([A-Za-z0-9][-A-Za-z0-9_.]{0,61})?[A-Za-z0-9]))$
@@ -1367,15 +1374,10 @@ spec:
                       rule: self == 'System'
                 type: object
                 x-kubernetes-validations:
-                - message: sni is required when no trust source is set; set sni, provide
-                    secretRef, files, or wellKnownCACertificates, or set insecureSkipVerify
-                    to true
-                  rule: has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates)
-                    || has(self.insecureSkipVerify) || has(self.sni)
-                - message: at most one of the fields in [secretRef files insecureSkipVerify
-                    wellKnownCACertificates] may be set
+                - message: exactly one of the fields in [secretRef files insecureSkipVerify
+                    wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
-                    <= 1'
+                    == 1'
               tunnel:
                 description: |-
                   Tunnel sends Backend connections through an HTTP CONNECT proxy.

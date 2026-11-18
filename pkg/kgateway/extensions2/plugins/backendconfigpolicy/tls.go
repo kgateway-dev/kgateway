@@ -207,8 +207,9 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 }
 
 // effectiveWellKnownCACertificates returns the well-known CA set to validate the
-// backend against. When the policy names no trust source (no secretRef, files, or
-// wellKnownCACertificates), it defaults to the system CA set rather than skipping
+// backend against. The CRD requires exactly one trust source, but a policy stored
+// before that was enforced (such as one with insecureSkipVerify: false) can name
+// none. Such a policy is validated against the system CA set rather than skipping
 // validation. Callers handle insecureSkipVerify: true before reaching here.
 func effectiveWellKnownCACertificates(tlsConfig *kgateway.TLS) *gwv1.WellKnownCACertificatesType {
 	if tlsConfig.WellKnownCACertificates != nil {
