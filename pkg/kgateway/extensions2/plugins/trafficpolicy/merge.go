@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -75,6 +76,47 @@ func copyForMerge[T any](in *T) *T {
 	}
 	cp := *in
 	return &cp
+}
+
+// providerConfig is a per-provider config of a merged sub-IR (extAuth, extProc) that
+// records which policies it came from, so that a merge that drops some of a field's
+// configs can tell which policies still contribute to the field.
+type providerConfig[T any] interface {
+	getMergeOrigins() sets.Set[string]
+	withMergeOrigins(sets.Set[string]) T
+}
+
+// fieldMergeOrigins returns the policies that contribute field of p2: p2Ref if set,
+// otherwise p2's own merge origins for field.
+func fieldMergeOrigins(field string, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins) sets.Set[string] {
+	if p2Ref != nil {
+		return sets.New(p2Ref.ID())
+	}
+	return p2MergeOrigins[field].Clone()
+}
+
+// withMergeOrigins returns a new slice of cfgs in which each config that has no merge
+// origins yet is replaced by a copy attributed to origins. A config without merge
+// origins has not been through a merge that combined configs, so all of the field's
+// origins are its own. The configs in cfgs are never modified.
+func withMergeOrigins[T providerConfig[T]](cfgs []T, origins sets.Set[string]) []T {
+	out := make([]T, len(cfgs))
+	for i, cfg := range cfgs {
+		if cfg.getMergeOrigins() == nil {
+			cfg = cfg.withMergeOrigins(origins.Clone())
+		}
+		out[i] = cfg
+	}
+	return out
+}
+
+// unionMergeOrigins returns the policies that contribute to cfgs.
+func unionMergeOrigins[T providerConfig[T]](cfgs []T) sets.Set[string] {
+	out := sets.New[string]()
+	for _, cfg := range cfgs {
+		out = out.Union(cfg.getMergeOrigins())
+	}
+	return out
 }
 
 // copyWithFilterConfig returns a copy of cfg carrying filterConfig, for the dynamic
@@ -202,7 +244,10 @@ func mergeExtProc(
 		if p2.spec.extProc.providerNames.Len() > 0 && !p1.spec.extProc.providerNames.IsSuperset(p2.spec.extProc.providerNames) {
 			// Always Concat so that the original slice in the IR is never modified
 			// Note: p1 is preferred over p2 (slice order)
-			p1.spec.extProc.perProviderConfig = slices.Concat(p1.spec.extProc.perProviderConfig, p2.spec.extProc.perProviderConfig)
+			p1.spec.extProc.perProviderConfig = slices.Concat(
+				withMergeOrigins(p1.spec.extProc.perProviderConfig, mergeOrigins["extProc"]),
+				withMergeOrigins(p2.spec.extProc.perProviderConfig, fieldMergeOrigins("extProc", p2Ref, p2MergeOrigins)),
+			)
 			// Always Clone so that the original slice in the IR is never modified
 			tmp := p1.spec.extProc.providerNames.Clone()
 			tmp.Insert(p2.spec.extProc.providerNames.UnsortedList()...)
@@ -225,21 +270,22 @@ func mergeExtProc(
 		p1.spec.extProc = copyForMerge(p1.spec.extProc)
 		if p2.spec.extProc.providerNames.Len() > 0 {
 			// p2 is preferred over p1, so if both configure the same provider then p2's config
-			// replaces p1's. Always Clone so that the original slice in the IR is never modified
-			p1Only := slices.DeleteFunc(slices.Clone(p1.spec.extProc.perProviderConfig), func(cfg *perProviderExtProcConfig) bool {
+			// replaces p1's. withMergeOrigins always returns a new slice, so the original
+			// slice in the IR is never modified
+			p1Only := slices.DeleteFunc(withMergeOrigins(p1.spec.extProc.perProviderConfig, mergeOrigins["extProc"]), func(cfg *perProviderExtProcConfig) bool {
 				return p2.spec.extProc.providerNames.Has(providerName(cfg.provider))
 			})
 			// Note: p2 is preferred over p1 (slice order)
-			p1.spec.extProc.perProviderConfig = slices.Concat(p2.spec.extProc.perProviderConfig, p1Only)
+			p1.spec.extProc.perProviderConfig = slices.Concat(
+				withMergeOrigins(p2.spec.extProc.perProviderConfig, fieldMergeOrigins("extProc", p2Ref, p2MergeOrigins)),
+				p1Only,
+			)
 			// Always Clone so that the original slice in the IR is never modified
 			tmp := p1.spec.extProc.providerNames.Clone()
 			tmp.Insert(p2.spec.extProc.providerNames.UnsortedList()...)
 			p1.spec.extProc.providerNames = tmp
-			if len(p1Only) == 0 {
-				mergeOrigins.SetOne("extProc", p2Ref, p2MergeOrigins)
-			} else {
-				mergeOrigins.Append("extProc", p2Ref, p2MergeOrigins)
-			}
+			// A policy whose provider config p2 replaced no longer contributes to the field
+			mergeOrigins["extProc"] = unionMergeOrigins(p1.spec.extProc.perProviderConfig)
 		}
 		if p2.spec.extProc.disableAllProviders {
 			p1.spec.extProc.disableAllProviders = true
@@ -420,7 +466,10 @@ func mergeExtAuth(
 		if p2.spec.extAuth.providerNames.Len() > 0 && !p1.spec.extAuth.providerNames.IsSuperset(p2.spec.extAuth.providerNames) {
 			// Always Concat so that the original slice in the IR is never modified
 			// Note: p1 is preferred over p2 (slice order)
-			p1.spec.extAuth.perProviderConfig = slices.Concat(p1.spec.extAuth.perProviderConfig, p2.spec.extAuth.perProviderConfig)
+			p1.spec.extAuth.perProviderConfig = slices.Concat(
+				withMergeOrigins(p1.spec.extAuth.perProviderConfig, mergeOrigins["extAuth"]),
+				withMergeOrigins(p2.spec.extAuth.perProviderConfig, fieldMergeOrigins("extAuth", p2Ref, p2MergeOrigins)),
+			)
 			// Always Clone so that the original slice in the IR is never modified
 			tmp := p1.spec.extAuth.providerNames.Clone()
 			tmp.Insert(p2.spec.extAuth.providerNames.UnsortedList()...)
@@ -443,21 +492,22 @@ func mergeExtAuth(
 		p1.spec.extAuth = copyForMerge(p1.spec.extAuth)
 		if p2.spec.extAuth.providerNames.Len() > 0 {
 			// p2 is preferred over p1, so if both configure the same provider then p2's config
-			// replaces p1's. Always Clone so that the original slice in the IR is never modified
-			p1Only := slices.DeleteFunc(slices.Clone(p1.spec.extAuth.perProviderConfig), func(cfg *perProviderExtAuthConfig) bool {
+			// replaces p1's. withMergeOrigins always returns a new slice, so the original
+			// slice in the IR is never modified
+			p1Only := slices.DeleteFunc(withMergeOrigins(p1.spec.extAuth.perProviderConfig, mergeOrigins["extAuth"]), func(cfg *perProviderExtAuthConfig) bool {
 				return p2.spec.extAuth.providerNames.Has(providerName(cfg.provider))
 			})
 			// Note: p2 is preferred over p1 (slice order)
-			p1.spec.extAuth.perProviderConfig = slices.Concat(p2.spec.extAuth.perProviderConfig, p1Only)
+			p1.spec.extAuth.perProviderConfig = slices.Concat(
+				withMergeOrigins(p2.spec.extAuth.perProviderConfig, fieldMergeOrigins("extAuth", p2Ref, p2MergeOrigins)),
+				p1Only,
+			)
 			// Always Clone so that the original slice in the IR is never modified
 			tmp := p1.spec.extAuth.providerNames.Clone()
 			tmp.Insert(p2.spec.extAuth.providerNames.UnsortedList()...)
 			p1.spec.extAuth.providerNames = tmp
-			if len(p1Only) == 0 {
-				mergeOrigins.SetOne("extAuth", p2Ref, p2MergeOrigins)
-			} else {
-				mergeOrigins.Append("extAuth", p2Ref, p2MergeOrigins)
-			}
+			// A policy whose provider config p2 replaced no longer contributes to the field
+			mergeOrigins["extAuth"] = unionMergeOrigins(p1.spec.extAuth.perProviderConfig)
 		}
 		if p2.spec.extAuth.disableAllProviders {
 			p1.spec.extAuth.disableAllProviders = true

@@ -383,7 +383,7 @@ func TestMergeDeepMergeConflictUsesPreferredPolicy(t *testing.T) {
 		child := policyFor(childCfg, childOnlyCfg)
 		p1 = &TrafficPolicy{spec: trafficPolicySpecIr{extAuth: child.spec.extAuth}}
 		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extAuth")
-		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg, childOnlyCfg}, p1.spec.extAuth.perProviderConfig,
+		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg, childOnlyCfg}, withoutMergeOrigins(p1.spec.extAuth.perProviderConfig),
 			"parent's config replaces the child's for the provider they share")
 		assert.ElementsMatch(t, []string{p1Ref.ID(), p2Ref.ID()}, origins.Get("extAuth"))
 		assert.Equal(t, []*perProviderExtAuthConfig{childCfg, childOnlyCfg}, child.spec.extAuth.perProviderConfig,
@@ -391,7 +391,7 @@ func TestMergeDeepMergeConflictUsesPreferredPolicy(t *testing.T) {
 
 		p1 = policyFor(childCfg)
 		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extAuth")
-		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg}, p1.spec.extAuth.perProviderConfig)
+		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg}, withoutMergeOrigins(p1.spec.extAuth.perProviderConfig))
 		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extAuth"))
 
 		p1 = policyFor(childCfg)
@@ -433,7 +433,7 @@ func TestMergeDeepMergeConflictUsesPreferredPolicy(t *testing.T) {
 		child := policyFor(childCfg, childOnlyCfg)
 		p1 = &TrafficPolicy{spec: trafficPolicySpecIr{extProc: child.spec.extProc}}
 		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extProc")
-		assert.Equal(t, []*perProviderExtProcConfig{parentCfg, childOnlyCfg}, p1.spec.extProc.perProviderConfig,
+		assert.Equal(t, []*perProviderExtProcConfig{parentCfg, childOnlyCfg}, withoutMergeOrigins(p1.spec.extProc.perProviderConfig),
 			"parent's config replaces the child's for the provider they share")
 		assert.ElementsMatch(t, []string{p1Ref.ID(), p2Ref.ID()}, origins.Get("extProc"))
 		assert.Equal(t, []*perProviderExtProcConfig{childCfg, childOnlyCfg}, child.spec.extProc.perProviderConfig,
@@ -441,7 +441,7 @@ func TestMergeDeepMergeConflictUsesPreferredPolicy(t *testing.T) {
 
 		p1 = policyFor(childCfg)
 		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extProc")
-		assert.Equal(t, []*perProviderExtProcConfig{parentCfg}, p1.spec.extProc.perProviderConfig)
+		assert.Equal(t, []*perProviderExtProcConfig{parentCfg}, withoutMergeOrigins(p1.spec.extProc.perProviderConfig))
 		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extProc"))
 
 		p1 = policyFor(childCfg)
@@ -449,6 +449,117 @@ func TestMergeDeepMergeConflictUsesPreferredPolicy(t *testing.T) {
 		assert.Equal(t, []*perProviderExtProcConfig{childCfg}, p1.spec.extProc.perProviderConfig,
 			"child's config is kept for the provider they share when preferred")
 	})
+}
+
+// withoutMergeOrigins returns copies of cfgs without their merge bookkeeping, so that
+// they can be compared with the configs the merged policies were built from.
+func withoutMergeOrigins[T providerConfig[T]](cfgs []T) []T {
+	out := make([]T, 0, len(cfgs))
+	for _, cfg := range cfgs {
+		out = append(out, cfg.withMergeOrigins(nil))
+	}
+	return out
+}
+
+// TestMergeDeepMergePreferParentOriginsPerProvider checks that under
+// OverridableDeepMerge (DeepMergePreferParent) a policy whose extAuth/extProc provider
+// config the parent replaced is dropped from the field's merge origins, while a policy
+// whose provider config survives the merge stays in them.
+func TestMergeDeepMergePreferParentOriginsPerProvider(t *testing.T) {
+	providerA := &TrafficPolicyGatewayExtensionIR{Name: "provider-a"}
+	providerB := &TrafficPolicyGatewayExtensionIR{Name: "provider-b"}
+
+	childA := &ir.AttachedPolicyRef{Name: "child-a", Namespace: "team1"}
+	childB := &ir.AttachedPolicyRef{Name: "child-b", Namespace: "team1"}
+	parentA := &ir.AttachedPolicyRef{Name: "parent-a", Namespace: "infra"}
+	parentB := &ir.AttachedPolicyRef{Name: "parent-b", Namespace: "infra"}
+	grandparentA := &ir.AttachedPolicyRef{Name: "grandparent-a", Namespace: "infra"}
+
+	fields := []struct {
+		field     string
+		policy    func(provider *TrafficPolicyGatewayExtensionIR) *TrafficPolicy
+		providers func(p *TrafficPolicy) []string
+	}{
+		{
+			field: "extAuth",
+			policy: func(provider *TrafficPolicyGatewayExtensionIR) *TrafficPolicy {
+				return &TrafficPolicy{spec: trafficPolicySpecIr{extAuth: &extAuthIR{
+					perProviderConfig: []*perProviderExtAuthConfig{{provider: provider}},
+					providerNames:     sets.New(providerName(provider)),
+				}}}
+			},
+			providers: func(p *TrafficPolicy) []string {
+				var names []string
+				for _, cfg := range p.spec.extAuth.perProviderConfig {
+					names = append(names, providerName(cfg.provider))
+				}
+				return names
+			},
+		},
+		{
+			field: "extProc",
+			policy: func(provider *TrafficPolicyGatewayExtensionIR) *TrafficPolicy {
+				return &TrafficPolicy{spec: trafficPolicySpecIr{extProc: &extprocIR{
+					perProviderConfig: []*perProviderExtProcConfig{{provider: provider}},
+					providerNames:     sets.New(providerName(provider)),
+				}}}
+			},
+			providers: func(p *TrafficPolicy) []string {
+				var names []string
+				for _, cfg := range p.spec.extProc.perProviderConfig {
+					names = append(names, providerName(cfg.provider))
+				}
+				return names
+			},
+		},
+	}
+
+	for _, f := range fields {
+		merge := func(p1, p2 *TrafficPolicy, p2Ref *ir.AttachedPolicyRef, p2Origins ir.MergeOrigins, strategy policy.MergeStrategy, origins ir.MergeOrigins) {
+			MergeTrafficPolicies(p1, p2, p2Ref, p2Origins, policy.MergeOptions{Strategy: strategy}, origins, TrafficPolicyMergeOpts{})
+		}
+
+		t.Run(f.field+"/two children deep merged, parent replaces one", func(t *testing.T) {
+			// child-a (provider A) and child-b (provider B) are deep merged at the same level
+			p1 := f.policy(providerA)
+			origins := ir.MergeOrigins{f.field: sets.New(childA.ID())}
+			merge(p1, f.policy(providerB), childB, nil, policy.AugmentedDeepMerge, origins)
+			require.ElementsMatch(t, []string{childA.ID(), childB.ID()}, origins.Get(f.field))
+
+			// the parent also configures provider A, and is preferred
+			merge(p1, f.policy(providerA), parentA, nil, policy.OverridableDeepMerge, origins)
+			assert.Equal(t, []string{providerName(providerA), providerName(providerB)}, f.providers(p1))
+			assert.ElementsMatch(t, []string{parentA.ID(), childB.ID()}, origins.Get(f.field),
+				"child-a's provider config was replaced, so it must not be an origin")
+		})
+
+		t.Run(f.field+"/three levels", func(t *testing.T) {
+			// child (A) <- parent (B) <- grandparent (A)
+			p1 := f.policy(providerA)
+			origins := ir.MergeOrigins{f.field: sets.New(childA.ID())}
+			merge(p1, f.policy(providerB), parentB, nil, policy.OverridableDeepMerge, origins)
+			require.ElementsMatch(t, []string{childA.ID(), parentB.ID()}, origins.Get(f.field))
+
+			merge(p1, f.policy(providerA), grandparentA, nil, policy.OverridableDeepMerge, origins)
+			assert.Equal(t, []string{providerName(providerA), providerName(providerB)}, f.providers(p1))
+			assert.ElementsMatch(t, []string{grandparentA.ID(), parentB.ID()}, origins.Get(f.field),
+				"child-a's provider config was replaced, so it must not be an origin")
+		})
+
+		t.Run(f.field+"/merged parent replaces the child's only provider", func(t *testing.T) {
+			// parent-a (A) and parent-b (B) are deep merged into one parent policy
+			parent := f.policy(providerA)
+			parentOrigins := ir.MergeOrigins{f.field: sets.New(parentA.ID())}
+			merge(parent, f.policy(providerB), parentB, nil, policy.AugmentedDeepMerge, parentOrigins)
+
+			p1 := f.policy(providerA)
+			origins := ir.MergeOrigins{f.field: sets.New(childA.ID())}
+			merge(p1, parent, nil, parentOrigins, policy.OverridableDeepMerge, origins)
+			assert.Equal(t, []string{providerName(providerA), providerName(providerB)}, f.providers(p1))
+			assert.ElementsMatch(t, []string{parentA.ID(), parentB.ID()}, origins.Get(f.field),
+				"child-a's provider config was replaced, so it must not be an origin")
+		})
+	}
 }
 
 func TestMergeHTTPUpgradeAndBufferConflictUsesHigherPriorityField(t *testing.T) {
