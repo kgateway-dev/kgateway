@@ -27,7 +27,7 @@ func TestSelectClientCertValidation(t *testing.T) {
 			ref:           gwv1.ObjectReference{Name: gwv1.ObjectName(name), Kind: "Secret"},
 			fromGVK:       wellknown.ListenerPolicyGVK,
 			fromNamespace: "policy-ns",
-			holder:        "ListenerPolicy policy-ns/pol",
+			holderName:    "pol",
 		}
 	}
 	frontendRef := func(name string) caCertRef {

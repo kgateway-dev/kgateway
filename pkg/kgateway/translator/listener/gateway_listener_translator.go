@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -76,10 +77,9 @@ func mergeGWListeners(
 	settings ListenerTranslatorConfig,
 ) *MergedListeners {
 	ml := &MergedListeners{
-		parentGw:          parentGw,
-		Queries:           queries,
-		settings:          settings,
-		frontendTLSConfig: parentGw.FrontendTLSConfig,
+		parentGw: parentGw,
+		Queries:  queries,
+		settings: settings,
 	}
 	for _, listener := range listeners {
 		result := routesForGw.GetListenerResult(listener.Parent, string(listener.Name))
@@ -95,11 +95,10 @@ func mergeGWListeners(
 }
 
 type MergedListeners struct {
-	parentGw          ir.Gateway
-	Listeners         []*MergedListener
-	Queries           query.GatewayQueries
-	settings          ListenerTranslatorConfig
-	frontendTLSConfig *ir.FrontendTLSConfigIR
+	parentGw  ir.Gateway
+	Listeners []*MergedListener
+	Queries   query.GatewayQueries
+	settings  ListenerTranslatorConfig
 }
 
 func (ml *MergedListeners) AppendListener(
@@ -122,6 +121,17 @@ func (ml *MergedListeners) AppendListener(
 	}
 
 	return nil
+}
+
+// newMergedListener returns a MergedListener for listener on port, without filter chains.
+func (ml *MergedListeners) newMergedListener(listener ir.Listener, port gwv1.PortNumber) *MergedListener {
+	return &MergedListener{
+		name:     GenerateListenerName(listener),
+		port:     port,
+		listener: listener,
+		gateway:  ml.parentGw,
+		settings: ml.settings,
+	}
 }
 
 func getListenerPortNumber(listener ir.Listener) gwv1.PortNumber {
@@ -158,14 +168,9 @@ func (ml *MergedListeners) appendHttpListener(
 	}
 
 	// create a new filter chain for the listener
-	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:            GenerateListenerName(listener),
-		port:            finalPort,
-		httpFilterChain: fc,
-		listener:        listener,
-		gateway:         ml.parentGw,
-		settings:        ml.settings,
-	})
+	merged := ml.newMergedListener(listener, finalPort)
+	merged.httpFilterChain = fc
+	ml.Listeners = append(ml.Listeners, merged)
 }
 
 func (ml *MergedListeners) appendHttpsListener(
@@ -198,14 +203,9 @@ func (ml *MergedListeners) appendHttpsListener(
 		}
 	}
 
-	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:              GenerateListenerName(listener),
-		port:              finalPort,
-		httpsFilterChains: []httpsFilterChain{mfc},
-		listener:          listener,
-		gateway:           ml.parentGw,
-		settings:          ml.settings,
-	})
+	merged := ml.newMergedListener(listener, finalPort)
+	merged.httpsFilterChains = []httpsFilterChain{mfc}
+	ml.Listeners = append(ml.Listeners, merged)
 }
 
 func (ml *MergedListeners) AppendTcpListener(
@@ -233,14 +233,9 @@ func (ml *MergedListeners) AppendTcpListener(
 	}
 
 	// create a new filter chain for the listener
-	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:            GenerateListenerName(listener),
-		port:            finalPort,
-		TcpFilterChains: []tcpFilterChain{fc},
-		listener:        listener,
-		gateway:         ml.parentGw,
-		settings:        ml.settings,
-	})
+	merged := ml.newMergedListener(listener, finalPort)
+	merged.TcpFilterChains = []tcpFilterChain{fc}
+	ml.Listeners = append(ml.Listeners, merged)
 }
 
 func (ml *MergedListeners) AppendTlsListener(
@@ -301,14 +296,9 @@ func (ml *MergedListeners) AppendTlsListener(
 	}
 
 	// create a new filter chain for the listener
-	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:            GenerateListenerName(listener),
-		port:            finalPort,
-		TcpFilterChains: filterChains,
-		listener:        listener,
-		gateway:         ml.parentGw,
-		settings:        ml.settings,
-	})
+	merged := ml.newMergedListener(listener, finalPort)
+	merged.TcpFilterChains = filterChains
+	ml.Listeners = append(ml.Listeners, merged)
 }
 
 func listenerSNIDomains(listener ir.Listener) []string {
@@ -538,9 +528,7 @@ func (ml *MergedListener) TranslateListener(
 			ctx,
 			queries,
 			reporter,
-			ml.gateway.FrontendTLSConfig,
-			ml.gateway.Namespace,
-			ml.gateway.AttachedListenerPolicies,
+			&ml.gateway,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -554,7 +542,7 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig, ml.gateway.Namespace, ml.gateway.AttachedListenerPolicies); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, &ml.gateway); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -625,9 +613,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	queries query.GatewayQueries,
 	parentName string,
 	reporter reports.Reporter,
-	frontendTLSConfig *ir.FrontendTLSConfigIR,
-	gatewayNamespace string,
-	gatewayPolicies ir.AttachedPolicies,
+	gateway *ir.Gateway,
 ) *ir.TcpIR {
 	for _, c := range tc.conflictedRoutes {
 		rejectConflictingRoute(c.routeInfo, c.message, reporter)
@@ -719,7 +705,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, frontendTLSConfig, gatewayNamespace, gatewayPolicies)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, gateway)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -794,7 +780,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		}
 
 		// Translate TLS config for TLS termination (same as TCPRoute)
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, frontendTLSConfig, gatewayNamespace, gatewayPolicies)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, gateway)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -1062,9 +1048,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	ctx context.Context,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
-	frontendTLSConfig *ir.FrontendTLSConfigIR,
-	gatewayNamespace string,
-	gatewayPolicies ir.AttachedPolicies,
+	gateway *ir.Gateway,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -1106,9 +1090,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		hfc.listener,
 		hfc.tls,
 		queries,
-		frontendTLSConfig,
-		gatewayNamespace,
-		gatewayPolicies,
+		gateway,
 	)
 	if err != nil {
 		// An error and a non-nil tlsConfig means that the listener is partially valid,
@@ -1238,9 +1220,7 @@ func translateTLSConfig(
 	listener ir.Listener,
 	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
-	frontendTLSConfig *ir.FrontendTLSConfigIR,
-	gatewayNamespace string,
-	gatewayPolicies ir.AttachedPolicies,
+	gateway *ir.Gateway,
 ) (*ir.TLSConfig, error) {
 	// Client certificate validation sources, in precedence order. ListenerPolicy clientCertificateValidation
 	// replaces the Gateway's spec.tls.frontend validation. Like the other ListenerPolicy fields, the most
@@ -1249,9 +1229,9 @@ func translateTLSConfig(
 	// Gateway-wide policy.
 	policySource := listenerPolicyCertSource(listener.AttachedPolicies)
 	if policySource == nil {
-		policySource = listenerPolicyCertSource(gatewayPolicies)
+		policySource = listenerPolicyCertSource(gateway.AttachedListenerPolicies)
 	}
-	frontendSource := frontendCertSource(listener.Port, frontendTLSConfig, gatewayNamespace)
+	frontendSource := frontendCertSource(listener.Port, gateway.FrontendTLSConfig, gateway.Namespace)
 	// A frontend without a valid CA ref fails the listener even when the listener does not terminate TLS,
 	// unless a ListenerPolicy replaces it.
 	if policySource == nil && frontendSource != nil && len(frontendSource.refs) == 0 {
@@ -1362,9 +1342,9 @@ type caCertRef struct {
 	ref           gwv1.ObjectReference
 	fromGVK       schema.GroupVersionKind
 	fromNamespace string
-	// holder names the object holding ref in errors, which are reported on a listener whose owner may not
-	// own that object. Empty for the Gateway's own refs.
-	holder string
+	// holderName names the object holding ref (of kind fromGVK, in fromNamespace) in errors, which are
+	// reported on a listener whose owner may not own that object. Empty for the Gateway's own refs.
+	holderName string
 }
 
 // selectClientCertValidation returns the client certificate validation of the first source, in order, that
@@ -1414,8 +1394,8 @@ func (s *clientCertSource) fetch(fetchCA func(caCertRef) ([]byte, error)) (*ir.C
 	for _, r := range s.refs {
 		data, err := fetchCA(r)
 		if err != nil {
-			if r.holder != "" {
-				err = fmt.Errorf("%s: %w", r.holder, err)
+			if r.holderName != "" {
+				err = fmt.Errorf("%s %s/%s: %w", r.fromGVK.Kind, r.fromNamespace, r.holderName, err)
 			}
 			errs = errors.Join(errs, err)
 			continue
@@ -1449,6 +1429,7 @@ func frontendCertSource(port gwv1.PortNumber, frontendTLSConfig *ir.FrontendTLSC
 		allowInsecureFallback: validation.AllowInsecureFallback,
 		refErr:                err,
 	}
+	source.refs = make([]caCertRef, 0, len(validation.CACertificateRefs))
 	for _, ref := range validation.CACertificateRefs {
 		source.refs = append(source.refs, caCertRef{ref: ref, fromGVK: wellknown.GatewayGVK, fromNamespace: gatewayNamespace})
 	}
@@ -1466,7 +1447,8 @@ func listenerPolicyCertSource(attachedPolicies ir.AttachedPolicies) *clientCertS
 		fromNamespace, group, kind, name, namespace string
 	}
 	seen := make(map[refKey]bool)
-	source := &clientCertSource{name: "ListenerPolicy"}
+	var refs []caCertRef
+	var require bool
 	for _, polAtt := range attachedPolicies.Policies[wellknown.ListenerPolicyGVK.GroupKind()] {
 		listenerPol, ok := polAtt.PolicyIr.(*listenerpolicy.ListenerPolicyIR)
 		if !ok || listenerPol == nil || polAtt.PolicyRef == nil {
@@ -1479,29 +1461,31 @@ func listenerPolicyCertSource(attachedPolicies ir.AttachedPolicies) *clientCertS
 			continue
 		}
 		policyNamespace := polAtt.PolicyRef.Namespace
-		holder := fmt.Sprintf("ListenerPolicy %s/%s", policyNamespace, polAtt.PolicyRef.Name)
 		for _, ref := range certVal.CACertificateRefs {
-			key := refKey{fromNamespace: policyNamespace, group: string(ref.Group), kind: string(ref.Kind), name: string(ref.Name)}
-			if ref.Namespace != nil {
-				key.namespace = string(*ref.Namespace)
+			key := refKey{
+				fromNamespace: policyNamespace,
+				group:         string(ref.Group),
+				kind:          string(ref.Kind),
+				name:          string(ref.Name),
+				namespace:     string(ptr.Deref(ref.Namespace, "")),
 			}
 			if seen[key] {
 				continue
 			}
 			seen[key] = true
-			source.refs = append(source.refs, caCertRef{
+			refs = append(refs, caCertRef{
 				ref:           ref,
 				fromGVK:       wellknown.ListenerPolicyGVK,
 				fromNamespace: policyNamespace,
-				holder:        holder,
+				holderName:    polAtt.PolicyRef.Name,
 			})
 		}
-		source.require = source.require || certVal.RequireClientCertificate
+		require = require || certVal.RequireClientCertificate
 	}
-	if len(source.refs) == 0 {
+	if len(refs) == 0 {
 		return nil
 	}
-	return source
+	return &clientCertSource{name: "ListenerPolicy", refs: refs, require: require}
 }
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
