@@ -239,7 +239,8 @@ spec:
   selector:
     app: primary
   ports:
-  - port: 80
+  - name: grpc
+    port: 80
     targetPort: 8080
 ---
 apiVersion: v1

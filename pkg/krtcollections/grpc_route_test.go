@@ -1,7 +1,9 @@
 package krtcollections_test
 
 import (
+	"cmp"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -454,6 +457,103 @@ func TestTransformGRPCRoute(t *testing.T) {
 				return true
 			},
 		},
+		{
+			name: "no_http2_protocol",
+			grpcRoute: &gwv1.GRPCRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-grpc-route",
+					Namespace: "default",
+				},
+				Spec: gwv1.GRPCRouteSpec{
+					Hostnames: []gwv1.Hostname{"test.example.com"},
+					Rules: []gwv1.GRPCRouteRule{
+						{
+							Matches: []gwv1.GRPCRouteMatch{
+								{
+									Method: &gwv1.GRPCMethodMatch{
+										Service: new("TestService"),
+										Method:  new("TestMethod"),
+										Type:    new(gwv1.GRPCMethodMatchExact),
+									},
+								},
+							},
+							BackendRefs: []gwv1.GRPCBackendRef{
+								{
+									BackendRef: gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+											Port: new(gwv1.PortNumber(8080)),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-service",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Name: "http",
+								Port: 8080,
+							},
+						},
+					},
+				},
+			},
+			expectedResult: func(httpRouteIR *ir.HttpRouteIR) bool {
+				if httpRouteIR == nil {
+					return false
+				}
+
+				// Verify the basic properties were copied
+				if httpRouteIR.Name != "test-grpc-route" ||
+					httpRouteIR.Namespace != "default" ||
+					len(httpRouteIR.Hostnames) != 1 ||
+					httpRouteIR.Hostnames[0] != "test.example.com" {
+					return false
+				}
+
+				// Verify rules were transformed correctly
+				if len(httpRouteIR.Rules) != 1 {
+					return false
+				}
+
+				// Verify matches
+				rule := httpRouteIR.Rules[0]
+				if len(rule.Matches) != 1 {
+					return false
+				}
+
+				match := rule.Matches[0]
+				if match.Path == nil ||
+					*match.Path.Value != "/TestService/TestMethod" ||
+					*match.Path.Type != gwv1.PathMatchExact {
+					return false
+				}
+
+				// Verify backends
+				if len(rule.Backends) != 1 {
+					return false
+				}
+
+				var unsupportedAppProtocol *krtcollections.UnsupportedAppProtocolError
+				backend := rule.Backends[0]
+				if backend.Backend == nil ||
+					backend.Backend.ClusterName != wellknown.BlackholeClusterName ||
+					!errors.As(backend.Backend.Err, &unsupportedAppProtocol) {
+					return false
+				}
+
+				return true
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -535,6 +635,7 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 				Name:      svc.Name,
 			}, port.Port, "", "")
 			backend.Obj = svc
+			backend.AppProtocol = ir.ParseAppProtocol(cmp.Or(port.AppProtocol, new(port.Name)))
 
 			uss = append(uss, backend)
 		}
