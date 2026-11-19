@@ -73,6 +73,43 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			// A typo would otherwise reach Envoy and NACK the whole listener while
+			// the listener still reports Programmed=True (#14453).
+			name: "invalid_signature_algorithm",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha255",
+			},
+			out: &ir.TLSConfig{},
+			errors: []string{
+				"invalid signature algorithm: rsa_pss_rsae_sha255",
+			},
+		},
+		{
+			name: "signature_algorithms_trailing_comma",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha256,",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pss_rsae_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_whitespace_only_entry",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256, , rsa_pss_rsae_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_only_empty_entries",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: " , ,",
+			},
+			out: &ir.TLSConfig{},
+		},
+		{
 			name: "subject_alt_names",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},

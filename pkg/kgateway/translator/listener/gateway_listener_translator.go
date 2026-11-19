@@ -1605,6 +1605,11 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		// Invalid condition on Programmed/Accepted, not a ResolvedRefs issue.
 		resolvedRefsOK = true
 		message = err.Error()
+	case errors.Is(err, sslutils.ErrInvalidSignatureAlgorithm):
+		// An invalid signature-algorithms value is a TLS options problem, not a
+		// certificate reference problem — the cert refs resolved fine.
+		resolvedRefsOK = true
+		message = err.Error()
 	}
 
 	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {

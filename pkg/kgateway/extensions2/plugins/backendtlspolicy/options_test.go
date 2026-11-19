@@ -151,6 +151,21 @@ func TestBuildTranslateFunc_UnknownKgatewayTLSOptionRejected(t *testing.T) {
 	assert.ErrorIs(t, err, sslutils.ErrUnknownTLSExtensionOption)
 }
 
+func TestBuildTranslateFunc_InvalidSignatureAlgorithmRejected(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	// A typo in a signature algorithm name would otherwise be silently accepted
+	// and NACKed by Envoy at xDS load; report it like other invalid TLS options.
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		annotations.SignatureAlgorithms: "rsa_pss_rsae_sha255",
+	})
+
+	_, err := translate(krt.TestingDummyContext{}, policy)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrInvalidTLSOptions)
+	assert.ErrorIs(t, err, sslutils.ErrInvalidSignatureAlgorithm)
+}
+
 func TestBuildTranslateFunc_OnlyForeignTLSOptions(t *testing.T) {
 	translate := buildTranslateFunc(nil, nil)
 

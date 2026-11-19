@@ -45,6 +45,11 @@ var (
 
 	ErrUnknownTLSExtensionOption = errors.New("unknown tls option")
 
+	// ErrInvalidSignatureAlgorithm wraps each rejected name in a
+	// kgateway.dev/signature-algorithms value; reportTLSConfigError uses it to
+	// report the problem on Programmed/Accepted instead of ResolvedRefs.
+	ErrInvalidSignatureAlgorithm = errors.New("invalid signature algorithm")
+
 	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
 	tlsProtocolMap = map[string]envoytlsv3.TlsParameters_TlsProtocol{
 		"1.0": envoytlsv3.TlsParameters_TLSv1_0,
@@ -126,10 +131,47 @@ func ApplyEcdhCurves(in string, out *ir.TLSConfig) error {
 	return nil
 }
 
+// validSignatureAlgorithms are the signature algorithm names BoringSSL's sigalgs
+// parser accepts, as documented for TlsParameters.signature_algorithms in the
+// Envoy API version kgateway pins. Envoy hands the configured list straight to
+// SSL_CTX_set1_sigalgs_list, so a name outside this set makes Envoy NACK the
+// whole listener while its status still reports Programmed (#14453). Rejecting
+// here fails translation visibly instead. Extend the set when the pinned
+// Envoy's BoringSSL accepts new names (e.g. the ML-DSA family in newer
+// BoringSSL); do not extend it speculatively, for the same NACK reason.
+var validSignatureAlgorithms = map[string]struct{}{
+	"rsa_pkcs1_sha1":         {},
+	"rsa_pkcs1_sha256":       {},
+	"rsa_pkcs1_sha384":       {},
+	"rsa_pkcs1_sha512":       {},
+	"rsa_pss_rsae_sha256":    {},
+	"rsa_pss_rsae_sha384":    {},
+	"rsa_pss_rsae_sha512":    {},
+	"ecdsa_secp256r1_sha256": {},
+	"ecdsa_secp384r1_sha384": {},
+	"ecdsa_secp521r1_sha512": {},
+	"ecdsa_sha1":             {},
+	"ed25519":                {},
+}
+
 func ApplySignatureAlgorithms(in string, out *ir.TLSConfig) error {
-	signatureAlgorithms := strings.Split(in, ",")
-	for i, suite := range signatureAlgorithms {
-		signatureAlgorithms[i] = strings.TrimSpace(suite)
+	var signatureAlgorithms []string
+	var errs error
+	for suite := range strings.SplitSeq(in, ",") {
+		suite = strings.TrimSpace(suite)
+		// A trailing comma or a whitespace-only entry is a formatting artifact,
+		// not a requested algorithm; an empty name would otherwise be NACKed.
+		if suite == "" {
+			continue
+		}
+		if _, ok := validSignatureAlgorithms[suite]; !ok {
+			errs = errors.Join(errs, fmt.Errorf("%w: %s", ErrInvalidSignatureAlgorithm, suite))
+			continue
+		}
+		signatureAlgorithms = append(signatureAlgorithms, suite)
+	}
+	if errs != nil {
+		return errs
 	}
 	out.SignatureAlgorithms = signatureAlgorithms
 	return nil
