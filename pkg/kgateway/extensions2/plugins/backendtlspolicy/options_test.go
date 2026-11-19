@@ -1,6 +1,7 @@
 package backendtlspolicy
 
 import (
+	"strings"
 	"testing"
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -117,6 +118,24 @@ func TestBuildTranslateFunc_InvalidTLSOption(t *testing.T) {
 	_, err := translate(krt.TestingDummyContext{}, policy)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrInvalidTLSOptions)
+}
+
+func TestBuildTranslateFunc_InvalidTLSParameter(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	for key, value := range map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		annotations.CipherSuites:        "NO-SUCH-CIPHER",
+		annotations.EcdhCurves:          "NO-SUCH-CURVE",
+		annotations.SignatureAlgorithms: "no_such_algorithm",
+		annotations.AlpnProtocols:       gwv1.AnnotationValue(strings.Repeat("a", 256)),
+	} {
+		policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{key: value})
+
+		_, err := translate(krt.TestingDummyContext{}, policy)
+		require.Error(t, err, key)
+		assert.ErrorIs(t, err, ErrInvalidTLSOptions, key)
+		assert.ErrorIs(t, err, sslutils.ErrInvalidTLSParameter, key)
+	}
 }
 
 func TestBuildTranslateFunc_ForeignTLSOptionsSkipped(t *testing.T) {
