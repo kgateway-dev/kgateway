@@ -1,0 +1,89 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffering-omitted
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  extAuth:
+    extensionRef:
+      name: ext-auth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffering-disabled
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    disableRequestBodyBuffering: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffering-not-disabled
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    disableRequestBodyBuffering: false
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffering-configured
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    withRequestBody:
+      maxRequestBytes: 1024
+---
+_err: at most one of the fields in [withRequestBody disableRequestBodyBuffering] may be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffering-conflicts-with-true
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    withRequestBody:
+      maxRequestBytes: 1024
+    disableRequestBodyBuffering: true
+---
+_err: at most one of the fields in [withRequestBody disableRequestBodyBuffering] may be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: buffering-conflicts-with-false
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example
+  extAuth:
+    extensionRef:
+      name: ext-auth
+    withRequestBody:
+      maxRequestBytes: 1024
+    disableRequestBodyBuffering: false

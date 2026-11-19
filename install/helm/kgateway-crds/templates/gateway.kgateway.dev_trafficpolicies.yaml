@@ -977,6 +977,15 @@ spec:
                       Disable all external auth filters.
                       Can be used to disable external auth policies applied at a higher level in the config hierarchy.
                     type: object
+                  disableRequestBodyBuffering:
+                    description: |-
+                      DisableRequestBodyBuffering disables request body buffering for the
+                      referenced ext auth provider on the routes this policy applies to, even
+                      when that provider's GatewayExtension sets withRequestBody.
+                      Use it for routes that carry large or streaming bodies.
+
+                      Defaults to false. Mutually exclusive with withRequestBody.
+                    type: boolean
                   extensionRef:
                     description: ExtensionRef references the GatewayExtension that
                       should be used for auth.
@@ -1030,6 +1039,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
+                - message: at most one of the fields in [withRequestBody disableRequestBodyBuffering]
+                    may be set
+                  rule: '[has(self.withRequestBody),has(self.disableRequestBodyBuffering)].filter(x,x==true).size()
+                    <= 1'
                 - message: exactly one of the fields in [extensionRef disable] must
                     be set
                   rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
