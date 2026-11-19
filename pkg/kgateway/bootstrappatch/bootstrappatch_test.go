@@ -279,7 +279,35 @@ func TestApplyInvalidOverlay(t *testing.T) {
 		{
 			name:     "admin layer",
 			overlays: []Overlay{overlay(t, gwParams, `{layered_runtime: {layers: [{name: mine, admin_layer: {}}]}}`)},
-			wantErr:  `runtime layer "mine" is an admin layer`,
+			wantErr:  `runtime layer "mine" sets admin_layer instead of static_layer; bootstrap patches can add only static runtime layers`,
+		},
+		{
+			name:     "disk layer",
+			overlays: []Overlay{overlay(t, gwParams, `{layered_runtime: {layers: [{name: from_disk, disk_layer: {symlink_root: /etc/runtime}}]}}`)},
+			wantErr:  `runtime layer "from_disk" sets disk_layer instead of static_layer`,
+		},
+		{
+			name: "RTDS layer",
+			overlays: []Overlay{overlay(t, gwParams, `
+static_resources:
+  clusters: [{name: runtime_server, connect_timeout: 1s}]
+layered_runtime:
+  layers:
+  - {name: static, static_layer: {a: 1}}
+  - name: from_rtds
+    rtds_layer:
+      name: from_rtds
+      rtds_config:
+        api_config_source:
+          api_type: GRPC
+          grpc_services: [{envoy_grpc: {cluster_name: runtime_server}}]
+`)},
+			wantErr: `runtime layer "from_rtds" sets rtds_layer instead of static_layer`,
+		},
+		{
+			name:     "layer without a type",
+			overlays: []Overlay{overlay(t, gwParams, `{layered_runtime: {layers: [{name: empty}]}}`)},
+			wantErr:  `runtime layer "empty" sets no layer type instead of static_layer`,
 		},
 		{
 			name:     "layer named like a generated layer",
@@ -303,39 +331,6 @@ func TestApplyInvalidOverlay(t *testing.T) {
 			name:     "cluster name repeated in one overlay",
 			overlays: []Overlay{overlay(t, gwParams, `{static_resources: {clusters: [{name: c}, {name: c}]}}`)},
 			wantErr:  `static_resources.clusters has more than one entry named "c"`,
-		},
-		{
-			name:     "RTDS layer through ADS",
-			overlays: []Overlay{overlay(t, gwParams, `{layered_runtime: {layers: [{name: rt, rtds_layer: {name: rt, rtds_config: {ads: {}}}}]}}`)},
-			wantErr:  `RTDS runtime layer "rt" requests its values from the kgateway control plane through ADS`,
-		},
-		{
-			name: "RTDS layer through the xds_cluster over gRPC",
-			overlays: []Overlay{overlay(t, gwParams, `
-layered_runtime:
-  layers:
-  - name: rt
-    rtds_layer:
-      name: rt
-      rtds_config:
-        api_config_source:
-          api_type: GRPC
-          grpc_services: [{envoy_grpc: {cluster_name: xds_cluster}}]
-`)},
-			wantErr: `RTDS runtime layer "rt" requests its values from the kgateway control plane through the xds_cluster cluster`,
-		},
-		{
-			name: "RTDS layer through the xds_cluster over REST",
-			overlays: []Overlay{overlay(t, gwParams, `
-layered_runtime:
-  layers:
-  - name: rt
-    rtds_layer:
-      name: rt
-      rtds_config:
-        api_config_source: {api_type: REST, cluster_names: [xds_cluster]}
-`)},
-			wantErr: `RTDS runtime layer "rt" requests its values from the kgateway control plane through the xds_cluster cluster`,
 		},
 	}
 
@@ -448,115 +443,6 @@ staticResources:
 		assert.Empty(t, res.ManagedPaths)
 		assert.Equal(t, int64(10), res.Bootstrap.GetStatsFlushInterval().GetSeconds())
 	})
-}
-
-func TestApplyCuratedOverrides(t *testing.T) {
-	// The class overlay switches the stats matcher's oneof; the Gateway overlay replaces
-	// the DNS resolver and adds the downstream connections monitor.
-	classOverlay := `{stats_config: {stats_matcher: {reject_all: true}}}`
-	gatewayOverlay := `
-typed_dns_resolver_config:
-  name: envoy.network.dns_resolver.cares
-  typed_config:
-    "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
-    use_resolvers_as_fallback: true
-overload_manager:
-  resource_monitors:
-  - name: envoy.resource_monitors.global_downstream_max_connections
-    typed_config:
-      "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
-      max_active_downstream_connections: 10`
-	overlays := func(t *testing.T) []Overlay {
-		return []Overlay{overlay(t, gcParams, classOverlay), overlay(t, gwParams, gatewayOverlay)}
-	}
-
-	t.Run("reports paths the base generated", func(t *testing.T) {
-		// Apply onto a base without the monitor, under PRUNE: curated paths are not managed.
-		res, err := Apply(parseBase(t), overlays(t), apisettings.BootstrapPatchManagedPathsPrune)
-		require.NoError(t, err)
-
-		// Each replacement is attributed to its overlay; the monitor is not reported
-		// since the base did not generate it.
-		assert.Equal(t, []CuratedOverride{
-			{Field: "stats.matcher", Path: "stats_config.stats_matcher", Source: gcParams},
-			{Field: "envoyContainer.bootstrap.dnsResolver", Path: "typed_dns_resolver_config", Source: gwParams},
-		}, res.CuratedOverrides)
-		assert.Empty(t, res.ManagedPaths)
-
-		// The overlays replace the generated values, dropping udp_max_queries.
-		assert.True(t, res.Bootstrap.GetStatsConfig().GetStatsMatcher().GetRejectAll())
-		cares := &envoycaresv3.CaresDnsResolverConfig{}
-		require.NoError(t, res.Bootstrap.GetTypedDnsResolverConfig().GetTypedConfig().UnmarshalTo(cares))
-		assert.True(t, cares.GetUseResolversAsFallback())
-		assert.Nil(t, cares.GetUdpMaxQueries())
-	})
-
-	t.Run("reports the monitor when the base has it", func(t *testing.T) {
-		// Apply onto a base that has the monitor maxDownstreamConnections generates.
-		base, err := ParseBootstrap([]byte(generatedBase + `
-overload_manager:
-  resource_monitors:
-  - name: envoy.resource_monitors.global_downstream_max_connections
-    typed_config:
-      "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
-      max_active_downstream_connections: 100`))
-		require.NoError(t, err)
-		res, err := Apply(base, overlays(t), apisettings.BootstrapPatchManagedPathsWarn)
-		require.NoError(t, err)
-
-		// The monitor is reported along with the other two.
-		assert.Contains(t, res.CuratedOverrides, CuratedOverride{
-			Field:  "envoyContainer.bootstrap.maxDownstreamConnections",
-			Path:   "overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections]",
-			Source: gwParams,
-		})
-		assert.Len(t, res.CuratedOverrides, 3)
-	})
-}
-
-func TestApplyUnvalidatedRuntimeLayers(t *testing.T) {
-	// The GatewayClass adds a disk layer, and the Gateway a static layer and an RTDS
-	// layer that reads from its own server.
-	overlays := []Overlay{
-		overlay(t, gcParams, `{layered_runtime: {layers: [{name: from_disk, disk_layer: {symlink_root: /etc/runtime}}]}}`),
-		overlay(t, gwParams, `
-static_resources:
-  clusters: [{name: runtime_server, connect_timeout: 1s}]
-layered_runtime:
-  layers:
-  - {name: static, static_layer: {a: 1}}
-  - name: from_rtds
-    rtds_layer:
-      name: from_rtds
-      rtds_config:
-        resource_api_version: V3
-        api_config_source:
-          api_type: GRPC
-          transport_api_version: V3
-          grpc_services: [{envoy_grpc: {cluster_name: runtime_server}}]
-`),
-	}
-
-	// Both layers apply under every mode and are reported in order, each with its
-	// GatewayParameters. The static layer is not reported: its values are validated.
-	for _, mode := range []apisettings.BootstrapPatchManagedPathsMode{
-		apisettings.BootstrapPatchManagedPathsWarn,
-		apisettings.BootstrapPatchManagedPathsPrune,
-		apisettings.BootstrapPatchManagedPathsReject,
-	} {
-		res, err := Apply(parseBase(t), overlays, mode)
-		require.NoError(t, err, "mode %s", mode)
-		assert.Equal(t, []RuntimeLayer{
-			{Name: "from_disk", Kind: RuntimeLayerDisk, Source: gcParams},
-			{Name: "from_rtds", Kind: RuntimeLayerRTDS, Source: gwParams},
-		}, res.UnvalidatedLayers, "mode %s", mode)
-		assert.Equal(t, []string{"from_disk", "static", "from_rtds", "admin_layer"},
-			names(res.Bootstrap.GetLayeredRuntime().GetLayers()), "mode %s", mode)
-	}
-
-	// Each layer is named with its kind and GatewayParameters.
-	assert.Equal(t, `RTDS layer "from_rtds" (GatewayParameters default/gw-params)`,
-		RuntimeLayer{Name: "from_rtds", Kind: RuntimeLayerRTDS, Source: gwParams}.String())
 }
 
 func TestListenerPorts(t *testing.T) {

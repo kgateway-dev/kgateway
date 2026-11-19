@@ -39,8 +39,9 @@ type ValidationData struct {
 
 // ValidationSubset returns the fields of bs that change which xDS configuration Envoy
 // accepts and that Envoy can load in the controller: the static runtime layers, which
-// set limits such as re2.max_program_size.error_level. Admin, RTDS and disk layers are
-// left out, since their values are not in the bootstrap. default_regex_engine is left
+// set limits such as re2.max_program_size.error_level. The admin layer is left out: it
+// starts empty and holds only values set on a running proxy with /runtime_modify.
+// Overlays can add only static layers. default_regex_engine is left
 // out because its only engine, GoogleRE2, has no settings, so it accepts what Envoy's
 // default engine accepts. Add a field here only with a test that shows it changes
 // what Envoy accepts, as TestGatewayValidatorWithEnvoy in

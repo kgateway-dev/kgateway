@@ -49,8 +49,11 @@ const (
 	KgatewayReasonBootstrapPathsDenied = "PathsDenied"
 
 	// This reason is used with "kgateway.dev/BootstrapPatchApplied" when the condition
-	// is false because a patch does not parse, contains a template, or uses a name the
-	// proxy reserves.
+	// is false because a patch does not parse, contains a template, uses a name the
+	// proxy reserves, adds a runtime layer that is not a static layer, or repeats a name
+	// Envoy requires to be unique; or because the patched bootstrap cannot be deployed,
+	// such as when its static runtime layers are too large or it listens on every
+	// Gateway listener port.
 	KgatewayReasonBootstrapInvalidOverlay = "InvalidOverlay"
 
 	// This reason is used with "kgateway.dev/BootstrapPatchApplied" when the condition

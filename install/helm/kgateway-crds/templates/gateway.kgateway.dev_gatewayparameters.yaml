@@ -333,10 +333,9 @@ spec:
                                   merged into the generated one.
                                 properties:
                                   mergeStrategy:
-                                    default: StructuredMerge
                                     description: |-
                                       MergeStrategy selects how Value is merged into the generated bootstrap.
-                                      Defaults to StructuredMerge.
+                                      StructuredMerge is the only strategy.
                                     enum:
                                     - StructuredMerge
                                     type: string
@@ -351,7 +350,9 @@ spec:
                                       opening braces, which the proxy treats\nas the
                                       start of a Go template when it starts, or define
                                       the static secret\nSYSTEM_CA_CERT, which the
-                                      proxy adds itself. Setting a path the control
+                                      proxy adds itself. A runtime layer it adds must
+                                      be a\nstatic_layer, so that the values it sets
+                                      are in the bootstrap. Setting a path the control
                                       plane manages, such as the node, the xDS\ncluster
                                       or the readiness listener, is reported on the
                                       Gateway's status, and may be\ndropped or refused
@@ -363,6 +364,7 @@ spec:
                                     type: object
                                     x-kubernetes-preserve-unknown-fields: true
                                 required:
+                                - mergeStrategy
                                 - value
                                 type: object
                             type: object

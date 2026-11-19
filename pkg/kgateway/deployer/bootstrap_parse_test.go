@@ -48,9 +48,7 @@ func TestGeneratedBootstrapParses(t *testing.T) {
 func TestGeneratedBootstrapValidates(t *testing.T) {
 	// Validate the bootstrap rendered with every option with the bundled Envoy.
 	bs := renderFullBootstrap(t)
-	result, err := validator.NewDocker().(validator.BootstrapValidator).ValidateBootstrap(t.Context(), bs)
-	require.NoError(t, err)
-	require.Empty(t, result.RemovedRuntimeGuards, "the generated bootstrap should set no removed runtime guard")
+	require.NoError(t, validator.NewDocker().(validator.BootstrapValidator).ValidateBootstrap(t.Context(), bs))
 }
 
 // renderFullBootstrap renders the envoy chart with every option that adds a `@type`

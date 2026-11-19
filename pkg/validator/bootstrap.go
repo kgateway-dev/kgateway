@@ -9,8 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -49,10 +47,6 @@ const (
 	dockerValidationTimeout = 5 * time.Minute
 )
 
-// removedGuardRe matches the message Envoy logs for a runtime guard it no longer
-// knows, in any log format.
-var removedGuardRe = regexp.MustCompile(`Using a removed guard (\S+?)\. In future version`)
-
 // BootstrapValidator validates the bootstrap a managed proxy starts with.
 type BootstrapValidator interface {
 	// ValidateBootstrap runs bootstrap through envoy --mode validate, prepared to
@@ -64,15 +58,7 @@ type BootstrapValidator interface {
 	// Any other error means Envoy did not finish, for a reason that can pass, such as
 	// a full disk, the timeout, or Envoy being killed for memory; validating again can
 	// succeed.
-	ValidateBootstrap(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) (BootstrapResult, error)
-}
-
-// BootstrapResult reports what Envoy logged about a bootstrap it accepted.
-type BootstrapResult struct {
-	// RemovedRuntimeGuards lists the runtime keys Envoy reported as removed guards,
-	// sorted. Envoy accepts them and ignores their values. Envoy rate-limits the
-	// message, so when the bootstrap sets more than two, some may be missing.
-	RemovedRuntimeGuards []string
+	ValidateBootstrap(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error
 }
 
 var (
@@ -81,7 +67,7 @@ var (
 )
 
 // ValidateBootstrap validates bootstrap with the Envoy binary.
-func (b *binaryValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
+func (b *binaryValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) error {
 	return validateProxyBootstrap(ctx, bs, binaryValidationTimeout, func(ctx context.Context, _ string, args []string, config []byte) (string, error) {
 		cmd := exec.CommandContext(ctx, b.path, args...) //nolint:gosec // G204: envoy binary with controlled args for config validation
 		cmd.Env = append(cmd.Env, "ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/usr/local/lib")
@@ -91,7 +77,7 @@ func (b *binaryValidator) ValidateBootstrap(ctx context.Context, bs *envoybootst
 
 // ValidateBootstrap validates bootstrap with Envoy in the validator's image, mounting
 // the placeholder files at the same path in the container.
-func (d *dockerValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
+func (d *dockerValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) error {
 	return validateProxyBootstrap(ctx, bs, dockerValidationTimeout, func(ctx context.Context, dir string, args []string, config []byte) (string, error) {
 		// Run Envoy in the image, with the placeholder files mounted.
 		dockerArgs := []string{"run", "--rm", "-i"}
@@ -133,22 +119,22 @@ type envoyRunner func(ctx context.Context, dir string, args []string, config []b
 
 // validateProxyBootstrap prepares a copy of bs to match what the proxy pod runs,
 // validates it with run within timeout, and interprets Envoy's output.
-func validateProxyBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap, timeout time.Duration, run envoyRunner) (BootstrapResult, error) {
+func validateProxyBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap, timeout time.Duration, run envoyRunner) error {
 	// Prepare the copy, with its placeholder files in a temporary directory.
 	dir, err := os.MkdirTemp("", "kgateway-bootstrap-validation-")
 	if err != nil {
-		return BootstrapResult{}, fileError("failed to create a directory for bootstrap validation", err)
+		return fileError("failed to create a directory for bootstrap validation", err)
 	}
 	defer os.RemoveAll(dir)
 	config, err := prepareProxyBootstrap(bs, dir)
 	if err != nil {
-		return BootstrapResult{}, err
+		return err
 	}
 
-	// Run Envoy at error level, which includes removed runtime guards. The proxy's
-	// own log format applies when the bootstrap sets one, since Envoy refuses it
-	// together with --log-format.
-	args := []string{"--mode", "validate", "--config-path", "/dev/fd/0", "-l", "error"}
+	// Run Envoy at critical level, as xDS validation does. The proxy's own log format
+	// applies when the bootstrap sets one, since Envoy refuses it together with
+	// --log-format.
+	args := []string{"--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical"}
 	if bs.GetApplicationLogConfig().GetLogFormat() == nil {
 		args = append(args, "--log-format", "%v")
 	}
@@ -156,9 +142,9 @@ func validateProxyBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap,
 	defer cancel()
 	stderr, err := run(runCtx, dir, args, config)
 	if err == nil {
-		return BootstrapResult{RemovedRuntimeGuards: removedRuntimeGuards(stderr)}, nil
+		return nil
 	}
-	return BootstrapResult{}, classifyRunError(ctx, runCtx, timeout, stderr, err)
+	return classifyRunError(ctx, runCtx, timeout, stderr, err)
 }
 
 // classifyRunError returns the error to report for a run of Envoy that failed with
@@ -325,15 +311,4 @@ func rewriteAny(a *anypb.Any, rewrite func(string) (string, error)) error {
 	// Pack it again in place.
 	a.Value, err = proto.MarshalOptions{Deterministic: true}.Marshal(inner)
 	return err
-}
-
-// removedRuntimeGuards returns the runtime keys Envoy reported as removed guards in
-// its log, sorted and without duplicates.
-func removedRuntimeGuards(log string) []string {
-	var keys []string
-	for _, m := range removedGuardRe.FindAllStringSubmatch(log, -1) {
-		keys = append(keys, m[1])
-	}
-	slices.Sort(keys)
-	return slices.Compact(keys)
 }

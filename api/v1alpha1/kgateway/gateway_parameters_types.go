@@ -476,11 +476,10 @@ const (
 // BootstrapOverlay is a partial Envoy bootstrap merged into the generated one.
 type BootstrapOverlay struct {
 	// MergeStrategy selects how Value is merged into the generated bootstrap.
-	// Defaults to StructuredMerge.
+	// StructuredMerge is the only strategy.
 	//
-	// +optional
-	// +kubebuilder:default=StructuredMerge
-	MergeStrategy BootstrapMergeStrategy `json:"mergeStrategy,omitempty"`
+	// +required
+	MergeStrategy BootstrapMergeStrategy `json:"mergeStrategy"`
 
 	// Value is a partial envoy.config.bootstrap.v3.Bootstrap, written in the proto
 	// JSON mapping: field names in snake_case or lowerCamelCase, and each Any with an
@@ -491,7 +490,8 @@ type BootstrapOverlay struct {
 	//
 	// The value cannot contain two consecutive opening braces, which the proxy treats
 	// as the start of a Go template when it starts, or define the static secret
-	// SYSTEM_CA_CERT, which the proxy adds itself. Setting a path the control plane manages, such as the node, the xDS
+	// SYSTEM_CA_CERT, which the proxy adds itself. A runtime layer it adds must be a
+	// static_layer, so that the values it sets are in the bootstrap. Setting a path the control plane manages, such as the node, the xDS
 	// cluster or the readiness listener, is reported on the Gateway's status, and may be
 	// dropped or refused depending on how the controller is configured.
 	//

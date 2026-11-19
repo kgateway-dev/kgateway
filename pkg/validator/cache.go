@@ -44,15 +44,14 @@ const bootstrapCacheSize = 1024
 // cachedBootstrapResult holds a memoized proxy bootstrap verdict. msg is the
 // rejection's text verbatim, empty when Envoy accepted the bootstrap.
 type cachedBootstrapResult struct {
-	result BootstrapResult
-	msg    string
+	msg string
 }
 
-func (r cachedBootstrapResult) get() (BootstrapResult, error) {
+func (r cachedBootstrapResult) err() error {
 	if r.msg != "" {
-		return BootstrapResult{}, &cachedInvalidBootstrapError{msg: r.msg}
+		return &cachedInvalidBootstrapError{msg: r.msg}
 	}
-	return r.result, nil
+	return nil
 }
 
 // cachedInvalidBootstrapError rehydrates a memoized ErrInvalidBootstrap verdict.
@@ -109,11 +108,11 @@ var _ BootstrapValidator = &cachingValidator{}
 // ValidateBootstrap validates bs with the inner validator, which must implement
 // BootstrapValidator, and memoizes acceptance and ErrInvalidBootstrap verdicts. Like
 // Validate, it does not memoize errors from running Envoy.
-func (c *cachingValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
+func (c *cachingValidator) ValidateBootstrap(ctx context.Context, bs *envoybootstrapv3.Bootstrap) error {
 	// Find the inner validator and the key.
 	inner, ok := c.inner.(BootstrapValidator)
 	if !ok {
-		return BootstrapResult{}, fmt.Errorf("%w: the configured validator cannot validate proxy bootstraps", ErrBootstrapValidatorUnavailable)
+		return fmt.Errorf("%w: the configured validator cannot validate proxy bootstraps", ErrBootstrapValidatorUnavailable)
 	}
 	key, err := ContentKeyOf(bs)
 	if err != nil {
@@ -122,16 +121,15 @@ func (c *cachingValidator) ValidateBootstrap(ctx context.Context, bs *envoyboots
 
 	// Return a memoized verdict.
 	if hit, ok := c.bootstrapCache.Get(key); ok {
-		return hit.get()
+		return hit.err()
 	}
 
 	// Validate once for concurrent misses on the same content.
 	res, sfErr, _ := c.bootstrapSF.Do(string(key[:]), func() (any, error) {
-		result, innerErr := inner.ValidateBootstrap(ctx, bs)
+		innerErr := inner.ValidateBootstrap(ctx, bs)
 		var r cachedBootstrapResult
 		switch {
 		case innerErr == nil:
-			r = cachedBootstrapResult{result: result}
 		case errors.Is(innerErr, ErrInvalidBootstrap):
 			r = cachedBootstrapResult{msg: innerErr.Error()}
 		default:
@@ -141,9 +139,9 @@ func (c *cachingValidator) ValidateBootstrap(ctx context.Context, bs *envoyboots
 		return r, nil
 	})
 	if sfErr != nil {
-		return BootstrapResult{}, sfErr
+		return sfErr
 	}
-	return res.(cachedBootstrapResult).get()
+	return res.(cachedBootstrapResult).err()
 }
 
 func (c *cachingValidator) Validate(ctx context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {

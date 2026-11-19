@@ -109,7 +109,10 @@ func withOverlay(t *testing.T, gwp *kgateway.GatewayParameters, overlayYAML stri
 		gwp.Spec.Kube = &kgateway.KubernetesProxyConfig{}
 	}
 	gwp.Spec.Kube.EnvoyContainer = &kgateway.EnvoyContainer{Bootstrap: &kgateway.EnvoyBootstrap{
-		Patches: &kgateway.BootstrapPatches{Overlay: &kgateway.BootstrapOverlay{Value: apiextensionsv1.JSON{Raw: raw}}},
+		Patches: &kgateway.BootstrapPatches{Overlay: &kgateway.BootstrapOverlay{
+			MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
+			Value:         apiextensionsv1.JSON{Raw: raw},
+		}},
 	}}
 	return gwp
 }
@@ -492,6 +495,16 @@ func TestBootstrapPatchesInvalid(t *testing.T) {
 			overlay: `{layered_runtime: {layers: [{name: admin_layer, static_layer: {}}]}}`,
 			wantErr: `runtime layer "admin_layer" has the name of a layer in the generated bootstrap`,
 		},
+		{
+			name:    "disk runtime layer",
+			overlay: `{layered_runtime: {layers: [{name: from_disk, disk_layer: {symlink_root: /etc/runtime}}]}}`,
+			wantErr: `runtime layer "from_disk" sets disk_layer instead of static_layer; bootstrap patches can add only static runtime layers`,
+		},
+		{
+			name:    "RTDS runtime layer",
+			overlay: `{layered_runtime: {layers: [{name: rt, rtds_layer: {name: rt, rtds_config: {ads: {}}}}]}}`,
+			wantErr: `runtime layer "rt" sets rtds_layer instead of static_layer`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -514,14 +527,13 @@ func TestBootstrapPatchesInvalid(t *testing.T) {
 // fakeBootstrapValidator records the bootstrap it validates and returns a programmed
 // response.
 type fakeBootstrapValidator struct {
-	got    *envoybootstrapv3.Bootstrap
-	result validator.BootstrapResult
-	err    error
+	got *envoybootstrapv3.Bootstrap
+	err error
 }
 
-func (f *fakeBootstrapValidator) ValidateBootstrap(_ context.Context, bs *envoybootstrapv3.Bootstrap) (validator.BootstrapResult, error) {
+func (f *fakeBootstrapValidator) ValidateBootstrap(_ context.Context, bs *envoybootstrapv3.Bootstrap) error {
 	f.got = bs
-	return f.result, f.err
+	return f.err
 }
 
 func TestBootstrapPatchesValidation(t *testing.T) {
@@ -529,9 +541,9 @@ func TestBootstrapPatchesValidation(t *testing.T) {
 		return withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)
 	}
 
-	t.Run("accepted, with removed runtime guards", func(t *testing.T) {
-		// Render a Gateway whose patched bootstrap Envoy accepts with a removed guard.
-		v := &fakeBootstrapValidator{result: validator.BootstrapResult{RemovedRuntimeGuards: []string{"envoy.reloadable_features.a"}}}
+	t.Run("accepted", func(t *testing.T) {
+		// Render a Gateway whose patched bootstrap Envoy accepts.
+		v := &fakeBootstrapValidator{}
 		objs, report, err := bootstrapTestCase{gatewayParams: gwp(), validator: v}.render(t)
 		require.NoError(t, err)
 
@@ -541,11 +553,11 @@ func TestBootstrapPatchesValidation(t *testing.T) {
 		_, written := renderedBootstrap(t, objs)
 		assert.True(t, proto.Equal(written, v.got), "the validated bootstrap should be the one written")
 
-		// The patches apply, and the condition names the removed guard.
+		// The patches apply.
 		cond := bootstrapCondition(t, report)
 		assert.Equal(t, metav1.ConditionTrue, cond.Status)
 		assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
-		assert.Contains(t, cond.Message, "Envoy no longer has the runtime guard(s) envoy.reloadable_features.a")
+		assert.Equal(t, "The bootstrap patches are applied.", cond.Message)
 	})
 
 	t.Run("rejected", func(t *testing.T) {
@@ -653,12 +665,18 @@ static_resources:
 	assert.Equal(t, metav1.ConditionTrue, cond.Status)
 	assert.Contains(t, cond.Message, "uses Gateway listener port(s) 8443")
 
-	// When every listener port collides, nothing is deployed, as for any Gateway with no valid ports.
-	_, _, err = bootstrapTestCase{
+	// When every listener port collides, nothing is deployed, and the error, which the
+	// condition reports, names the ports.
+	objs, _, err = bootstrapTestCase{
 		gatewayParams: withOverlay(t, gatewayParams(), overlay),
 		listenerPorts: []gwv1.PortNumber{8443},
 	}.render(t)
-	assert.ErrorIs(t, err, ErrNoValidPorts)
+	assert.Nil(t, objs)
+	patchErr, ok := errors.AsType[*BootstrapPatchError](err)
+	require.True(t, ok, "expected a *BootstrapPatchError, got %v", err)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+	assert.NotEmpty(t, patchErr.ConfigMapName, "an existing Gateway's Accepted condition should be left alone")
+	assert.ErrorContains(t, patchErr, "the patched bootstrap listens on every Gateway listener port (8443)")
 }
 
 func TestBootstrapPatchesDefaultListenerPorts(t *testing.T) {
@@ -812,126 +830,7 @@ func TestBootstrapPatchesManagedPathModes(t *testing.T) {
 	})
 }
 
-func TestBootstrapPatchesCuratedOverride(t *testing.T) {
-	// Render a Gateway whose patches replace the DNS resolver that
-	// envoyContainer.bootstrap.dnsResolver generates.
-	overlay := `
-typed_dns_resolver_config:
-  name: envoy.network.dns_resolver.cares
-  typed_config:
-    "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
-    use_resolvers_as_fallback: true`
-	objs, report, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), overlay)}.render(t)
-	require.NoError(t, err)
-
-	// The overlay's resolver replaces the generated one.
-	_, bs := renderedBootstrap(t, objs)
-	require.NotNil(t, bs.GetTypedDnsResolverConfig())
-
-	// The condition keeps its reason and names the field and the path.
-	cond := bootstrapCondition(t, report)
-	assert.Equal(t, metav1.ConditionTrue, cond.Status)
-	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
-	assert.Contains(t, cond.Message,
-		"typed_dns_resolver_config replaces what envoyContainer.bootstrap.dnsResolver generates (GatewayParameters default/gw-params)")
-
-	// A Warning event names the replaced field.
-	assert.Equal(t, []deployer.ReportEvent{{
-		Type:   corev1.EventTypeWarning,
-		Reason: curatedFieldOverriddenReason,
-		Action: applyBootstrapPatchesAction,
-		Note:   "The bootstrap patches replace generated configuration: typed_dns_resolver_config replaces what envoyContainer.bootstrap.dnsResolver generates (GatewayParameters default/gw-params).",
-	}}, report.Events)
-}
-
-func TestBootstrapPatchesUnvalidatedRuntimeLayers(t *testing.T) {
-	// Render a Gateway whose patches add a disk layer and an RTDS layer that reads from
-	// a cluster of their own, validated by Envoy.
-	overlay := `
-static_resources:
-  clusters:
-  - name: runtime_server
-    connect_timeout: 1s
-    type: STATIC
-    typed_extension_protocol_options:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicit_http_config: {http2_protocol_options: {}}
-    load_assignment:
-      cluster_name: runtime_server
-      endpoints: [{lb_endpoints: [{endpoint: {address: {socket_address: {address: 127.0.0.1, port_value: 18000}}}}]}]
-layered_runtime:
-  layers:
-  - {name: from_disk, disk_layer: {symlink_root: /etc/runtime, subdirectory: envoy}}
-  - name: from_rtds
-    rtds_layer:
-      name: from_rtds
-      rtds_config:
-        resource_api_version: V3
-        api_config_source:
-          api_type: GRPC
-          transport_api_version: V3
-          grpc_services: [{envoy_grpc: {cluster_name: runtime_server}}]`
-	_, report, err := bootstrapTestCase{
-		gatewayParams: withOverlay(t, gatewayParams(), overlay),
-		validator:     validator.NewDocker().(validator.BootstrapValidator),
-	}.render(t)
-	require.NoError(t, err)
-
-	// The layers apply, and the condition keeps its reason and names both.
-	cond := bootstrapCondition(t, report)
-	assert.Equal(t, metav1.ConditionTrue, cond.Status)
-	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
-	assert.Equal(t, "The bootstrap patches are applied. "+
-		"The proxy loads the values of these runtime layers while it runs, so route validation uses Envoy's defaults for the keys they set: "+
-		`disk layer "from_disk" (GatewayParameters default/gw-params), RTDS layer "from_rtds" (GatewayParameters default/gw-params).`,
-		cond.Message)
-
-	// A Warning event names each layer.
-	assert.Equal(t, []deployer.ReportEvent{
-		{
-			Type:   corev1.EventTypeWarning,
-			Reason: unvalidatedRuntimeLayerReason,
-			Action: applyBootstrapPatchesAction,
-			Note:   `The bootstrap patches add disk layer "from_disk" (GatewayParameters default/gw-params). The proxy loads its values while it runs, so route validation uses Envoy's defaults for the keys it sets.`,
-		},
-		{
-			Type:   corev1.EventTypeWarning,
-			Reason: unvalidatedRuntimeLayerReason,
-			Action: applyBootstrapPatchesAction,
-			Note:   `The bootstrap patches add RTDS layer "from_rtds" (GatewayParameters default/gw-params). The proxy loads its values while it runs, so route validation uses Envoy's defaults for the keys it sets.`,
-		},
-	}, report.Events)
-}
-
-func TestBootstrapPatchesRTDSLayerFromControlPlane(t *testing.T) {
-	// Render a Gateway whose patches add an RTDS layer that reads through ADS.
-	_, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(),
-		`{layered_runtime: {layers: [{name: rt, rtds_layer: {name: rt, rtds_config: {ads: {}}}}]}}`)}.render(t)
-
-	// None of the patches apply, with reason InvalidOverlay.
-	patchErr, ok := errors.AsType[*BootstrapPatchError](err)
-	require.True(t, ok, "expected a *BootstrapPatchError, got %v", err)
-	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
-	assert.ErrorContains(t, patchErr, `RTDS runtime layer "rt" requests its values from the kgateway control plane through ADS, which serves no runtime values`)
-}
-
 func TestBootstrapPatchEvents(t *testing.T) {
-	t.Run("removed runtime guards", func(t *testing.T) {
-		// Render a Gateway whose patched bootstrap Envoy accepts with removed guards.
-		v := &fakeBootstrapValidator{result: validator.BootstrapResult{RemovedRuntimeGuards: []string{"envoy.reloadable_features.a", "envoy.reloadable_features.b"}}}
-		_, report, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`), validator: v}.render(t)
-		require.NoError(t, err)
-
-		// One Warning event names them all.
-		assert.Equal(t, []deployer.ReportEvent{{
-			Type:   corev1.EventTypeWarning,
-			Reason: removedRuntimeGuardsReason,
-			Action: applyBootstrapPatchesAction,
-			Note:   "Envoy no longer has the runtime guard(s) envoy.reloadable_features.a, envoy.reloadable_features.b, so their values have no effect; remove them from the bootstrap patches.",
-		}}, report.Events)
-	})
-
 	t.Run("not mounted", func(t *testing.T) {
 		// Render a Gateway whose deploymentOverlay mounts another ConfigMap, with patches
 		// that also set a managed path.

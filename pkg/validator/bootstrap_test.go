@@ -142,17 +142,10 @@ func TestBinaryValidator_ValidateBootstrap(t *testing.T) {
 		script    string
 		// wantErr is the rejection; empty when Envoy accepts the bootstrap.
 		wantErr string
-		guards  []string
 	}{
 		{
-			name: "accepted, reporting removed runtime guards",
-			script: `#!/bin/sh
-echo "[error] envoy bug failure: false. Details: Using a removed guard envoy.reloadable_features.b. In future version of Envoy this will be treated as invalid configuration" >&2
-echo '{"msg":"envoy bug failure: false. Details: Using a removed guard envoy.reloadable_features.a. In future version of Envoy this will be treated as invalid configuration"}' >&2
-echo "[error] envoy bug failure: false. Details: Using a removed guard envoy.reloadable_features.b. In future version of Envoy this will be treated as invalid configuration" >&2
-exit 0
-`,
-			guards: []string{"envoy.reloadable_features.a", "envoy.reloadable_features.b"},
+			name:   "accepted",
+			script: "#!/bin/sh\nexit 0\n",
 		},
 		{
 			name: "rejected",
@@ -165,12 +158,12 @@ exit 1
 		},
 		{
 			// The mock echoes its arguments, so the rejection shows them.
-			name: "runs at error level with a bare log format",
+			name: "runs at critical level with a bare log format",
 			script: `#!/bin/sh
 echo "$@" >&2
 exit 1
 `,
-			wantErr: "Envoy rejected the bootstrap: --mode validate --config-path /dev/fd/0 -l error --log-format %v",
+			wantErr: "Envoy rejected the bootstrap: --mode validate --config-path /dev/fd/0 -l critical --log-format %v",
 		},
 		{
 			name:      "keeps the proxy's log format",
@@ -179,7 +172,7 @@ exit 1
 echo "$@" >&2
 exit 1
 `,
-			wantErr: "Envoy rejected the bootstrap: --mode validate --config-path /dev/fd/0 -l error",
+			wantErr: "Envoy rejected the bootstrap: --mode validate --config-path /dev/fd/0 -l critical",
 		},
 	}
 	for _, tt := range tests {
@@ -189,12 +182,11 @@ exit 1
 			if tt.bootstrap != "" {
 				bs = parseTestBootstrap(t, tt.bootstrap)
 			}
-			result, err := NewBinary(createMockBinary(t, tt.script)).(BootstrapValidator).ValidateBootstrap(t.Context(), bs)
+			err := NewBinary(createMockBinary(t, tt.script)).(BootstrapValidator).ValidateBootstrap(t.Context(), bs)
 
 			// Check the verdict.
 			if tt.wantErr == "" {
 				require.NoError(t, err)
-				assert.Equal(t, tt.guards, result.RemovedRuntimeGuards)
 				return
 			}
 			require.ErrorIs(t, err, ErrInvalidBootstrap)
@@ -203,7 +195,7 @@ exit 1
 	}
 
 	t.Run("Envoy cannot be run", func(t *testing.T) {
-		_, err := NewBinary("/nonexistent/envoy").(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
+		err := NewBinary("/nonexistent/envoy").(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
 		require.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
 		assert.NotErrorIs(t, err, ErrInvalidBootstrap, "a failure to run Envoy is not a verdict on the bootstrap")
 	})
@@ -212,8 +204,7 @@ exit 1
 func TestBinaryValidator_ValidateBootstrapFailures(t *testing.T) {
 	validate := func(t *testing.T, ctx context.Context, script string) error {
 		t.Helper()
-		_, err := NewBinary(createMockBinary(t, script)).(BootstrapValidator).ValidateBootstrap(ctx, &envoybootstrapv3.Bootstrap{})
-		return err
+		return NewBinary(createMockBinary(t, script)).(BootstrapValidator).ValidateBootstrap(ctx, &envoybootstrapv3.Bootstrap{})
 	}
 
 	t.Run("a crash rejects the bootstrap", func(t *testing.T) {
@@ -249,7 +240,7 @@ func TestBinaryValidator_ValidateBootstrapFailures(t *testing.T) {
 	t.Run("the validation timeout is not a verdict", func(t *testing.T) {
 		// Run an Envoy that outlasts the timeout.
 		path := createMockBinary(t, "#!/bin/sh\nsleep 5\n")
-		_, err := validateProxyBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{}, 200*time.Millisecond,
+		err := validateProxyBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{}, 200*time.Millisecond,
 			func(ctx context.Context, _ string, args []string, config []byte) (string, error) {
 				return runEnvoy(exec.CommandContext(ctx, path, args...), config)
 			})
@@ -267,7 +258,7 @@ func TestBinaryValidator_ValidateBootstrapFailures(t *testing.T) {
 		// the mock Envoy.
 		path := createMockBinary(t, "#!/bin/sh\nexit 0\n")
 		t.Setenv("TMPDIR", filepath.Join(t.TempDir(), "missing"))
-		_, err := NewBinary(path).(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
+		err := NewBinary(path).(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
 
 		// Validating again fails the same way until the controller's Deployment changes.
 		require.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
@@ -307,7 +298,7 @@ func TestDockerValidator_ValidateBootstrapDockerFailures(t *testing.T) {
 			t.Setenv("PATH", bin)
 
 			// Validate with it.
-			_, err := NewDocker().(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
+			err := NewDocker().(BootstrapValidator).ValidateBootstrap(t.Context(), &envoybootstrapv3.Bootstrap{})
 
 			// Docker's failure is never a verdict on the bootstrap.
 			require.Error(t, err)
@@ -329,29 +320,25 @@ func TestDockerValidator_ValidateBootstrapDockerFailures(t *testing.T) {
 type stubBootstrapValidator struct {
 	stubValidator
 	bootstrapCalls int
-	result         BootstrapResult
 	bootstrapErr   error
 }
 
-func (s *stubBootstrapValidator) ValidateBootstrap(context.Context, *envoybootstrapv3.Bootstrap) (BootstrapResult, error) {
+func (s *stubBootstrapValidator) ValidateBootstrap(context.Context, *envoybootstrapv3.Bootstrap) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.bootstrapCalls++
-	return s.result, s.bootstrapErr
+	return s.bootstrapErr
 }
 
 func TestCachingValidator_ValidateBootstrap(t *testing.T) {
-	t.Run("memoizes acceptance with its removed guards", func(t *testing.T) {
+	t.Run("memoizes acceptance", func(t *testing.T) {
 		// Validate the same content twice and different content once.
-		stub := &stubBootstrapValidator{result: BootstrapResult{RemovedRuntimeGuards: []string{"envoy.reloadable_features.a"}}}
+		stub := &stubBootstrapValidator{}
 		v := NewCaching(stub, 0).(BootstrapValidator)
 		for range 2 {
-			result, err := v.ValidateBootstrap(t.Context(), bootstrapForNode("a"))
-			require.NoError(t, err)
-			assert.Equal(t, []string{"envoy.reloadable_features.a"}, result.RemovedRuntimeGuards)
+			require.NoError(t, v.ValidateBootstrap(t.Context(), bootstrapForNode("a")))
 		}
-		_, err := v.ValidateBootstrap(t.Context(), bootstrapForNode("b"))
-		require.NoError(t, err)
+		require.NoError(t, v.ValidateBootstrap(t.Context(), bootstrapForNode("b")))
 
 		// Envoy ran once per content, and xDS validation was not used.
 		assert.Equal(t, 2, stub.bootstrapCalls)
@@ -362,8 +349,8 @@ func TestCachingValidator_ValidateBootstrap(t *testing.T) {
 		// Validate a rejected bootstrap twice.
 		stub := &stubBootstrapValidator{bootstrapErr: errors.Join(ErrInvalidBootstrap, errors.New("bad"))}
 		v := NewCaching(stub, 0).(BootstrapValidator)
-		_, err1 := v.ValidateBootstrap(t.Context(), bootstrapForNode("a"))
-		_, err2 := v.ValidateBootstrap(t.Context(), bootstrapForNode("a"))
+		err1 := v.ValidateBootstrap(t.Context(), bootstrapForNode("a"))
+		err2 := v.ValidateBootstrap(t.Context(), bootstrapForNode("a"))
 
 		// Both get the same rejection, from one run.
 		require.ErrorIs(t, err1, ErrInvalidBootstrap)
@@ -377,14 +364,13 @@ func TestCachingValidator_ValidateBootstrap(t *testing.T) {
 		stub := &stubBootstrapValidator{bootstrapErr: errors.New("exec format error")}
 		v := NewCaching(stub, 0).(BootstrapValidator)
 		for range 2 {
-			_, err := v.ValidateBootstrap(t.Context(), bootstrapForNode("a"))
-			require.Error(t, err)
+			require.Error(t, v.ValidateBootstrap(t.Context(), bootstrapForNode("a")))
 		}
 		assert.Equal(t, 2, stub.bootstrapCalls)
 	})
 
 	t.Run("refuses when the inner validator cannot validate bootstraps", func(t *testing.T) {
-		_, err := NewCaching(&stubValidator{}, 0).(BootstrapValidator).ValidateBootstrap(t.Context(), bootstrapForNode("a"))
+		err := NewCaching(&stubValidator{}, 0).(BootstrapValidator).ValidateBootstrap(t.Context(), bootstrapForNode("a"))
 		require.ErrorIs(t, err, ErrBootstrapValidatorUnavailable)
 		require.EqualError(t, err, "the controller cannot run Envoy to validate the bootstrap: the configured validator cannot validate proxy bootstraps")
 	})
@@ -418,30 +404,13 @@ func TestDockerValidator_ValidateBootstrap(t *testing.T) {
 		require.Contains(t, err.Error(), "does not exist")
 
 		// With them, it passes.
-		result, err := v.ValidateBootstrap(t.Context(), bs)
-		require.NoError(t, err)
-		assert.Empty(t, result.RemovedRuntimeGuards)
+		require.NoError(t, v.ValidateBootstrap(t.Context(), bs))
 	})
 
 	t.Run("an invalid log format is rejected", func(t *testing.T) {
 		bs := parseTestBootstrap(t, `{application_log_config: {log_format: {json_format: {message: "%v"}}}}`)
-		_, err := v.ValidateBootstrap(t.Context(), bs)
+		err := v.ValidateBootstrap(t.Context(), bs)
 		require.ErrorIs(t, err, ErrInvalidBootstrap)
 		assert.Contains(t, err.Error(), "%v")
-	})
-
-	t.Run("a removed runtime guard is reported and accepted", func(t *testing.T) {
-		// If a future Envoy rejects this guard outright, switch to a guard removed in
-		// that Envoy version; see TestDockerValidator_FailOnWarnings.
-		bs := parseTestBootstrap(t, `
-layered_runtime:
-  layers:
-  - name: static_layer
-    static_layer:
-      envoy.restart_features.use_eds_cache_for_ads: true
-`)
-		result, err := v.ValidateBootstrap(t.Context(), bs)
-		require.NoError(t, err)
-		assert.Equal(t, []string{"envoy.restart_features.use_eds_cache_for_ads"}, result.RemovedRuntimeGuards)
 	})
 }

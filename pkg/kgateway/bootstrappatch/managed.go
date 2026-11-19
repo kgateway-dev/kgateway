@@ -30,7 +30,7 @@ const (
 var (
 	managedClusterNames = []string{
 		// The proxy's connection to the controller.
-		xdsClusterName,
+		"xds_cluster",
 		// The readiness and Prometheus listeners route to it.
 		"admin_port_cluster",
 		// With the Istio integration, translated listeners and clusters get Istio

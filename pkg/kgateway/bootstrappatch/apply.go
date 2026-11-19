@@ -52,12 +52,6 @@ type Result struct {
 	// ManagedPaths lists each managed path the overlays set. Under WARN each one was
 	// applied; under PRUNE each one was dropped from its overlay before merging.
 	ManagedPaths []ManagedPath
-	// CuratedOverrides lists each path the overlays replace that a GatewayParameters
-	// field generated. They apply under every mode.
-	CuratedOverrides []CuratedOverride
-	// UnvalidatedLayers lists each disk and RTDS runtime layer the overlays add. Route
-	// validation uses Envoy's defaults for the values they set.
-	UnvalidatedLayers []RuntimeLayer
 }
 
 // InvalidOverlayError reports an overlay that cannot be applied under any mode.
@@ -109,8 +103,6 @@ func Apply(
 	// managed paths of all of them.
 	parsed := make([]*envoybootstrapv3.Bootstrap, 0, len(overlays))
 	var managed []ManagedPath
-	var curated []CuratedOverride
-	var unvalidated []RuntimeLayer
 	for _, o := range overlays {
 		ov, err := parseOverlay(o.Raw)
 		if err != nil {
@@ -122,15 +114,11 @@ func Apply(
 		if err := claimLayers(ov, o.Source.String(), layerOwners); err != nil {
 			return nil, &InvalidOverlayError{Source: o.Source, Err: err}
 		}
-		if err := checkRTDSLayers(ov); err != nil {
-			return nil, &InvalidOverlayError{Source: o.Source, Err: err}
-		}
 
-		unvalidated = append(unvalidated, unvalidatedRuntimeLayers(ov, o.Source)...)
+		// Record the managed paths it sets, and drop them under PRUNE.
 		for _, p := range managedPaths(base, ov) {
 			managed = append(managed, ManagedPath{Path: p, Source: o.Source})
 		}
-		curated = append(curated, curatedOverrides(base, ov, o.Source)...)
 		if mode == apisettings.BootstrapPatchManagedPathsPrune {
 			ov = prune(base, ov)
 		}
@@ -147,7 +135,7 @@ func Apply(
 	for _, ov := range parsed {
 		mergeOverlay(merged, ov)
 	}
-	return &Result{Bootstrap: merged, ManagedPaths: managed, CuratedOverrides: curated, UnvalidatedLayers: unvalidated}, nil
+	return &Result{Bootstrap: merged, ManagedPaths: managed}, nil
 }
 
 // checkReserved rejects names the proxy reserves and lists entries Envoy requires to
@@ -158,10 +146,13 @@ func checkReserved(ov *envoybootstrapv3.Bootstrap) error {
 		return fmt.Errorf("static secret %q is reserved: the proxy adds it for the OS CA bundle", systemCASecretName)
 	}
 
-	// The generated bootstrap has the only admin layer, which /runtime_modify writes to.
+	// Only a static layer has its values in the bootstrap, where route validation and
+	// status see them. The values of a disk or RTDS layer come from outside the
+	// bootstrap, and the generated bootstrap already has the one admin layer Envoy
+	// allows.
 	for _, l := range ov.GetLayeredRuntime().GetLayers() {
-		if l.GetAdminLayer() != nil {
-			return fmt.Errorf("runtime layer %q is an admin layer; the generated bootstrap already has one, and Envoy allows only one", l.GetName())
+		if l.GetStaticLayer() == nil {
+			return fmt.Errorf("runtime layer %q sets %s instead of static_layer; bootstrap patches can add only static runtime layers", l.GetName(), runtimeLayerKind(l))
 		}
 	}
 
@@ -217,4 +208,17 @@ func firstDuplicate[T namedEntry](entries []T) string {
 		seen[name] = true
 	}
 	return ""
+}
+
+// runtimeLayerKind names the field that sets l's values, such as disk_layer.
+func runtimeLayerKind(l *envoybootstrapv3.RuntimeLayer) string {
+	switch {
+	case l.GetDiskLayer() != nil:
+		return "disk_layer"
+	case l.GetRtdsLayer() != nil:
+		return "rtds_layer"
+	case l.GetAdminLayer() != nil:
+		return "admin_layer"
+	}
+	return "no layer type"
 }

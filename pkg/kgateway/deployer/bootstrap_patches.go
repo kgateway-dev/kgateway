@@ -38,15 +38,6 @@ const (
 
 	// applyBootstrapPatchesAction is the action of each bootstrap patch event.
 	applyBootstrapPatchesAction = "ApplyBootstrapPatches"
-	// curatedFieldOverriddenReason is the event reason for bootstrap patches that
-	// replace what a GatewayParameters field generates.
-	curatedFieldOverriddenReason = "CuratedFieldOverridden"
-	// removedRuntimeGuardsReason is the event reason for bootstrap patches that set
-	// runtime guards Envoy no longer has.
-	removedRuntimeGuardsReason = "RemovedRuntimeGuards"
-	// unvalidatedRuntimeLayerReason is the event reason for a disk or RTDS runtime layer
-	// the bootstrap patches add, whose values route validation does not see.
-	unvalidatedRuntimeLayerReason = "UnvalidatedRuntimeLayer"
 )
 
 // BootstrapPatchProvider is an optional interface for a HelmValuesGenerator set with
@@ -133,18 +124,9 @@ type BootstrapPatchOutcome struct {
 	// ManagedPaths lists each path the control plane manages that the patches set.
 	// Under PRUNE each one was dropped; otherwise each one applied.
 	ManagedPaths []bootstrappatch.ManagedPath
-	// CuratedOverrides lists each path the patches replace that a GatewayParameters
-	// field generated.
-	CuratedOverrides []bootstrappatch.CuratedOverride
 	// RemovedServicePorts lists the Gateway listener ports left off the Service because
 	// a static listener in the patched bootstrap uses them.
 	RemovedServicePorts []int32
-	// RemovedRuntimeGuards lists the runtime keys in the patched bootstrap that Envoy
-	// reports as removed guards. Envoy ignores their values.
-	RemovedRuntimeGuards []string
-	// UnvalidatedLayers lists each disk and RTDS runtime layer the patches add. Route
-	// validation uses Envoy's defaults for the values they set.
-	UnvalidatedLayers []bootstrappatch.RuntimeLayer
 }
 
 // BootstrapPatchConfig is what ApplyBootstrapPatches needs besides the objects and
@@ -167,8 +149,8 @@ type BootstrapPatchConfig struct {
 // pod template, for the translator to validate against. It removes from the Service each
 // listener port that the patched bootstrap also listens on. Call it before applying
 // object overlays, so that they can still change any object. It returns ctx.Err()
-// when ctx ends, ErrNoValidPorts when no Service port is left, and otherwise a
-// *BootstrapPatchError when the patches are not applied.
+// when ctx ends, and otherwise a *BootstrapPatchError when the patches are not
+// applied, including when every Gateway listener port collides with the bootstrap.
 func ApplyBootstrapPatches(
 	ctx context.Context,
 	rendered []client.Object,
@@ -227,9 +209,8 @@ func ApplyBootstrapPatches(
 
 	// Validate the merged bootstrap as the proxy runs it. When ctx has ended, the
 	// controller is stopping, and the result says nothing about the patches.
-	var validation validator.BootstrapResult
 	if cfg.Validator != nil {
-		validation, err = cfg.Validator.ValidateBootstrap(ctx, res.Bootstrap)
+		err := cfg.Validator.ValidateBootstrap(ctx, res.Bootstrap)
 		switch {
 		case err == nil:
 		case errors.Is(err, validator.ErrInvalidBootstrap):
@@ -276,18 +257,23 @@ func ApplyBootstrapPatches(
 		}
 	}
 	removed, err := removeServicePorts(rendered, colliding)
+
+	// A Service with no ports cannot be applied, so when every listener port collides
+	// none of the objects are, and the proxy keeps running its current bootstrap.
+	if errors.Is(err, ErrNoValidPorts) {
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, fmt.Errorf(
+			"the patched bootstrap listens on every Gateway listener port (%s), which would leave the Gateway's Service with no ports; move the bootstrap's static listener or add a Gateway listener on another port",
+			joinPorts(colliding)))
+	}
 	if err != nil {
-		return nil, err
+		return nil, controllerErr(err)
 	}
 
 	return &BootstrapPatchOutcome{
-		ConfigMapName:        cm.Name,
-		ManagedPathsMode:     mode,
-		ManagedPaths:         res.ManagedPaths,
-		CuratedOverrides:     res.CuratedOverrides,
-		RemovedServicePorts:  removed,
-		RemovedRuntimeGuards: validation.RemovedRuntimeGuards,
-		UnvalidatedLayers:    res.UnvalidatedLayers,
+		ConfigMapName:       cm.Name,
+		ManagedPathsMode:    mode,
+		ManagedPaths:        res.ManagedPaths,
+		RemovedServicePorts: removed,
 	}, nil
 }
 
@@ -373,45 +359,11 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 			joinManagedPaths(outcome.ManagedPaths)))
 	}
 
-	// Report each path that replaces what a GatewayParameters field generated. The
-	// reason does not change: the replaced value is the user's own configuration.
-	if len(outcome.CuratedOverrides) > 0 {
-		overrides := make([]string, 0, len(outcome.CuratedOverrides))
-		for _, o := range outcome.CuratedOverrides {
-			overrides = append(overrides, o.String())
-		}
-		msg = append(msg, fmt.Sprintf(
-			"The patches replace configuration other GatewayParameters fields generate, including values left at their defaults: %s.",
-			strings.Join(overrides, "; ")))
-	}
-
 	// Report each listener port left off the Service.
 	if len(outcome.RemovedServicePorts) > 0 {
-		ports := make([]string, 0, len(outcome.RemovedServicePorts))
-		for _, p := range outcome.RemovedServicePorts {
-			ports = append(ports, strconv.Itoa(int(p)))
-		}
 		msg = append(msg, fmt.Sprintf(
 			"A static listener in the bootstrap uses Gateway listener port(s) %s, so those ports are left off the Service and the Gateway listeners on them are rejected.",
-			strings.Join(ports, ", ")))
-	}
-
-	// Report each runtime key Envoy ignores.
-	if len(outcome.RemovedRuntimeGuards) > 0 {
-		msg = append(msg, fmt.Sprintf(
-			"Envoy no longer has the runtime guard(s) %s, so their values have no effect; remove them from the patches.",
-			strings.Join(outcome.RemovedRuntimeGuards, ", ")))
-	}
-
-	// Report each runtime layer whose values route validation does not see.
-	if len(outcome.UnvalidatedLayers) > 0 {
-		layers := make([]string, 0, len(outcome.UnvalidatedLayers))
-		for _, l := range outcome.UnvalidatedLayers {
-			layers = append(layers, l.String())
-		}
-		msg = append(msg, fmt.Sprintf(
-			"The proxy loads the values of these runtime layers while it runs, so route validation uses Envoy's defaults for the keys they set: %s.",
-			strings.Join(layers, ", ")))
+			joinPorts(outcome.RemovedServicePorts)))
 	}
 	cond.Message = strings.Join(msg, " ")
 	return cond
@@ -419,8 +371,7 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 
 // bootstrapPatchEvents returns the Warning events that go with the
 // kgateway.dev/BootstrapPatchApplied condition cond: one for each managed path the
-// patches set, each GatewayParameters field they replace, the runtime guards Envoy
-// ignores, and each disk or RTDS runtime layer they add.
+// patches set.
 func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome) []deployer.ReportEvent {
 	// Patches that are not mounted have no other effect to report.
 	if cond.Reason == conditions.KgatewayReasonBootstrapNotMounted {
@@ -438,25 +389,6 @@ func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome)
 		out = append(out, bootstrapPatchEvent(conditions.KgatewayReasonBootstrapManagedPathsOverridden,
 			fmt.Sprintf("Applied bootstrap patches that set %s, which the control plane manages.", p)))
 	}
-
-	// Report each GatewayParameters field the patches replace.
-	for _, o := range outcome.CuratedOverrides {
-		out = append(out, bootstrapPatchEvent(curatedFieldOverriddenReason,
-			fmt.Sprintf("The bootstrap patches replace generated configuration: %s.", o)))
-	}
-
-	// Report the runtime keys Envoy ignores.
-	if len(outcome.RemovedRuntimeGuards) > 0 {
-		out = append(out, bootstrapPatchEvent(removedRuntimeGuardsReason,
-			fmt.Sprintf("Envoy no longer has the runtime guard(s) %s, so their values have no effect; remove them from the bootstrap patches.",
-				strings.Join(outcome.RemovedRuntimeGuards, ", "))))
-	}
-
-	// Report each runtime layer whose values route validation does not see.
-	for _, l := range outcome.UnvalidatedLayers {
-		out = append(out, bootstrapPatchEvent(unvalidatedRuntimeLayerReason,
-			fmt.Sprintf("The bootstrap patches add %s. The proxy loads its values while it runs, so route validation uses Envoy's defaults for the keys it sets.", l)))
-	}
 	return out
 }
 
@@ -467,6 +399,15 @@ func bootstrapPatchEvent(reason, note string) deployer.ReportEvent {
 		Action: applyBootstrapPatchesAction,
 		Note:   note,
 	}
+}
+
+// joinPorts returns ports as a comma-separated list.
+func joinPorts(ports []int32) string {
+	out := make([]string, 0, len(ports))
+	for _, p := range ports {
+		out = append(out, strconv.Itoa(int(p)))
+	}
+	return strings.Join(out, ", ")
 }
 
 func joinManagedPaths(paths []bootstrappatch.ManagedPath) string {

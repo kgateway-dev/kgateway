@@ -785,7 +785,10 @@ func setBootstrapOverlay(gwp *kgateway.GatewayParameters, overlayJSON string) {
 	gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patches = nil
 	if overlayJSON != "" {
 		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patches = &kgateway.BootstrapPatches{
-			Overlay: &kgateway.BootstrapOverlay{Value: apiextensionsv1.JSON{Raw: []byte(overlayJSON)}},
+			Overlay: &kgateway.BootstrapOverlay{
+				MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
+				Value:         apiextensionsv1.JSON{Raw: []byte(overlayJSON)},
+			},
 		}
 	}
 }
