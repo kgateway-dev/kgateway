@@ -1,6 +1,7 @@
 package krtcollections
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -222,6 +223,81 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 				} else if string(actualValue) != string(expectedValue) {
 					t.Errorf("GetSecretWithoutRefGrant() secret.Data[%q] = %q, want %q", key, string(actualValue), string(expectedValue))
 				}
+			}
+		})
+	}
+}
+
+// TestSecretsBySelectorLabelMatch pins that a selector matches the way the API server
+// matches it: every label has to be present on the secret with the selected value. A
+// marker label has an empty value, and a secret without that label must not pass for
+// one that carries it.
+func TestSecretsBySelectorLabelMatch(t *testing.T) {
+	labeled := func(name string, labels map[string]string) *corev1.Secret {
+		return &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "app-ns", Name: name, Labels: labels}}
+	}
+	objs := []any{
+		labeled("gold", map[string]string{"keys.example.com/gold": "", "tier": "gold"}),
+		labeled("free", map[string]string{"keys.example.com/free": "", "tier": "free"}),
+		labeled("gold-valued", map[string]string{"keys.example.com/gold": "true"}),
+		labeled("unlabeled", nil),
+	}
+
+	mock := krttest.NewMock(t, objs)
+	secretCol := krttest.GetMockCollection[*corev1.Secret](mock)
+	refGrantCol := krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock)
+	secretGK := corev1.SchemeGroupVersion.WithKind("Secret").GroupKind()
+	secretIndex := NewSecretIndex(map[schema.GroupKind]krt.Collection[ir.Secret]{
+		secretGK: krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
+			return &ir.Secret{
+				ObjectSource: ir.ObjectSource{Kind: "Secret", Namespace: i.Namespace, Name: i.Name},
+				Obj:          i,
+				Data:         i.Data,
+			}
+		}),
+	}, NewRefGrantIndex(refGrantCol, apisettings.ReferenceGrantPermissive))
+	for !secretIndex.HasSynced() {
+	}
+
+	tests := []struct {
+		name     string
+		selector map[string]string
+		want     []string
+	}{
+		{
+			name:     "value",
+			selector: map[string]string{"tier": "gold"},
+			want:     []string{"gold"},
+		},
+		{
+			name:     "empty value needs the label to be present",
+			selector: map[string]string{"keys.example.com/gold": ""},
+			want:     []string{"gold"},
+		},
+		{
+			name:     "empty value of a label no secret has",
+			selector: map[string]string{"keys.example.com/platinum": ""},
+		},
+		{
+			name:     "all labels have to match",
+			selector: map[string]string{"keys.example.com/gold": "", "tier": "free"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secrets, err := secretIndex.GetSecretsBySelector(krt.TestingDummyContext{},
+				From{GroupKind: schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy"}, Namespace: "app-ns"},
+				secretGK, tt.selector)
+			if err != nil {
+				t.Fatalf("GetSecretsBySelector() = %v, want no error", err)
+			}
+			var got []string
+			for _, sec := range secrets {
+				got = append(got, sec.Name)
+			}
+			slices.Sort(got)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("GetSecretsBySelector() = %v, want %v", got, tt.want)
 			}
 		})
 	}
