@@ -964,6 +964,55 @@ spec:
                     maximum: 100
                     minimum: 0
                     type: integer
+                  errorStatusCodes:
+                    description: |-
+                      ErrorStatusCodes specifies HTTP status codes or status code ranges that outlier detection
+                      should treat as errors.
+
+                      NOTE: When configured, Envoy replaces its default 5xx error checking with this matcher.
+                      If you still want 5xx responses to be treated as errors, you must include them explicitly
+                      (e.g., range: {start: 500, end: 599}).
+                    items:
+                      properties:
+                        code:
+                          description: Code specifies an exact HTTP status code (e.g.,
+                            429, 500).
+                          format: int32
+                          maximum: 599
+                          minimum: 100
+                          type: integer
+                        range:
+                          description: 'Range specifies an inclusive range of HTTP
+                            status codes (e.g., start: 500, end: 599).'
+                          properties:
+                            end:
+                              description: End is the inclusive end of the HTTP status
+                                code range.
+                              format: int32
+                              maximum: 599
+                              minimum: 100
+                              type: integer
+                            start:
+                              description: Start is the inclusive start of the HTTP
+                                status code range.
+                              format: int32
+                              maximum: 599
+                              minimum: 100
+                              type: integer
+                          required:
+                          - end
+                          - start
+                          type: object
+                          x-kubernetes-validations:
+                          - message: start must be less than or equal to end
+                            rule: self.start <= self.end
+                      type: object
+                      x-kubernetes-validations:
+                      - message: exactly one of the fields in [code range] must be
+                          set
+                        rule: '[has(self.code),has(self.range)].filter(x,x==true).size()
+                          == 1'
+                    type: array
                   interval:
                     default: 10s
                     description: |-
