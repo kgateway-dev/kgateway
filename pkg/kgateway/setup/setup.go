@@ -330,13 +330,17 @@ func (s *setup) Start(ctx context.Context) error {
 	// Extra callbacks go first in the chain, so they receive every hook by
 	// construction instead of through forwarding.
 	xdsCallbacks := ChainCallbacks(s.extraXDSCallbacks, uniqueClientCallbacks)
-	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds, s.globalSettings.XdsRespondOnReconnect)
+	// xDS rejections reported by connected proxies, surfaced on Gateway status.
+	xdsRejections := xds.NewRejectionTracker(krtutil.NewKrtOptions(ctx.Done(), s.krtDebugger).ToOptions("XdsRejections")...)
+	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher,
+		s.globalSettings.EnableOrderedAds, s.globalSettings.XdsRespondOnReconnect, xdsRejections)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
 		KrtDebugger:    s.krtDebugger,
 		GlobalSettings: s.globalSettings,
 		CertWatcher:    certWatcher,
+		XdsRejections:  xdsRejections,
 	}
 
 	logger.Info("creating krt collections")

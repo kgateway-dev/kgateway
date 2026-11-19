@@ -1,14 +1,17 @@
 package proxy_syncer
 
 import (
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 )
 
 type statusSyncerConfig struct {
 	statusRegistrations   []StatusRegistration
 	policyTargetResolvers policyTargetResolvers
+	xdsRejections         krt.Collection[xds.GatewayXdsRejection]
 }
 
 // StatusSyncerOption configures the status pipeline. The same options are passed to both
@@ -61,5 +64,13 @@ func WithPolicyTargetResolver(gk schema.GroupKind, resolver PolicyTargetResolver
 			cfg.policyTargetResolvers = policyTargetResolvers{}
 		}
 		cfg.policyTargetResolvers[gk] = resolver
+	}
+}
+
+// WithXdsRejections reports the xDS rejections in rejections on each Gateway's status, as
+// Programmed=False with reason XdsRejected.
+func WithXdsRejections(rejections krt.Collection[xds.GatewayXdsRejection]) StatusSyncerOption {
+	return func(cfg *statusSyncerConfig) {
+		cfg.xdsRejections = rejections
 	}
 }

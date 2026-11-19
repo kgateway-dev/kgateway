@@ -314,9 +314,10 @@ func NewControlPlane(
 	certWatcher *certwatcher.CertWatcher,
 	orderedADS bool,
 	respondOnReconnect bool,
+	rejections *xds.RejectionTracker,
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
-	lnc := newLogNackCallback(xdsAuth)
+	lnc := newLogNackCallback(xdsAuth, rejections)
 	// The rejection metrics consume the role resolved by unique-client processing.
 	// Keep that callback first so failed requests never reach the metric callback.
 	allCallbacks := chainCallbacks(callbacks, lnc)
