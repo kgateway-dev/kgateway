@@ -87,6 +87,12 @@ func (c *requestConfig) executeNative() (*http.Response, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Send the request target as written. The client writes an opaque URL to the request
+	// line without escaping it.
+	if c.requestTarget != "" {
+		req.URL.Opaque = c.requestTarget
+	}
+
 	// Add headers
 	for key, values := range c.headers {
 		for _, value := range values {

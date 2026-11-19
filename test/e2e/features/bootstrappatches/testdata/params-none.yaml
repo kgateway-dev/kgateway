@@ -1,0 +1,11 @@
+# GatewayParameters without bootstrap patches, for a test to add them to.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: bootstrap-patches
+  namespace: default
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: info
