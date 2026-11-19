@@ -8,7 +8,6 @@ on:
 env:
   VERSION: 'v1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
-  GO_TEST_RETRIES: 2
   ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
   CONTROLLER_CACHE_REF: ghcr.io/${{ github.repository_owner }}/kgateway-cache
   SDS_CACHE_REF: ghcr.io/${{ github.repository_owner }}/sds-cache
