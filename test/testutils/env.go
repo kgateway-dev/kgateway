@@ -45,6 +45,10 @@ const (
 	// SkipDump, if true, disables test dumping
 	SkipDump = "SKIP_DUMP"
 
+	// MaxFailureDumps caps how many failure dumps one bug report directory
+	// holds (default 10); further failures skip the dump. 0 or less removes the cap.
+	MaxFailureDumps = "MAX_FAILURE_DUMPS"
+
 	// InstallNamespace is the namespace in which kgateway is installed
 	InstallNamespace = "INSTALL_NAMESPACE"
 
@@ -109,6 +113,11 @@ func ShouldFailFastAndPersist() bool {
 // waste your time and confuse you if each test case starts in a chaotic state.
 func ShouldSkipAllTeardown() bool {
 	return envutils.IsEnvTruthy(SkipAllTeardown)
+}
+
+// ShouldSkipDump returns true if failure dumps of the cluster state should be skipped.
+func ShouldSkipDump() bool {
+	return envutils.IsEnvTruthy(SkipDump)
 }
 
 func ShouldSkipBugReport() bool {
