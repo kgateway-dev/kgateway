@@ -923,3 +923,98 @@ func TestClientDepartedReleasesPublishedRefs(t *testing.T) {
 
 // Publication tests model connected clients; their snapshots cannot be reclaimed.
 func (stubPriorXDS) RunIfDisconnected(string, func()) bool { return false }
+
+// A client whose first publish already happened gets a fresh first-publish
+// budget on its next connection, however that first publish happened. A
+// bounded first publish used to leave its pending entry behind, so departing
+// remembered the old episode and a reconnect within one budget published its
+// incomplete build at once.
+func TestFirstPublish_ReconnectAfterPublishGetsFullBudget(t *testing.T) {
+	const budget = 300 * time.Millisecond
+	ctx := context.Background()
+	published := func(pt *ProxyTranslator) bool {
+		_, err := pt.xdsCache.GetSnapshot(publishGateTestClient)
+		return err == nil
+	}
+	// reconnect departs and admits a new stream, as registerConnectionStartHooks
+	// does: fence.start clears the cache entry, connectionStarted adopts it.
+	reconnect := func(t *testing.T, pt *ProxyTranslator) {
+		t.Helper()
+		pt.gate.clientDeparted(publishGateTestClient)
+		pt.gate.fence.start(pt.xdsCache, publishGateTestClient)
+		pt.gate.connectionStarted(publishGateTestClient)
+		require.False(t, published(pt), "the new stream starts with no cache entry")
+	}
+	// requireFreshBudget offers the new connection's first deferred build and
+	// checks that it waits a full budget before publishing.
+	requireFreshBudget := func(t *testing.T, pt *ProxyTranslator) {
+		t.Helper()
+		pt.syncXds(ctx, deferredWrapperV("v2"))
+		pt.gate.mu.Lock()
+		st := pt.gate.pending[publishGateTestClient]
+		pt.gate.mu.Unlock()
+		require.NotNil(t, st, "the new connection's deferred build is withheld")
+		assert.Less(t, time.Since(st.since), budget/2, "the budget restarts on the new connection")
+		time.Sleep(budget / 3)
+		assert.False(t, published(pt),
+			"the new connection's incomplete build must be withheld for a fresh budget, not released at once")
+		require.Eventually(t, func() bool { return published(pt) }, 2*time.Second, 5*time.Millisecond)
+		assert.Equal(t, "v2", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
+	}
+
+	t.Run("bounded first publish", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, budget)
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		require.Eventually(t, func() bool { return published(pt) }, 2*time.Second, 5*time.Millisecond,
+			"the budget expires and firePending publishes v1")
+		pt.gate.mu.Lock()
+		_, pending := pt.gate.pending[publishGateTestClient]
+		pt.gate.mu.Unlock()
+		assert.False(t, pending, "a published first publish leaves no pending entry")
+		time.Sleep(2 * budget)
+		reconnect(t, pt)
+		requireFreshBudget(t, pt)
+	})
+
+	t.Run("bounded first publish, row withdrawn before departure", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, budget)
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		require.Eventually(t, func() bool { return published(pt) }, 2*time.Second, 5*time.Millisecond)
+		time.Sleep(2 * budget)
+		pt.gate.snapshotWithdrawn(publishGateTestClient)
+		reconnect(t, pt)
+		requireFreshBudget(t, pt)
+	})
+
+	t.Run("warm release", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, true, budget)
+		pt.gate.warmWithholdBound = budget
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		require.Eventually(t, func() bool { return published(pt) }, 4*time.Second, 5*time.Millisecond,
+			"the warm withhold bound expires and firePending publishes v1")
+		time.Sleep(2 * budget)
+		reconnect(t, pt)
+		pt.syncXds(ctx, deferredWrapperV("v2"))
+		pt.gate.mu.Lock()
+		st := pt.gate.pending[publishGateTestClient]
+		require.NotNil(t, st)
+		since, warmSince := st.since, st.warmWithheldSince
+		pt.gate.mu.Unlock()
+		assert.Less(t, time.Since(since), budget/2, "the budget restarts on the new connection")
+		assert.True(t, warmSince.IsZero(), "the new connection is not yet warm-withheld")
+		time.Sleep(budget / 3)
+		assert.False(t, published(pt), "the new connection's incomplete build is withheld")
+	})
+
+	t.Run("coherent first publish (control)", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, budget)
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		pt.syncXds(ctx, coherentWrapperV("c1"))
+		v, ok := publishedListenerVersion(t, pt)
+		require.True(t, ok)
+		require.Equal(t, "c1", v)
+		time.Sleep(2 * budget)
+		reconnect(t, pt)
+		requireFreshBudget(t, pt)
+	})
+}
