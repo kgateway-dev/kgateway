@@ -104,16 +104,17 @@ func newPolicyStatusFixture(
 	buildObject := func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
 		return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 	}
-	register := RegisterPolicyStatusWithBuilder(policyGVK, policies, cl, testController,
+	register := RegisterPolicyStatusWithBuilder(policyGVK, policies, cl,
 		getStatus, buildObject, buildDesired)
 	if buildDesired == nil {
 		// The arguments a standard policy plugin passes, so go through the entry point it calls.
-		register = RegisterPolicyStatus(policyGVK, policies, cl, testController, getStatus, buildObject)
+		register = RegisterPolicyStatus(policyGVK, policies, cl, getStatus, buildObject)
 	}
 	register(pluginsdk.PolicyStatusInputs{
 		Collections:           collections,
 		StatusContributions:   contributionCol,
 		ContributionsByTarget: byTarget,
+		ControllerName:        testController,
 		RegisterWriter: func(_ schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
 			registered = syncer
 		},

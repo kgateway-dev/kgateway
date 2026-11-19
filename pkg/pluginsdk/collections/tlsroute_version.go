@@ -29,7 +29,7 @@ func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
 	return &gwv1a2.TLSRoute{
 		// Every served TLSRoute version is normalized to this one Go type, so TypeMeta is the
 		// only record of which version an object came from — and that is the version its
-		// status must be written back through. statussync.RegisterKindByObjectGVK keys the
+		// status must be written back through. statussync.RegisterByObjectGVK keys the
 		// status reductions and the write queue off this GVK, so it has to be set here.
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: gwv1.GroupVersion.String(),
