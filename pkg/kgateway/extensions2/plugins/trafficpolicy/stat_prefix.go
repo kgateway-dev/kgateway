@@ -71,14 +71,27 @@ func applyStatPrefix(sp *statPrefixIR, pCtx *ir.RouteContext, out *envoyroutev3.
 		return
 	}
 
-	var routeName, routeNamespace string
+	routeName, routeNamespace, ruleName := statPrefixRouteVars(pCtx)
+	out.StatPrefix = resolveStatPrefixTemplate(sp.template, routeName, routeNamespace, ruleName)
+}
+
+// statPrefixRouteVars returns the route metadata that the stat prefix template
+// variables resolve to.
+func statPrefixRouteVars(pCtx *ir.RouteContext) (routeName, routeNamespace, ruleName string) {
+	if pCtx == nil {
+		return "", "", ""
+	}
 	if parent := pCtx.In.Parent; parent != nil {
 		routeName = parent.Name
 		routeNamespace = parent.Namespace
 	}
-	ruleName := pCtx.In.RuleName
+	return routeName, routeNamespace, pCtx.In.RuleName
+}
 
-	resolved := statPrefixTemplateVar.ReplaceAllStringFunc(sp.template, func(token string) string {
+// resolveStatPrefixTemplate substitutes the supported template variables in
+// template and drops the empty '.'-separated segments this can leave behind.
+func resolveStatPrefixTemplate(template, routeName, routeNamespace, ruleName string) string {
+	resolved := statPrefixTemplateVar.ReplaceAllStringFunc(template, func(token string) string {
 		match := statPrefixTemplateVar.FindStringSubmatch(token)
 		switch match[1] {
 		case statPrefixVarRouteName:
@@ -99,7 +112,7 @@ func applyStatPrefix(sp *statPrefixIR, pCtx *ir.RouteContext, out *envoyroutev3.
 	// '.'-separated segments this leaves behind (leading, trailing, or in the
 	// middle) to avoid doubled or trailing dots, which produce malformed stat
 	// names and blank levels in dot-hierarchy sinks such as statsd/Graphite.
-	out.StatPrefix = joinNonEmptyStatSegments(resolved)
+	return joinNonEmptyStatSegments(resolved)
 }
 
 // joinNonEmptyStatSegments splits s on the Envoy stat separator ('.') and
