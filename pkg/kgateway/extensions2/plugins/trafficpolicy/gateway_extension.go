@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
@@ -32,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
@@ -78,7 +78,7 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	if e.PrecedenceWeight != other.PrecedenceWeight {
 		return false
 	}
-	if !reflect.DeepEqual(e.FilterStage, other.FilterStage) {
+	if !cmputils.PointerValsEqual(e.FilterStage, other.FilterStage) {
 		return false
 	}
 

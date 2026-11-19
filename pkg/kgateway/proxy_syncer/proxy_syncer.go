@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"slices"
 	"strconv"
 	"sync/atomic"
@@ -82,7 +83,10 @@ type ProxySyncer struct {
 type GatewayXdsResources struct {
 	types.NamespacedName
 	// Clusters are items in the CDS response payload.
-	// +krtEqualsTodo include CDC resources in equality for diff detection
+	// Equals compares ClustersHash, derived from the sorted cluster digests in
+	// sliceToResourcesHash. Routes, Listeners, and Secrets each use a Version
+	// string derived from the corresponding resource set's hash.
+	// +noKrtEquals
 	Clusters     []envoycachetypes.ResourceWithTTL
 	ClustersHash uint64
 
@@ -150,16 +154,25 @@ func (r gatewayTranslationOutput) Equals(other gatewayTranslationOutput) bool {
 }
 
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
-	var slicePb []envoycachetypes.ResourceWithTTL
-	var resourcesHash uint64
-	for _, r := range slice {
-		var m proto.Message = r
-		hash := utils.HashProto(r)
-		slicePb = append(slicePb, envoycachetypes.ResourceWithTTL{Resource: m})
-		resourcesHash ^= hash
+	if len(slice) == 0 {
+		return nil, 0
 	}
 
-	return slicePb, resourcesHash
+	resources := make([]envoycachetypes.ResourceWithTTL, len(slice))
+	digests := make([]uint64, len(slice))
+	for i, r := range slice {
+		resources[i] = envoycachetypes.ResourceWithTTL{Resource: r}
+		digests[i] = utils.HashProto(r)
+	}
+
+	// Hash the sorted digests so every occurrence contributes and resource
+	// ordering does not affect the version.
+	slices.Sort(digests)
+	hasher := fnv.New64a()
+	for _, digest := range digests {
+		utils.HashUint64(hasher, digest)
+	}
+	return resources, hasher.Sum64()
 }
 
 func sliceToResources[T proto.Message](slice []T) envoycache.Resources {

@@ -29,7 +29,6 @@ var VirtualIstioGK = schema.GroupKind{
 }
 
 type IstioSettings struct {
-	// +krtEqualsTodo ensure ISTIO auto-mtls flag participates in equality
 	EnableAutoMtls bool
 }
 
@@ -48,7 +47,7 @@ func (i IstioSettings) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return i == s
+	return i.EnableAutoMtls == s.EnableAutoMtls
 }
 
 var _ ir.PolicyIR = &IstioSettings{}

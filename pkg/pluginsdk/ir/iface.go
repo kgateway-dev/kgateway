@@ -337,7 +337,6 @@ type PolicyWrapper struct {
 	PolicyIR PolicyIR
 
 	// Where to attach the policy. This usually comes from the policy CRD.
-	// +krtEqualsTodo ensure target refs differences are surfaced in equality
 	TargetRefs []PolicyRef
 
 	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
@@ -393,7 +392,18 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 		return false
 	}
 
-	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
+	return versionEquals(c.Policy, in.Policy) &&
+		slices.EqualFunc(c.TargetRefs, in.TargetRefs, policyRefEqual) &&
+		c.PolicyIR.Equals(in.PolicyIR) &&
+		c.PrecedenceWeight == in.PrecedenceWeight
+}
+
+func policyRefEqual(a, b PolicyRef) bool {
+	return a.Group == b.Group &&
+		a.Kind == b.Kind &&
+		a.Name == b.Name &&
+		a.SectionName == b.SectionName &&
+		maps.Equal(a.MatchLabels, b.MatchLabels)
 }
 
 // VersionEquals reports whether a and b are the same version of a source object, by the rule

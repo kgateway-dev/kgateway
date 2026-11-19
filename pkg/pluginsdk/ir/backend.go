@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -465,7 +466,8 @@ type Secret struct {
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
 
-	// +krtEqualsTodo evaluate secret data equality handling
+	// Data is compared directly: versionEquals(Obj) only falls back to resourceVersion when
+	// generation is zero, and the API server does not guarantee that for Secrets.
 	Data map[string][]byte
 
 	// TLSValidation keeps the result of ValidateTLS, so the listeners that reference this
@@ -481,7 +483,9 @@ func (c Secret) ResourceName() string {
 }
 
 func (c Secret) Equals(in Secret) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		versionEquals(c.Obj, in.Obj) &&
+		maps.EqualFunc(c.Data, in.Data, bytes.Equal)
 }
 
 var (

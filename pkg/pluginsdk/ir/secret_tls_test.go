@@ -36,7 +36,9 @@ func TestSecretValidateTLS(t *testing.T) {
 		secret.Data[corev1.TLSCertKey] = []byte("not a cert")
 		assert.NoError(t, copied.ValidateTLS())
 		assert.Zero(t, testing.AllocsPerRun(10, func() { _ = copied.ValidateTLS() }), "later calls should not parse the certificate")
-		assert.True(t, secret.Equals(Secret{ObjectSource: secret.ObjectSource}), "Equals should ignore the cached result")
+		uncached := copied
+		uncached.TLSValidation = nil
+		assert.True(t, secret.Equals(uncached), "Equals should ignore the cached result")
 
 		invalid := tlsSecret([]byte("not a cert"), &SecretValidation{})
 		require.ErrorIs(t, invalid.ValidateTLS(), ErrInvalidTlsSecret)
