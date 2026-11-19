@@ -229,11 +229,11 @@ func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
 		backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: "1", Generation: 1, Labels: labels,
 		}}
-		return baseEnvoyCluster{
+		return baseEnvoyCluster{&baseClusterRow{
 			Name: "c", Cluster: cluster, ClusterVersion: 7,
 			OverlayInputsHash: translator.OverlayInputsHash(backend),
 			Backend:           &backend,
-		}
+		}}
 	}
 
 	require.True(t, rowFor(nil).Equals(rowFor(nil)), "identical backends must compare equal")
@@ -243,7 +243,7 @@ func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
 		"a label no overlay declared must leave the row equal, so no client's walk reruns")
 
 	// Rows built without a backend (test fixtures) compare by the remaining fields.
-	fixture := baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7}
+	fixture := baseEnvoyCluster{&baseClusterRow{Name: "c", Cluster: cluster, ClusterVersion: 7}}
 	require.True(t, fixture.Equals(fixture))
 	require.False(t, fixture.Equals(rowFor(map[string]string{overlayLabel: "true"})),
 		"a fixture row is never equal to a row whose declared inputs are set")
@@ -253,22 +253,28 @@ func TestBaseEnvoyClusterEquals_UndeclaredInputs(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
 	changed := backend
 	changed.CanonicalHostname = "changed"
-	base := baseEnvoyCluster{Name: backend.ClusterName(), Backend: &backend, CompareBackendInputs: true}
-	other := base
+	base := baseEnvoyCluster{&baseClusterRow{Name: backend.ClusterName(), Backend: &backend, CompareBackendInputs: true}}
+	// Rows share their fields through a pointer, so each variant is a copy.
+	clone := func(b baseEnvoyCluster) baseEnvoyCluster {
+		row := *b.baseClusterRow
+		return baseEnvoyCluster{&row}
+	}
+	other := clone(base)
 	other.Backend = &changed
 	require.True(t, base.Equals(base))
 	require.False(t, base.Equals(other), "nil-Obj backend IR changes must reach undeclared hooks")
 	require.False(t, other.Equals(base), "comparison must be symmetric")
-	other = base
+	other = clone(base)
 	other.CompareBackendInputs = false
 	require.False(t, base.Equals(other), "changing the comparison mode must invalidate the row")
-	other = base
+	other = clone(base)
 	other.Backend = nil
 	require.False(t, base.Equals(other))
 	require.False(t, other.Equals(base))
 	require.True(t, other.Equals(other), "empty fixtures remain reflexive")
+	base = clone(base)
 	base.CompareBackendInputs = false
-	other = base
+	other = clone(base)
 	other.Backend = &changed
 	require.True(t, base.Equals(other), "declared hooks compare their hash instead of unread IR fields")
 }
