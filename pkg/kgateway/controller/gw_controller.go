@@ -65,6 +65,10 @@ type gatewayReconciler struct {
 	svcAccountClient kclient.Client[*corev1.ServiceAccount]
 	configMapClient  kclient.Client[*corev1.ConfigMap]
 
+	// gatewaysForDeployer holds the ports each Gateway's proxy Service must expose, including
+	// those added by attached ListenerSets.
+	gatewaysForDeployer krt.Collection[ir.GatewayForDeployer]
+
 	controllerExtension pluginsdk.GatewayControllerExtension
 
 	queue controllers.Queue
@@ -91,6 +95,8 @@ func NewGatewayReconciler(
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
 		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
+
+		gatewaysForDeployer: cfg.CommonCollections.GatewayIndex.GatewaysForDeployer,
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.
@@ -195,7 +201,7 @@ func NewGatewayReconciler(
 	r.gwParamClient.AddEventHandler(gwParamEventHandler)
 
 	// Custom event handler for ListenerSet changes
-	cfg.CommonCollections.GatewayIndex.GatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
+	r.gatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
 		gw := o.Latest()
 		ref := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
 		logger.Debug("reconciling Gateway due to ListenerSet change", "ref", ref)
@@ -240,6 +246,11 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 	}
 	// Add GatewayParameters cache sync handlers
 	hasSynced = append(hasSynced, r.gwParams.GetCacheSyncHandlers()...)
+	// Until this syncs, a Gateway can have no row yet, and the deployer then guesses its ports
+	// from the Gateway's own listeners. Reconciling on that guess after a restart or a leader
+	// change would apply a Service without the attached ListenerSets' ports, removing them from
+	// the live Service until the row is computed.
+	hasSynced = append(hasSynced, r.gatewaysForDeployer.HasSynced)
 
 	// Wait for all caches to sync
 	kube.WaitForCacheSync("GatewayController", ctx.Done(), hasSynced...)
