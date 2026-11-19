@@ -35,7 +35,11 @@ func (m *MockSecretGetter) AddSecret(name, namespace string, secret *ir.Secret) 
 	m.secrets[key] = secret
 }
 
-func (m *MockSecretGetter) GetSecret(name, namespace string) (*ir.Secret, error) {
+func (m *MockSecretGetter) GetSecret(secretRef gwv1.SecretObjectReference, policyNamespace string) (*ir.Secret, error) {
+	name, namespace := string(secretRef.Name), policyNamespace
+	if secretRef.Namespace != nil {
+		namespace = string(*secretRef.Namespace)
+	}
 	key := namespace + "/" + name
 	if secret, ok := m.secrets[key]; ok {
 		return secret, nil
@@ -115,7 +119,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "secret-based TLS config",
 			tlsConfig: &kgateway.TLS{
-				SecretRef: &corev1.LocalObjectReference{
+				SecretRef: &gwv1.SecretObjectReference{
 					Name: "test-secret",
 				},
 				Sni:                new("test.example.com"),
@@ -255,7 +259,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "invalid TLS config - missing secret",
 			tlsConfig: &kgateway.TLS{
-				SecretRef: &corev1.LocalObjectReference{
+				SecretRef: &gwv1.SecretObjectReference{
 					Name: "non-existent-secret",
 				},
 				AllowRenegotiation: new(true),
@@ -359,7 +363,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "should not have validation context if no rootca",
 			tlsConfig: &kgateway.TLS{
-				SecretRef: &corev1.LocalObjectReference{
+				SecretRef: &gwv1.SecretObjectReference{
 					Name: "test-secret",
 				},
 			},

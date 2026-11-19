@@ -70,6 +70,7 @@ mode causes the referencing policy to be rejected and its routes to report a
 |---|---|---|---|---|---|
 | BackendRef | HTTPRoute / GRPCRoute | Service / Backend | allowed | checked | checked |
 | SecretRef | TrafficPolicy (BasicAuth, APIKeyAuth) | Secret | allowed | checked | checked |
+| SecretRef | BackendConfigPolicy (TLS) | Secret | allowed | checked | checked |
 | BackendRef | GatewayExtension (ExtAuth, ExtProc, RateLimit, OAuth2) | Service | allowed | checked | checked |
 | ExtensionRef | TrafficPolicy | GatewayExtension (same ns) | allowed | allowed | allowed |
 | ExtensionRef | TrafficPolicy | GatewayExtension (cross-ns) | allowed | allowed | checked |
@@ -221,6 +222,5 @@ require a ReferenceGrant regardless of mode:
 | CRD | Field | Type | Reason |
 |---|---|---|---|
 | `Backend` | `Aws.Auth.SecretRef` | `corev1.LocalObjectReference` | Name only, no namespace field |
-| `BackendConfigPolicy` | `TLS.SecretRef` | `corev1.LocalObjectReference` | Name only, no namespace field |
 | `GatewayExtension` | `OAuth2.Credentials.ClientSecretRef` | `corev1.LocalObjectReference` | Always same-namespace as the GatewayExtension |
 | `GatewayExtension` | `JWT.Providers[].JWKS.LocalJWKS.ConfigMapRef` | `corev1.LocalObjectReference` | Always same-namespace as the GatewayExtension |
