@@ -58,8 +58,9 @@ generated bootstrap, including control-plane–managed fields (`node.cluster`,
   package the deployer can use and extended with the list rules in Merge semantics
 - API types: `api/v1alpha1/kgateway/gateway_parameters_types.go` (`EnvoyBootstrap`)
 - Controller settings: `api/settings/settings.go`
-- Overlay precedent (strategic merge patch with `$patch` directives):
-  `api/v1alpha1/shared/overlay_types.go` (`KubernetesResourceOverlay`)
+- Object overlays (`deploymentOverlay` and the others), whose GatewayClass-then-Gateway
+  order the bootstrap overlay follows: `api/v1alpha1/shared/overlay_types.go`
+  (`KubernetesResourceOverlay`)
 
 ## Motivation
 
@@ -139,10 +140,10 @@ interface and file-based SDS secrets, none of which resolve in the controller po
 
 - The **validation allowlist** lists the bootstrap fields that validation uses.
   It holds only the `layered_runtime` layers of type `static_layer`, whose values
-  are written in the bootstrap. Disk, RTDS and admin layers are left out: the
-  bootstrap only says where their values come from, and the proxy loads them at
-  runtime. The condition message reports each disk or RTDS layer an overlay adds
-  (see Reporting).
+  are written in the bootstrap. `admin_layer` is left out: it starts empty and
+  holds only values set on a running proxy with `/runtime_modify`. An overlay can
+  add only static layers (see Managed paths), so the static layers hold every
+  runtime value the bootstrap sets.
 - The **validation subset** is the partial `Bootstrap` made by copying the
   allowlisted fields out of a Gateway's merged bootstrap. The deployer writes it
   next to `envoy.yaml` and onto each proxy pod (see Deployer), and the translator
@@ -213,7 +214,7 @@ spec:
 
           # Layer 2 (Phase 1): typed proto merge for everything else.
           overlay:
-            mergeStrategy: StructuredMerge     # default, and the only value in Phase 1
+            mergeStrategy: StructuredMerge     # required; the only value in Phase 1
             value:                             # a partial envoy.config.bootstrap.v3.Bootstrap
               stats_flush_interval: 10s
               layered_runtime:
@@ -291,20 +292,19 @@ The Envoy bootstrap has no field for reloadable features. A flag such as
   overlay layer against the base layers and the other overlay layers.
   `layered_runtime` is not a managed path.
 - A flag that a later Envoy removes stops having an effect. Envoy logs
-  `Using a removed guard <key>` at error level and ignores the key. Bootstrap
-  validation (see Validate the merged result) collects that line and names the key
-  in the condition message, so a stale flag shows up on the Envoy bump that
-  removes it. Once Envoy treats a removed flag as invalid configuration, the bump
-  fails validation for every Gateway whose overlay still sets it, and the Gateway
-  follows the invalid-merge fallback.
+  `Using a removed guard <key>` and ignores the key; kgateway does not report it.
+  The Envoy release notes for the bump are the signal. Once Envoy treats a removed
+  flag as invalid configuration, the bump fails validation for every Gateway whose
+  overlay still sets it, and the Gateway follows the invalid-merge fallback.
 - The example flag defaults to `true` in the pinned Envoy, under which Envoy rejects
   a request whose path contains a `#` fragment. Set to `false`, Envoy strips the
   fragment and routes the request.
 
 #### Merge semantics
 
-`StructuredMerge` is built on proto `MergeFrom`, which merges each kind of field as
-follows:
+`StructuredMerge` is built on Go's `proto.Merge`, which has the same semantics as
+the C++ `MergeFrom` that Envoy uses to layer `--config-yaml` (see Design
+principle). It merges each kind of field as follows:
 
 | Field kind | Example | Result |
 |---|---|---|
@@ -315,13 +315,12 @@ follows:
 | Map, including `Struct` | `certificate_provider_instances`, `node.metadata` | Merged by key. An overlay entry replaces the base entry with the same key whole. |
 | List | `static_resources.clusters`, `stats_sinks` | See Lists below. |
 
-`MergeFrom` cannot remove an entry or replace a message as a whole. `mergeStrategy`
-takes its value names from `KubernetesResourceOverlay`
-(`api/v1alpha1/shared/overlay_types.go`) but not its implementation: that overlay
-uses Kubernetes strategic merge patch, which depends on struct tags the Envoy
-`Bootstrap` proto does not carry.
+`proto.Merge` cannot remove an entry or replace a message as a whole; the Phase 3
+strategies add that. `mergeStrategy` ships in Phase 1 as a required enum with one
+value, so every stored overlay names its strategy, and when Phase 3 adds a strategy
+no overlay relies on an implicit default.
 
-- `StructuredMerge` (default; Phase 1): proto `MergeFrom` as in the table, except
+- `StructuredMerge` (Phase 1): `proto.Merge` as in the table, except
   for the lists described below. `mergeBootstrapOverlay` from [#14752](https://github.com/kgateway-dev/kgateway/pull/14752) provides the
   `Merge` call, the runtime-layer insertion and the duplicate check against the
   base; merge by name, prepending, and the check between overlay layers are new.
@@ -333,36 +332,48 @@ uses Kubernetes strategic merge patch, which depends on struct tags the Envoy
 
 ##### Lists
 
-`MergeFrom` appends to every repeated field. For some lists Envoy rejects a second
+`proto.Merge` appends to every repeated field. For some lists Envoy rejects a second
 entry with the same name (`duplicate cluster 'xds_cluster'`), so appending can never
 override a base entry: the bootstrap fails validation and the whole overlay falls
-back. `StructuredMerge` therefore handles three kinds of list:
+back. `StructuredMerge` therefore handles lists in three ways. Named entries and
+runtime layers are taken out of the overlay before `proto.Merge` and merged by their
+own code. Every other list goes through `proto.Merge`, which appends, and the
+overlay's entries are then moved to the front.
 
 | Kind | Fields | `StructuredMerge` |
 |---|---|---|
 | Named entries | `static_resources.clusters`, `static_resources.listeners`, `static_resources.secrets`, `overload_manager.resource_monitors` | Merge by `name`. An overlay entry whose `name` matches a base entry replaces that entry; other overlay entries are appended. |
-| Runtime layers | `layered_runtime.layers` | Custom code, not `MergeFrom`. Overlay layers are inserted before `admin_layer` instead of appended. An overlay layer that reuses a base or overlay layer's `name` is rejected (see the worked example). |
-| Every other list | e.g. `stats_config.histogram_bucket_settings`, `stats_config.stats_tags`, `stats_sinks`, `bootstrap_extensions` | Prepend: the overlay's entries go before the base's. |
+| Runtime layers | `layered_runtime.layers` | Overlay layers are inserted before `admin_layer` instead of appended. An overlay layer that reuses a base or overlay layer's `name` is rejected (see the worked example). |
+| Every other list | e.g. `stats_config.histogram_bucket_settings`, `stats_config.stats_tags`, `stats_sinks`, `bootstrap_extensions` | Prepend: the overlay's entries go before the base's. `proto.Merge` appends them, and the merge then moves them to the front. |
 
 - **A replaced entry is replaced whole,** not merged field by field. The user writes
   the full entry, for example by copying it from the generated `ConfigMap`, and a
   later kgateway change to that base entry does not reach it. A partial merge would
   be no better: most of a cluster or listener sits inside `typed_config` fields,
-  which `MergeFrom` replaces whole anyway.
+  which `proto.Merge` replaces whole anyway.
 - **Only these four fields merge by name,** because Envoy requires unique names in
   each. Elsewhere `name` often identifies the extension type rather than the entry
   (`stats_sinks[].name` is `envoy.stat_sinks.statsd` for every statsd sink), and
   merging by `name` would silently drop entries.
 - **Runtime layers are not replaced by name.** Replacing would let an overlay remove
   `admin_layer`, and with it `/runtime_modify`. A later layer already wins per key.
-- **Prepending lets the overlay win in first-match lists.** In
-  `histogram_bucket_settings`, Envoy uses the first entry that matches a stat, so
-  an overlay entry beats a base entry for the same stat. In `stats_tags`,
-  `stats_sinks` and `bootstrap_extensions` every entry applies, so order does not
-  matter. `-c` gives the same order today.
+- **Other lists are prepended, not appended, so the overlay wins.** Some lists
+  are first-match: in `histogram_bucket_settings`, Envoy uses the first entry that
+  matches a stat. Appending, as `proto.Merge` does, would let a base entry beat the
+  overlay's entry for the same stat, against the rule that the user's value wins.
+  Prepending makes the overlay's entry match first. In lists where every entry
+  applies, such as `stats_sinks` and `bootstrap_extensions`, order does not
+  matter, so prepending changes nothing there. `-c` gives the same order
+  today.
+- **An overlay entry never changes a base entry in these lists.** Entries are
+  matched by position, not by content, so an overlay entry equal to a base entry
+  is a second copy. In a list where every entry applies, the copy applies twice,
+  such as a second identical stats sink. In a first-match list, the copy is
+  never used.
 - **The base rarely fills these lists.** Today it fills only the
   `stats_matcher` patterns (from `kube.stats.matcher`), where order does not
-  matter. Removing a base entry waits for Phase 3 `Replace`.
+  matter and a duplicate pattern changes nothing. Removing or changing a base
+  entry waits for Phase 3 `Replace`.
 
 Under merge by name, an overlay `xds_cluster` replaces kgateway's. It is a managed
 path, so `WARN` applies and reports it, `PRUNE` drops it, and `REJECT` refuses the
@@ -445,12 +456,15 @@ is in the generated bootstrap (`pkg/kgateway/helm/envoy/templates/configmap.yaml
 | `static_resources.listeners[name=readiness_listener]` | The `Deployment`'s default readiness and startup probes target its port, 8082. |
 | `static_resources.listeners[name=prometheus_listener]` | The pod's `prometheus.io/port: "9091"` scrape annotation targets its port. |
 
-Two names are protected under every mode, because overriding them breaks the proxy:
+Under every mode, the controller rejects with `InvalidOverlay`:
 
-- The secret name `SYSTEM_CA_CERT` is reserved; the controller rejects an overlay
-  that defines it (see Changes envoyinit makes in the pod).
-- `admin_layer` cannot be overridden: an overlay layer cannot share its name, and
-  runtime layers are never replaced (see Lists).
+- A secret named `SYSTEM_CA_CERT`, which envoyinit adds in the pod (see Changes
+  envoyinit makes in the pod).
+- An overlay layer named `admin_layer`. Runtime layers are never replaced (see
+  Lists), so `/runtime_modify` keeps working.
+- A runtime layer that is not a `static_layer`. A disk, RTDS or admin layer's
+  values are not in the bootstrap, so route validation and status could not see
+  them (see Validation subset).
 
 Paths are matched on the **parsed proto** (field descriptors, with list entries
 identified by key), never on raw YAML keys, because the proto JSON mapping accepts
@@ -514,70 +528,22 @@ under `PRUNE` or `REJECT` the author is the person the setting constrains.
 
 Under `WARN`, adding a path adds a report but does not change what applies. Under
 `PRUNE` and `REJECT` it does, and under any mode a new runtime layer can collide
-with a user layer's name, so each addition needs a release note. The per-path
-metric (see Reporting) lets a platform team find affected Gateways before a version
-bump.
+with a user layer's name, so each addition needs a release note that names the
+path. Before upgrading, a platform team finds the affected Gateways by searching
+their `GatewayParameters` overlays for that path, in both snake_case and
+lowerCamelCase. The per-path metric (see Reporting) lists them only after the new
+controller runs, because the running controller does not yet treat the path as
+managed.
 
 ##### Validate the merged result
 
-Run the merged `Bootstrap` through `envoy --mode validate` before rollout. It builds
-both the runtime and the cluster manager, so it catches duplicate layer and cluster
-names. `validator.New` (`pkg/validator/factory.go`) builds a validator that runs
-the Envoy binary in the controller image, optionally behind a result cache. It is
-wired only into the translator today, so the bootstrap path needs new wiring. It
-validates against the controller's Envoy, not the proxy's `envoyContainer.image`,
-so a Gateway that overrides the proxy image is validated against a different Envoy
-version than it runs (see Envoy versions and proto types).
-
-The validator needs a bootstrap mode, which validates a copy of the merged
-bootstrap prepared to match what the proxy pod runs:
-
-- **`application_log_config`.** The xDS validator passes `--log-format %v` so that
-  Envoy prints a bare message the controller can put on status, and strips
-  `application_log_config` from the bootstrap
-  ([`validator.go`](https://github.com/kgateway-dev/kgateway/blob/851bfc9c3cf37139586e82c1c0081ff718c02799/pkg/validator/validator.go#L302-L308))
-  because Envoy refuses a bootstrap `log_format` together with that flag
-  (`assertExclusiveLogFormatMethod` in `source/server/utils.cc`, which the
-  validation server calls too, in `source/server/config_validation/server.cc`).
-  Keeping the field with the flag would fail validation for every Gateway that
-  sets `logFormat`. Bootstrap mode keeps the field and omits `--log-format` when
-  the merged bootstrap sets it, so Envoy also checks the format
-  (`maybeSetApplicationLogFormat`) and a bad `text_format` or `json_format` is
-  caught before rollout. Envoy then prints its errors in the user's format; the
-  validator takes the message from the `error initializing configuration` line, as
-  the docker validator's `extractEnvoyError` already does.
-- **Removed runtime guards.** For a boolean or numeric key under
-  `envoy.reloadable_features.` or `envoy.restart_features.` that Envoy does not
-  know, whether removed or misspelled, Envoy accepts the bootstrap and logs
-  `Using a removed guard <key>. In future version of Envoy this will be treated as
-  invalid configuration` at error level (`SnapshotImpl` in
-  `source/common/runtime/runtime_impl.cc`; `FailOnWarnings` in
-  `pkg/validator/validator.go` already matches it for the docker validator).
-  Bootstrap mode runs at `-l error` instead of `-l critical` and matches those
-  lines by text, so the log format does not matter. The keys go into the
-  condition message and a `Warning` event. Validation still passes: the bootstrap
-  works, and an Envoy bump is when the user most needs the proxy running. Other
-  warnings are not collected, because a deprecated field in the base template is
-  kgateway's to fix. Deprecated fields that the overlay sets are found from the
-  proto annotations instead (see Envoy versions and proto types).
-- **Placeholder files for file-based SDS.** Envoy's validate mode requires every
-  `path_config_source` path to exist but does not read the file. On Envoy v1.40.2,
-  the generated bootstrap with xDS TLS fails with
-  `'/etc/envoy/xds_ca_sds.json' does not exist` when the file is missing and passes
-  with an empty file there. The copy rewrites each `path_config_source` path,
-  including any an overlay adds, to an empty file in a temporary directory. The
-  files those SDS files point at (the projected xDS token and `ca.crt`) are never
-  opened, and a static secret's `filename` is not read either.
-- **`SYSTEM_CA_CERT` placeholder.** envoyinit adds this secret in the pod, so the
-  copy adds the placeholder xDS validation already uses
-  (`SystemCAValidationSecretPlaceholder` in `pkg/xds/bootstrap/builder.go`).
-  Without it, an overlay static cluster that trusts the system CA fails with
-  `Unknown static certificate validation context: SYSTEM_CA_CERT`.
-- **Node.** The binary validator passes no `--service-node` (only the docker
-  validator used in tests does), and the `ConfigMap` sets no `node.id`; the proxy
-  gets its id from the `Deployment`'s `--service-node $(POD_NAME).$(POD_NAMESPACE)`.
-  The copy sets a placeholder `node.id`, as the xDS validation builder does
-  (`ConfigBuilder.Build`), since it never connects to xDS.
+Run the merged `Bootstrap` through `envoy --mode validate` before rollout, using
+the validator the translator already uses (`validator.New`). It runs the Envoy in
+the controller image, not the proxy's `envoyContainer.image` (see Envoy versions
+and proto types). The validator gets a bootstrap mode that validates a copy of the
+merged bootstrap adjusted to match what the proxy pod runs: it adds what envoyinit
+adds in the pod (see Changes envoyinit makes in the pod) and stands in for what
+exists only in the pod, such as the file-based SDS files and the node id.
 
 ##### Changes envoyinit makes in the pod
 
@@ -648,7 +614,10 @@ deployer, which already has the Gateway's listener ports (`GatewayForDeployer` i
 `pkg/krtcollections/policy.go`, recomputed when a ListenerSet changes), leaves the
 port off the `Service` and lists each colliding port in the
 `kgateway.dev/BootstrapPatchApplied` message. A collision does not reject the
-overlay, so a ListenerSet added later cannot make a working overlay fall back.
+overlay, so a ListenerSet added later cannot make a working overlay fall back. The
+one exception is a collision on every Gateway listener port: the `Service` would
+have no ports, which Kubernetes does not accept, so the deployer takes the
+invalid-merge fallback with `InvalidOverlay` and names the ports.
 
 ##### Invalid-merge fallback
 
@@ -657,7 +626,8 @@ When the overlay cannot be parsed, the merged bootstrap fails validation, or
 the `ConfigMap`, `Deployment`, `Service` and the rest stay as they are, as they do
 today when the deployer cannot render a Gateway's objects. The controller never
 rolls out the generated bootstrap without the overlay, because that would silently
-remove settings the user depends on, often a security-response override.
+remove settings the user depends on, often a security-response override. See Open
+Questions for the alternatives.
 
 - **Existing Gateway.** The proxy keeps running its last-good bootstrap and
   receiving xDS. Other `GatewayParameters` changes (image, resources, replicas)
@@ -689,28 +659,10 @@ serving its last-good config would read as not accepted. The deployer returns a
 distinct error for an invalid patch, which the reconciler handles in its own
 branch, as it already does for `ErrNoValidPorts`.
 
-The same fallback applies when the patches were not validated, and the condition
-says why (see Reporting):
-
-- Envoy rejects the merged bootstrap, or crashes on it with a signal other than
-  `SIGKILL`: `ValidationFailed`. The proxy would fail the same way, so the
-  controller does not retry, and caches the result.
-- Envoy does not finish within 30 seconds, is killed with `SIGKILL` (most likely
-  by the out-of-memory killer, since Envoy runs in the controller's container),
-  the temporary files cannot be written for a reason such as a full disk, or
-  Docker cannot run the container: `ValidationUnavailable`. Validating again can
-  succeed, so the controller retries with its usual backoff and does not cache the
-  result.
-- The Envoy binary, the Docker CLI or the image's Envoy is missing or cannot be
-  run, or the controller has no writable temporary directory:
-  `ValidationUnavailable`. Every validation fails the same way until the
-  controller's `Deployment` or settings change, which restarts the controller and
-  reconciles every Gateway, so the controller does not retry.
-- The controller fails to process the bootstrap it generated or the merged
-  result: `ControllerError`, without a retry.
-- The controller is stopping: no condition is written.
-
-In each case `Accepted` is left alone for an existing Gateway.
+The same fallback applies when the controller cannot validate the patches, and the
+reason says why (see Reporting): `ValidationUnavailable` when the controller could
+not run Envoy, retried when the cause can clear, and `ControllerError` for a
+kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
 
 #### Deployer
 
@@ -802,43 +754,15 @@ translator also writes Gateway conditions but preserves types it does not own
 | `True` | `ManagedPathsOverridden` | `WARN` applied an overlay that sets one or more managed paths. The message lists each path. |
 | `True` | `PathsIgnored` | `PRUNE` dropped one or more managed paths; the rest applied. The message lists each dropped path. |
 | `False` | `PathsDenied` | `REJECT` refused an overlay that touched managed paths. The message lists them. |
-| `False` | `InvalidOverlay` | The overlay does not parse as a partial `Bootstrap`, contains `{{`, defines a reserved name, or adds an RTDS layer that reads from kgateway's xDS server. |
+| `False` | `InvalidOverlay` | One of:<ul><li>The overlay does not parse as a partial `Bootstrap`.</li><li>The overlay contains `{{`.</li><li>The overlay defines a reserved name.</li><li>The overlay adds a runtime layer that is not a static layer.</li><li>The overlay uses the same name twice in a list where Envoy requires unique names.</li><li>The patched bootstrap's validation subset is over 64 KiB.</li><li>The patched bootstrap listens on every Gateway listener port (see Listener ports).</li></ul> |
 | `False` | `ValidationFailed` | The merged bootstrap failed `envoy --mode validate`, or Envoy crashed on it. |
-| `False` | `ValidationUnavailable` | The controller could not run Envoy to validate the merged bootstrap. The message says whether the controller retries (Envoy timed out or was killed, the disk is full, Docker failed) or waits for a change to its `Deployment` or settings (no Envoy binary, no writable temporary directory). |
+| `False` | `ValidationUnavailable` | The controller could not run Envoy to validate the merged bootstrap. |
 | `False` | `ControllerError` | The controller failed to process the bootstrap it generated or the merged result. This is a kgateway defect; the message says so. |
 | `False` | `BootstrapNotMounted` | An object overlay points the `envoy-config` volume at a `ConfigMap` other than the generated one, so the proxy does not run the patched bootstrap. |
 
 `True` with `ManagedPathsOverridden` or `PathsIgnored` is deliberate: the patch did
 apply, and a routine report must not read as a broken Gateway to anyone alerting on
 condition status. `False` means the patches are not in effect on the proxy.
-
-**Overrides of curated fields.** Curated fields are applied before the overlay, so
-an overlay can replace their output. That output is the user's own configuration,
-not a managed path, so the mode does not apply. But the replacement can drop a
-value the user did not mean to change: `dnsResolver.udpMaxQueries` (default 100)
-renders into `typed_dns_resolver_config.typed_config`, an `Any`, so an overlay that
-sets another c-ares option there replaces the whole `Any` and drops the cap. For a
-curated patch under `patches`, the controller compares the overlay's paths with the
-patch it built. For the existing Helm-rendered fields, it keeps a list of the paths
-each one renders:
-
-| Curated field | Renders into |
-|---|---|
-| `dnsResolver` | `typed_dns_resolver_config` |
-| `maxDownstreamConnections` | `overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections]` |
-| `stats.matcher` | `stats_config.stats_matcher` |
-
-When the overlay replaces one of them, or switches the `oneof` option it set, the
-condition message names the curated field and the overlay path. The status and
-reason do not change. Curated fields that render onto managed paths
-(`enableReadinessProbeProxyProtocol` onto `readiness_listener`, `stats.enabled` onto
-`prometheus_listener`) are already reported as managed paths.
-
-**Runtime layers that route validation does not see.** For each disk or RTDS layer
-an overlay adds, the condition message names the layer and says that route
-validation uses Envoy's defaults for the values it sets, and a `Warning` event
-says the same. The status and reason do not change (see Validation subset and
-Envoy versions and proto types).
 
 **A proxy image that differs from the controller's.** When the `kgateway-proxy`
 image in the final `Deployment` is not `envoy-wrapper` at the controller's own
@@ -900,9 +824,7 @@ curated patch needs:
 Promotion is backward-compatible: the curated patch and the overlay target the same
 proto path, with the curated patch applied first and the overlay merged on top.
 In a prepended list the overlay's entries precede the curated ones, as they
-precede the base's. Because the controller holds each curated patch as a proto,
-it can report an overlay that replaces the patch's output without a hand-kept
-path list (see Reporting).
+precede the base's.
 
 The first candidate is `patches.statsConfig.histogramBucketSettings`, for
 [#14088](https://github.com/kgateway-dev/kgateway/issues/14088). Envoy applies the
@@ -910,8 +832,13 @@ first matching entry, and overlay entries precede curated ones (see Lists), so a
 overlay entry wins over a curated entry matching the same stat, as the
 overlay-on-top rule requires.
 
-A curated `staticResources.clusters` field, if demand warrants, can reject
-collisions with managed cluster names up front with a clearer message.
+The second candidate is the RE2 program-size limit
+(`patches.re2MaxProgramSize.errorLevel` and `warnLevel`), rendered into a static
+runtime layer. Through the overlay, a misspelled runtime key is ignored by Envoy
+and the limit stays at 100; a typed field is checked at write time and is listed
+in the API reference. It needs no plumbing of its own: it renders into the merged
+bootstrap, and its static layer is in the validation subset that strict
+validation reads.
 
 Settings that extend an existing Helm-rendered field, such as more c-ares options
 next to `dnsResolver.udpMaxQueries`, are added when a use case comes up. Where they
@@ -923,24 +850,11 @@ Add `Replace` and (discouraged) `JSONPatch` once a concrete need appears.
 `StructuredMerge` covers changes that only add or overwrite values, which are most
 of them.
 
-`Replace` lists the paths to replace next to `value`:
-
-```yaml
-overlay:
-  mergeStrategy: Replace
-  replace:
-    - stats_config.histogram_bucket_settings
-  value:
-    stats_config:
-      histogram_bucket_settings:
-        - match: { prefix: "cluster." }
-          buckets: [1, 5, 10, 25, 50, 100]
-```
-
-Each listed path is cleared in the base, and then the overlay is merged as under
-`StructuredMerge`. The paths are a separate field rather than `$patch: replace`
-directives inside `value`, because `value` is parsed as a `Bootstrap` proto, which
-has no field for a directive.
+`Replace` clears the messages and lists the user names in the generated bootstrap,
+then merges the overlay as under `StructuredMerge`, so the overlay's value
+becomes the whole value at each named path. For example, replacing
+`stats_config.histogram_bucket_settings` drops every generated bucket setting and
+keeps only the overlay's. How the user names the paths is decided with Phase 3.
 
 - **Managed paths.** A replaced path that contains a managed path counts as setting
   it. Replacing `static_resources.clusters` sets
@@ -1099,7 +1013,11 @@ image, and Alternatives for a check of stored overlays before an upgrade.
   `pkg/utils/filter_types` (see Pipeline). The file is generated by `go list` over
   go-control-plane's `envoy/...`, `contrib/...` and `ratelimit/...` packages, so
   nobody maintains a list and the parse cannot reject a type the proxy's Envoy
-  supports. The generator also covers the cncf/xds `udpa/type/v1` and `xds/type/v3`
+  supports. The one package left out is the contrib ALPN filter
+  (`contrib/envoy/extensions/filters/http/alpn/v3`): linking it alongside Istio's
+  legacy ALPN package panics when the binary starts. Contrib extensions are not
+  built into the proxy's Envoy, so an overlay could not use it anyway. The
+  generator also covers the cncf/xds `udpa/type/v1` and `xds/type/v3`
   packages, which hold the `TypedStruct` wrappers Envoy accepts in any
   `typed_config`. go-control-plane does not contain them, and the controller links
   `udpa.type.v1.TypedStruct` today only because an unrelated dependency imports it.
@@ -1120,19 +1038,6 @@ image, and Alternatives for a check of stored overlays before an upgrade.
   full replacement may use either casing. Envoy alone then decides what the pod
   accepts, and envoyinit no longer needs `filter_types`. This change does not
   depend on the rest of Phase 1 and can ship first.
-- **Overlay disk and RTDS layers apply and are reported.** Their values are not in
-  the bootstrap, so route validation cannot see them (see Validation subset). They
-  still have uses: a disk layer that reads a mounted `ConfigMap` changes runtime
-  values on every pod without a rollout, because Kubernetes updates the mount by
-  swapping a symlink, which is how Envoy expects a disk layer to change. The
-  condition message and a `Warning` event name each such layer (see Reporting).
-  See Open Questions for rejecting these layers or allowing them only behind a
-  controller setting.
-- **An RTDS layer that reads from kgateway's xDS server is rejected.** kgateway
-  serves no runtime resources, so a layer whose `rtds_config` uses ADS or names
-  `xds_cluster` never receives values. The controller rejects it with
-  `InvalidOverlay`. If kgateway starts serving runtime resources, this check is
-  removed.
 - **The deployer reports a proxy image that differs from the controller's.** For
   a Gateway with `patches`, the deployer reads the `kgateway-proxy` image in the
   final `Deployment`, after the object overlays, and compares it with the
@@ -1201,14 +1106,14 @@ image, and Alternatives for a check of stored overlays before an upgrade.
 - **Guardrails:** managed-path matching on the parsed proto (both casings, keyed
   list entries); each mode applies, prunes or rejects as specified, with the right
   status reason; the settings decoder accepts only the three values; an overlay
-  containing `{{` or defining `SYSTEM_CA_CERT` is rejected under every mode; an
-  overlay that replaces a curated field's output applies under every mode and is
-  named in the condition message; a translator status update keeps
+  containing `{{` or defining `SYSTEM_CA_CERT` is rejected under every mode; a
+  translator status update keeps
   `kgateway.dev/BootstrapPatchApplied`.
 - **Parsing:** the generated bootstrap parses in the controller with every option
   that adds a `@type` turned on; an overlay `@type` the pinned Envoy does not know
   fails `envoy --mode validate` with `ValidationFailed`; an overlay that wraps a
-  filter in `udpa.type.v1.TypedStruct` or `xds.type.v3.TypedStruct` parses.
+  filter in `udpa.type.v1.TypedStruct` or `xds.type.v3.TypedStruct` parses; an
+  overlay without `mergeStrategy` is rejected by the API server.
 - **Golden:** overlays produce the expected merged bootstrap; a base-bootstrap
   change leaves the user's settings in place; a managed-path overlay under each
   mode; a prepended list orders Gateway, GatewayClass, then base entries, and
@@ -1236,8 +1141,7 @@ image, and Alternatives for a check of stored overlays before an upgrade.
   the real Envoy validation in bootstrap mode, so an Envoy version that starts
   reading the placeholder files fails this test; an overlay static cluster that
   trusts `SYSTEM_CA_CERT` passes; a Gateway with `logFormat` set passes, and an
-  invalid `text_format` fails and is not rolled out; a removed runtime guard
-  passes and is named in the condition message.
+  invalid `text_format` fails and is not rolled out.
 - **Rollout and fallback:** an overlay-only change changes the pod-template
   checksum, identical merged content does not, and a Gateway without `patches`
   keeps today's `envoy.yaml`, checksum and `ConfigMap` keys; an invalid overlay
@@ -1265,10 +1169,8 @@ image, and Alternatives for a check of stored overlays before an upgrade.
   default is named in the condition message and a `Warning` event, the last with
   its runtime key; a deprecated field in the generated bootstrap that the overlay
   does not set is not reported.
-- **Runtime layer types:** an overlay disk layer and an RTDS layer with its own
-  config source apply and are named in the condition message and a `Warning`
-  event; an RTDS layer using ADS or `xds_cluster` is rejected with
-  `InvalidOverlay`.
+- **Runtime layer types:** an overlay disk, RTDS or admin layer is rejected with
+  `InvalidOverlay` under every mode.
 - **envoyinit:** `SYSTEM_CA_CERT` is appended to a bootstrap using
   `static_resources` and to one using `staticResources`, alongside existing
   secrets and with none; a field and an `@type` that go-control-plane does not
@@ -1304,22 +1206,20 @@ sections.
   Lists).
 - An overlay that replaces the output of a typed field can drop a value the user
   did not mean to change. For example, setting another c-ares option in
-  `typed_dns_resolver_config` drops the `dnsResolver.udpMaxQueries` cap. The
-  condition message names the field (see Reporting).
+  `typed_dns_resolver_config` drops the `dnsResolver.udpMaxQueries` cap, which
+  kgateway sets to 100 by default. The condition reports `Applied`; the overlay
+  must set every option it wants kept.
 - The controller rejects an overlay that contains `{{` anywhere, including in a
   string value, because envoyinit runs a template pass over the bootstrap in the
-  pod. It also rejects a secret named `SYSTEM_CA_CERT`, and an RTDS layer that
-  reads from kgateway's xDS server, which serves no runtime values (see Changes
-  envoyinit makes in the pod, and Envoy versions and proto types).
-- A disk runtime layer that reads a `ConfigMap` mounted with `deploymentOverlay`
-  changes runtime values on every pod without a rollout (see Envoy versions and
-  proto types).
+  pod. It also rejects a secret named `SYSTEM_CA_CERT`, and any runtime layer
+  other than a static layer (see Managed paths).
 - envoyinit overwrites `node.locality.region`, `zone` and `sub_zone` with the
   values it derives from the pod's environment or topology labels (see Changes
   envoyinit makes in the pod).
 - Envoy ignores a feature flag it does not know, whether removed or misspelled,
-  instead of rejecting the bootstrap. The condition message and a `Warning` event
-  name it (see Validate the merged result).
+  instead of rejecting the bootstrap, and kgateway does not report it. A
+  misspelled flag passes validation and has no effect (see Worked example:
+  reloadable feature flags).
 - A `deploymentOverlay` that mounts another `ConfigMap` as the bootstrap, as the
   full-replacement workaround does, keeps the patches from reaching the proxy, and
   the condition reports `BootstrapNotMounted` (see Deployer).
@@ -1355,10 +1255,8 @@ sections.
 **Route validation**
 
 - Routes are validated against the static runtime layers in the Gateway's
-  bootstrap. Runtime values set through a disk layer, an RTDS layer or
-  `/runtime_modify` are not in the bootstrap, so validation uses Envoy's defaults
-  for them. The condition message names each disk or RTDS layer an overlay adds
-  (see Validation subset and Reporting).
+  bootstrap. Values set with `/runtime_modify` are not in the bootstrap, so
+  validation does not see them (see Validation subset).
 - During a rollout, a route must pass under the bootstrap of every running proxy
   pod. Raising a limit restores a dropped route only after the last old pod is
   gone; lowering one drops the route at once. A route that fails only on an old pod
@@ -1377,8 +1275,9 @@ sections.
   previous proxy image and Envoy, until the overlay is fixed, so any Envoy
   security fix the upgrade carries does not reach it. The condition message names
   the held-back image (see Invalid-merge fallback and Reporting).
-- Before upgrading, check each Gateway's condition message for deprecated fields
-  and removed feature flags, and the release notes for new runtime layers. A field
+- Before upgrading, check each Gateway's condition message for deprecated fields,
+  the Envoy release notes for removed feature flags the overlay sets, and the
+  kgateway release notes for new runtime layers. A field
   disallowed by default keeps working, until Envoy removes its code, if the
   overlay sets the runtime key the message names (see Envoy versions and proto
   types).
@@ -1410,7 +1309,9 @@ sections.
   motivating feature flag already works this way. What `-c` lacks is
   controller visibility: no validation before rollout, no status, no rollout on
   edits, and strict validation keeps using Envoy defaults. It stays documented as
-  a way to add settings outside the controller's view.
+  a way to add settings outside the controller's view. A second `--config-yaml`
+  through `extraArgs` does not work: the wrapper already passes one, and Envoy
+  rejects a repeated flag (`Argument already set!`).
 - **`PRUNE` or `REJECT` as the default, or a per-`GatewayParameters` mode.** Either
   default makes overriding a managed path impossible through the API, which sends
   security responses back to full replacement; `REJECT` also silently stops an
@@ -1440,27 +1341,29 @@ sections.
 
   Phase 1 reports a proxy image that differs from the controller's instead (see
   Envoy versions and proto types).
-- **Check stored overlays before an upgrade** (possible follow-up). After an
-  upgrade, the new controller can reject a stored overlay, and the invalid-merge
-  fallback keeps the Gateway's old `Deployment` until the overlay is fixed. A check
-  that finds this before `helm upgrade` has to run the new deployer end to end for
-  every Gateway with `patches`: render the new template with the Gateway's
-  `GatewayParameters` and the controller's settings, merge, and validate with the
-  new Envoy. That means a new subcommand in the controller image that rebuilds the
-  deployer's inputs outside the controller. Two ways to run it:
-  - A Helm `pre-upgrade` hook `Job`. If a failure blocks the upgrade, one
-    Gateway's overlay holds back the controller upgrade for every Gateway,
-    including a controller security fix. If it does not block, its output is in a
-    `Job` log, and the condition reports the same failure once the new controller
-    reconciles the Gateway. It also adds hook RBAC, and Argo CD and Flux each
-    handle Helm hooks their own way. Rejected.
-  - Run by hand from the new image, as a step in the upgrade docs. It changes
-    nothing for an upgrade that skips it. Worth building if users ask for it.
-
-  It matters most for a user who skips kgateway releases: the deprecated-field
-  report (see Envoy versions and proto types) warns only on a release the user
-  runs, so a skipped release's warning never appears, while this check tests the
-  overlay against the target release directly.
+- **Check stored overlays before an upgrade** (possible follow-up). A command in
+  the new controller image that renders, merges and validates every Gateway's
+  overlay against the target release, run by hand before `helm upgrade`, would
+  find overlays the invalid-merge fallback would hold back. It has to rebuild the
+  deployer's inputs outside the controller, so it is left until users ask for it.
+  A Helm `pre-upgrade` hook was rejected: if it blocks, one Gateway's overlay
+  holds back the controller upgrade for every Gateway.
+- **Switch strict validation to the new bootstrap only after the rollout.**
+  Validate against the previous bootstrap until every pod runs the new one. This
+  is safe only for a change that makes Envoy accept more. A change that makes it
+  stricter needs the served config to pass the new bootstrap before the first new
+  pod starts, so the switch point would depend on the direction of each change.
+- **Validate against the most restrictive value,** such as the lower of the old
+  and new RE2 limits during a rollout. Simple, but it works only for numeric
+  limits; a feature flag can make Envoy stricter or looser.
+- **A dedicated RE2 setting with its own validator plumbing,** instead of the
+  controller knowing the effective bootstrap. It fixes the RE2 case only; every
+  other runtime key that changes what Envoy accepts would need the same plumbing
+  again.
+- **Per-regex `google_re2.max_program_size`** for the RE2 case. It travels in RDS,
+  so the validator sees it without plumbing, but the field is deprecated, covers
+  only regexes kgateway generates, disables the runtime warn level, and changing
+  the limit rewrites every route with a regex.
 
 ## Open Questions
 
@@ -1482,28 +1385,46 @@ sections.
   validates with placeholders for per-pod values (`PodName`, `PodIp`, `NodeName`),
   and checks that the template parses. Does any user need a per-pod value in the
   bootstrap, such as the pod name in a stats tag, or is rejecting `{{` enough?
-- **Runtime layers outside the bootstrap.** The controller applies an overlay's
-  disk and RTDS layers and names each one in the condition message and a
-  `Warning` event (see Envoy versions and proto types). The values in these
-  layers never reach the controller: route validation uses Envoy's defaults for
-  them, and status does not show them. A disk layer that reads a mounted
-  `ConfigMap` lets anyone who can edit that `ConfigMap` change runtime values on
-  every proxy pod, with no change to the Gateway or its `GatewayParameters` and no
-  rollout. An RTDS layer with its own cluster gives the same reach to whoever runs
-  that management server. Values set through `/runtime_modify` also bypass route
-  validation, but setting them requires reaching each pod's admin port, through
-  `kubectl exec` or `kubectl port-forward`; editing a `ConfigMap` needs only
-  `update` on `configmaps` in the Gateway's namespace. Options:
-  - Apply and report, as this design does. Runtime values change without a
-    rollout, and the `ConfigMap`'s RBAC decides who can change them.
-  - Reject disk and RTDS layers with `InvalidOverlay`. Every runtime value is then
-    in the bootstrap, validated and reported like the rest of the overlay, and
-    changing one rolls the pods.
-  - Allow them only when a controller setting enables them, so the platform team
-    decides, as with the managed-path mode (see Alternatives).
+- **Invalid-merge fallback.** When an overlay fails, the deployer applies none of
+  the Gateway's objects (see Invalid-merge fallback). After an upgrade, that keeps
+  the previous `Deployment`, and its Envoy, running with no time limit, including
+  when the upgrade carries a security fix. A new Gateway gets no proxy at all.
+  Options:
+  - Hold every object, as this design does. Pods never run an overlay that failed
+    validation, but image, resource and replica changes wait for the fix.
+  - Hold only the bootstrap: keep the last-good `envoy.yaml` and apply the other
+    objects. The new Envoy image rolls out, but with a bootstrap the new control
+    plane did not generate and the new Envoy did not validate.
+  - Fail open: roll the generated bootstrap without the overlay and set
+    `BootstrapPatchApplied=False`. The Gateway gets the upgrade, but settings it
+    depends on, possibly a security-response override, are removed.
 
-  Should Phase 1 keep applying these layers, reject them, or put them behind a
-  controller setting?
+  Which applies to an edit, an upgrade, and a new Gateway?
+- **Who wins, per overlay.** Under `WARN` the overlay wins every conflict. Some
+  users want kgateway's value to win once kgateway starts setting a path, as with
+  `-c`, so their value applies only until then. A per-overlay
+  `conflictPolicy: UserWins | KgatewayWins`, with conflicts reported either way,
+  would cover it. Unlike the managed-path mode, it limits only the author's own
+  overlay, so a field on `GatewayParameters` fits. Phase 1, or later?
+- **Name collisions in named lists.** An overlay entry in
+  `static_resources.clusters`, `static_resources.listeners`,
+  `static_resources.secrets` or `overload_manager.resource_monitors` replaces the
+  generated entry with the same name (see Lists). Today every named entry in the
+  generated bootstrap is a managed path, so its replacement is reported, except the
+  downstream-connections resource monitor that `maxDownstreamConnections` renders.
+  A later kgateway release can also add a named entry that is not a managed path;
+  if a user entry already has its name, the user's entry replaces it, with no
+  report, and the proxy runs without what kgateway added. Options:
+  - Report every generated entry an overlay replaces, managed or not, in the
+    condition message and a `Warning` event. The override still applies.
+  - Append, as plain `proto.Merge` does: an overlay entry with a generated entry's
+    name fails validation as a duplicate, and the Gateway follows the
+    invalid-merge fallback. A collision is never silent, but no generated entry can
+    be overridden, including `xds_cluster` under `WARN`, so that override needs
+    full bootstrap replacement.
+
+  Should a replaced generated entry always be reported, or should a collision
+  fail?
 - **A static cluster with the name of a translated cluster.** Envoy does not let
   CDS update a cluster defined in the bootstrap: the CDS entry is skipped and
   logged only at debug level. If an overlay defines a static cluster with the same
