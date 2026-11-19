@@ -189,7 +189,9 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetNamespace(), obj.GetName(), err)
+		// No GVK here: TypeMeta is empty on some informer paths, and this message is reported
+		// in status, so it must not change from one attempt to the next.
+		return nil, fmt.Errorf("failed to get helm values for %s/%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
 	if vals == nil {
 		return nil, nil

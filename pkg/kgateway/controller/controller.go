@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // rateLimiter uses token bucket for overall rate limiting and exponential backoff for per-item rate limiting
@@ -50,6 +51,10 @@ type GatewayConfig struct {
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
 	CertWatcher *certwatcher.CertWatcher
+	// GatewayParametersStatus receives the deployer's verdict on each Gateway's parameters,
+	// which the status syncer reports as the Gateway's Accepted=False/InvalidParameters.
+	// Without it, invalid parameters are not reported.
+	GatewayParametersStatus *reports.GatewayParametersStatus
 }
 
 type HelmValuesGeneratorOverrideFunc func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
