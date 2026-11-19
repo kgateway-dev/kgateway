@@ -135,7 +135,7 @@ func (r *ReferenceGrantMode) Decode(value string) error {
 	}
 }
 
-// DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
+// DnsLookupFamily controls the default DNS lookup family for DNS-based upstreams.
 type DnsLookupFamily string
 
 const (
@@ -222,7 +222,8 @@ func (r *GatewayClassParametersRefs) Decode(value string) error {
 }
 
 type Settings struct {
-	// Controls the DnsLookupFamily for all static clusters created via Backend resources.
+	// Controls the default DNS lookup family for DNS-based upstreams, including
+	// Dynamic Forward Proxy backends that omit dnsLookupFamily.
 	// If not set, kgateway will default to "V4_PREFERRED". Note that this is different
 	// from the Envoy default of "AUTO", which is effectively "V6_PREFERRED".
 	// Supported values are: "ALL", "AUTO", "V4_PREFERRED", "V4_ONLY", "V6_ONLY"

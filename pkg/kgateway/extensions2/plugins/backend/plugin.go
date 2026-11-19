@@ -15,7 +15,9 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -102,7 +104,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translateFn := buildTranslateFunc(col, commoncol.Secrets, commoncol.Settings.EnableAwsEc2Discovery)
+	translateFn := buildTranslateFunc(col, commoncol.Secrets, &commoncol.Settings)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.errors) > 0 {
@@ -171,8 +173,9 @@ func supportedRouteKinds(be *kgateway.Backend) []schema.GroupKind {
 func buildTranslateFunc(
 	col krt.Collection[*kgateway.Backend],
 	secrets *krtcollections.SecretIndex,
-	enableAwsEc2Discovery bool,
+	settings *apisettings.Settings,
 ) func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
+	dnsLookupFamily := pluginutils.EnvoyDNSLookupFamilyFromSettings(settings.DnsLookupFamily)
 	return func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 		var beIr backendIr
 		switch {
@@ -187,7 +190,7 @@ func buildTranslateFunc(
 			}
 			beIr.staticIr = staticIr
 		case i.Spec.DynamicForwardProxy != nil:
-			dfpIr, err := buildDfpIr(i.Spec.DynamicForwardProxy)
+			dfpIr, err := buildDfpIr(i.Spec.DynamicForwardProxy, dnsLookupFamily)
 			if err != nil {
 				beIr.errors = append(beIr.errors, err)
 			}
@@ -249,7 +252,7 @@ func buildTranslateFunc(
 					},
 				}
 			case i.Spec.Aws.Ec2 != nil:
-				if !enableAwsEc2Discovery {
+				if !settings.EnableAwsEc2Discovery {
 					beIr.errors = append(beIr.errors, errAwsEc2DiscoveryDisabled)
 					break
 				}

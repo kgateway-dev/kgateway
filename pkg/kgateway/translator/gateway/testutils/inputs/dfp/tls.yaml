@@ -29,4 +29,5 @@ metadata:
 spec:
   type: DynamicForwardProxy
   dynamicForwardProxy:
+    dnsLookupFamily: IPv4Only
     enableTls: true
