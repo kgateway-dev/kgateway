@@ -280,6 +280,11 @@ type HttpRouteRuleIR struct {
 	// Err contains any error encountered during the construction of this HttpRouteRuleIR
 	// that should be propagated through to translation to any derived ir.HttpRouteRuleMatchIRs
 	Err error
+
+	// ResolvedRefsErr holds reference errors from the rule's filters, such as a RequestMirror
+	// backendRef that is not permitted by a ReferenceGrant or does not exist. Unlike Err, it
+	// does not replace the route: the filter is skipped and the route reports ResolvedRefs=False.
+	ResolvedRefsErr error
 }
 
 type HttpBackendOrDelegate struct {

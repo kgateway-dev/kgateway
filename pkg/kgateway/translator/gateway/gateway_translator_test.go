@@ -431,6 +431,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("RequestMirror reference errors report ResolvedRefs without replacing the route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"request-mirror-ref-errors.yaml"},
+			outputFile: "request-mirror-ref-errors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy request mirror listener precedence", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/request-mirror-listener.yaml"},

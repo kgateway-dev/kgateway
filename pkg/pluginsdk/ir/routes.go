@@ -104,19 +104,23 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 				return false
 			}
 		}
-		e1 := rule.Err
-		e2 := in.Rules[i].Err
-		if e1 == nil && e2 != nil {
+		if !errEquals(rule.Err, in.Rules[i].Err) {
 			return false
 		}
-		if e1 != nil && e2 == nil {
-			return false
-		}
-		if (e1 != nil && e2 != nil) && e1.Error() != e2.Error() {
+		// The generation check does not cover filter references: a ReferenceGrant or a mirror
+		// backend can change without the route changing.
+		if !errEquals(rule.ResolvedRefsErr, in.Rules[i].ResolvedRefsErr) {
 			return false
 		}
 	}
 	return true
+}
+
+func errEquals(e1, e2 error) bool {
+	if e1 == nil || e2 == nil {
+		return e1 == nil && e2 == nil
+	}
+	return e1.Error() == e2.Error()
 }
 
 var _ Route = &HttpRouteIR{}
