@@ -192,10 +192,10 @@ type EndpointsForBackend struct {
 	AttachedPolicies AttachedPolicies
 
 	// LbEps is summarized by epsEqualityHash and endpointCount, both compared by
-	// Equals. Add hashes locality, metadata labels, and the LbEndpoint proto and sums
-	// the per-endpoint hashes, so the summary is order-independent and duplicates do
-	// not cancel; reuse/adoption methods preserve those contributions. Equality assumes
-	// no 64-bit collisions. Writers must maintain these summaries rather than edit LbEps directly.
+	// Equals. Add sums mixed digests of locality, metadata labels, and the LbEndpoint
+	// proto. Each occurrence contributes to the sum regardless of insertion order.
+	// Reuse and adoption preserve those contributions. Equality assumes no 64-bit
+	// collisions. Writers must maintain these summaries rather than edit LbEps directly.
 	// +noKrtEquals
 	LbEps                LocalityLbMap
 	ClusterName          string
@@ -314,7 +314,13 @@ func hashEndpoints(l PodLocality, emd EndpointWithMd) uint64 {
 
 	utils.HashUint64(hasher, utils.HashLabels(emd.EndpointMd.Labels))
 	utils.HashProtoWithHasher(hasher, emd.LbEndpoint)
-	return hasher.Sum64()
+
+	// Apply the SplitMix64 finalizer before the digest enters the sum. Nearby
+	// addresses can otherwise produce FNV digests whose differences cancel.
+	digest := hasher.Sum64()
+	digest = (digest ^ (digest >> 30)) * 0xbf58476d1ce4e5b9
+	digest = (digest ^ (digest >> 27)) * 0x94d049bb133111eb
+	return digest ^ (digest >> 31)
 }
 
 func hash(a, b uint64) uint64 {
@@ -347,8 +353,6 @@ func (e *EndpointsForBackend) ReuseEndpoint(l PodLocality, emd EndpointWithMd) {
 }
 
 func (e *EndpointsForBackend) addWithEndpointHash(l PodLocality, emd EndpointWithMd, endpointHash uint64) {
-	// Sum the contributions: the result is order-independent like XOR, but a
-	// duplicated endpoint does not cancel itself out, so [A, A] and [B, B] differ.
 	e.epsEqualityHash += endpointHash
 	emd.endpointEqualityHash = endpointHash
 	e.LbEps[l] = append(e.LbEps[l], emd)

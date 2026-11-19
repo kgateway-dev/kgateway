@@ -461,3 +461,23 @@ func TestDuplicatedEndpointSwapChangesEquality(t *testing.T) {
 		t.Fatal("[A, A] and [B, B] must not compare equal")
 	}
 }
+
+func TestEndpointAddressSwapChangesEquality(t *testing.T) {
+	endpoints := func(addresses ...string) *EndpointsForBackend {
+		row := NewEndpointsForBackend(epsBackend("svc"))
+		for _, address := range addresses {
+			row.Add(PodLocality{}, EndpointWithMd{LbEndpoint: testLbEndpoint(address, 80)})
+		}
+		return row
+	}
+
+	// These address pairs had the same sum of raw endpoint digests.
+	before := endpoints("10.0.0.1", "10.0.0.4")
+	after := endpoints("10.0.0.2", "10.0.0.3")
+	if before.LbEpsEqualityHash == after.LbEpsEqualityHash || before.Equals(*after) {
+		t.Error("replacing both endpoint addresses must change the endpoint version and row equality")
+	}
+	if !before.Equals(*endpoints("10.0.0.4", "10.0.0.1")) {
+		t.Error("reordering endpoints must preserve row equality")
+	}
+}

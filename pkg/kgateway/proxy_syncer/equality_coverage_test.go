@@ -13,6 +13,7 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -296,6 +297,41 @@ func TestGatewayXdsResourcesEqualsObservesClusterChangeViaHash(t *testing.T) {
 	})
 	if orig.Equals(duplicated) {
 		t.Error("Equals returned true after a duplicated pair of clusters was added to the CDS payload")
+	}
+}
+
+func TestGatewayXdsResourcesEqualsObservesDirectResponseBodyChange(t *testing.T) {
+	// Model the route configurations emitted for the same DirectResponse on two ports.
+	route := func(port, body string) *envoyroutev3.RouteConfiguration {
+		name := "listener~" + port
+		return &envoyroutev3.RouteConfiguration{
+			Name:                     name,
+			IgnorePortInHostMatching: true,
+			VirtualHosts: []*envoyroutev3.VirtualHost{{
+				Name:    name + "~example_com",
+				Domains: []string{"example.com"},
+				Routes: []*envoyroutev3.Route{{
+					Name:  name + "~example_com-route-0-httproute-example-default-0-0-matcher-0",
+					Match: &envoyroutev3.RouteMatch{PathSpecifier: &envoyroutev3.RouteMatch_Prefix{Prefix: "/"}},
+					Action: &envoyroutev3.Route_DirectResponse{DirectResponse: &envoyroutev3.DirectResponseAction{
+						Status: 200,
+						Body:   &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_InlineString{InlineString: body}},
+					}},
+				}},
+			}},
+		}
+	}
+	before := baseGatewayXdsResources()
+	before.Routes = sliceToResources([]*envoyroutev3.RouteConfiguration{route("8080", "b"), route("8081", "b")})
+	after := before
+	after.Routes = sliceToResources([]*envoyroutev3.RouteConfiguration{route("8080", "c"), route("8081", "c")})
+	if before.Routes.Version == after.Routes.Version || before.Equals(after) {
+		t.Error("changing the body on both ports must change the route version and row equality")
+	}
+	reordered := before
+	reordered.Routes = sliceToResources([]*envoyroutev3.RouteConfiguration{route("8081", "b"), route("8080", "b")})
+	if !before.Equals(reordered) {
+		t.Error("reordering route configurations must preserve row equality")
 	}
 }
 
