@@ -1726,6 +1726,45 @@ spec:
                             minItems: 1
                             type: array
                         type: object
+                      asyncFetch:
+                        description: |-
+                          AsyncFetch configures fetching the JWKS asynchronously and caching it on a timer,
+                          instead of fetching it on demand during request handling.
+                          When unset, each Envoy worker thread fetches and caches its own copy of the JWKS on demand,
+                          and requests wait for that fetch whenever the worker's cached copy has expired.
+                        properties:
+                          failedRefetchDuration:
+                            description: |-
+                              FailedRefetchDuration is how long to wait before retrying the fetch after a failure.
+                              If unspecified, Envoy default of 1 second is used.
+                            maxLength: 32
+                            type: string
+                            x-kubernetes-validations:
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            - message: failedRefetchDuration must be at least 1ms.
+                              rule: duration(self) >= duration('1ms')
+                          fastListener:
+                            description: |-
+                              FastListener controls when the listener is considered ready relative to the
+                              initial JWKS fetch.
+                              If false or unset, the listener waits for the first JWKS fetch to complete before
+                              it starts serving traffic, so requests are never validated against an empty key set.
+                              If true, the listener starts immediately and the first fetch happens in the background.
+                            type: boolean
+                        type: object
+                      cacheDuration:
+                        description: |-
+                          CacheDuration specifies the duration after which the cached JWKS expires.
+                          It applies to the JWKS shared by the access and ID token.
+                          If unspecified, Envoy's default cache duration of 10 minutes is used.
+                        maxLength: 32
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: cacheDuration must be at least 1ms.
+                          rule: duration(self) >= duration('1ms')
                       idToken:
                         description: |-
                           IDToken specifies how to process the retrieved ID token.
@@ -1853,6 +1892,67 @@ spec:
                           Refer to https://datatracker.ietf.org/doc/html/rfc7517#section-5 for more details.
                         pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
                         type: string
+                      retryPolicy:
+                        description: |-
+                          RetryPolicy configures how the JWKS fetch is retried (with exponential backoff)
+                          when the remote JWKS server is unavailable.
+                          If unset, a failed fetch is not retried.
+                        properties:
+                          backOff:
+                            description: |-
+                              BackOff configures the exponential backoff strategy between retries.
+                              If unset, the default base interval is 1000ms and the default maximum interval is
+                              10 times the base interval.
+                            properties:
+                              baseInterval:
+                                description: |-
+                                  BaseInterval is the base interval for the exponential backoff computation.
+                                  It must be greater than zero and less than or equal to MaxInterval.
+                                maxLength: 32
+                                type: string
+                                x-kubernetes-validations:
+                                - message: invalid duration value
+                                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                - message: baseInterval must be at least 1ms.
+                                  rule: duration(self) >= duration('1ms')
+                              maxInterval:
+                                description: |-
+                                  MaxInterval is the maximum interval between retries. If set, it must be greater than
+                                  or equal to BaseInterval. Defaults to 10 times the BaseInterval.
+                                maxLength: 32
+                                type: string
+                                x-kubernetes-validations:
+                                - message: invalid duration value
+                                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                - message: maxInterval must be at least 1ms.
+                                  rule: duration(self) >= duration('1ms')
+                            required:
+                            - baseInterval
+                            type: object
+                            x-kubernetes-validations:
+                            - message: maxInterval must be greater than or equal to
+                                baseInterval
+                              rule: '!has(self.maxInterval) || duration(self.maxInterval)
+                                >= duration(self.baseInterval)'
+                          numRetries:
+                            description: |-
+                              NumRetries is the allowed number of retries when fetching the JWKS fails.
+                              Defaults to 1 if unset.
+                            format: int32
+                            maximum: 2147483647
+                            minimum: 1
+                            type: integer
+                        type: object
+                      timeout:
+                        description: Timeout for fetching the remote JWKS. If not
+                          specified, defaults to 5s.
+                        maxLength: 32
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms.
+                          rule: duration(self) >= duration('1ms')
                     type: object
                   logoutPath:
                     default: /logout
