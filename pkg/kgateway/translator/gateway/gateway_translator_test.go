@@ -3857,6 +3857,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with mTLS provides the trusted CA for verify-subject-alt-names", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-san.yaml"},
+			outputFile: "listener-policy/gateway-mtls-san.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with mTLS replaces a frontend validation with unsupported CA kinds", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/gateway-mtls-frontend-invalid-kind.yaml"},
