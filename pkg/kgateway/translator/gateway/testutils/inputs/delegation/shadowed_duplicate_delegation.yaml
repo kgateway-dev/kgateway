@@ -1,0 +1,59 @@
+# This test contains a parent route whose two rules have the same match and delegate the
+# same child route, so the child is programmed twice.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Rule 0 delegates /a to a/route-a
+#   - Rule 1 also delegates /a to a/route-a
+# - Child a/route-a: /a/1 -> a/svc-a
+#
+# Expected output routes:
+# - /a/1 -> a/svc-a (under rule 0)
+# - /a/1 -> a/svc-a (under rule 1, unreachable)
+#
+# The child is not at fault, so it reports no condition. infra/example-route reports
+# kgateway.dev/Programmed=True with Reason=RouteRuleShadowed on rule 1.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-a
+      namespace: a
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-a
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080

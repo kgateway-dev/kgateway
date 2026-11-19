@@ -23,4 +23,10 @@ const (
 	// to one or more of the rule's backends. The route is still programmed,
 	// with the BackendConfigPolicy's session persistence for those backends.
 	KgatewayReasonSessionPersistenceOverridden = "SessionPersistenceOverridden"
+
+	// This reason is used with the "kgateway.dev/Programmed" condition when
+	// the condition is true, but a delegated route rule never receives
+	// traffic: another rule in the same delegation tree resolves to an
+	// identical match and takes precedence. The rule is still programmed.
+	KgatewayReasonRouteRuleShadowed = "RouteRuleShadowed"
 )

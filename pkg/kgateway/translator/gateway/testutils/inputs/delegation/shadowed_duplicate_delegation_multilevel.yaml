@@ -1,0 +1,92 @@
+# This test contains a grandchild route delegated by two intermediate routes whose
+# rules have the same match, so the grandchild is programmed twice and the two copies
+# first differ at routes other than the top-level parent.
+#
+# Input:
+# - Parent infra/example-route: delegates /a to routes with the label
+#   delegation.kgateway.dev/label=mid in the 'a' namespace
+# - Intermediate a/mid-1 (older): delegates /a/x to a/leaf
+# - Intermediate a/mid-2 (newer): delegates /a/x to a/leaf
+# - Grandchild a/leaf: /a/x/1 -> a/svc-a
+#
+# Expected output routes:
+# - /a/x/1 -> a/svc-a (under a/mid-1)
+# - /a/x/1 -> a/svc-a (under a/mid-2, unreachable)
+#
+# a/mid-2 reports kgateway.dev/Programmed=True with Reason=RouteRuleShadowed, naming
+# a/mid-1 rule 0. a/leaf reports no condition.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: delegation.kgateway.dev
+      kind: label
+      name: mid
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mid-1
+  namespace: a
+  creationTimestamp: "2026-01-01T00:00:00Z"
+  labels:
+    delegation.kgateway.dev/label: mid
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/x
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: leaf
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mid-2
+  namespace: a
+  creationTimestamp: "2026-01-02T00:00:00Z"
+  labels:
+    delegation.kgateway.dev/label: mid
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/x
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: leaf
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: leaf
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/x/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
