@@ -90,9 +90,31 @@ type SelfManagedGateway struct{}
 // is recommended to use an overlay only if necessary (no config exists that
 // can achieve the same goal) for smoother upgrades, readability, and earlier
 // and improved validation.
+//
+// +kubebuilder:validation:XValidation:rule="!has(self.workloadKind) || self.workloadKind != 'DaemonSet' || !has(self.deployment) || (!has(self.deployment.replicas) && !has(self.deployment.strategy))",message="deployment is not valid when workloadKind is DaemonSet"
+// +kubebuilder:validation:XValidation:rule="!has(self.workloadKind) || self.workloadKind != 'DaemonSet' || !has(self.horizontalPodAutoscaler)",message="horizontalPodAutoscaler is not valid when workloadKind is DaemonSet"
 type KubernetesProxyConfig struct {
-	// Use a Kubernetes deployment as the proxy workload type. Currently, this is the only
-	// supported workload type.
+	// The Kubernetes workload kind that runs the proxy pods. Defaults to
+	// Deployment. Set it to DaemonSet to run one proxy pod on every eligible
+	// node; use the pod template's nodeSelector, affinity and tolerations to
+	// choose the nodes.
+	//
+	// The kind is never inferred from other fields: unset means Deployment.
+	// A Gateway's GatewayParameters override the kind set on its
+	// GatewayClass's GatewayParameters. Settings for the other kind are
+	// rejected, in either GatewayParameters (an empty deployment or overlay
+	// sets nothing and is allowed): with DaemonSet, deployment,
+	// deploymentOverlay, horizontalPodAutoscaler and a podDisruptionBudget
+	// using maxUnavailable or a percentage minAvailable are invalid; with
+	// Deployment, daemonSetOverlay is invalid. A Gateway whose parameters
+	// conflict with the final kind is not Accepted, with reason
+	// InvalidParameters.
+	//
+	// +optional
+	WorkloadKind *WorkloadKind `json:"workloadKind,omitempty"`
+
+	// Configuration for the proxy Deployment. Not valid when workloadKind is
+	// DaemonSet.
 	//
 	// +optional
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
@@ -148,6 +170,13 @@ type KubernetesProxyConfig struct {
 	OmitDefaultSecurityContext *bool `json:"omitDefaultSecurityContext,omitempty"`
 
 	GatewayParametersOverlays `json:",inline"`
+}
+
+func (in *KubernetesProxyConfig) GetWorkloadKind() *WorkloadKind {
+	if in == nil {
+		return nil
+	}
+	return in.WorkloadKind
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -212,6 +241,18 @@ func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {
 	}
 	return in.OmitDefaultSecurityContext
 }
+
+// WorkloadKind is the Kubernetes workload kind that runs the proxy pods.
+//
+// +kubebuilder:validation:Enum=Deployment;DaemonSet
+type WorkloadKind string
+
+const (
+	// WorkloadKindDeployment runs the proxy as a Deployment.
+	WorkloadKindDeployment WorkloadKind = "Deployment"
+	// WorkloadKindDaemonSet runs the proxy as a DaemonSet.
+	WorkloadKindDaemonSet WorkloadKind = "DaemonSet"
+)
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
 type ProxyDeployment struct {
@@ -827,6 +868,11 @@ type GatewayParametersOverlays struct {
 	// +optional
 	DeploymentOverlay *shared.KubernetesResourceOverlay `json:"deploymentOverlay,omitempty"`
 
+	// daemonSetOverlay allows specifying overrides for the generated DaemonSet
+	// resource. Only valid when the workload kind is DaemonSet.
+	// +optional
+	DaemonSetOverlay *shared.KubernetesResourceOverlay `json:"daemonSetOverlay,omitempty"`
+
 	// serviceOverlay allows specifying overrides for the generated Service resource.
 	// +optional
 	ServiceOverlay *shared.KubernetesResourceOverlay `json:"serviceOverlay,omitempty"`
@@ -837,21 +883,25 @@ type GatewayParametersOverlays struct {
 
 	// podDisruptionBudget allows creating a PodDisruptionBudget for the proxy.
 	// If absent, no PDB is created. If present, a PDB is created with its selector
-	// automatically configured to target the proxy Deployment.
+	// automatically configured to target the proxy pods.
 	// The metadata and spec fields from this overlay are applied to the generated PDB.
+	// When workloadKind is DaemonSet, only an integer minAvailable is valid:
+	// Kubernetes cannot compute maxUnavailable or a percentage for a DaemonSet,
+	// and such a PDB would block every eviction.
 	// +optional
 	PodDisruptionBudget *shared.KubernetesResourceOverlay `json:"podDisruptionBudget,omitempty"`
 
 	// horizontalPodAutoscaler allows creating a HorizontalPodAutoscaler for the proxy.
 	// If absent, no HPA is created. If present, an HPA is created with its scaleTargetRef
-	// automatically configured to target the proxy Deployment.
+	// automatically configured to target the proxy Deployment. Not valid when
+	// workloadKind is DaemonSet.
 	// The metadata and spec fields from this overlay are applied to the generated HPA.
 	// +optional
 	HorizontalPodAutoscaler *shared.KubernetesResourceOverlay `json:"horizontalPodAutoscaler,omitempty"`
 
 	// verticalPodAutoscaler allows creating a VerticalPodAutoscaler for the proxy.
 	// If absent, no VPA is created. If present, a VPA is created with its targetRef
-	// automatically configured to target the proxy Deployment.
+	// automatically configured to target the proxy Deployment or DaemonSet.
 	// The metadata and spec fields from this overlay are applied to the generated VPA.
 	// +optional
 	VerticalPodAutoscaler *shared.KubernetesResourceOverlay `json:"verticalPodAutoscaler,omitempty"`

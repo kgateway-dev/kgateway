@@ -1,7 +1,9 @@
 {{- $gateway := .Values.gateway }}
 {{- $statsConfig := $gateway.stats }}
+{{- /* The proxy runs as a Deployment unless workloadKind selects a DaemonSet. */}}
+{{- $daemonSet := eq ($gateway.workloadKind | default "Deployment") "DaemonSet" }}
 apiVersion: apps/v1
-kind: Deployment
+kind: {{ ternary "DaemonSet" "Deployment" $daemonSet }}
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
   {{- with $gateway.gatewayAnnotations }}
@@ -11,15 +13,17 @@ metadata:
   labels:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:
-  {{- if not (kindIs "invalid" $gateway.replicaCount) }}
+  {{- if and (not $daemonSet) (not (kindIs "invalid" $gateway.replicaCount)) }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+  {{- if not $daemonSet }}
   {{- with $gateway.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- end }}
   template:
     metadata:
@@ -126,7 +130,7 @@ spec:
         - name: ENVOY_UID
           value: "0"
         - name: OTEL_RESOURCE_ATTRIBUTES
-          value: "service.namespace=$(POD_NAMESPACE),service.instance.id=$(POD_UID),{{- if .Chart.AppVersion }}service.version={{ .Chart.AppVersion }},{{- end }}k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(NODE_NAME),k8s.deployment.name={{ include "kgateway.gateway.fullname" . }},k8s.container.name={{ .Chart.Name }}{{- range $gateway.env }}{{- if and (eq .name "OTEL_RESOURCE_ATTRIBUTES") .value }},{{ .value }}{{- end }}{{- end }}"
+          value: "service.namespace=$(POD_NAMESPACE),service.instance.id=$(POD_UID),{{- if .Chart.AppVersion }}service.version={{ .Chart.AppVersion }},{{- end }}k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.node.name=$(NODE_NAME),{{ ternary "k8s.daemonset.name" "k8s.deployment.name" $daemonSet }}={{ include "kgateway.gateway.fullname" . }},k8s.container.name={{ .Chart.Name }}{{- range $gateway.env }}{{- if and (eq .name "OTEL_RESOURCE_ATTRIBUTES") .value }},{{ .value }}{{- end }}{{- end }}"
 {{- if $gateway.env }}
 {{- $filteredEnv := list }}
 {{- range $gateway.env }}
@@ -142,7 +146,7 @@ spec:
         Listener ports are deliberately not listed as containerPorts: Envoy binds
         whatever xDS tells it to, and the Service targets ports by number. Listing
         them would put every listener port change into the pod template and roll
-        the Deployment.
+        the workload.
         */}}
         {{- if $statsConfig.enabled }}
         ports:

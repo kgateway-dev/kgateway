@@ -31,6 +31,7 @@ func DeepMergeGatewayParameters(dst, src *kgateway.GatewayParameters) {
 	dstKube := dst.Spec.Kube
 	srcKube := src.Spec.Kube.DeepCopy()
 
+	dstKube.WorkloadKind = MergePointers(dstKube.GetWorkloadKind(), srcKube.GetWorkloadKind())
 	dstKube.Deployment = deepMergeDeployment(dstKube.GetDeployment(), srcKube.GetDeployment())
 	dstKube.EnvoyContainer = deepMergeEnvoyContainer(dstKube.GetEnvoyContainer(), srcKube.GetEnvoyContainer())
 	dstKube.SdsContainer = deepMergeSdsContainer(dstKube.GetSdsContainer(), srcKube.GetSdsContainer())
