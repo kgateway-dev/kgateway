@@ -12,10 +12,28 @@ import (
 type ConfigMapIndex struct {
 	configmaps krt.Collection[*corev1.ConfigMap]
 	refgrants  *RefGrantIndex
+
+	// selector, when set, is named in missing-ConfigMap errors; see SelectorNotFoundError.
+	selector WatchSelector
 }
 
-func NewConfigMapIndex(configmaps krt.Collection[*corev1.ConfigMap], refgrants *RefGrantIndex) *ConfigMapIndex {
-	return &ConfigMapIndex{configmaps: configmaps, refgrants: refgrants}
+// ConfigMapIndexOption configures a ConfigMapIndex.
+type ConfigMapIndexOption func(*ConfigMapIndex)
+
+// WithConfigMapLabelSelector names the active ConfigMap label selector in missing-ConfigMap
+// errors. The selector itself is applied by the ConfigMap informer, not here.
+func WithConfigMapLabelSelector(selector string) ConfigMapIndexOption {
+	return func(c *ConfigMapIndex) {
+		c.selector = ConfigMapWatchSelector(selector)
+	}
+}
+
+func NewConfigMapIndex(configmaps krt.Collection[*corev1.ConfigMap], refgrants *RefGrantIndex, opts ...ConfigMapIndexOption) *ConfigMapIndex {
+	index := &ConfigMapIndex{configmaps: configmaps, refgrants: refgrants}
+	for _, opt := range opts {
+		opt(index)
+	}
+	return index
 }
 
 func (c *ConfigMapIndex) HasSynced() bool {
@@ -30,6 +48,19 @@ func (c *ConfigMapIndex) HasSynced() bool {
 // or is handled elsewhere.
 func (c *ConfigMapIndex) Collection() krt.Collection[*corev1.ConfigMap] {
 	return c.configmaps
+}
+
+// GetConfigMapWithoutRefGrant retrieves a ConfigMap from the given namespace. Like
+// SecretIndex.GetSecretWithoutRefGrant, it is for same-namespace references, which need no
+// ReferenceGrant, and a miss names the ConfigMap label selector when one is set.
+func (c *ConfigMapIndex) GetConfigMapWithoutRefGrant(kctx krt.HandlerContext, name, ns string) (*corev1.ConfigMap, error) {
+	return c.GetConfigMap(kctx, From{Namespace: ns}, gwv1.ObjectReference{Name: gwv1.ObjectName(name)})
+}
+
+// SelectorNote names the ConfigMap label selector, for appending to an error about a lookup that
+// found nothing, or returns "" when the ConfigMap watch is unfiltered.
+func (c *ConfigMapIndex) SelectorNote() string {
+	return c.selector.excludedNote("ConfigMap")
 }
 
 // GetConfigMap retrieves a ConfigMap from the index, validating reference grants to ensure
@@ -55,7 +86,7 @@ func (c *ConfigMapIndex) GetConfigMap(kctx krt.HandlerContext, from From, config
 	}
 	cmPtr := krt.FetchOne(kctx, c.configmaps, krt.FilterObjectName(nn))
 	if cmPtr == nil {
-		return nil, &NotFoundError{NotFoundObj: to}
+		return nil, c.selector.notFound(NotFoundError{NotFoundObj: to})
 	}
 
 	return *cmPtr, nil

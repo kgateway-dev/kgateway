@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -122,7 +121,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	)
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
-	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection(), commoncol.Secrets)
+	translate := buildTranslateFunc(commoncol.ConfigMaps, commoncol.Secrets)
 
 	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
@@ -219,7 +218,7 @@ func replaceInnerInProxyProtocol(wrapper, inner *envoycorev3.TransportSocket) (*
 }
 
 func buildTranslateFunc(
-	cfgmaps krt.Collection[*corev1.ConfigMap],
+	cfgmaps *krtcollections.ConfigMapIndex,
 	secrets *krtcollections.SecretIndex,
 ) func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 	return func(krtctx krt.HandlerContext, policyCR *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
@@ -265,16 +264,16 @@ func buildTranslateFunc(
 					Name:      string(certRef.Name),
 					Namespace: policyCR.Namespace,
 				}
-				cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
-				if cfgmap == nil {
+				cfgmap, lookupErr := cfgmaps.GetConfigMapWithoutRefGrant(krtctx, nn.Name, nn.Namespace)
+				if lookupErr != nil {
 					err := &InvalidCACertificateRefError{
 						Ref:   localObjectRefString(refKind, certRef),
-						Cause: fmt.Errorf("%w: %v", ErrConfigMapNotFound, nn),
+						Cause: fmt.Errorf("%w: %v%s", ErrConfigMapNotFound, nn, cfgmaps.SelectorNote()),
 					}
 					logger.Error("error fetching ConfigMap", "error", err, "policy_name", policyCR.Name)
 					return &policyIr, err
 				}
-				caCert, err = sslutils.GetCACertFromConfigMap(*cfgmap)
+				caCert, err = sslutils.GetCACertFromConfigMap(cfgmap)
 				if err != nil {
 					perr := &InvalidCACertificateRefError{
 						Ref:   localObjectRefString(refKind, certRef),

@@ -21,10 +21,28 @@ type From struct {
 type SecretIndex struct {
 	secrets   map[schema.GroupKind]krt.Collection[ir.Secret]
 	refgrants *RefGrantIndex
+
+	// selector, when set, is named in missing core Secret errors; see SelectorNotFoundError.
+	selector WatchSelector
 }
 
-func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refgrants *RefGrantIndex) *SecretIndex {
-	return &SecretIndex{secrets: secrets, refgrants: refgrants}
+// SecretIndexOption configures a SecretIndex.
+type SecretIndexOption func(*SecretIndex)
+
+// WithSecretLabelSelector names the active Secret label selector in missing-Secret errors.
+// The selector itself is applied by the Secret informer, not here.
+func WithSecretLabelSelector(selector string) SecretIndexOption {
+	return func(s *SecretIndex) {
+		s.selector = SecretWatchSelector(selector)
+	}
+}
+
+func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refgrants *RefGrantIndex, opts ...SecretIndexOption) *SecretIndex {
+	index := &SecretIndex{secrets: secrets, refgrants: refgrants}
+	for _, opt := range opts {
+		opt(index)
+	}
+	return index
 }
 
 func (s *SecretIndex) HasSynced() bool {
@@ -70,6 +88,10 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	}
 	secret := krt.FetchOne(kctx, col, krt.FilterKey(to.ResourceName()))
 	if secret == nil {
+		// Only the core Secret watch is narrowed by the selector; plugin-provided kinds are not.
+		if secretGroup == "" && secretKind == "Secret" {
+			return nil, s.selector.notFound(NotFoundError{NotFoundObj: to})
+		}
 		return nil, &NotFoundError{NotFoundObj: to}
 	}
 	return secret, nil
@@ -89,6 +111,14 @@ func (s *SecretIndex) GetSecretWithoutRefGrant(kctx krt.HandlerContext, secretNa
 		Namespace: ns,
 	}
 	return s.GetSecret(kctx, from, secretRef)
+}
+
+// SelectorNote names the Secret label selector, for appending to an error about a lookup that
+// found nothing, since a Secret it excludes is invisible here. It is "" when the Secret watch is
+// unfiltered. GetSecretsBySelector cannot apply it itself: it returns no error for an empty
+// result, and with the selector set it cannot tell how many matches it never saw.
+func (s *SecretIndex) SelectorNote() string {
+	return s.selector.excludedNote("Secret")
 }
 
 // GetSecretsBySelector retrieves secrets matching the label selector,

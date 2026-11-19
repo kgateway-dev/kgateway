@@ -21,7 +21,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -210,7 +209,7 @@ func ProviderName(resourceName, providerName string) string {
 func translateProvider(
 	krtctx krt.HandlerContext,
 	provider kgateway.JWTProvider,
-	configMaps krt.Collection[*corev1.ConfigMap],
+	configMaps *krtcollections.ConfigMapIndex,
 	resolver backendResolver,
 	gwExtObj ir.ObjectSource,
 ) (*jwtauthnv3.JwtProvider, error) {
@@ -293,7 +292,7 @@ func translateJwks(
 	krtctx krt.HandlerContext,
 	jwkConfig kgateway.JWKS,
 	out *jwtauthnv3.JwtProvider,
-	configMaps krt.Collection[*corev1.ConfigMap],
+	configMaps *krtcollections.ConfigMapIndex,
 	resolver backendResolver,
 	gwExtObj ir.ObjectSource,
 ) error {
@@ -560,15 +559,11 @@ func buildJwtRequirementFromProviders(
 	return jwtReqs
 }
 
-func GetConfigMap(krtctx krt.HandlerContext, configMaps krt.Collection[*corev1.ConfigMap], cmName, ns string) (*corev1.ConfigMap, error) {
+func GetConfigMap(krtctx krt.HandlerContext, configMaps *krtcollections.ConfigMapIndex, cmName, ns string) (*corev1.ConfigMap, error) {
 	if configMaps == nil {
 		return nil, errors.New("configmaps collection not available")
 	}
-	obj := krt.FetchOne(krtctx, configMaps, krt.FilterObjectName(types.NamespacedName{Namespace: ns, Name: cmName}))
-	if obj == nil {
-		return nil, &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{Group: "", Kind: "ConfigMap", Namespace: ns, Name: cmName}}
-	}
-	return *obj, nil
+	return configMaps.GetConfigMapWithoutRefGrant(krtctx, cmName, ns)
 }
 
 func jwtFilterName(name string) string {
