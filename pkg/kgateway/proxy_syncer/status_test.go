@@ -444,6 +444,43 @@ func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t 
 	a.Equal(string(gwv1.PolicyReasonConflicted), accepted.Reason)
 }
 
+// TestBackendPolicyStatusStampsObservedGeneration checks that every condition reported on a
+// backend ancestor carries the generation of the policy it was computed from, as the Gateway
+// ancestor's conditions do. The standard policy status builder overwrites the per-condition
+// value with the report's, so this is visible only to a builder that copies conditions
+// verbatim (BuildDesiredPolicyStatus for BackendTLSPolicy does, and
+// pluginutils.RegisterPolicyStatusWithBuilder lets any policy kind do the same): before, such
+// a builder wrote observedGeneration 0 on these conditions.
+func TestBackendPolicyStatusStampsObservedGeneration(t *testing.T) {
+	gk := schema.GroupKind{Group: "test", Kind: "ConnectionPolicy"}
+	att := func(name string, generation int64, errs ...error) ir.PolicyAtt {
+		return ir.PolicyAtt{
+			GroupKind:  gk,
+			Generation: generation,
+			PolicyRef:  &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "default", Name: name},
+			Errors:     errs,
+		}
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "default", Name: "reviews"}, 0, "", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+		gk: {att("valid", 4), att("invalid", 7, errors.New("bad"))},
+	}}
+
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
+
+	ancestor := reports.ParentRefKey{Kind: "Service", NamespacedName: types.NamespacedName{Namespace: "default", Name: "reviews"}}
+	for name, generation := range map[string]int64{"valid": 4, "invalid": 7} {
+		report := rm.Policies[reporter.PolicyKey{Group: gk.Group, Kind: gk.Kind, Namespace: "default", Name: name}]
+		require.NotNil(t, report, "policy %s should be reported", name)
+		require.Contains(t, report.Ancestors, ancestor)
+		conds := report.Ancestors[ancestor].Conditions
+		require.NotEmpty(t, conds)
+		for _, c := range conds {
+			assert.Equal(t, generation, c.ObservedGeneration, "policy %s condition %s", name, c.Type)
+		}
+	}
+}
+
 // TestBackendPolicyStatusReportsAttributedTranslationErrors checks that only
 // the policy responsible for a backend translation failure is rejected.
 func TestBackendPolicyStatusReportsAttributedTranslationErrors(t *testing.T) {
