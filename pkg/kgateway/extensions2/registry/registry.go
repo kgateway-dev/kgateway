@@ -20,6 +20,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkcol "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -54,6 +55,7 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 	}
 	var funcs []sdk.GwTranslatorFactory
 	var hasSynced []func() bool
+	var registerStatus []func(statussync.RegistrationInputs)
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		maps.Copy(ret.ContributesBackends, p.ContributesBackends)
@@ -64,9 +66,17 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 		if p.ExtraHasSynced != nil {
 			hasSynced = append(hasSynced, p.ExtraHasSynced)
 		}
+		if p.RegisterStatus != nil {
+			registerStatus = append(registerStatus, p.RegisterStatus)
+		}
 	}
 	ret.ContributesGwTranslator = mergedGw(funcs)
 	ret.ExtraHasSynced = mergeSynced(hasSynced)
+	ret.RegisterStatus = func(in statussync.RegistrationInputs) {
+		for _, register := range registerStatus {
+			register(in)
+		}
+	}
 	return ret
 }
 

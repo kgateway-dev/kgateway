@@ -13,6 +13,10 @@ type GatewayExtension struct {
 	// ObjectSource identifies the source of this extension.
 	ObjectSource
 
+	// Generation is the metadata.generation this IR was built from, reported as the
+	// observedGeneration of the extension's status.
+	Generation int64
+
 	// ExtAuth configuration for ExtAuth extension type.
 	ExtAuth *kgateway.ExtAuthProvider
 
@@ -46,7 +50,7 @@ func (e GatewayExtension) ResourceName() string {
 }
 
 func (e GatewayExtension) Equals(other GatewayExtension) bool {
-	if e.ObjectSource != other.ObjectSource {
+	if e.ObjectSource != other.ObjectSource || e.Generation != other.Generation {
 		return false
 	}
 	if !reflect.DeepEqual(e.ExtAuth, other.ExtAuth) {

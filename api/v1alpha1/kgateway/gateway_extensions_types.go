@@ -328,6 +328,8 @@ const (
 // GatewayExtensionStatus defines the observed state of GatewayExtension.
 type GatewayExtensionStatus struct {
 	// Conditions is the list of conditions for the GatewayExtension.
+	// The Accepted condition is True with reason Accepted when the extension translates,
+	// and False with reason Invalid, carrying the error, when it does not.
 	// +optional
 	// +listType=map
 	// +listMapKey=type

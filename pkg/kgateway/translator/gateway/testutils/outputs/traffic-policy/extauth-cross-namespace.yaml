@@ -277,6 +277,22 @@ Routes:
         filterName: rustformation
         perRouteConfigName: rustformation
 Statuses:
+  gatewayExtensions:
+    default/allowed-extauth-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    denied/denied-extauth-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: 'GatewayExtension error: "failed to resolve ExtAuth gRPC backend:
+          missing reference grant"'
+        reason: Invalid
+        status: "False"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

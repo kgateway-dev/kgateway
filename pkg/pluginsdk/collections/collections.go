@@ -19,6 +19,7 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -65,6 +66,8 @@ type CommonCollections struct {
 	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
 	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
 	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+	// RawGatewayExtensions is the informer-backed source of GatewayExtensions.
+	RawGatewayExtensions krt.Collection[*kgateway.GatewayExtension]
 
 	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
 	// writes may go through, most preferred first, resolved from CRD discovery at startup.
@@ -216,7 +219,7 @@ func NewCommonCollections(
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
+	rawGwExts, gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
 	systemNamespaceNetwork := krtcollections.NewSystemNamespaceNetwork(namespaces, settings.IstioNamespace, krtOptions)
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, systemNamespaceNetwork, krtOptions)
@@ -236,6 +239,7 @@ func NewCommonCollections(
 		ServiceEntries:                        serviceEntries,
 		ServiceEntriesExclusionLabelSelectors: serviceEntriesExclusionLabelSelectors,
 		GatewayExtensions:                     gwExts,
+		RawGatewayExtensions:                  rawGwExts,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 

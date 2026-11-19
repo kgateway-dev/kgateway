@@ -2,12 +2,14 @@ package translator
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -15,7 +17,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -28,12 +34,15 @@ type Statuses struct {
 	GRPCRoutes   map[string]*gwv1.RouteStatus       `json:"grpcRoutes,omitempty"`
 	Policies     map[string]*gwv1.PolicyStatus      `json:"policies,omitempty"`
 	Backends     map[string]*kgateway.BackendStatus `json:"backends,omitempty"`
+
+	GatewayExtensions map[string]*kgateway.GatewayExtensionStatus `json:"gatewayExtensions,omitempty"`
 }
 
 func buildStatusesFromReports(
 	reportsMap reports.ReportMap,
 	gateways map[types.NamespacedName]*gwv1.Gateway,
 	listenerSets map[types.NamespacedName]*gwv1.ListenerSet,
+	gatewayExtensions map[string]*kgateway.GatewayExtensionStatus,
 ) *Statuses {
 	// Fixed values for deterministic golden file tests. Use the zero time
 	// for consistency and to avoid confusion about the significance of a
@@ -49,6 +58,8 @@ func buildStatusesFromReports(
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
 		Policies:     make(map[string]*gwv1.PolicyStatus),
 		Backends:     make(map[string]*kgateway.BackendStatus),
+
+		GatewayExtensions: gatewayExtensions,
 	}
 
 	// Build Gateway statuses. We need to use the actual Gateway object to make sure that
@@ -172,7 +183,7 @@ func buildStatusesFromReports(
 			},
 		}
 		if status := reportsMap.BuildBackendStatus(&backend, kgateway.BackendStatus{}); status != nil {
-			normalizeBackendStatus(status, fixedTime)
+			normalizeConditions(status.Conditions, fixedTime)
 			statuses.Backends[backendNN.String()] = status
 		}
 	}
@@ -243,11 +254,57 @@ func normalizePolicyStatus(status *gwv1.PolicyStatus, time metav1.Time) {
 	}
 }
 
-// normalizeBackendStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
-func normalizeBackendStatus(status *kgateway.BackendStatus, time metav1.Time) {
-	for i := range status.Conditions {
-		status.Conditions[i].LastTransitionTime = time
+// normalizeConditions sets LastTransitionTime to a fixed value for deterministic testing.
+func normalizeConditions(conditions []metav1.Condition, time metav1.Time) {
+	for i := range conditions {
+		conditions[i].LastTransitionTime = time
 	}
+}
+
+// gatewayExtensionStatuses builds GatewayExtension statuses with the writer the plugins
+// register at runtime, so golden files capture what the controller would write.
+type gatewayExtensionStatuses struct {
+	sources *statussync.StatusCollections
+	writer  statussync.Writer[*kgateway.GatewayExtension, kgateway.GatewayExtensionStatus]
+	found   bool
+}
+
+// registerGatewayExtensionStatuses runs the plugins' status registrations the way the proxy
+// syncer does. Call it before the client starts, so the collections it builds are synced.
+func registerGatewayExtensionStatuses(plugins pluginsdk.Plugin, krtOpts krtutil.KrtOptions) gatewayExtensionStatuses {
+	g := gatewayExtensionStatuses{sources: statussync.NewStatusCollections()}
+	plugins.RegisterStatus(statussync.RegistrationInputs{
+		Collections: g.sources,
+		KrtOpts:     krtOpts,
+		RegisterWriter: func(_ schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
+			if w, ok := syncer.(statussync.Writer[*kgateway.GatewayExtension, kgateway.GatewayExtensionStatus]); ok {
+				g.writer, g.found = w, true
+			}
+		},
+	})
+	return g
+}
+
+func (g gatewayExtensionStatuses) HasSynced() bool {
+	return g.sources.HasSynced()
+}
+
+// build returns the status written to each extension, starting from an empty status.
+func (g gatewayExtensionStatuses) build(exts []ir.GatewayExtension) map[string]*kgateway.GatewayExtensionStatus {
+	if !g.found {
+		return nil
+	}
+	out := make(map[string]*kgateway.GatewayExtensionStatus, len(exts))
+	for _, ext := range exts {
+		nn := types.NamespacedName{Namespace: ext.Namespace, Name: ext.Name}
+		res := statussync.Resource{GroupVersionKind: wellknown.GatewayExtensionGVK, NamespacedName: nn}
+		obj := &kgateway.GatewayExtension{ObjectMeta: metav1.ObjectMeta{Namespace: nn.Namespace, Name: nn.Name}}
+		if status, ok := g.writer.Desired(res, obj); ok {
+			normalizeConditions(status.Conditions, metav1.Time{})
+			out[nn.String()] = &status
+		}
+	}
+	return out
 }
 
 func compareStatuses(expectedStatuses, actualStatuses *Statuses) string {
@@ -370,6 +427,8 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	for _, k := range backendKeys {
 		sorted.Backends[k] = statuses.Backends[k]
 	}
+
+	sorted.GatewayExtensions = maps.Clone(statuses.GatewayExtensions)
 
 	return sorted
 }

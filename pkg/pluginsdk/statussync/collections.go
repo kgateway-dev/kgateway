@@ -12,6 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -279,15 +280,40 @@ func (s *StatusCollections) HasSynced() bool {
 // set changes, and records the reducer in the cache-sync barrier reported by HasSynced.
 // Deletes are ignored because the corresponding raw object is gone.
 func RegisterResourceReports(s *StatusCollections, col krt.Collection[ResourceReports]) {
+	registerStatusSource(s, col, func(r ResourceReports) Resource { return r.Resource })
+}
+
+// RegisterDerivedKind is RegisterKind for a kind whose desired status is a projection of the
+// object's own translation rather than a reduction of contributions from other objects.
+// statuses holds that projection, at most one row per object, and the kind's writer reads it
+// by key. Like RegisterKind it wires the raw objects and the status rows together, so neither
+// half can be forgotten.
+func RegisterDerivedKind[I controllers.Object, S any](
+	s *StatusCollections,
+	gvk schema.GroupVersionKind,
+	objects krt.Collection[I],
+	statuses krt.Collection[S],
+	owner func(S) types.NamespacedName,
+) {
+	RegisterResource(s, gvk, objects)
+	registerStatusSource(s, statuses, func(row S) Resource {
+		return Resource{GroupVersionKind: gvk, NamespacedName: owner(row)}
+	})
+}
+
+// registerStatusSource enqueues the owner of every row of col whenever that row changes, and
+// records col in the cache-sync barrier reported by HasSynced. Deletes are ignored because
+// they mean the raw object is gone.
+func registerStatusSource[T any](s *StatusCollections, col krt.Collection[T], owner func(T) Resource) {
 	s.mu.Lock()
 	s.reportSyncs = append(s.reportSyncs, col.HasSynced)
 	s.mu.Unlock()
 	s.Register(func(statusWriter WorkerQueue) krt.HandlerRegistration {
-		return col.Register(func(event krt.Event[ResourceReports]) {
+		return col.Register(func(event krt.Event[T]) {
 			if event.Event == controllers.EventDelete {
 				return
 			}
-			statusWriter.Push(event.Latest().Resource)
+			statusWriter.Push(owner(event.Latest()))
 		})
 	})
 }

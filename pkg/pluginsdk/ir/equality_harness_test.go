@@ -435,6 +435,12 @@ func TestHarnessGatewayExtensionEquals(t *testing.T) {
 			},
 		},
 		{
+			Field: "Generation",
+			Mutate: func(e *GatewayExtension) {
+				e.Generation++
+			},
+		},
+		{
 			Field: "ExtAuth",
 			Mutate: func(e *GatewayExtension) {
 				e.ExtAuth = &kgateway.ExtAuthProvider{

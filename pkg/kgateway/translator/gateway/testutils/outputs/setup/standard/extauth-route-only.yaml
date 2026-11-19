@@ -123,6 +123,14 @@ Routes:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
 Statuses:
+  gatewayExtensions:
+    gwtest/basic-extauth:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     gwtest/http-gw-for-test:
       conditions:
