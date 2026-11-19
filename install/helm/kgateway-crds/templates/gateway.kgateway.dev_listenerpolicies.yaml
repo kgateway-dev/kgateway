@@ -1100,6 +1100,11 @@ spec:
                                       required:
                                       - baseInterval
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: maxInterval must be greater than
+                                          or equal to baseInterval
+                                        rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                          >= duration(self.baseInterval) : true'
                                   type: object
                                 skipEnvoyHeaders:
                                   description: This provides gRPC client level control
@@ -1347,6 +1352,11 @@ spec:
                                           required:
                                           - baseInterval
                                           type: object
+                                          x-kubernetes-validations:
+                                          - message: maxInterval must be greater than
+                                              or equal to baseInterval
+                                            rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                              >= duration(self.baseInterval) : true'
                                       type: object
                                     skipEnvoyHeaders:
                                       description: This provides gRPC client level
@@ -3230,6 +3240,11 @@ spec:
                                             required:
                                             - baseInterval
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: maxInterval must be greater
+                                                than or equal to baseInterval
+                                              rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                                >= duration(self.baseInterval) : true'
                                         type: object
                                       skipEnvoyHeaders:
                                         description: This provides gRPC client level
@@ -4412,6 +4427,11 @@ spec:
                                       required:
                                       - baseInterval
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: maxInterval must be greater than
+                                          or equal to baseInterval
+                                        rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                          >= duration(self.baseInterval) : true'
                                   type: object
                                 skipEnvoyHeaders:
                                   description: This provides gRPC client level control
@@ -4659,6 +4679,11 @@ spec:
                                           required:
                                           - baseInterval
                                           type: object
+                                          x-kubernetes-validations:
+                                          - message: maxInterval must be greater than
+                                              or equal to baseInterval
+                                            rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                              >= duration(self.baseInterval) : true'
                                       type: object
                                     skipEnvoyHeaders:
                                       description: This provides gRPC client level
@@ -5704,6 +5729,11 @@ spec:
                                             required:
                                             - baseInterval
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: maxInterval must be greater
+                                                than or equal to baseInterval
+                                              rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                                >= duration(self.baseInterval) : true'
                                         type: object
                                       skipEnvoyHeaders:
                                         description: This provides gRPC client level
@@ -5959,6 +5989,12 @@ spec:
                                                 required:
                                                 - baseInterval
                                                 type: object
+                                                x-kubernetes-validations:
+                                                - message: maxInterval must be greater
+                                                    than or equal to baseInterval
+                                                  rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                                    >= duration(self.baseInterval)
+                                                    : true'
                                             type: object
                                           skipEnvoyHeaders:
                                             description: This provides gRPC client
@@ -7875,6 +7911,13 @@ spec:
                                                   required:
                                                   - baseInterval
                                                   type: object
+                                                  x-kubernetes-validations:
+                                                  - message: maxInterval must be greater
+                                                      than or equal to baseInterval
+                                                    rule: 'has(self.maxInterval) ?
+                                                      duration(self.maxInterval) >=
+                                                      duration(self.baseInterval)
+                                                      : true'
                                               type: object
                                             skipEnvoyHeaders:
                                               description: This provides gRPC client
@@ -9066,6 +9109,11 @@ spec:
                                             required:
                                             - baseInterval
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: maxInterval must be greater
+                                                than or equal to baseInterval
+                                              rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                                >= duration(self.baseInterval) : true'
                                         type: object
                                       skipEnvoyHeaders:
                                         description: This provides gRPC client level
@@ -9321,6 +9369,12 @@ spec:
                                                 required:
                                                 - baseInterval
                                                 type: object
+                                                x-kubernetes-validations:
+                                                - message: maxInterval must be greater
+                                                    than or equal to baseInterval
+                                                  rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                                    >= duration(self.baseInterval)
+                                                    : true'
                                             type: object
                                           skipEnvoyHeaders:
                                             description: This provides gRPC client
