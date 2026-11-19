@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,7 +26,7 @@ const (
 
 func GetIstioctl(ctx context.Context) (string, error) {
 	// Download istioctl binary
-	istioctlBinary, err := downloadIstio(getIstioVersion())
+	istioctlBinary, err := downloadIstio(ctx, getIstioVersion())
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
@@ -119,8 +118,8 @@ func getIstioVersion() string {
 	}
 }
 
-// Download istioctl binary from istio.io/downloadIstio and returns the path to the binary
-func downloadIstio(version string) (string, error) {
+// downloadIstio downloads the requested release and returns the istioctl binary path.
+func downloadIstio(ctx context.Context, version string) (string, error) {
 	if version == "" {
 		logger.Info("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")
@@ -171,34 +170,66 @@ func downloadIstio(version string) (string, error) {
 		return binaryLocation, nil
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "https://istio.io/downloadIstio", nil)
+	if err := downloadIstioRelease(ctx, version, installLocation, runtime.GOOS, runtime.GOARCH); err != nil {
+		return "", err
+	}
+
+	return binaryLocation, nil
+}
+
+func downloadIstioRelease(ctx context.Context, version, installLocation, goos, goarch string) error {
+	if err := os.MkdirAll(installLocation, 0o755); err != nil {
+		return fmt.Errorf("create Istio install directory: %w", err)
+	}
+	tempDir, err := os.MkdirTemp(installLocation, "istio-download-*")
 	if err != nil {
-		return "", err
+		return fmt.Errorf("create Istio download directory: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	osName := "linux"
+	archSuffix := "-" + goarch
+	if goos == "darwin" {
+		osName = "osx"
+		if goarch != "arm64" {
+			archSuffix = ""
+		}
+	}
+	assetName := fmt.Sprintf("istio-%s-%s%s.tar.gz", version, osName, archSuffix)
+	archive := filepath.Join(tempDir, assetName)
+	// The upstream installer probes /releases/download/ and calls every HTTP
+	// failure "not found". Use the asset API and verify its SHA-256 instead.
+	downloader := filepath.Join(testutils.GitRootDirectory(), "hack", "download-github-release-asset.sh")
+	cmd := exec.CommandContext(ctx, downloader, "istio/istio", version, assetName, archive)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("download Istio release: %w\n%s", err, out)
 	}
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
+	member := filepath.Join("istio-"+version, "bin", "istioctl")
+	cmd = exec.CommandContext(ctx, "tar", "-xzf", archive, "-C", tempDir, member)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("extract istioctl: %w\n%s", err, out)
 	}
-	defer res.Body.Close()
-
-	cmd := exec.Command("sh", "-")
-
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", testruntime.IstioVersionEnv, version))
-	cmd.Dir = installLocation
-
-	cmd.Stdin = res.Body
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err = cmd.Run(); err != nil {
-		return "", err
+	binary := filepath.Join(tempDir, member)
+	if err := os.Chmod(binary, 0o755); err != nil {
+		return fmt.Errorf("change istioctl permissions: %w", err)
 	}
-
-	return binaryLocation, err
+	// Cache only a successfully extracted binary, so a failed attempt can be retried.
+	destination := filepath.Join(installLocation, member)
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return fmt.Errorf("create istioctl cache directory: %w", err)
+	}
+	if err := os.Rename(binary, destination); err != nil {
+		return fmt.Errorf("cache istioctl: %w", err)
+	}
+	return nil
 }
 
 func UninstallIstio(istioctlBinary, kubeContext string) error {
+	// Setup can fail before a binary is available, including during download.
+	if istioctlBinary == "" {
+		return nil
+	}
 	// sh -c yes | istioctl uninstall —purge —context <kube-context>
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context '%s'", istioctlBinary, kubeContext)) //nolint:gosec // G204: controlled istioctl uninstall command in tests
 	cmd.Stdout = os.Stdout
