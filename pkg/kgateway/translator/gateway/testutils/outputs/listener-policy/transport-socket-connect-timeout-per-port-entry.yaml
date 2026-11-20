@@ -47,7 +47,12 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.transportSocketConnectTimeout:
         - gateway.kgateway.dev/ListenerPolicy/default/gateway-wide
+        perPortPolicy[8443].perConnectionBufferLimitBytes:
+        - gateway.kgateway.dev/ListenerPolicy/default/tls-per-port-buffer-limit
+        perPortPolicy[8443].transportSocketConnectTimeout:
+        - gateway.kgateway.dev/ListenerPolicy/default/gateway-wide
   name: listener~8443
+  perConnectionBufferLimitBytes: 4096
 - address:
     socketAddress:
       address: '::'
@@ -99,7 +104,12 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.transportSocketConnectTimeout:
         - gateway.kgateway.dev/ListenerPolicy/default/gateway-wide
+        perPortPolicy[9443].perConnectionBufferLimitBytes:
+        - gateway.kgateway.dev/ListenerPolicy/default/https-per-port-buffer-limit
+        perPortPolicy[9443].transportSocketConnectTimeout:
+        - gateway.kgateway.dev/ListenerPolicy/default/gateway-wide
   name: listener~9443
+  perConnectionBufferLimitBytes: 4096
 Routes:
 - ignorePortInHostMatching: true
   metadata:
@@ -246,6 +256,25 @@ Statuses:
           type: Attached
         controllerName: kgateway.dev/kgateway
     ListenerPolicy/default/https-per-port-buffer-limit:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Merged with other policies in target(s) and attached
+          reason: Merged
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    ListenerPolicy/default/tls-per-port-buffer-limit:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

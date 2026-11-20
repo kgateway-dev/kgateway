@@ -214,10 +214,21 @@ func (t *Translator) runListenerPlugins(
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-		pols := attachedPolicies.Policies[gk]
 		pass := pass[gk]
 		if pass == nil {
 			// TODO: report user error - they attached a non http policy
+			continue
+		}
+		var pols []ir.PolicyAtt
+		if lisPass, ok := pass.ProxyTranslationPass.(ir.ListenerPolicyPass); ok {
+			for _, pol := range l.AttachedPolicies.Policies[gk] {
+				if lisPass.AppliesToListener(pol.PolicyIr, l.BindPort) {
+					pols = append(pols, pol)
+				}
+			}
+		}
+		pols = append(pols, gw.AttachedHttpPolicies.Policies[gk]...)
+		if len(pols) == 0 {
 			continue
 		}
 		reportPolicyAcceptanceStatus(reporter, l.PolicyAncestorRef, pols...)
@@ -271,7 +282,7 @@ func (t *Translator) runPostListenerPlugins(
 
 	for _, chain := range chains {
 		var attachedPolicies ir.AttachedPolicies
-		attachedPolicies.Append(chain.attachedPolicies, l.AttachedPolicies, gw.AttachedHttpPolicies)
+		attachedPolicies.Append(chain.attachedPolicies, gw.AttachedHttpPolicies)
 		for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 			pols := attachedPolicies.Policies[gk]
 			pass := pass[gk]

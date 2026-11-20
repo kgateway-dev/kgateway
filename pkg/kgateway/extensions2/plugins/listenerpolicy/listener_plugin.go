@@ -322,11 +322,14 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	if cfg.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *cfg.perConnectionBufferLimitBytes}
 	}
-	if http := cfg.http; http != nil {
-		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
-		p.grpcStats[pCtx.Port] = http.grpcStats
-	}
 }
+
+func (p *listenerPolicyPluginGwPass) AppliesToListener(policy ir.PolicyIR, listenerPort uint32) bool {
+	cfg := p.getPolicy(policy, listenerPort)
+	return cfg.proxyProtocol != nil || cfg.tcpKeepalive != nil || cfg.perConnectionBufferLimitBytes != nil
+}
+
+var _ ir.ListenerPolicyPass = &listenerPolicyPluginGwPass{}
 
 // ApplyPostListener runs after FilterChains have been built so the plugin can set
 // FilterChain level fields like transport_socket_connect_timeout. It is invoked once per
@@ -351,6 +354,7 @@ func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc 
 	var stagedFilters []filters.StagedHttpFilter
 
 	if healthCheckPolicy := p.healthCheckPolicy[hCtx.ListenerPort]; healthCheckPolicy != nil {
+		delete(p.healthCheckPolicy, hCtx.ListenerPort)
 		// Add the health check filter after the authz filter but before the rate limit filter
 		// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
 		stagedFilter, err := filters.NewStagedFilter(
@@ -365,6 +369,7 @@ func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc 
 	}
 
 	if grpcStats := p.grpcStats[hCtx.ListenerPort]; grpcStats != nil {
+		delete(p.grpcStats, hCtx.ListenerPort)
 		// Place the gRPC stats filter just before the router so it observes the
 		// final request/response and can emit per-method grpc-status metrics.
 		stagedFilter, err := filters.NewStagedFilter(
@@ -389,6 +394,19 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	policy := cfg.http
 	if policy == nil {
 		return nil
+	}
+
+	if policy.healthCheckPolicy != nil {
+		if p.healthCheckPolicy == nil {
+			p.healthCheckPolicy = make(map[uint32]*healthcheckv3.HealthCheck)
+		}
+		p.healthCheckPolicy[pCtx.ListenerPort] = policy.healthCheckPolicy
+	}
+	if policy.grpcStats != nil {
+		if p.grpcStats == nil {
+			p.grpcStats = make(map[uint32]*grpcstatsv3.FilterConfig)
+		}
+		p.grpcStats[pCtx.ListenerPort] = policy.grpcStats
 	}
 
 	// translate access logging configuration

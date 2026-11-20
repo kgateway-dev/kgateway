@@ -249,6 +249,10 @@ type TcpFilterChainPolicyPass interface {
 	AppliesToTcpFilterChain(policy PolicyIR, listenerPort uint32) bool
 }
 
+type ListenerPolicyPass interface {
+	AppliesToListener(policy PolicyIR, listenerPort uint32) bool
+}
+
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}

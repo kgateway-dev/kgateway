@@ -5,6 +5,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	grpcstatsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_stats/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -137,5 +138,35 @@ func TestGrpcStatsHttpFilter(t *testing.T) {
 		var decoded grpcstatsv3.FilterConfig
 		require.NoError(t, got[0].Filter.GetTypedConfig().UnmarshalTo(&decoded))
 		assert.True(t, decoded.GetStatsForAllMethods().GetValue())
+
+		// Subsequent filter chain on the same port without the policy should not inherit the filter.
+		gotNext, err := p.HttpFilters(ir.HttpFiltersContext{ListenerPort: port}, ir.FilterChainCommon{})
+		require.NoError(t, err)
+		assert.Empty(t, gotNext)
+	})
+
+	t.Run("ApplyHCM populates grpcStats for HttpFilters", func(t *testing.T) {
+		cfg := &grpcstatsv3.FilterConfig{
+			PerMethodStatSpecifier: &grpcstatsv3.FilterConfig_StatsForAllMethods{
+				StatsForAllMethods: wrapperspb.Bool(true),
+			},
+		}
+		p := &listenerPolicyPluginGwPass{}
+		err := p.ApplyHCM(&ir.HcmContext{
+			Policy: &ListenerPolicyIR{
+				defaultPolicy: listenerPolicy{
+					http: &HttpListenerPolicyIr{
+						grpcStats: cfg,
+					},
+				},
+			},
+			ListenerPort: port,
+		}, &envoy_hcm.HttpConnectionManager{})
+		require.NoError(t, err)
+
+		got, err := p.HttpFilters(ir.HttpFiltersContext{ListenerPort: port}, ir.FilterChainCommon{})
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.Equal(t, "envoy.filters.http.grpc_stats", got[0].Filter.GetName())
 	})
 }

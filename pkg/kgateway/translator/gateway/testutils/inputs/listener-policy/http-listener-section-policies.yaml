@@ -1,0 +1,105 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+  - name: shared-http-a
+    protocol: HTTP
+    port: 8081
+    hostname: a.example.com
+  - name: shared-http-b
+    protocol: HTTP
+    port: 8081
+    hostname: b.example.com
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: http-section-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http
+  default:
+    perConnectionBufferLimitBytes: 4096
+    httpSettings:
+      serverName: custom-server
+      healthCheck:
+        path: /health
+      grpcStats:
+        statsForAllMethods: true
+---
+# ListenerPolicy targeting one HTTP listener on a shared HTTP port cannot be applied
+# to the shared filter chain or listener, so it must not be reported as attached.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: shared-http-section-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: shared-http-a
+  default:
+    perConnectionBufferLimitBytes: 8192
+    httpSettings:
+      serverName: shared-server
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shared-route-a
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: shared-http-a
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: shared-route-b
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: shared-http-b
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    app: example
+  ports:
+  - port: 80
+    protocol: TCP
+
