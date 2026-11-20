@@ -65,6 +65,14 @@ options ndots:5
 `,
 		want: defaultDomainName,
 	}, {
+		name:       "tab separated search line",
+		resolvConf: "nameserver 1.1.1.1\nsearch\tdefault.svc.abc.com\tsvc.abc.com\tabc.com\noptions ndots:5\n",
+		want:       "abc.com",
+	}, {
+		name:       "indented search line",
+		resolvConf: "nameserver 1.1.1.1\n  search default.svc.abc.com svc.abc.com abc.com\n",
+		want:       "abc.com",
+	}, {
 		name: "non k8s resolv.conf format",
 		resolvConf: `
 nameserver 1.1.1.1
