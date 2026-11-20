@@ -2,6 +2,7 @@ package krtcollections
 
 import (
 	"cmp"
+	"fmt"
 	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -171,24 +172,62 @@ func runningBootstraps(gw types.NamespacedName, pods []WrappedPod) podBootstraps
 		}
 
 		// Read the pod's subset and ports, or the defaults without the annotation.
-		pb := podBootstrap{
-			subset:   ir.ValidationBootstrap{Pod: pod.Name},
-			ports:    validate.DefaultReservedPorts(),
+		subset, ports, err := readPodBootstrap(pod.Annotations)
+		if err != nil {
+			logger.Error("ignoring a pod's bootstrap validation annotation; validating against Envoy's defaults in its place",
+				"gateway", gw, "pod", pod.Name, "error", err)
+		}
+		subset.Pod = pod.Name
+		out = append(out, podBootstrap{
+			subset:   subset,
+			ports:    ports,
 			checksum: pod.Annotations[bootstrappatch.ChecksumAnnotation],
-		}
-		if annotation, ok := pod.Annotations[bootstrappatch.ValidationAnnotation]; ok {
-			data, err := bootstrappatch.DecodeValidationData(annotation)
-			if err != nil {
-				logger.Error("ignoring a pod's bootstrap validation annotation; validating against Envoy's defaults and ports in its place",
-					"gateway", gw, "pod", pod.Name, "error", err)
-			} else {
-				pb.subset = parseValidationSubset(gw, string(data.Bootstrap), pod.Name)
-				pb.ports = data.ReservedPorts
-			}
-		}
-		out = append(out, pb)
+		})
 	}
 	return out
+}
+
+// readPodBootstrap returns the validation subset and ports of the bootstrap a pod
+// started with, from its validation annotation, with Pod unset. A pod without the
+// annotation, or whose annotation does not decode, started with Envoy's defaults and
+// listens on the default reserved ports. A subset that does not parse is Envoy's
+// defaults, and the annotation's ports still apply. err reports what was ignored.
+func readPodBootstrap(annotations map[string]string) (ir.ValidationBootstrap, []uint32, error) {
+	// Without the annotation, the pod runs Envoy's defaults.
+	annotation, ok := annotations[bootstrappatch.ValidationAnnotation]
+	if !ok {
+		return ir.ValidationBootstrap{}, validate.DefaultReservedPorts(), nil
+	}
+
+	// An annotation that does not decode is ignored as a whole.
+	data, err := bootstrappatch.DecodeValidationData(annotation)
+	if err != nil {
+		return ir.ValidationBootstrap{}, validate.DefaultReservedPorts(), err
+	}
+
+	// A subset that does not parse leaves Envoy's defaults.
+	subset, err := parseSubset(string(data.Bootstrap))
+	return subset, data.ReservedPorts, err
+}
+
+// podBootstrapFromAnnotations returns what LocalityPod.Bootstrap holds for a pod with
+// these annotations: nil without the validation annotation, otherwise the subset and
+// ports runningBootstraps reads for it.
+func podBootstrapFromAnnotations(annotations map[string]string) *ir.PodBootstrap {
+	// A pod without the annotation is left to defaultPodBootstrap.
+	if _, ok := annotations[bootstrappatch.ValidationAnnotation]; !ok {
+		return nil
+	}
+
+	// Read it as runningBootstraps does; runningBootstraps logs what is ignored.
+	subset, ports, _ := readPodBootstrap(annotations)
+	return &ir.PodBootstrap{Subset: subset.Subset, Ports: ports}
+}
+
+// defaultPodBootstrap is the bootstrap of a pod without the validation annotation:
+// Envoy's defaults, listening on the default reserved ports.
+func defaultPodBootstrap() *ir.PodBootstrap {
+	return &ir.PodBootstrap{Ports: validate.DefaultReservedPorts()}
 }
 
 // subsets returns each distinct subset the pods carry, naming the first pod that
@@ -275,17 +314,33 @@ func buildValidationBootstraps(current currentValidation, running podBootstraps)
 // parseValidationSubset parses an encoded subset that pod carries, or the current one
 // when pod is empty. A subset that does not parse is treated as Envoy's defaults.
 func parseValidationSubset(gw types.NamespacedName, subset, pod string) ir.ValidationBootstrap {
-	subset = normalizeValidationSubset(subset)
-	if subset == "" {
-		return ir.ValidationBootstrap{Pod: pod}
-	}
-	bs, err := bootstrappatch.ParseValidationSubset(subset)
+	// Parse the subset, logging one that does not parse.
+	vb, err := parseSubset(subset)
 	if err != nil {
 		logger.Error("ignoring a bootstrap validation subset that does not parse; validating against Envoy's defaults in its place",
 			"gateway", gw, "pod", pod, "error", err)
-		return ir.ValidationBootstrap{Pod: pod}
 	}
-	return ir.ValidationBootstrap{Subset: subset, Pod: pod, Bootstrap: bs}
+
+	// Name the pod that carries it.
+	vb.Pod = pod
+	return vb
+}
+
+// parseSubset normalizes and parses an encoded subset, with Pod unset. A subset that
+// does not parse is returned as Envoy's defaults, with the parse error.
+func parseSubset(subset string) (ir.ValidationBootstrap, error) {
+	// A subset that sets nothing needs no parsing.
+	subset = normalizeValidationSubset(subset)
+	if subset == "" {
+		return ir.ValidationBootstrap{}, nil
+	}
+
+	// Parse it, falling back to Envoy's defaults.
+	bs, err := bootstrappatch.ParseValidationSubset(subset)
+	if err != nil {
+		return ir.ValidationBootstrap{}, fmt.Errorf("parsing the validation subset: %w", err)
+	}
+	return ir.ValidationBootstrap{Subset: subset, Bootstrap: bs}, nil
 }
 
 // normalizeValidationSubset returns "" for a subset that sets nothing.

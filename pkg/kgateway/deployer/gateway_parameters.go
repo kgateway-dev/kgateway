@@ -9,6 +9,8 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,6 +39,11 @@ var (
 
 	// ErrNotFound is returned when a requested resource is not found
 	ErrNotFound = errors.New("resource not found")
+
+	// ErrBootstrapConfigMapUnreadable is returned when the controller cannot read a
+	// Gateway's generated bootstrap ConfigMap from the API server. The Gateway's
+	// objects are left unchanged and the reconcile is retried.
+	ErrBootstrapConfigMapUnreadable = errors.New("could not read the generated bootstrap ConfigMap")
 )
 
 func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *GatewayParameters {
@@ -61,7 +68,10 @@ type kgatewayParameters struct {
 	// replicaSetClient lists the ReplicaSets of proxy Deployments, to keep the
 	// bootstrap revisions they can still create pods with.
 	replicaSetClient kclient.Client[*appsv1.ReplicaSet]
-	inputs           *deployer.Inputs
+	// getConfigMap reads a ConfigMap from the API server rather than an informer
+	// cache, so the bootstrap revisions it holds are current.
+	getConfigMap func(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error)
+	inputs       *deployer.Inputs
 }
 
 func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.HelmValuesGenerator) *GatewayParameters {
@@ -201,7 +211,10 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 	}
 	mountProblem := BootstrapMountProblem(rendered, outcome.ConfigMapName)
 	if mountProblem == "" {
-		revs := gp.bootstrapRevisions(gwNN, rendered, outcome.ConfigMapName, running.Revisions)
+		revs, err := gp.bootstrapRevisions(ctx, gwNN, rendered, outcome.ConfigMapName, running.Revisions)
+		if err != nil {
+			return nil, nil, err
+		}
 		if err := WriteBootstrapRevision(rendered, outcome, revs); err != nil {
 			return nil, nil, err
 		}
@@ -231,20 +244,32 @@ func (gp *GatewayParameters) runningBootstraps(gw types.NamespacedName) krtcolle
 // bootstrapRevisions returns the Gateway's live generated ConfigMap cmName and the
 // bootstrap revisions in use: podRevisions, from the Gateway's running pods, and those
 // of the ReplicaSets of the rendered proxy Deployment with replicas above zero.
-func (gp *GatewayParameters) bootstrapRevisions(gw types.NamespacedName, rendered []client.Object, cmName string, podRevisions []string) BootstrapRevisions {
+//
+// The ConfigMap is read from the API server: WriteBootstrapRevision keeps only the
+// revisions it holds, so a stale read would drop the key of a revision a pod still
+// reads when its container restarts. Any error other than NotFound fails with
+// ErrBootstrapConfigMapUnreadable rather than reading as no ConfigMap, which would drop
+// every earlier revision.
+func (gp *GatewayParameters) bootstrapRevisions(ctx context.Context, gw types.NamespacedName, rendered []client.Object, cmName string, podRevisions []string) (BootstrapRevisions, error) {
 	// Read the live ConfigMap.
 	out := BootstrapRevisions{InUse: slices.Clone(podRevisions)}
-	if cols := gp.inputs.CommonCollections; cols != nil && cols.ConfigMaps != nil {
-		if live := cols.ConfigMaps.Collection().GetKey(gw.Namespace + "/" + cmName); live != nil {
-			out.Live = *live
-		}
+	if gp.kgwParameters == nil {
+		return out, fmt.Errorf("%w %s/%s: the deployer has no API client", ErrBootstrapConfigMapUnreadable, gw.Namespace, cmName)
+	}
+	live, err := gp.kgwParameters.getConfigMap(ctx, gw.Namespace, cmName)
+	switch {
+	case apierrors.IsNotFound(err):
+	case err != nil:
+		return out, fmt.Errorf("%w %s/%s: %w", ErrBootstrapConfigMapUnreadable, gw.Namespace, cmName, err)
+	default:
+		out.Live = live
 	}
 
 	// Add the revision of each ReplicaSet of the proxy Deployment that can still create
 	// a pod.
 	dep := findDeployment(rendered)
-	if dep == nil || gp.kgwParameters == nil {
-		return out
+	if dep == nil {
+		return out, nil
 	}
 	selector := labels.SelectorFromSet(labels.Set{wellknown.GatewayNameLabel: kubeutils.SafeGatewayLabelValue(gw.Name)})
 	for _, rs := range gp.kgwParameters.replicaSetClient.List(gw.Namespace, selector) {
@@ -256,7 +281,7 @@ func (gp *GatewayParameters) bootstrapRevisions(gw types.NamespacedName, rendere
 			out.InUse = append(out.InUse, rs.Spec.Template.Annotations[bootstrapChecksumAnnotation])
 		}
 	}
-	return out
+	return out, nil
 }
 
 // applyObjectOverlays applies the resolved GatewayParameters object overlays to objs,
@@ -313,6 +338,9 @@ func newkgatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *kgate
 			ObjectFilter:  cli.ObjectFilter(),
 			LabelSelector: wellknown.GatewayNameLabel,
 		}),
+		getConfigMap: func(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error) {
+			return cli.Kube().CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+		},
 		inputs: inputs,
 	}
 }

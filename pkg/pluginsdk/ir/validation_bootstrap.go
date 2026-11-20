@@ -49,6 +49,24 @@ type PodReservedPort struct {
 	Pod string
 }
 
+// PodBootstrap is what a proxy pod's validation annotation says about the bootstrap
+// the pod started with: the parts that decide which xDS configuration it accepts.
+type PodBootstrap struct {
+	// Subset is the encoded validation subset, compared with ValidationBootstrap.Subset;
+	// empty when it sets nothing, so Envoy's defaults apply.
+	Subset string
+	// Ports are the ports the bootstrap listens on.
+	Ports []uint32
+}
+
+// Equals compares the subset and the ports.
+func (b *PodBootstrap) Equals(in *PodBootstrap) bool {
+	if b == nil || in == nil {
+		return b == in
+	}
+	return b.Subset == in.Subset && slices.Equal(b.Ports, in.Ports)
+}
+
 // GetReservedPorts returns ReservedPorts, or nil when g is nil.
 func (g *GatewayValidationBootstraps) GetReservedPorts() []uint32 {
 	if g == nil {

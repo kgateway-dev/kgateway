@@ -944,6 +944,53 @@ func TestWriteBootstrapRevision(t *testing.T) {
 	})
 }
 
+func TestBootstrapRevisionsLiveConfigMap(t *testing.T) {
+	gw := types.NamespacedName{Namespace: defaultNamespace, Name: "gw"}
+
+	t.Run("reads the ConfigMap from the API server", func(t *testing.T) {
+		// The API server holds the ConfigMap; the deployer's informer-backed collections
+		// do not.
+		live := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: defaultNamespace},
+			Data:       map[string]string{bootstrapRevisionKey("pod-sum"): "pod bootstrap"},
+		}
+		gp := NewGatewayParameters(fake.NewClient(t, live), defaultInputs(t))
+
+		// The read returns it.
+		revs, err := gp.bootstrapRevisions(t.Context(), gw, nil, "gw", []string{"pod-sum"})
+		require.NoError(t, err)
+		require.NotNil(t, revs.Live, "the ConfigMap the API server holds should be read")
+		assert.Equal(t, "pod bootstrap", revs.Live.Data[bootstrapRevisionKey("pod-sum")])
+		assert.Equal(t, []string{"pod-sum"}, revs.InUse)
+	})
+
+	t.Run("a missing ConfigMap is no live ConfigMap", func(t *testing.T) {
+		// The API server has no ConfigMap for the Gateway.
+		gp := NewGatewayParameters(fake.NewClient(t), defaultInputs(t))
+
+		// The read succeeds with nothing live.
+		revs, err := gp.bootstrapRevisions(t.Context(), gw, nil, "gw", nil)
+		require.NoError(t, err)
+		assert.Nil(t, revs.Live)
+	})
+
+	t.Run("a failed read fails the reconcile", func(t *testing.T) {
+		// The API server returns an error other than NotFound.
+		gp := NewGatewayParameters(fake.NewClient(t), defaultInputs(t))
+		readErr := errors.New("connection refused")
+		gp.kgwParameters.getConfigMap = func(context.Context, string, string) (*corev1.ConfigMap, error) {
+			return nil, readErr
+		}
+
+		// The error names the ConfigMap and keeps the cause, rather than reading as no
+		// ConfigMap, which would drop every earlier revision.
+		_, err := gp.bootstrapRevisions(t.Context(), gw, nil, "gw", []string{"pod-sum"})
+		require.ErrorIs(t, err, ErrBootstrapConfigMapUnreadable)
+		require.ErrorIs(t, err, readErr)
+		assert.ErrorContains(t, err, "default/gw")
+	})
+}
+
 func TestBootstrapPatchesPortsOfRunningPods(t *testing.T) {
 	// render returns a Gateway's objects with listeners on ports, and patches that move
 	// the readiness listener from 8082 to 8083 applied while pods running the default

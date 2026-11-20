@@ -202,6 +202,9 @@ func snapshotPerClient(
 		slices.Sort(snap.synthesizedEndpoints)
 		snap.erroredClusters = slices.Sorted(slices.Values(clustersForUcc.erroredClusters))
 		snap.proxyKey = ucc.ResourceName()
+		// The gate holds a new client's first snapshot until the Gateway's
+		// configuration was validated under its pod's bootstrap.
+		snap.bootstrapUnvalidated = !listenerRouteSnapshot.validatedBootstraps.covers(ucc.Bootstrap)
 		snap.scopesClusters = scoping.ScopesClusters()
 		snap.endpointHashes = endpointHashes
 		snapshot := &envoycache.Snapshot{}

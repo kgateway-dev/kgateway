@@ -341,6 +341,12 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			// The controller is stopping; the error says nothing about the Gateway.
 			return err
 		}
+		if errors.Is(err, internaldeployer.ErrBootstrapConfigMapUnreadable) {
+			// A failed read from the API server says nothing about the Gateway, so its
+			// status and objects are left as they are and the reconcile is retried.
+			logger.Info("not deploying Gateway: could not read its generated bootstrap ConfigMap; retrying", "ref", req, "error", err)
+			return err
+		}
 		if patchErr, ok := errors.AsType[*internaldeployer.BootstrapPatchError](err); ok {
 			logger.Info("not deploying Gateway: its bootstrap patch was not applied", "ref", req, "reason", patchErr.Reason, "retry", patchErr.Retry, "error", patchErr)
 			conds := []metav1.Condition{{
