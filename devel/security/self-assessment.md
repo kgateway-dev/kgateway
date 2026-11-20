@@ -154,7 +154,7 @@ kgateway is not currently targeting formal standards (PCI-DSS, GDPR). However, t
 
 ### Industry Standards
 
-* **Gateway API Compliance:** Full compliance with Kubernetes Gateway API specifications and [security](https://gateway-api.sigs.k8s.io/guides/security/)
+* **Gateway API Compliance:** Full compliance with Kubernetes Gateway API specifications and [security](https://gateway-api.sigs.k8s.io/docs/concepts/security/)
 * **Envoy Proxy Standards:** Built on battle-tested Envoy proxy with its [security model](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/security)
 * **Cloud Native Security:** Adherence to [CNCF security best practices and guidelines](https://github.com/cncf/sig-security/blob/main/security-whitepaper/CNCF_security_whitepaper-v2.pdf)
 * **OpenTelemetry Integration:** Observability and security monitoring through OpenTelemetry standards
