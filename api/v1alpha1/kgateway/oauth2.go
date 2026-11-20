@@ -167,13 +167,23 @@ type OAuth2CookieConfig struct {
 }
 
 // OAuth2Credentials specifies the Oauth2 client credentials.
+//
+// +kubebuilder:validation:ExactlyOneOf=clientID;clientIDRef
 type OAuth2Credentials struct {
 	// ClientID specifies the client ID issued to the client during the registration process.
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
-	// +required
+	// Exactly one of ClientID or ClientIDRef must be set.
+	// +optional
 	//
 	// +kubebuilder:validation:MinLength=1
-	ClientID string `json:"clientID"`
+	ClientID string `json:"clientID,omitempty"`
+
+	// ClientIDRef specifies a Secret that contains the client ID stored in the key 'client-id'.
+	// Use this when the client ID is only known after the client is registered, for example
+	// when the registration is created by a controller that writes its credentials to a Secret.
+	// Exactly one of ClientID or ClientIDRef must be set.
+	// +optional
+	ClientIDRef *corev1.LocalObjectReference `json:"clientIDRef,omitempty"`
 
 	// ClientSecretRef specifies a Secret that contains the client secret stored in the key 'client-secret'
 	// to use in the authentication request to obtain the access token.
