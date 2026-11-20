@@ -318,6 +318,16 @@ func WithCookieJar(cookieJar string) Option {
 	}
 }
 
+// WithRequestTarget returns the Option to send target as the request target, the
+// path and query in the request line, exactly as written. It lets a test send what a
+// client normally does not, such as a URL fragment.
+// https://curl.se/docs/manpage.html#--request-target
+func WithRequestTarget(target string) Option {
+	return func(config *requestConfig) {
+		config.requestTarget = target
+	}
+}
+
 func WithProxyProto() Option {
 	return func(config *requestConfig) {
 		config.proxyProto = true

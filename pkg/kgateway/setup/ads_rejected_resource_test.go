@@ -496,6 +496,47 @@ func TestADSCacheDeliversRoutesToANewProxyWhileAListenerIsRejected(t *testing.T)
 	}
 }
 
+// A static bootstrap cluster with the name of a translated EDS cluster shadows
+// it: Envoy skips the CDS cluster, acknowledges the CDS response, and never
+// requests that cluster's endpoints. The shadowed cluster's CLA stays in the
+// snapshot, and it must not hold back the endpoints of the other clusters, for
+// a proxy that connects while it is published or for the later changes.
+func TestADSCacheDeliversEndpointsWhileAClusterIsShadowedByAStaticCluster(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(adsModeName(ordered), func(t *testing.T) {
+			// Publish backend and the shadowed cluster, both with endpoints.
+			p := newADSProxy(newADSHarness(t, ordered))
+			p.h.setSnapshot(clusterEndpointSnapshot("1", "1",
+				[]string{"backend", "shadowed"},
+				map[string]string{"backend": "10.0.0.1", "shadowed": "10.0.0.3"}))
+
+			// Envoy keeps its static cluster, acknowledges CDS, and requests
+			// endpoints for backend only.
+			p.subscribe(envoyresource.ClusterType)
+			p.accept(p.next(envoyresource.ClusterType))
+			p.subscribeHandled(envoyresource.EndpointType, "backend")
+			want := map[string]string{"backend": "10.0.0.1"}
+			require.Truef(t, p.await(envoyresource.EndpointType, want),
+				"the new proxy has endpoints %v, want %v: the shadowed cluster's endpoints, which the proxy never "+
+					"requested, held back its first EDS response", p.received[envoyresource.EndpointType], want)
+
+			// backend moves while the shadowed cluster's CLA is still published.
+			p.h.waitForOpenWatches(2)
+			p.h.setSnapshot(clusterEndpointSnapshot("1", "2",
+				[]string{"backend", "shadowed"},
+				map[string]string{"backend": "10.0.0.11", "shadowed": "10.0.0.4"}))
+			want = map[string]string{"backend": "10.0.0.11"}
+			require.Truef(t, p.await(envoyresource.EndpointType, want),
+				"the proxy has endpoints %v, want %v: the shadowed cluster's endpoints held back the EDS update",
+				p.received[envoyresource.EndpointType], want)
+
+			// The proxy never received the shadowed cluster's endpoints.
+			require.NotContains(t, p.received[envoyresource.EndpointType], "shadowed",
+				"the proxy never requested the shadowed cluster's endpoints")
+		})
+	}
+}
+
 // SetSnapshot installs one type at a time, so Envoy can request endpoints for a
 // new cluster after its CDS is installed and before its EDS is. The same update
 // removes a cluster, so the endpoints still installed name one that the request

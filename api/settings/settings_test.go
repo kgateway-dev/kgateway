@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -31,6 +32,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_DEFAULT_IMAGE_REGISTRY":                    "my-registry",
 		"KGW_DEFAULT_IMAGE_TAG":                         "my-tag",
 		"KGW_DEFAULT_IMAGE_PULL_POLICY":                 "Always",
+		"KGW_CONTROLLER_IMAGE_TAG":                      "my-controller-tag",
 		"KGW_INGRESS_USE_WAYPOINTS":                     "true",
 		"KGW_LOG_LEVEL":                                 "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":             `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
@@ -40,6 +42,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_VALIDATION_MODE":                           string(ValidationStrict),
 		"KGW_VALIDATOR_MODE":                            string(ValidatorBinary),
 		"KGW_VALIDATOR_CACHE_SIZE":                      "8192",
+		"KGW_BOOTSTRAP_PATCH_MANAGED_PATHS":             string(BootstrapPatchManagedPathsReject),
 		"KGW_ENABLE_BUILTIN_DEFAULT_METRICS":            "true",
 		"KGW_GLOBAL_POLICY_NAMESPACE":                   "foo",
 		"KGW_DISABLE_LEADER_ELECTION":                   "true",
@@ -108,6 +111,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
 				ValidatorCacheSize:                    0,
+				BootstrapPatchManagedPaths:            BootstrapPatchManagedPathsWarn,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				XdsScopingMode:                        XdsScopingAll,
 				XdsScopingDereferenceGrace:            5 * time.Second,
@@ -149,6 +153,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "my-registry",
 				DefaultImageTag:                       "my-tag",
 				DefaultImagePullPolicy:                "Always",
+				ControllerImageTag:                    "my-controller-tag",
 				IngressUseWaypoints:                   true,
 				LogLevel:                              "debug",
 				DiscoveryNamespaceSelectors:           `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
@@ -158,6 +163,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStrict,
 				ValidatorMode:                         ValidatorBinary,
 				ValidatorCacheSize:                    8192,
+				BootstrapPatchManagedPaths:            BootstrapPatchManagedPathsReject,
 				EnableBuiltinDefaultMetrics:           true,
 				GlobalPolicyNamespace:                 "foo",
 				DisableLeaderElection:                 true,
@@ -223,6 +229,13 @@ func TestSettings(t *testing.T) {
 				"KGW_VALIDATOR_MODE": "invalid",
 			},
 			expectedErrorStr: `invalid validator mode: "invalid"`,
+		},
+		{
+			name: "errors on invalid bootstrap patch managed paths mode",
+			envVars: map[string]string{
+				"KGW_BOOTSTRAP_PATCH_MANAGED_PATHS": "invalid",
+			},
+			expectedErrorStr: `invalid bootstrap patch managed paths mode: "invalid"`,
 		},
 		{
 			name: "errors on invalid xDS scoping mode",
@@ -337,6 +350,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
 				ValidatorCacheSize:                    0,
+				BootstrapPatchManagedPaths:            BootstrapPatchManagedPathsWarn,
 				LeaderElectionLeaseDuration:           15 * time.Second,
 				LeaderElectionRenewDeadline:           10 * time.Second,
 				LeaderElectionRetryPeriod:             2 * time.Second,
@@ -381,6 +395,39 @@ func TestSettings(t *testing.T) {
 
 			diff := cmp.Diff(tc.expectedSettings, s)
 			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
+		})
+	}
+}
+
+// TestBootstrapPatchManagedPathsModeDecode tests that the managed paths mode accepts
+// exactly WARN, PRUNE and REJECT, in any case.
+func TestBootstrapPatchManagedPathsModeDecode(t *testing.T) {
+	tests := []struct {
+		value   string
+		want    BootstrapPatchManagedPathsMode
+		wantErr bool
+	}{
+		{value: "WARN", want: BootstrapPatchManagedPathsWarn},
+		{value: "PRUNE", want: BootstrapPatchManagedPathsPrune},
+		{value: "REJECT", want: BootstrapPatchManagedPathsReject},
+		{value: "prune", want: BootstrapPatchManagedPathsPrune},
+		{value: "", wantErr: true},
+		{value: "IGNORE", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			// Decode the value.
+			var mode BootstrapPatchManagedPathsMode
+			err := mode.Decode(tt.value)
+
+			// Check the mode, or the error for a value that is not a mode.
+			if tt.wantErr {
+				require.EqualError(t, err, fmt.Sprintf("invalid bootstrap patch managed paths mode: %q", tt.value))
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, mode)
 		})
 	}
 }

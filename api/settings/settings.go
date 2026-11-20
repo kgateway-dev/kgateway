@@ -102,6 +102,35 @@ func (v *ValidatorMode) Decode(value string) error {
 	}
 }
 
+// BootstrapPatchManagedPathsMode determines what the controller does with a
+// GatewayParameters bootstrap patch that sets a path the control plane manages,
+// such as the node, the xDS cluster or the readiness listener.
+type BootstrapPatchManagedPathsMode string
+
+const (
+	// BootstrapPatchManagedPathsWarn applies the patch as written and reports each
+	// managed path it sets.
+	BootstrapPatchManagedPathsWarn BootstrapPatchManagedPathsMode = "WARN"
+	// BootstrapPatchManagedPathsPrune drops each managed path from the patch before
+	// merging, applies the rest, and reports each dropped path.
+	BootstrapPatchManagedPathsPrune BootstrapPatchManagedPathsMode = "PRUNE"
+	// BootstrapPatchManagedPathsReject applies none of the patch and reports the
+	// managed paths it sets.
+	BootstrapPatchManagedPathsReject BootstrapPatchManagedPathsMode = "REJECT"
+)
+
+// Decode implements envconfig.Decoder.
+func (m *BootstrapPatchManagedPathsMode) Decode(value string) error {
+	mode := BootstrapPatchManagedPathsMode(strings.ToUpper(value))
+	switch mode {
+	case BootstrapPatchManagedPathsWarn, BootstrapPatchManagedPathsPrune, BootstrapPatchManagedPathsReject:
+		*m = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid bootstrap patch managed paths mode: %q", value)
+	}
+}
+
 // ReferenceGrantMode controls how strictly cross-namespace references are validated
 // via ReferenceGrant across the control plane.
 type ReferenceGrantMode string
@@ -282,6 +311,11 @@ type Settings struct {
 	DefaultImageTag string `split_words:"true" default:""`
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
+	// ControllerImageTag is the image tag of the controller itself. The controller
+	// validates GatewayParameters bootstrap patches with the Envoy in its own image, and
+	// reports a patched Gateway whose proxy image is not envoy-wrapper at this tag. Empty
+	// skips that report.
+	ControllerImageTag string `split_words:"true" default:""`
 
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
 	// When enabled, ingress traffic from ambient-captured gateways (the
@@ -346,6 +380,16 @@ type Settings struct {
 	// and the translator's cluster verdict cache in every ValidatorMode.
 	// A value <= 0 selects validator.DefaultCacheSize.
 	ValidatorCacheSize int `split_words:"true"`
+
+	// BootstrapPatchManagedPaths determines what the controller does with a
+	// GatewayParameters bootstrap patch that sets a path the control plane manages.
+	// Supported values:
+	// - "WARN" (default): apply the patch as written and report each managed path
+	//   it sets on status, in an event and in a metric.
+	// - "PRUNE": drop each managed path from the patch before merging, apply the
+	//   rest, and report each dropped path.
+	// - "REJECT": apply none of the patch and report the managed paths.
+	BootstrapPatchManagedPaths BootstrapPatchManagedPathsMode `split_words:"true" default:"WARN"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.

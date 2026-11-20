@@ -13,6 +13,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -22,7 +23,7 @@ import (
 // localClusterEndpointPort is the port used in local-cluster CLA endpoints.
 // The value is arbitrary, and the admin port is used since it is guaranteed
 // to be listening on every Envoy pod.
-const localClusterEndpointPort uint32 = 19000
+var localClusterEndpointPort = wellknown.EnvoyAdminPort
 
 // localClusterEndpoint is one gateway pod as it appears in the local-cluster CLA:
 // just the address and locality, plus the pod's resource name for stable ordering.

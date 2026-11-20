@@ -107,6 +107,8 @@ var chartVersionFieldNormalizers = []struct {
 	{regexp.MustCompile(`(?m)^(\s*image: ".*:)[^"]*(")\s*$`), `${1}NORMALIZED${2}`},
 	// KGW_DEFAULT_IMAGE_TAG env value, also derived from appVersion
 	{regexp.MustCompile(`(?m)^(\s*- name: KGW_DEFAULT_IMAGE_TAG\n\s*value: ).*$`), `${1}NORMALIZED`},
+	// KGW_CONTROLLER_IMAGE_TAG env value, also derived from appVersion
+	{regexp.MustCompile(`(?m)^(\s*- name: KGW_CONTROLLER_IMAGE_TAG\n\s*value: ).*$`), `${1}NORMALIZED`},
 }
 
 func normalizeChartVersionFields(rendered string) string {

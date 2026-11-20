@@ -24,16 +24,19 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/events"
 	utilretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -67,6 +70,9 @@ type gatewayReconciler struct {
 
 	controllerExtension pluginsdk.GatewayControllerExtension
 
+	// recorder records the events the deployer reports on Gateways.
+	recorder events.EventRecorder
+
 	queue controllers.Queue
 }
 
@@ -83,6 +89,7 @@ func NewGatewayReconciler(
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
 		controllerExtension: controllerExtension,
+		recorder:            cfg.Mgr.GetEventRecorder(cfg.ControllerName),
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
@@ -202,12 +209,37 @@ func NewGatewayReconciler(
 		r.queue.Add(ref)
 	})
 
+	// Reconcile a Gateway when the bootstraps its proxy pods run change: a port an old
+	// pod listened on can return to the Service, and a bootstrap revision no pod uses
+	// can be removed from the generated ConfigMap.
+	if running := cfg.CommonCollections.GatewayIndex.RunningBootstraps; running != nil {
+		running.Register(func(o krt.Event[krtcollections.GatewayRunningBootstraps]) {
+			ref := o.Latest().Gateway
+			logger.Debug("reconciling Gateway due to a change in the bootstraps its proxies run", "ref", ref)
+			r.queue.Add(ref)
+		})
+	}
+
 	// Add a handler to reconcile the parent Gateway when child objects (Deployment, Service, etc.)
-	parentHandler := controllers.ObjectHandler(controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway))
+	enqueueParent := controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway)
+	parentHandler := controllers.ObjectHandler(enqueueParent)
 	r.deploymentClient.AddEventHandler(parentHandler)
 	r.svcAccountClient.AddEventHandler(parentHandler)
 	r.svcClient.AddEventHandler(parentHandler)
 	r.configMapClient.AddEventHandler(parentHandler)
+
+	// Reconcile the Gateway that owns a ReplicaSet's Deployment when the ReplicaSet
+	// changes, so a bootstrap revision is removed once no ReplicaSet can create a pod
+	// with it.
+	r.gwParams.GetReplicaSetClient().AddEventHandler(controllers.ObjectHandler(func(o controllers.Object) {
+		owner := metav1.GetControllerOf(o)
+		if owner == nil || owner.Kind != wellknown.DeploymentGVK.Kind {
+			return
+		}
+		if dep := r.deploymentClient.Get(owner.Name, o.GetNamespace()); dep != nil {
+			enqueueParent(dep)
+		}
+	}))
 
 	// Register controller extensions
 	if controllerExtension != nil {
@@ -253,6 +285,7 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 		r.gwClient,
 		r.gwClassClient,
 		r.gwParamClient,
+		r.gwParams.GetReplicaSetClient(),
 		r.nsClient,
 		r.deploymentClient,
 		r.svcAccountClient,
@@ -275,6 +308,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	if gw == nil || gw.GetDeletionTimestamp() != nil {
 		// ignore the event if the Gateway is not found. A subsequent event should handle this if needed
 		logger.Debug("gateway not found, skipping reconciliation", "ref", req)
+		internaldeployer.ForgetBootstrapPatchMetrics(req)
 		return nil
 	}
 
@@ -296,11 +330,79 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 
 	logger.Info("reconciling Gateway", "ref", req)
 	ctx := r.ctx
-	objs, err := r.deployer.GetObjsToDeploy(ctx, gw)
+	objs, report, err := r.deployer.GetObjsToDeployWithReport(ctx, gw)
 	if err != nil {
 		if errors.Is(err, internaldeployer.ErrNoValidPorts) {
 			// status is reported from translator, so return normally
 			return err
+		}
+		if ctx.Err() != nil {
+			// The controller is stopping; the error says nothing about the Gateway.
+			return err
+		}
+		if errors.Is(err, internaldeployer.ErrBootstrapConfigMapUnreadable) {
+			// A failed read from the API server says nothing about the Gateway, so its
+			// status and objects are left as they are and the reconcile is retried.
+			logger.Info("not deploying Gateway: could not read its generated bootstrap ConfigMap; retrying", "ref", req, "error", err)
+			return err
+		}
+		if patchErr, ok := errors.AsType[*internaldeployer.BootstrapPatchError](err); ok {
+			logger.Info("not deploying Gateway: its bootstrap patch was not applied", "ref", req, "reason", patchErr.Reason, "retry", patchErr.Retry, "error", patchErr)
+			conds := []metav1.Condition{{
+				Type:               conditions.KgatewayConditionBootstrapPatchApplied,
+				Status:             metav1.ConditionFalse,
+				ObservedGeneration: gw.Generation,
+				Reason:             patchErr.Reason,
+				Message:            patchErr.Error(),
+			}}
+
+			// An existing proxy keeps running its last applied bootstrap, so Accepted is
+			// left alone. A Gateway whose bootstrap ConfigMap does not exist yet has no
+			// proxy, so it is not accepted. Without the ConfigMap's name, which only a
+			// controller defect leaves out, Accepted is left alone.
+			evts := patchErr.Events()
+			if patchErr.ConfigMapName != "" && r.configMapClient.Get(patchErr.ConfigMapName, gw.Namespace) == nil {
+				conds = append(conds, metav1.Condition{
+					Type:               string(gwv1.GatewayConditionAccepted),
+					Status:             metav1.ConditionFalse,
+					ObservedGeneration: gw.Generation,
+					Reason:             string(gwv1.GatewayReasonInvalidParameters),
+					Message:            "No proxy is deployed until the bootstrap patch applies: " + patchErr.Error(),
+				})
+			} else if heldBack := r.heldBackProxyImage(gw, patchErr.Proxy); heldBack != "" {
+				// The existing proxy keeps its image too, which can hold back an Envoy
+				// upgrade; name both images.
+				conds[0].Message += " " + heldBack
+				evts = append(evts, internaldeployer.HeldBackProxyImageEvent(heldBack))
+			}
+			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil, evts); statusErr != nil {
+				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+
+			// Retry only when applying the patches again can succeed. Otherwise a change
+			// to the GatewayParameters or GatewayClass starts a new reconcile, and so
+			// does the controller restart that a change to its Deployment or settings
+			// causes.
+			if patchErr.Retry {
+				return patchErr
+			}
+			return nil
+		}
+		if tooLarge, ok := errors.AsType[*internaldeployer.BootstrapConfigMapTooLargeError](err); ok {
+			// A Gateway without bootstrap patches has no BootstrapPatchApplied condition,
+			// so the failure is reported as an event, every time the reconcile hits it.
+			// The objects are left as they are; the pod and ReplicaSet changes that free
+			// earlier revisions start a new reconcile.
+			logger.Info("not deploying Gateway: its generated bootstrap ConfigMap would be too large", "ref", req, "error", tooLarge)
+			if statusErr := r.applyGatewayConditions(ctx, gw, nil, []string{conditions.KgatewayConditionBootstrapPatchApplied}, nil); statusErr != nil {
+				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+			evts := tooLarge.Events()
+			if heldBack := r.heldBackProxyImage(gw, tooLarge.Proxy); heldBack != "" {
+				evts = append(evts, internaldeployer.HeldBackProxyImageEvent(heldBack))
+			}
+			r.recordEvents(gw, evts)
+			return nil
 		}
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
@@ -341,6 +443,13 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	err = r.deployer.PruneRemovedResources(ctx, gw, objs)
 	if err != nil {
 		return fmt.Errorf("error pruning removed resources for Gateway %s: %w", req, err)
+	}
+
+	// Report what the post-processor found, now that the objects are deployed.
+	if report != nil {
+		if err := r.applyGatewayConditions(ctx, gw, report.Conditions, report.OwnedConditionTypes, report.Events); err != nil {
+			return fmt.Errorf("error updating status for Gateway %s: %w", req, err)
+		}
 	}
 
 	// find the name/ns of the service we own so we can grab addresses
@@ -505,6 +614,66 @@ func (r *gatewayReconciler) updateGatewayStatusWithRetry(ctx context.Context, gw
 			return *newStatus, true
 		},
 	)
+}
+
+// applyGatewayConditions sets each condition on the Gateway's status, and removes each
+// type in ownedTypes that conds does not set. It writes the status only when it
+// changes, and records evts on the Gateway only then, so that reconciling an unchanged
+// Gateway does not repeat them.
+func (r *gatewayReconciler) applyGatewayConditions(
+	ctx context.Context,
+	gw *gwv1.Gateway,
+	conds []metav1.Condition,
+	ownedTypes []string,
+	evts []deployer.ReportEvent,
+) error {
+	// Update the status. The last attempt decides whether it changed.
+	var changed bool
+	err := updateGatewayStatusWithRetryFunc(
+		ctx,
+		r.gwClient,
+		client.ObjectKeyFromObject(gw),
+		func(latest *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
+			// Set the reported conditions.
+			newStatus := latest.Status.DeepCopy()
+			changed = false
+			for _, c := range conds {
+				changed = meta.SetStatusCondition(&newStatus.Conditions, c) || changed
+			}
+
+			// Remove the owned conditions that were not reported.
+			for _, t := range ownedTypes {
+				if !slices.ContainsFunc(conds, func(c metav1.Condition) bool { return c.Type == t }) {
+					changed = meta.RemoveStatusCondition(&newStatus.Conditions, t) || changed
+				}
+			}
+			return *newStatus, changed
+		},
+	)
+	if err != nil || !changed {
+		return err
+	}
+
+	// Record the events that go with the new status.
+	r.recordEvents(gw, evts)
+	return nil
+}
+
+// heldBackProxyImage returns the sentence that names the image gw's live proxy
+// Deployment keeps running and the image of rendered, which was not deployed, or ""
+// when they are the same or either is unknown.
+func (r *gatewayReconciler) heldBackProxyImage(gw *gwv1.Gateway, rendered internaldeployer.RenderedProxy) string {
+	if rendered.DeploymentName == "" {
+		return ""
+	}
+	return internaldeployer.HeldBackProxyImage(r.deploymentClient.Get(rendered.DeploymentName, gw.Namespace), rendered)
+}
+
+// recordEvents records evts on gw.
+func (r *gatewayReconciler) recordEvents(gw *gwv1.Gateway, evts []deployer.ReportEvent) {
+	for _, e := range evts {
+		r.recorder.Eventf(gw, nil, e.Type, e.Reason, e.Action, "%s", e.Note)
+	}
 }
 
 // setupTLSCertificateWatch configures a watch for xDS TLS certificate changes.

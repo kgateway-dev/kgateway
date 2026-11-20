@@ -348,6 +348,7 @@ func (x *callbacksCollection) deriveClientIdentity(r *envoy_service_discovery_v3
 	var locality ir.PodLocality
 	var ns string
 	var labels map[string]string
+	var bootstrap *ir.PodBootstrap
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
 	if peer.podRef != nil {
 		k := krt.Named{Name: peer.podRef.Name, Namespace: peer.podRef.Namespace}.ResourceName()
@@ -363,8 +364,19 @@ func (x *callbacksCollection) deriveClientIdentity(r *envoy_service_discovery_v3
 		ns = pod.Namespace
 		labels = pod.AugmentedLabels
 		peer.role = NormalizeGatewayRole(peer.role, ns, labels)
+
+		// The pod's bootstrap holds its first snapshot until the Gateway's
+		// configuration was validated under it. pod-template-hash is in labels, so
+		// every pod of the client runs this bootstrap.
+		bootstrap = pod.Bootstrap
+		if bootstrap == nil {
+			bootstrap = defaultPodBootstrap()
+		}
 	}
+
+	// Build the client from the pod's state.
 	ucc := ir.NewUniquelyConnectedClient(peer.role, ns, labels, locality)
+	ucc.Bootstrap = bootstrap
 	return &ucc, nil
 }
 

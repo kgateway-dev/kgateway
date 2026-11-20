@@ -90,6 +90,8 @@ func (c *CommonCollections) InitCollections(
 		ListenerSets:        kubeRawListenerSets,
 		GatewayClasses:      gatewayClasses,
 		Namespaces:          namespaces,
+		ConfigMaps:          c.ConfigMaps.Collection(),
+		Pods:                c.WrappedPods,
 	},
 		krtcollections.WithGatewayForDeployerTransformationFunc(c.options.gatewayForDeployerTransformationFunc),
 		krtcollections.WithGatewayForEnvoyTransformationFunc(c.options.gatewayForEnvoyTransformationFunc),

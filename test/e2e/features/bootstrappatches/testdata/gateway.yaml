@@ -1,0 +1,36 @@
+# A Gateway whose proxy takes its bootstrap patches from the bootstrap-patches
+# GatewayParameters, which each test supplies, and a route to httpbin.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: bootstrap-patches
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: bootstrap-patches
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bootstrap-patches
+  namespace: default
+spec:
+  parentRefs:
+    - name: bootstrap-patches
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: httpbin
+          port: 8000

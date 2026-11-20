@@ -103,6 +103,10 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
+
+	// validatedBootstraps are the bootstraps the translation was validated under.
+	// A new client's first snapshot is held until they cover its pod's bootstrap.
+	validatedBootstraps bootstrapCoverage
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -115,7 +119,8 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
 		r.Secrets.Version == in.Secrets.Version &&
-		r.EmittedClusters.Equals(in.EmittedClusters)
+		r.EmittedClusters.Equals(in.EmittedClusters) &&
+		r.validatedBootstraps.Equals(in.validatedBootstraps)
 }
 
 // GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
@@ -179,14 +184,15 @@ func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, 
 	}
 	return &gatewayTranslationOutput{
 		Xds: GatewayXdsResources{
-			NamespacedName:     nn,
-			ClustersHash:       ch,
-			Clusters:           c,
-			Routes:             routes,
-			Listeners:          listeners,
-			Secrets:            sliceToResources(xdsSnap.Secrets),
-			ReferencedClusters: collectReferencedClusters(routes, listeners),
-			EmittedClusters:    emittedClustersFor(scoping, routes, listeners),
+			NamespacedName:      nn,
+			ClustersHash:        ch,
+			Clusters:            c,
+			Routes:              routes,
+			Listeners:           listeners,
+			Secrets:             sliceToResources(xdsSnap.Secrets),
+			ReferencedClusters:  collectReferencedClusters(routes, listeners),
+			EmittedClusters:     emittedClustersFor(scoping, routes, listeners),
+			validatedBootstraps: newBootstrapCoverage(gw.ValidationBootstraps),
 		},
 		Status: GatewayStatusSnapshot{
 			NamespacedName: nn,
@@ -348,6 +354,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// Resolved at construction; every scoping path checks ScopesClusters() and
 	// does nothing when it is false.
 	scoping := s.scoping
+	clusterConflicts := newStaticClusterConflicts(finalBackends)
 	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
 		// with controllerName matching s.controllerName (envoy controller). The filtering happens
@@ -358,6 +365,9 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		if xdsSnap == nil {
 			return nil
 		}
+
+		// Report static clusters from bootstrap patches that shadow translated clusters.
+		clusterConflicts.report(kctx, gw, &rm)
 
 		return toTranslationOutput(gw, *xdsSnap, rm, scoping)
 	}, krtopts.ToOptions("GatewayTranslationOutputs")...)

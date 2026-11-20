@@ -138,7 +138,7 @@ func (t *Translator) ComputeListener(
 			pluginPass:                pass,
 			logger:                    logger.With("route_config_name", hfc.FilterChainName),
 			validationLevel:           t.ValidationLevel,
-			validator:                 t.Validator,
+			validator:                 validatorForGateway(t.Validator, gw.SourceObject),
 			enableRouteSourceMetadata: t.EnableRouteSourceMetadata,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)

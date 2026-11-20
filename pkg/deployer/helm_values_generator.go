@@ -3,6 +3,7 @@ package deployer
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -28,4 +29,36 @@ type ObjectPostProcessor interface {
 	// It returns the (potentially modified) slice of objects, as new objects may be added
 	// (e.g., PodDisruptionBudget, HorizontalPodAutoscaler).
 	PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, error)
+}
+
+// ReportingObjectPostProcessor is an optional interface for an ObjectPostProcessor that
+// also reports status for the object the rendered objects belong to. When a
+// HelmValuesGenerator implements it, the Deployer calls it instead of PostProcessObjects.
+type ReportingObjectPostProcessor interface {
+	PostProcessObjectsWithReport(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, *PostProcessReport, error)
+}
+
+// PostProcessReport is status a post-processor computed for the object the rendered
+// objects belong to, such as a Gateway.
+type PostProcessReport struct {
+	// Conditions are set on the object's status.
+	Conditions []metav1.Condition
+	// OwnedConditionTypes are the condition types the post-processor manages. A type
+	// listed here and absent from Conditions is removed from the object's status.
+	OwnedConditionTypes []string
+	// Events are recorded on the object when the reported conditions change its status.
+	Events []ReportEvent
+}
+
+// ReportEvent is a Kubernetes Event to record on the object the rendered objects
+// belong to.
+type ReportEvent struct {
+	// Type is corev1.EventTypeNormal or corev1.EventTypeWarning.
+	Type string
+	// Reason is a short CamelCase reason.
+	Reason string
+	// Action is what the controller did, or failed to do, to the object.
+	Action string
+	// Note is the human-readable message.
+	Note string
 }

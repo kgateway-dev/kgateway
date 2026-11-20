@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -302,6 +303,7 @@ func (dt DeployerTester) RunHelmChartTestWithObjects(
 	// Get post-processed objects (what actually gets deployed)
 	deployObjs, err := deployer.GetObjsToDeploy(ctx, gtw)
 	assert.NoError(t, err, "error getting objects to deploy")
+	sanitizeRevisions(t, deployObjs)
 
 	got, err := objectsToYAML(deployObjs)
 	assert.NoError(t, err, "error converting objects to YAML")
@@ -420,6 +422,65 @@ var configChecksumRegex = regexp.MustCompile(`(?m)^[ \t]*kgateway\.dev/checksum-
 // out; pkg/kgateway/deployer/checksum_test.go covers the checksum itself.
 func sanitizeOutput(got []byte) []byte {
 	return configChecksumRegex.ReplaceAll(got, nil)
+}
+
+// revisionKeyRegex matches a bootstrap revision key of the generated ConfigMap.
+var revisionKeyRegex = regexp.MustCompile(`^envoy-([0-9a-f]{64})\.yaml$`)
+
+// revisionPlaceholder stands in for the checksum in revision keys and INPUT_CONF.
+const revisionPlaceholder = "envoy-CHECKSUM.yaml"
+
+// sanitizeRevisions checks that the generated ConfigMap's bootstrap revision holds
+// envoy.yaml under the pod template's checksum, and that INPUT_CONF points the proxy at
+// it. It then replaces the key and the INPUT_CONF path with a placeholder, since the
+// checksum changes with any bootstrap edit, and the revision's value too, so the golden
+// files do not hold the bootstrap twice.
+func sanitizeRevisions(t *testing.T, objs []client.Object) {
+	t.Helper()
+
+	// Find the pod template's checksum.
+	var checksum string
+	for _, obj := range objs {
+		if dep, ok := obj.(*appsv1.Deployment); ok {
+			checksum = dep.Spec.Template.Annotations["kgateway.dev/checksum-config"]
+		}
+	}
+
+	// Replace the revision key, checking it holds envoy.yaml under that checksum.
+	for _, obj := range objs {
+		cm, ok := obj.(*corev1.ConfigMap)
+		if !ok {
+			continue
+		}
+		for key, value := range cm.Data {
+			m := revisionKeyRegex.FindStringSubmatch(key)
+			if m == nil {
+				continue
+			}
+			assert.Equal(t, checksum, m[1], "the revision key should be named by the pod template's checksum")
+			assert.Equal(t, cm.Data["envoy.yaml"], value, "the revision should hold envoy.yaml")
+			delete(cm.Data, key)
+			cm.Data[revisionPlaceholder] = "<envoy.yaml>"
+		}
+	}
+
+	// Replace the INPUT_CONF path, checking it names that revision.
+	for _, obj := range objs {
+		dep, ok := obj.(*appsv1.Deployment)
+		if !ok {
+			continue
+		}
+		for i := range dep.Spec.Template.Spec.Containers {
+			c := &dep.Spec.Template.Spec.Containers[i]
+			for j := range c.Env {
+				if c.Env[j].Name != "INPUT_CONF" {
+					continue
+				}
+				assert.Equal(t, "/etc/envoy/envoy-"+checksum+".yaml", c.Env[j].Value, "INPUT_CONF should name the pod's revision")
+				c.Env[j].Value = "/etc/envoy/" + revisionPlaceholder
+			}
+		}
+	}
 }
 
 // objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"

@@ -7,13 +7,7 @@ import (
 	"os"
 	"syscall"
 
-	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
-	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 )
 
 const (
@@ -33,6 +27,7 @@ const (
 // RunEnvoy run Envoy with bootstrap configuration injected from a file
 func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 1. Transform the configuration using the Kubernetes Downward API
+	waitForInputConfig(inputPath)
 	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
 		// The "initializer failed" prefix is asserted by the envoy-wrapper
@@ -47,30 +42,11 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	}
 	if caPath != "" {
 		log.Printf("Using OS CA certificate for proxy: %s", caPath)
-		// If the CA cert path is set, we need to set the CA cert path in the bootstrap config
-		var bootstrap envoybootstrapv3.Bootstrap
-		err := protoutils.UnmarshalYaml([]byte(bootstrapConfig), &bootstrap)
+		withCA, err := addSystemCASecret([]byte(bootstrapConfig), caPath)
 		if err != nil {
-			log.Fatalf("failed to unmarshal bootstrap config: %v", err)
+			log.Fatalf("failed to add the system CA secret to the bootstrap: %v", err)
 		}
-		bootstrap.GetStaticResources().Secrets = append(bootstrap.GetStaticResources().GetSecrets(), &envoytlsv3.Secret{
-			Name: utils.SystemCaSecretName,
-			Type: &envoytlsv3.Secret_ValidationContext{
-				ValidationContext: &envoytlsv3.CertificateValidationContext{
-					TrustedCa: &envoycorev3.DataSource{
-						Specifier: &envoycorev3.DataSource_Filename{
-							Filename: caPath,
-						},
-					},
-				},
-			},
-		})
-
-		newBootstrapConfig, err := protoutils.MarshalBytes(&bootstrap)
-		if err != nil {
-			log.Fatalf("failed to marshal bootstrap config: %v", err)
-		}
-		bootstrapConfig = string(newBootstrapConfig)
+		bootstrapConfig = string(withCA)
 	}
 
 	// 2. Write to a file for debug purposes
