@@ -44,7 +44,9 @@ spec:
     authorizationEndpoint: https://keycloak/realms/master/protocol/openid-connect/auth
     endSessionEndpoint: https://keycloak/realms/master/protocol/openid-connect/logout
     credentials:
-      clientID: kgateway-client-id # must match the clientId created in Keycloak
+      # client ID from the Secret, key client-id
+      clientIDRef:
+        name: oauth-client-secret
       clientSecretRef:
         name: oauth-client-secret
     redirectURI: https://example.com/anything/second/oauth2/redirect # must match the REDIRECT_URL_SECOND used in Keycloak setup
