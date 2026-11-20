@@ -100,7 +100,7 @@ func (tc bootstrapTestCase) render(t *testing.T) ([]client.Object, *deployer.Pos
 	return d.GetObjsToDeployWithReport(t.Context(), gw)
 }
 
-// withOverlay returns GatewayParameters whose bootstrap overlay is the given YAML.
+// withOverlay returns GatewayParameters whose bootstrap patch is the given YAML.
 func withOverlay(t *testing.T, gwp *kgateway.GatewayParameters, overlayYAML string) *kgateway.GatewayParameters {
 	t.Helper()
 	raw, err := yaml.YAMLToJSON([]byte(overlayYAML))
@@ -109,10 +109,10 @@ func withOverlay(t *testing.T, gwp *kgateway.GatewayParameters, overlayYAML stri
 		gwp.Spec.Kube = &kgateway.KubernetesProxyConfig{}
 	}
 	gwp.Spec.Kube.EnvoyContainer = &kgateway.EnvoyContainer{Bootstrap: &kgateway.EnvoyBootstrap{
-		Patches: &kgateway.BootstrapPatches{Overlay: &kgateway.BootstrapOverlay{
+		Patch: &kgateway.BootstrapPatch{
 			MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
 			Value:         apiextensionsv1.JSON{Raw: raw},
-		}},
+		},
 	}}
 	return gwp
 }
@@ -219,7 +219,7 @@ layered_runtime:
 	assert.Equal(t, metav1.ConditionTrue, cond.Status)
 	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
 	assert.Equal(t, int64(3), cond.ObservedGeneration)
-	assert.Equal(t, "The bootstrap patches are applied.", cond.Message)
+	assert.Equal(t, "The bootstrap patch is applied.", cond.Message)
 	assert.Empty(t, report.Events, "patches with nothing to warn about should record no events")
 
 	// Rendering the same patches again gives the same checksum; changing them changes it.
@@ -254,15 +254,23 @@ static_resources:
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}}`, string(data.Bootstrap))
 	assert.Equal(t, []uint32{8083, 9000, 9091, 19000}, data.ReservedPorts)
+	assert.Contains(t, data.StaticClusters, "xds_cluster", "the ConfigMap should list the patched bootstrap's static clusters")
 
-	// The pod template carries the same subset, byte for byte.
-	assert.Equal(t, string(data.Bootstrap), podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
+	// The pod template carries the same subset, byte for byte, and the same ports,
+	// without the static cluster names.
+	annotation, err := bootstrappatch.DecodeValidationData(podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
+	require.NoError(t, err)
+	assert.Equal(t, string(data.Bootstrap), string(annotation.Bootstrap))
+	assert.Equal(t, data.ReservedPorts, annotation.ReservedPorts)
+	assert.Empty(t, annotation.StaticClusters)
 
 	// Patches without a static layer write the empty subset, which the translator
 	// treats as Envoy's defaults.
 	objs, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)}.render(t)
 	require.NoError(t, err)
-	assert.Equal(t, bootstrappatch.EmptyValidationSubset, podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
+	annotation, err = bootstrappatch.DecodeValidationData(podTemplateAnnotations(t, objs)[bootstrappatch.ValidationAnnotation])
+	require.NoError(t, err)
+	assert.Equal(t, bootstrappatch.EmptyValidationSubset, string(annotation.Bootstrap))
 }
 
 func TestBootstrapPatchesValidationSubsetTooLarge(t *testing.T) {
@@ -275,7 +283,7 @@ func TestBootstrapPatchesValidationSubsetTooLarge(t *testing.T) {
 	// Nothing is rendered, and the error names the limit.
 	var patchErr *BootstrapPatchError
 	require.ErrorAs(t, err, &patchErr)
-	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidPatch, patchErr.Reason)
 	assert.ErrorContains(t, patchErr, "the static runtime layers of the patched bootstrap take")
 	assert.Nil(t, objs)
 }
@@ -454,7 +462,7 @@ func TestBootstrapPatchProvider(t *testing.T) {
 		})
 
 		// Nothing is rendered, and the error names the Gateway and the cause.
-		assert.ErrorContains(t, err, fmt.Sprintf("failed to get the bootstrap patches for Gateway %s/gw: the provider's parameters are missing", defaultNamespace))
+		assert.ErrorContains(t, err, fmt.Sprintf("failed to get the bootstrap patch for Gateway %s/gw: the provider's parameters are missing", defaultNamespace))
 		assert.Nil(t, objs)
 	})
 }
@@ -479,6 +487,40 @@ func TestBootstrapPatchesManagedPath(t *testing.T) {
 	assert.Contains(t, cond.Message, "static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params)")
 }
 
+func TestBootstrapPatchesReplacedEntry(t *testing.T) {
+	// Render a Gateway whose patches replace the downstream-connections resource
+	// monitor that maxDownstreamConnections renders, which is not a managed path.
+	gwp := withOverlay(t, gatewayParams(), `
+overload_manager:
+  resource_monitors:
+  - name: envoy.resource_monitors.global_downstream_max_connections
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+      max_active_downstream_connections: 500`)
+	gwp.Spec.Kube.EnvoyContainer.Bootstrap.MaxDownstreamConnections = new(int64(100))
+	objs, report, err := bootstrapTestCase{gatewayParams: gwp}.render(t)
+	require.NoError(t, err)
+
+	// The replacement applies.
+	_, bs := renderedBootstrap(t, objs)
+	monitors := bs.GetOverloadManager().GetResourceMonitors()
+	require.Len(t, monitors, 1, "the patch should replace the generated monitor, not add a second")
+	assert.Contains(t, monitors[0].GetTypedConfig().String(), "500")
+
+	// The condition keeps its reason and names the entry, and a Warning event names it.
+	const entry = "overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections] (GatewayParameters default/gw-params)"
+	cond := bootstrapCondition(t, report)
+	assert.Equal(t, metav1.ConditionTrue, cond.Status)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
+	assert.Contains(t, cond.Message, entry)
+	assert.Equal(t, []deployer.ReportEvent{{
+		Type:   corev1.EventTypeWarning,
+		Reason: generatedEntryReplacedEventReason,
+		Action: applyBootstrapPatchesAction,
+		Note:   "Applied a bootstrap patch that replaces " + entry + ", an entry of the generated bootstrap.",
+	}}, report.Events)
+}
+
 func TestBootstrapPatchesInvalid(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -488,7 +530,7 @@ func TestBootstrapPatchesInvalid(t *testing.T) {
 		{
 			name:    "misspelled field",
 			overlay: `{layerd_runtime: {}}`,
-			wantErr: "bootstrap overlay in GatewayParameters default/gw-params: does not parse as an Envoy Bootstrap",
+			wantErr: "bootstrap patch in GatewayParameters default/gw-params: does not parse as an Envoy Bootstrap",
 		},
 		{
 			name:    "runtime layer named like the admin layer",
@@ -498,7 +540,7 @@ func TestBootstrapPatchesInvalid(t *testing.T) {
 		{
 			name:    "disk runtime layer",
 			overlay: `{layered_runtime: {layers: [{name: from_disk, disk_layer: {symlink_root: /etc/runtime}}]}}`,
-			wantErr: `runtime layer "from_disk" sets disk_layer instead of static_layer; bootstrap patches can add only static runtime layers`,
+			wantErr: `runtime layer "from_disk" sets disk_layer instead of static_layer; a bootstrap patch can add only static runtime layers`,
 		},
 		{
 			name:    "RTDS runtime layer",
@@ -515,7 +557,7 @@ func TestBootstrapPatchesInvalid(t *testing.T) {
 			// Nothing is rendered, and the error carries the condition reason.
 			var patchErr *BootstrapPatchError
 			require.ErrorAs(t, err, &patchErr)
-			assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+			assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidPatch, patchErr.Reason)
 			assert.Equal(t, "gw", patchErr.ConfigMapName)
 			assert.ErrorContains(t, patchErr, tt.wantErr)
 			assert.Nil(t, objs)
@@ -557,7 +599,7 @@ func TestBootstrapPatchesValidation(t *testing.T) {
 		cond := bootstrapCondition(t, report)
 		assert.Equal(t, metav1.ConditionTrue, cond.Status)
 		assert.Equal(t, conditions.KgatewayReasonBootstrapPatchApplied, cond.Reason)
-		assert.Equal(t, "The bootstrap patches are applied.", cond.Message)
+		assert.Equal(t, "The bootstrap patch is applied.", cond.Message)
 	})
 
 	t.Run("rejected", func(t *testing.T) {
@@ -628,7 +670,7 @@ func TestBootstrapPatchesValidation(t *testing.T) {
 		assert.Equal(t, conditions.KgatewayReasonBootstrapControllerError, patchErr.Reason)
 		assert.False(t, patchErr.Retry)
 		assert.Empty(t, patchErr.ConfigMapName)
-		assert.EqualError(t, patchErr, "the controller failed to apply the bootstrap patches; this is a kgateway defect, not a problem with the patches: no bootstrap ConfigMap was rendered")
+		assert.EqualError(t, patchErr, "the controller failed to apply the bootstrap patch; this is a kgateway defect, not a problem with the patch: no bootstrap ConfigMap was rendered")
 	})
 
 	t.Run("not run without patches", func(t *testing.T) {
@@ -674,7 +716,7 @@ static_resources:
 	assert.Nil(t, objs)
 	patchErr, ok := errors.AsType[*BootstrapPatchError](err)
 	require.True(t, ok, "expected a *BootstrapPatchError, got %v", err)
-	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidOverlay, patchErr.Reason)
+	assert.Equal(t, conditions.KgatewayReasonBootstrapInvalidPatch, patchErr.Reason)
 	assert.NotEmpty(t, patchErr.ConfigMapName, "an existing Gateway's Accepted condition should be left alone")
 	assert.ErrorContains(t, patchErr, "the patched bootstrap listens on every Gateway listener port (8443)")
 }
@@ -718,20 +760,232 @@ static_resources:
 }
 
 func TestBootstrapPatchesNotMounted(t *testing.T) {
-	// Render a Gateway whose patches apply but whose deploymentOverlay mounts another
-	// ConfigMap in the bootstrap volume.
-	gwp := withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)
-	gwp.Spec.Kube.DeploymentOverlay = &shared.KubernetesResourceOverlay{Spec: &apiextensionsv1.JSON{Raw: []byte(
-		`{"template": {"spec": {"volumes": [{"name": "envoy-config", "configMap": {"name": "my-bootstrap"}}]}}}`)}}
-	objs, report, err := bootstrapTestCase{gatewayParams: gwp}.render(t)
+	for name, tc := range map[string]struct {
+		deploymentOverlay string
+		message           string
+	}{
+		"another ConfigMap in the bootstrap volume": {
+			deploymentOverlay: `{"template": {"spec": {"volumes": [{"name": "envoy-config", "configMap": {"name": "my-bootstrap"}}]}}}`,
+			message:           `a deploymentOverlay mounts ConfigMap "my-bootstrap" at /etc/envoy instead of the generated ConfigMap "gw"`,
+		},
+		"another volume at /etc/envoy": {
+			deploymentOverlay: `{"template": {"spec": {
+				"volumes": [{"name": "my-volume", "emptyDir": {}}],
+				"containers": [{"name": "kgateway-proxy", "volumeMounts": [{"mountPath": "/etc/envoy", "name": "my-volume"}]}]}}}`,
+			message: `a deploymentOverlay mounts volume "my-volume" at /etc/envoy, which is not the generated ConfigMap "gw"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			// Render a Gateway whose patches apply but whose deploymentOverlay mounts
+			// something else at /etc/envoy.
+			gwp := withOverlay(t, gatewayParams(), `{layered_runtime: {layers: [{name: limits, static_layer: {re2.max_program_size.error_level: 1000}}]}}`)
+			gwp.Spec.Kube.DeploymentOverlay = &shared.KubernetesResourceOverlay{Spec: &apiextensionsv1.JSON{Raw: []byte(tc.deploymentOverlay)}}
+			objs, report, err := bootstrapTestCase{gatewayParams: gwp}.render(t)
+			require.NoError(t, err)
+
+			// The objects deploy as the overlay asks, and the condition says the patches
+			// are not in effect.
+			cond := bootstrapCondition(t, report)
+			assert.Equal(t, metav1.ConditionFalse, cond.Status)
+			assert.Equal(t, conditions.KgatewayReasonBootstrapNotMounted, cond.Reason)
+			assert.Equal(t, "The bootstrap patch is not in effect: "+tc.message+". Routes are validated against Envoy's defaults, not the patch.", cond.Message)
+
+			// The proxy does not run the patches, so there is no validation data, no
+			// revision key and no INPUT_CONF, and routes validate against Envoy's defaults.
+			cm := findBootstrapConfigMap(objs)
+			assert.NotContains(t, cm.Data, bootstrappatch.ValidationKey)
+			assert.NotContains(t, cm.Data, bootstrapRevisionKey(checksum(t, objs)))
+			assert.NotContains(t, podTemplateAnnotations(t, objs), bootstrappatch.ValidationAnnotation)
+			assert.Empty(t, proxyEnv(t, objs, inputConfigEnv))
+		})
+	}
+}
+
+func TestBootstrapMountProblem(t *testing.T) {
+	// deploymentMounting returns a Deployment whose proxy container mounts volume at
+	// mountPath.
+	deploymentMounting := func(volume corev1.Volume, mount corev1.VolumeMount) []client.Object {
+		return []client.Object{&appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Volumes:    []corev1.Volume{volume},
+			Containers: []corev1.Container{{Name: wellknown.KgatewayContainerName, VolumeMounts: []corev1.VolumeMount{mount}}},
+		}}}}}
+	}
+	generated := corev1.Volume{Name: "envoy-config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
+		LocalObjectReference: corev1.LocalObjectReference{Name: "gw"},
+	}}}
+	atEtcEnvoy := corev1.VolumeMount{Name: "envoy-config", MountPath: "/etc/envoy"}
+
+	// The whole generated ConfigMap at /etc/envoy, with or without a trailing slash, is
+	// mounted.
+	assert.Empty(t, BootstrapMountProblem(deploymentMounting(generated, atEtcEnvoy), "gw"))
+	assert.Empty(t, BootstrapMountProblem(deploymentMounting(generated, corev1.VolumeMount{Name: "envoy-config", MountPath: "/etc/envoy/"}), "gw"))
+
+	// A mount elsewhere, part of the ConfigMap, or some of its keys are not.
+	assert.Equal(t, "a deploymentOverlay removes the kgateway-proxy container's mount at /etc/envoy",
+		BootstrapMountProblem(deploymentMounting(generated, corev1.VolumeMount{Name: "envoy-config", MountPath: "/etc/other"}), "gw"))
+	assert.Equal(t, `a deploymentOverlay mounts only part of the generated ConfigMap "gw" at /etc/envoy`,
+		BootstrapMountProblem(deploymentMounting(generated, corev1.VolumeMount{Name: "envoy-config", MountPath: "/etc/envoy", SubPath: "envoy.yaml"}), "gw"))
+	someKeys := *generated.DeepCopy()
+	someKeys.ConfigMap.Items = []corev1.KeyToPath{{Key: "envoy.yaml", Path: "envoy.yaml"}}
+	assert.Equal(t, `a deploymentOverlay mounts only some keys of the generated ConfigMap "gw" at /etc/envoy`,
+		BootstrapMountProblem(deploymentMounting(someKeys, atEtcEnvoy), "gw"))
+
+	// Without the proxy container or a Deployment, nothing mounts it.
+	assert.Equal(t, "a deploymentOverlay removes the kgateway-proxy container",
+		BootstrapMountProblem([]client.Object{&appsv1.Deployment{}}, "gw"))
+	assert.Equal(t, "no proxy Deployment is rendered", BootstrapMountProblem(nil, "gw"))
+}
+
+// proxyEnv returns the value of the environment variable name on the rendered proxy
+// container, or "" when it is not set.
+func proxyEnv(t *testing.T, objs []client.Object, name string) string {
+	t.Helper()
+	deps := objectsOf[*appsv1.Deployment](objs)
+	require.Len(t, deps, 1)
+	for _, c := range deps[0].Spec.Template.Spec.Containers {
+		if c.Name != wellknown.KgatewayContainerName {
+			continue
+		}
+		for _, e := range c.Env {
+			if e.Name == name {
+				return e.Value
+			}
+		}
+	}
+	return ""
+}
+
+func TestBootstrapPatchesRevisionKey(t *testing.T) {
+	// Render a Gateway without patches.
+	objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
 	require.NoError(t, err)
 
-	// The objects deploy as the overlay asks, and the condition says the patches are not in effect.
-	assert.Equal(t, "my-bootstrap", BootstrapMountedConfigMap(objs))
-	cond := bootstrapCondition(t, report)
-	assert.Equal(t, metav1.ConditionFalse, cond.Status)
-	assert.Equal(t, conditions.KgatewayReasonBootstrapNotMounted, cond.Reason)
-	assert.Contains(t, cond.Message, `mounts ConfigMap "my-bootstrap"`)
+	// Its pods read envoy.yaml, the only bootstrap key.
+	assert.Empty(t, proxyEnv(t, objs, inputConfigEnv))
+	for key := range findBootstrapConfigMap(objs).Data {
+		assert.False(t, strings.HasPrefix(key, "envoy-"), "a Gateway without patches should have no revision key, got %s", key)
+	}
+
+	// Render a Gateway with patches.
+	objs, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)}.render(t)
+	require.NoError(t, err)
+
+	// The patched bootstrap is also under a key named by the pod template's checksum,
+	// which INPUT_CONF points the proxy at.
+	cm := findBootstrapConfigMap(objs)
+	key := "envoy-" + checksum(t, objs) + ".yaml"
+	assert.Equal(t, cm.Data[bootstrapConfigKey], cm.Data[key])
+	assert.Equal(t, "/etc/envoy/"+key, proxyEnv(t, objs, inputConfigEnv))
+}
+
+func TestWriteBootstrapRevision(t *testing.T) {
+	// render returns a Gateway's objects with patches applied, and their outcome.
+	render := func(t *testing.T, overlay string) ([]client.Object, *BootstrapPatchOutcome) {
+		t.Helper()
+		objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
+		require.NoError(t, err)
+		outcome, err := ApplyBootstrapPatches(t.Context(), objs, []bootstrappatch.Overlay{testOverlay(t, overlay)}, BootstrapPatchConfig{})
+		require.NoError(t, err)
+		return objs, outcome
+	}
+
+	t.Run("keeps the revisions in use", func(t *testing.T) {
+		// The live ConfigMap holds the revision a running pod uses, one an old
+		// ReplicaSet uses, and one nothing uses.
+		objs, outcome := render(t, `{stats_flush_interval: 10s}`)
+		live := &corev1.ConfigMap{Data: map[string]string{
+			bootstrapRevisionKey("pod-sum"):    "pod bootstrap",
+			bootstrapRevisionKey("rs-sum"):     "replicaset bootstrap",
+			bootstrapRevisionKey("unused-sum"): "unused bootstrap",
+		}}
+		err := WriteBootstrapRevision(objs, outcome, BootstrapRevisions{Live: live, InUse: []string{"rs-sum", "pod-sum", "pod-sum", "missing-sum"}})
+		require.NoError(t, err)
+
+		// The new revision and the two in use are written; the unused one and the one
+		// the live ConfigMap does not hold are not.
+		var keys []string
+		for key := range findBootstrapConfigMap(objs).Data {
+			if strings.HasPrefix(key, "envoy-") {
+				keys = append(keys, key)
+			}
+		}
+		assert.ElementsMatch(t, []string{bootstrapRevisionKey(outcome.checksum), bootstrapRevisionKey("pod-sum"), bootstrapRevisionKey("rs-sum")}, keys)
+		assert.Equal(t, "pod bootstrap", findBootstrapConfigMap(objs).Data[bootstrapRevisionKey("pod-sum")])
+	})
+
+	t.Run("earlier revisions exceed the size limit", func(t *testing.T) {
+		// The live ConfigMap holds a revision a running pod uses that leaves too little
+		// room for the new one.
+		objs, outcome := render(t, `{stats_flush_interval: 10s}`)
+		live := &corev1.ConfigMap{Data: map[string]string{bootstrapRevisionKey("old-sum"): strings.Repeat("x", maxConfigMapDataSize)}}
+		err := WriteBootstrapRevision(objs, outcome, BootstrapRevisions{Live: live, InUse: []string{"old-sum"}})
+
+		// The error names the earlier revision's size and how to free it, and keeps the
+		// managed paths known.
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, err, &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapConfigMapTooLarge, patchErr.Reason)
+		assert.Equal(t, "gw", patchErr.ConfigMapName)
+		assert.True(t, patchErr.pathsKnown())
+		assert.ErrorContains(t, patchErr, fmt.Sprintf("and 1 earlier bootstrap revisions that proxy pods or ReplicaSets still use take %d bytes", maxConfigMapDataSize))
+		assert.ErrorContains(t, patchErr, "once the Gateway's old ReplicaSets are scaled down")
+	})
+
+	t.Run("one large bootstrap exceeds the size limit", func(t *testing.T) {
+		// Patches whose bootstrap alone, written twice, exceeds the limit.
+		objs, outcome := render(t, fmt.Sprintf(`{node: {metadata: {big: %q}}}`, strings.Repeat("x", maxConfigMapDataSize/2)))
+		err := WriteBootstrapRevision(objs, outcome, BootstrapRevisions{})
+
+		// The error says to make the patches smaller.
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, err, &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapConfigMapTooLarge, patchErr.Reason)
+		assert.ErrorContains(t, patchErr, "make the bootstrap patch smaller")
+	})
+}
+
+func TestBootstrapPatchesPortsOfRunningPods(t *testing.T) {
+	// render returns a Gateway's objects with listeners on ports, and patches that move
+	// the readiness listener from 8082 to 8083 applied while pods running the default
+	// bootstrap still listen on 8082.
+	moved := `{static_resources: {listeners: [{name: readiness_listener, address: {socket_address: {address: 0.0.0.0, port_value: 8083}}}]}}`
+	render := func(t *testing.T, ports ...gwv1.PortNumber) ([]client.Object, *BootstrapPatchOutcome) {
+		t.Helper()
+		objs, _, err := bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), moved), listenerPorts: ports}.render(t)
+		require.NoError(t, err)
+		listenerPorts := make([]int32, 0, len(ports))
+		for _, p := range ports {
+			listenerPorts = append(listenerPorts, int32(p))
+		}
+		outcome, err := ApplyBootstrapPatches(t.Context(), objs, []bootstrappatch.Overlay{testOverlay(t, moved)}, BootstrapPatchConfig{
+			ListenerPorts: listenerPorts,
+			PodPorts:      []uint32{8082, 9091, 19000},
+		})
+		require.NoError(t, err)
+		return objs, outcome
+	}
+	servicePorts := func(objs []client.Object) []int32 {
+		var out []int32
+		for _, p := range objectsOf[*corev1.Service](objs)[0].Spec.Ports {
+			out = append(out, p.Port)
+		}
+		return out
+	}
+
+	// The listener on 8082 stays off the Service until the old pods are gone, and the
+	// condition says so.
+	objs, outcome := render(t, 8080, 8082)
+	assert.Equal(t, []int32{8080}, servicePorts(objs))
+	assert.Equal(t, []int32{8082}, outcome.RolloutServicePorts)
+	assert.Empty(t, outcome.RemovedServicePorts)
+	cond := bootstrapPatchAppliedCondition(&gwv1.Gateway{}, outcome, "")
+	assert.Contains(t, cond.Message, "Proxy pods still running an earlier bootstrap listen on Gateway listener port(s) 8082")
+
+	// A Gateway whose only listener is on 8082 keeps it on the Service, so the objects
+	// apply and the rollout that frees the port can happen.
+	objs, outcome = render(t, 8082)
+	assert.Equal(t, []int32{8082}, servicePorts(objs))
+	assert.Empty(t, outcome.RolloutServicePorts)
 }
 
 func TestBootstrapPatchesManagedPathModes(t *testing.T) {
@@ -762,7 +1016,7 @@ func TestBootstrapPatchesManagedPathModes(t *testing.T) {
 			Type:   corev1.EventTypeWarning,
 			Reason: conditions.KgatewayReasonBootstrapManagedPathsOverridden,
 			Action: applyBootstrapPatchesAction,
-			Note:   "Applied bootstrap patches that set static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params), which the control plane manages.",
+			Note:   "Applied a bootstrap patch that sets static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params), which the control plane manages.",
 		}}, report.Events)
 	})
 
@@ -783,12 +1037,12 @@ func TestBootstrapPatchesManagedPathModes(t *testing.T) {
 		cond := bootstrapCondition(t, report)
 		assert.Equal(t, metav1.ConditionTrue, cond.Status)
 		assert.Equal(t, conditions.KgatewayReasonBootstrapPathsIgnored, cond.Reason)
-		assert.Contains(t, cond.Message, "These paths were dropped from them because the control plane manages them: static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params).")
+		assert.Contains(t, cond.Message, "These paths were dropped from it because the control plane manages them: static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params).")
 		assert.Equal(t, []deployer.ReportEvent{{
 			Type:   corev1.EventTypeWarning,
 			Reason: conditions.KgatewayReasonBootstrapPathsIgnored,
 			Action: applyBootstrapPatchesAction,
-			Note:   "Dropped static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params) from the bootstrap patches because the control plane manages it.",
+			Note:   "Dropped static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params) from the bootstrap patch because the control plane manages it.",
 		}}, report.Events)
 	})
 
@@ -815,7 +1069,7 @@ func TestBootstrapPatchesManagedPathModes(t *testing.T) {
 			Type:   corev1.EventTypeWarning,
 			Reason: conditions.KgatewayReasonBootstrapPathsDenied,
 			Action: applyBootstrapPatchesAction,
-			Note:   "Applied none of the bootstrap patches: they set static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params), which the control plane manages, and the controller is configured to reject such patches.",
+			Note:   "Applied no bootstrap patch: a patch sets static_resources.clusters[name=xds_cluster] (GatewayParameters default/gw-params), which the control plane manages, and the controller is configured to reject such patches.",
 		}}, patchErr.Events())
 	})
 
@@ -859,9 +1113,9 @@ func TestBootstrapPatchEvents(t *testing.T) {
 		// One Warning event carries the error.
 		assert.Equal(t, []deployer.ReportEvent{{
 			Type:   corev1.EventTypeWarning,
-			Reason: conditions.KgatewayReasonBootstrapInvalidOverlay,
+			Reason: conditions.KgatewayReasonBootstrapInvalidPatch,
 			Action: applyBootstrapPatchesAction,
-			Note:   "Applied none of the bootstrap patches: " + patchErr.Error(),
+			Note:   "Applied no bootstrap patch: " + patchErr.Error(),
 		}}, patchErr.Events())
 	})
 }
@@ -878,7 +1132,7 @@ func TestBootstrapPatchManagedPathsMetric(t *testing.T) {
 	gw := types.NamespacedName{Namespace: defaultNamespace, Name: "gw"}
 	assertSeries := func(t *testing.T, want string) {
 		t.Helper()
-		expected := "# HELP kgateway_controller_bootstrap_patch_managed_paths Control-plane-managed bootstrap paths that a Gateway's GatewayParameters bootstrap patches set. The value is always 1.\n" +
+		expected := "# HELP kgateway_controller_bootstrap_patch_managed_paths Control-plane-managed bootstrap paths that a Gateway's GatewayParameters bootstrap patch sets. The value is always 1.\n" +
 			"# TYPE kgateway_controller_bootstrap_patch_managed_paths gauge\n" + want
 		if want == "" {
 			expected = ""

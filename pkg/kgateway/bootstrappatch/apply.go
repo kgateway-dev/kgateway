@@ -45,6 +45,20 @@ func (p ManagedPath) String() string {
 	return fmt.Sprintf("%s (%s)", p.Path, p.Source)
 }
 
+// ReplacedEntry is an entry of the generated bootstrap that an overlay replaces by
+// name, and that is not a managed path.
+type ReplacedEntry struct {
+	// Path is the entry's path, for example
+	// overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections].
+	Path string
+	// Source is the resource whose overlay replaces the entry.
+	Source Source
+}
+
+func (e ReplacedEntry) String() string {
+	return fmt.Sprintf("%s (%s)", e.Path, e.Source)
+}
+
 // Result is the outcome of applying overlays to a generated bootstrap.
 type Result struct {
 	// Bootstrap is the merged bootstrap.
@@ -52,6 +66,10 @@ type Result struct {
 	// ManagedPaths lists each managed path the overlays set. Under WARN each one was
 	// applied; under PRUNE each one was dropped from its overlay before merging.
 	ManagedPaths []ManagedPath
+	// ReplacedEntries lists each entry of the generated bootstrap that the overlays
+	// replace by name, other than the managed paths in ManagedPaths. Each replacement
+	// applied under every mode.
+	ReplacedEntries []ReplacedEntry
 }
 
 // InvalidOverlayError reports an overlay that cannot be applied under any mode.
@@ -61,7 +79,7 @@ type InvalidOverlayError struct {
 }
 
 func (e *InvalidOverlayError) Error() string {
-	return fmt.Sprintf("bootstrap overlay in %s: %v", e.Source, e.Err)
+	return fmt.Sprintf("bootstrap patch in %s: %v", e.Source, e.Err)
 }
 
 func (e *InvalidOverlayError) Unwrap() error {
@@ -79,7 +97,7 @@ func (e *ManagedPathsDeniedError) Error() string {
 	for _, p := range e.Paths {
 		paths = append(paths, p.String())
 	}
-	return "the controller is configured to reject bootstrap overlays that set paths it manages; remove these paths from the overlay: " +
+	return "the controller is configured to reject bootstrap patches that set paths it manages; remove these paths from the patch: " +
 		strings.Join(paths, ", ")
 }
 
@@ -103,6 +121,7 @@ func Apply(
 	// managed paths of all of them.
 	parsed := make([]*envoybootstrapv3.Bootstrap, 0, len(overlays))
 	var managed []ManagedPath
+	var replaced []ReplacedEntry
 	for _, o := range overlays {
 		ov, err := parseOverlay(o.Raw)
 		if err != nil {
@@ -115,9 +134,13 @@ func Apply(
 			return nil, &InvalidOverlayError{Source: o.Source, Err: err}
 		}
 
-		// Record the managed paths it sets, and drop them under PRUNE.
+		// Record the managed paths it sets and the other generated entries it replaces,
+		// and drop the managed paths under PRUNE.
 		for _, p := range managedPaths(base, ov) {
 			managed = append(managed, ManagedPath{Path: p, Source: o.Source})
+		}
+		for _, p := range replacedEntries(base, ov) {
+			replaced = append(replaced, ReplacedEntry{Path: p, Source: o.Source})
 		}
 		if mode == apisettings.BootstrapPatchManagedPathsPrune {
 			ov = prune(base, ov)
@@ -135,7 +158,7 @@ func Apply(
 	for _, ov := range parsed {
 		mergeOverlay(merged, ov)
 	}
-	return &Result{Bootstrap: merged, ManagedPaths: managed}, nil
+	return &Result{Bootstrap: merged, ManagedPaths: managed, ReplacedEntries: replaced}, nil
 }
 
 // checkReserved rejects names the proxy reserves and lists entries Envoy requires to
@@ -152,7 +175,7 @@ func checkReserved(ov *envoybootstrapv3.Bootstrap) error {
 	// allows.
 	for _, l := range ov.GetLayeredRuntime().GetLayers() {
 		if l.GetStaticLayer() == nil {
-			return fmt.Errorf("runtime layer %q sets %s instead of static_layer; bootstrap patches can add only static runtime layers", l.GetName(), runtimeLayerKind(l))
+			return fmt.Errorf("runtime layer %q sets %s instead of static_layer; a bootstrap patch can add only static runtime layers", l.GetName(), runtimeLayerKind(l))
 		}
 	}
 

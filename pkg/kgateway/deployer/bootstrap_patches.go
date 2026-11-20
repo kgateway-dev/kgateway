@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,26 +23,37 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 const (
 	// bootstrapConfigKey is the key of the Envoy bootstrap in the generated ConfigMap.
+	// For a Gateway with bootstrap patches it holds the bootstrap new pods get, and
+	// each pod reads its own revision's key instead.
 	bootstrapConfigKey = "envoy.yaml"
-	// bootstrapVolumeName is the proxy Deployment's volume that mounts the generated
-	// ConfigMap.
-	bootstrapVolumeName = "envoy-config"
+	// bootstrapMountPath is where the proxy container mounts the generated ConfigMap.
+	bootstrapMountPath = "/etc/envoy"
 	// bootstrapChecksumAnnotation is the pod-template annotation that holds the SHA-256
 	// of the bootstrap, so that a bootstrap change rolls the pods. The Helm template
 	// sets it from the rendered bootstrap.
-	bootstrapChecksumAnnotation = "kgateway.dev/checksum-config"
+	bootstrapChecksumAnnotation = bootstrappatch.ChecksumAnnotation
+	// inputConfigEnv is the proxy container's environment variable that names the
+	// bootstrap file envoyinit reads. Without it, envoyinit reads envoy.yaml.
+	inputConfigEnv = "INPUT_CONF"
+	// maxConfigMapDataSize is the most data, all keys together, the API server accepts
+	// in a ConfigMap.
+	maxConfigMapDataSize = 1024 * 1024
 
 	// applyBootstrapPatchesAction is the action of each bootstrap patch event.
 	applyBootstrapPatchesAction = "ApplyBootstrapPatches"
+	// generatedEntryReplacedEventReason is the reason of the event for an entry of the
+	// generated bootstrap, other than a managed path, that bootstrap patches replace.
+	generatedEntryReplacedEventReason = "GeneratedEntryReplaced"
 )
 
 // BootstrapPatchProvider is an optional interface for a HelmValuesGenerator set with
-// GatewayParameters.WithHelmValuesGeneratorOverride. It chooses the bootstrap overlays
+// GatewayParameters.WithHelmValuesGeneratorOverride. It chooses the bootstrap patches
 // for a Gateway. The controller then applies them as it does without an override:
 // it merges them into the rendered bootstrap, validates the result, removes the ports
 // the bootstrap listens on from the Service, writes the xDS validation data, and
@@ -53,7 +65,7 @@ const (
 // interface replaces all of the post-processing: no bootstrap patches are applied,
 // and no condition is reported.
 //
-// When a Gateway has bootstrap overlays, the override's GetValues should build the
+// When a Gateway has bootstrap patches, the override's GetValues should build the
 // Service ports with deployer.GetPortsValuesForBootstrapPatches rather than
 // deployer.GetPortsValues. Otherwise a listener on a default proxy port, such as
 // 8082, is dropped from the Service even when a patch moves the proxy listener off
@@ -94,16 +106,16 @@ func (e *BootstrapPatchError) Events() []deployer.ReportEvent {
 		out := make([]deployer.ReportEvent, 0, len(e.ManagedPaths))
 		for _, p := range e.ManagedPaths {
 			out = append(out, bootstrapPatchEvent(e.Reason,
-				fmt.Sprintf("Applied none of the bootstrap patches: they set %s, which the control plane manages, and the controller is configured to reject such patches.", p)))
+				fmt.Sprintf("Applied no bootstrap patch: a patch sets %s, which the control plane manages, and the controller is configured to reject such patches.", p)))
 		}
 		return out
 	}
-	return []deployer.ReportEvent{bootstrapPatchEvent(e.Reason, "Applied none of the bootstrap patches: "+e.Error())}
+	return []deployer.ReportEvent{bootstrapPatchEvent(e.Reason, "Applied no bootstrap patch: "+e.Error())}
 }
 
 // pathsKnown reports whether ManagedPaths lists the paths the patches set.
 func (e *BootstrapPatchError) pathsKnown() bool {
-	return e.Reason != conditions.KgatewayReasonBootstrapInvalidOverlay &&
+	return e.Reason != conditions.KgatewayReasonBootstrapInvalidPatch &&
 		e.Reason != conditions.KgatewayReasonBootstrapControllerError
 }
 
@@ -124,9 +136,25 @@ type BootstrapPatchOutcome struct {
 	// ManagedPaths lists each path the control plane manages that the patches set.
 	// Under PRUNE each one was dropped; otherwise each one applied.
 	ManagedPaths []bootstrappatch.ManagedPath
+	// ReplacedEntries lists each other entry of the generated bootstrap that the
+	// patches replace by name. Each replacement applied.
+	ReplacedEntries []bootstrappatch.ReplacedEntry
 	// RemovedServicePorts lists the Gateway listener ports left off the Service because
 	// a static listener in the patched bootstrap uses them.
 	RemovedServicePorts []int32
+	// RolloutServicePorts lists the Gateway listener ports left off the Service because
+	// a static listener in the bootstrap of a running pod uses them, and the patched
+	// bootstrap does not. They return to the Service once no running pod uses them.
+	RolloutServicePorts []int32
+
+	// checksum is the hex SHA-256 of the patched bootstrap, which names its revision.
+	checksum string
+	// bootstrap is the patched bootstrap, as written to the ConfigMap.
+	bootstrap string
+	// validationData is the content of the ConfigMap's validation key.
+	validationData string
+	// validationAnnotation is the value of the pod template's validation annotation.
+	validationAnnotation string
 }
 
 // BootstrapPatchConfig is what ApplyBootstrapPatches needs besides the objects and
@@ -134,6 +162,10 @@ type BootstrapPatchOutcome struct {
 type BootstrapPatchConfig struct {
 	// ListenerPorts are the Gateway's listener ports, which the Service exposes.
 	ListenerPorts []int32
+	// PodPorts are the ports the bootstraps of the Gateway's running proxy pods listen
+	// on. Pods receive the Gateway's listeners until they are replaced, so these ports
+	// are left off the Service too.
+	PodPorts []uint32
 	// ManagedPaths decides what happens to patches that set paths the control plane
 	// manages.
 	ManagedPaths apisettings.BootstrapPatchManagedPathsMode
@@ -144,13 +176,13 @@ type BootstrapPatchConfig struct {
 
 // ApplyBootstrapPatches merges overlays, in order, into the bootstrap in the rendered
 // bootstrap ConfigMap, validates the result with Envoy, and sets the Deployment's
-// checksum annotation to match so the pods roll. It writes the bootstrap's validation
-// subset and listener ports to the ConfigMap's validation key, and the subset to the
-// pod template, for the translator to validate against. It removes from the Service each
-// listener port that the patched bootstrap also listens on. Call it before applying
-// object overlays, so that they can still change any object. It returns ctx.Err()
-// when ctx ends, and otherwise a *BootstrapPatchError when the patches are not
-// applied, including when every Gateway listener port collides with the bootstrap.
+// checksum annotation to match so the pods roll. It removes from the Service each
+// listener port that the patched bootstrap, or the bootstrap of a running pod, also
+// listens on. Call it before applying object overlays, so that they can still change
+// any object, and then WriteBootstrapRevision once they are applied. It returns
+// ctx.Err() when ctx ends, and otherwise a *BootstrapPatchError when the patches are
+// not applied, including when every Gateway listener port collides with the patched
+// bootstrap.
 func ApplyBootstrapPatches(
 	ctx context.Context,
 	rendered []client.Object,
@@ -164,7 +196,7 @@ func ApplyBootstrapPatches(
 		return &BootstrapPatchError{
 			Reason:        conditions.KgatewayReasonBootstrapControllerError,
 			ConfigMapName: cmName,
-			Err:           fmt.Errorf("the controller failed to apply the bootstrap patches; this is a kgateway defect, not a problem with the patches: %w", err),
+			Err:           fmt.Errorf("the controller failed to apply the bootstrap patch; this is a kgateway defect, not a problem with the patch: %w", err),
 		}
 	}
 
@@ -186,7 +218,7 @@ func ApplyBootstrapPatches(
 	mode := cmp.Or(cfg.ManagedPaths, apisettings.BootstrapPatchManagedPathsWarn)
 	res, err := bootstrappatch.Apply(base, overlays, mode)
 	if invalid, ok := errors.AsType[*bootstrappatch.InvalidOverlayError](err); ok {
-		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, invalid)
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidPatch, nil, invalid)
 	}
 	if denied, ok := errors.AsType[*bootstrappatch.ManagedPathsDeniedError](err); ok {
 		return nil, patchErr(conditions.KgatewayReasonBootstrapPathsDenied, denied.Paths, denied)
@@ -202,7 +234,7 @@ func ApplyBootstrapPatches(
 		return nil, controllerErr(fmt.Errorf("failed to encode the validation subset of the patched bootstrap: %w", err))
 	}
 	if len(subset) > bootstrappatch.MaxValidationSubsetSize {
-		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, fmt.Errorf(
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidPatch, nil, fmt.Errorf(
 			"the static runtime layers of the patched bootstrap take %d bytes as JSON, more than the limit of %d; set fewer runtime values in static layers",
 			len(subset), bootstrappatch.MaxValidationSubsetSize))
 	}
@@ -235,33 +267,32 @@ func ApplyBootstrapPatches(
 	}
 	cm.Data[bootstrapConfigKey] = string(merged)
 	sum := sha256.Sum256(merged)
-	setPodTemplateAnnotation(rendered, bootstrapChecksumAnnotation, hex.EncodeToString(sum[:]))
+	checksum := hex.EncodeToString(sum[:])
+	setPodTemplateAnnotation(rendered, bootstrapChecksumAnnotation, checksum)
 
-	// Write what the translator validates against: the subset, on the ConfigMap for
-	// the pods to come and on the pod template for the pods that start with it, and
-	// the ports the bootstrap listens on, where Gateway listeners are rejected.
+	// Encode what the translator validates against, which WriteBootstrapRevision writes:
+	// the subset; the ports the bootstrap listens on, where Gateway listeners are
+	// rejected; and the static cluster names, which the proxy syncer checks against
+	// translated clusters. The pod annotation leaves out the cluster names.
 	bootstrapPorts := bootstrappatch.ListenerPorts(res.Bootstrap)
-	data, err := bootstrappatch.EncodeValidationData(subset, bootstrapPorts)
+	data, err := bootstrappatch.EncodeValidationData(subset, bootstrapPorts, bootstrappatch.StaticClusterNames(res.Bootstrap))
 	if err != nil {
 		return nil, controllerErr(fmt.Errorf("failed to encode the bootstrap validation data: %w", err))
 	}
-	cm.Data[bootstrappatch.ValidationKey] = data
-	setPodTemplateAnnotation(rendered, bootstrappatch.ValidationAnnotation, subset)
-
-	// Leave Gateway listener ports the bootstrap listens on off the Service. The
-	// translator rejects those listeners.
-	var colliding []int32
-	for _, port := range bootstrapPorts {
-		if slices.Contains(cfg.ListenerPorts, int32(port)) { //nolint:gosec // G115: Envoy ports fit in int32
-			colliding = append(colliding, int32(port)) //nolint:gosec // G115: Envoy ports fit in int32
-		}
+	annotation, err := bootstrappatch.EncodeValidationData(subset, bootstrapPorts, nil)
+	if err != nil {
+		return nil, controllerErr(fmt.Errorf("failed to encode the bootstrap validation annotation: %w", err))
 	}
+
+	// Leave Gateway listener ports the patched bootstrap listens on off the Service.
+	// The translator rejects those listeners.
+	colliding := listenerPortsIn(cfg.ListenerPorts, bootstrapPorts)
 	removed, err := removeServicePorts(rendered, colliding)
 
 	// A Service with no ports cannot be applied, so when every listener port collides
 	// none of the objects are, and the proxy keeps running its current bootstrap.
 	if errors.Is(err, ErrNoValidPorts) {
-		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidOverlay, nil, fmt.Errorf(
+		return nil, patchErr(conditions.KgatewayReasonBootstrapInvalidPatch, nil, fmt.Errorf(
 			"the patched bootstrap listens on every Gateway listener port (%s), which would leave the Gateway's Service with no ports; move the bootstrap's static listener or add a Gateway listener on another port",
 			joinPorts(colliding)))
 	}
@@ -269,34 +300,178 @@ func ApplyBootstrapPatches(
 		return nil, controllerErr(err)
 	}
 
+	// Also leave off the ports that only a running pod's bootstrap listens on, until no
+	// running pod does, unless that would leave the Service with no ports: the rollout
+	// that frees them cannot happen while none of the objects are applied.
+	var rollout []int32
+	if held := slices.DeleteFunc(listenerPortsIn(cfg.ListenerPorts, cfg.PodPorts), func(p int32) bool {
+		return slices.Contains(colliding, p)
+	}); servicesKeepPorts(rendered, held) {
+		rollout, err = removeServicePorts(rendered, held)
+		if err != nil {
+			return nil, controllerErr(err)
+		}
+	}
+
 	return &BootstrapPatchOutcome{
-		ConfigMapName:       cm.Name,
-		ManagedPathsMode:    mode,
-		ManagedPaths:        res.ManagedPaths,
-		RemovedServicePorts: removed,
+		ConfigMapName:        cm.Name,
+		ManagedPathsMode:     mode,
+		ManagedPaths:         res.ManagedPaths,
+		ReplacedEntries:      res.ReplacedEntries,
+		RemovedServicePorts:  removed,
+		RolloutServicePorts:  rollout,
+		checksum:             checksum,
+		bootstrap:            string(merged),
+		validationData:       data,
+		validationAnnotation: annotation,
 	}, nil
 }
 
-// BootstrapMountedConfigMap returns the name of the ConfigMap the proxy Deployment's
-// bootstrap volume mounts, or "" when there is no such volume. An object overlay can
-// point the volume at another ConfigMap, in which case the proxy does not run the
-// patched bootstrap.
-func BootstrapMountedConfigMap(objs []client.Object) string {
-	for _, obj := range objs {
-		dep, ok := obj.(*appsv1.Deployment)
-		if !ok {
+// BootstrapRevisions is what the cluster holds of the bootstrap revisions a Gateway's
+// proxies use.
+type BootstrapRevisions struct {
+	// Live is the Gateway's generated bootstrap ConfigMap as the cluster has it; nil
+	// before it exists.
+	Live *corev1.ConfigMap
+	// InUse are the checksums of the bootstrap revisions in use: those of the
+	// Gateway's pods that have not exited, and of the ReplicaSets of its proxy
+	// Deployment with replicas above zero, which can still create a pod.
+	InUse []string
+}
+
+// WriteBootstrapRevision writes the patched bootstrap that ApplyBootstrapPatches
+// produced as its own revision: under the envoy-<checksum>.yaml key of the generated
+// ConfigMap, which INPUT_CONF on the proxy container points at, so a pod always reads
+// the bootstrap its annotations describe, even when its container restarts during a
+// rollout. It also writes the validation data to the ConfigMap's validation key and the
+// pod template. It keeps each earlier revision in revs.InUse that the live ConfigMap
+// holds, and leaves out the rest, so applying the ConfigMap removes them. Call it
+// after the object overlays, and only when the proxy mounts the generated ConfigMap
+// (see BootstrapMountProblem). It returns a *BootstrapPatchError when the ConfigMap
+// would exceed the API server's size limit.
+func WriteBootstrapRevision(objs []client.Object, outcome *BootstrapPatchOutcome, revs BootstrapRevisions) error {
+	// Write the validation data.
+	cm := findBootstrapConfigMap(objs)
+	if cm == nil {
+		return &BootstrapPatchError{
+			Reason: conditions.KgatewayReasonBootstrapControllerError,
+			Err:    errors.New("the controller failed to apply the bootstrap patch; this is a kgateway defect, not a problem with the patch: no bootstrap ConfigMap was rendered"),
+		}
+	}
+	cm.Data[bootstrappatch.ValidationKey] = outcome.validationData
+	setPodTemplateAnnotation(objs, bootstrappatch.ValidationAnnotation, outcome.validationAnnotation)
+
+	// Write this revision, and point the proxy at it.
+	key := bootstrapRevisionKey(outcome.checksum)
+	cm.Data[key] = outcome.bootstrap
+	setProxyEnv(objs, inputConfigEnv, path.Join(bootstrapMountPath, key))
+
+	// Keep each earlier revision in use that the live ConfigMap holds.
+	earlierCount, earlierSize := 0, 0
+	for _, sum := range slices.Compact(slices.Sorted(slices.Values(revs.InUse))) {
+		if sum == outcome.checksum || revs.Live == nil {
 			continue
 		}
-		for _, v := range dep.Spec.Template.Spec.Volumes {
-			if v.Name == bootstrapVolumeName && v.ConfigMap != nil {
-				return v.ConfigMap.Name
-			}
+		if prev, ok := revs.Live.Data[bootstrapRevisionKey(sum)]; ok {
+			cm.Data[bootstrapRevisionKey(sum)] = prev
+			earlierCount++
+			earlierSize += len(prev)
 		}
+	}
+
+	// Check the API server's size limit. A revision in use is never dropped to make
+	// room: a pod reading it would wait for it when its container restarts.
+	size := configMapDataSize(cm)
+	if size <= maxConfigMapDataSize {
+		return nil
+	}
+	msg := fmt.Sprintf("the generated ConfigMap %q would hold %d bytes, more than the %d bytes the API server allows; the new bootstrap takes %d bytes",
+		cm.Name, size, maxConfigMapDataSize, len(outcome.bootstrap))
+	if earlierCount > 0 {
+		msg += fmt.Sprintf(", and %d earlier bootstrap revisions that proxy pods or ReplicaSets still use take %d bytes; the change applies once the rollout finishes, or once the Gateway's old ReplicaSets are scaled down or their pods deleted",
+			earlierCount, earlierSize)
+	} else {
+		msg += "; make the bootstrap patch smaller"
+	}
+	return &BootstrapPatchError{
+		Reason:        conditions.KgatewayReasonBootstrapConfigMapTooLarge,
+		ConfigMapName: cm.Name,
+		ManagedPaths:  outcome.ManagedPaths,
+		Err:           errors.New(msg),
+	}
+}
+
+// BootstrapMountProblem returns why the proxy container of the Deployment in objs does
+// not read the generated ConfigMap cmName at /etc/envoy, or "" when it does. An object
+// overlay can point the bootstrap volume at another ConfigMap, or mount another volume
+// there, in which case the proxy does not run the patched bootstrap.
+func BootstrapMountProblem(objs []client.Object, cmName string) string {
+	// Find the proxy container.
+	dep := findDeployment(objs)
+	if dep == nil {
+		return "no proxy Deployment is rendered"
+	}
+	podSpec := dep.Spec.Template.Spec
+	i := slices.IndexFunc(podSpec.Containers, func(c corev1.Container) bool { return c.Name == wellknown.KgatewayContainerName })
+	if i < 0 {
+		return fmt.Sprintf("a deploymentOverlay removes the %s container", wellknown.KgatewayContainerName)
+	}
+	container := podSpec.Containers[i]
+
+	// Find what the container mounts at /etc/envoy.
+	j := slices.IndexFunc(container.VolumeMounts, func(m corev1.VolumeMount) bool { return path.Clean(m.MountPath) == bootstrapMountPath })
+	if j < 0 {
+		return fmt.Sprintf("a deploymentOverlay removes the %s container's mount at %s", wellknown.KgatewayContainerName, bootstrapMountPath)
+	}
+	mount := container.VolumeMounts[j]
+	k := slices.IndexFunc(podSpec.Volumes, func(v corev1.Volume) bool { return v.Name == mount.Name })
+
+	// Check that it is the whole generated ConfigMap.
+	switch {
+	case k < 0 || podSpec.Volumes[k].ConfigMap == nil:
+		return fmt.Sprintf("a deploymentOverlay mounts volume %q at %s, which is not the generated ConfigMap %q", mount.Name, bootstrapMountPath, cmName)
+	case podSpec.Volumes[k].ConfigMap.Name != cmName:
+		return fmt.Sprintf("a deploymentOverlay mounts ConfigMap %q at %s instead of the generated ConfigMap %q",
+			podSpec.Volumes[k].ConfigMap.Name, bootstrapMountPath, cmName)
+	case mount.SubPath != "" || mount.SubPathExpr != "":
+		return fmt.Sprintf("a deploymentOverlay mounts only part of the generated ConfigMap %q at %s", cmName, bootstrapMountPath)
+	case len(podSpec.Volumes[k].ConfigMap.Items) > 0:
+		return fmt.Sprintf("a deploymentOverlay mounts only some keys of the generated ConfigMap %q at %s", cmName, bootstrapMountPath)
 	}
 	return ""
 }
 
-// bootstrapOverlays returns the bootstrap overlays of the resolved GatewayParameters,
+// bootstrapRevisionKey returns the generated ConfigMap's key for the bootstrap with
+// checksum sum.
+func bootstrapRevisionKey(sum string) string {
+	return "envoy-" + sum + ".yaml"
+}
+
+// configMapDataSize returns the size the API server limits: the values of all keys
+// together.
+func configMapDataSize(cm *corev1.ConfigMap) int {
+	size := 0
+	for _, v := range cm.Data {
+		size += len(v)
+	}
+	for _, v := range cm.BinaryData {
+		size += len(v)
+	}
+	return size
+}
+
+// listenerPortsIn returns each of listenerPorts that is in ports, in order.
+func listenerPortsIn(listenerPorts []int32, ports []uint32) []int32 {
+	var out []int32
+	for _, p := range listenerPorts {
+		if slices.Contains(ports, uint32(p)) { //nolint:gosec // G115: listener ports are positive
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// bootstrapOverlays returns the bootstrap patches of the resolved GatewayParameters,
 // GatewayClass first, so that the Gateway's overlay wins a conflict.
 func (r *resolvedKgatewayParameters) bootstrapOverlays() []bootstrappatch.Overlay {
 	var out []bootstrappatch.Overlay
@@ -304,7 +479,7 @@ func (r *resolvedKgatewayParameters) bootstrapOverlays() []bootstrappatch.Overla
 		if gwp == nil {
 			continue
 		}
-		overlay := gwp.Spec.GetKube().GetEnvoyContainer().GetBootstrap().GetPatches().GetOverlay()
+		overlay := gwp.Spec.GetKube().GetEnvoyContainer().GetBootstrap().GetPatch()
 		if overlay == nil {
 			continue
 		}
@@ -319,24 +494,20 @@ func (r *resolvedKgatewayParameters) bootstrapOverlays() []bootstrappatch.Overla
 	return out
 }
 
-// bootstrapPatchAppliedCondition reports patches that were applied, given the final
-// objects after the object overlays.
-func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOutcome, objs []client.Object) metav1.Condition {
+// bootstrapPatchAppliedCondition reports patches that were applied. mountProblem is
+// BootstrapMountProblem of the final objects, after the object overlays.
+func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOutcome, mountProblem string) metav1.Condition {
 	cond := metav1.Condition{
 		Type:               conditions.KgatewayConditionBootstrapPatchApplied,
 		ObservedGeneration: gw.Generation,
 	}
 
-	// An object overlay that mounts another ConfigMap keeps the patches off the proxy.
-	if mounted := BootstrapMountedConfigMap(objs); mounted != outcome.ConfigMapName {
+	// An object overlay that mounts something else at /etc/envoy keeps the patches off
+	// the proxy.
+	if mountProblem != "" {
 		cond.Status = metav1.ConditionFalse
 		cond.Reason = conditions.KgatewayReasonBootstrapNotMounted
-		cond.Message = fmt.Sprintf("The bootstrap patches are not in effect: a deploymentOverlay mounts ConfigMap %q in the %s volume instead of the generated ConfigMap %q.",
-			mounted, bootstrapVolumeName, outcome.ConfigMapName)
-		if mounted == "" {
-			cond.Message = fmt.Sprintf("The bootstrap patches are not in effect: a deploymentOverlay removes the %s volume that mounts the generated ConfigMap %q.",
-				bootstrapVolumeName, outcome.ConfigMapName)
-		}
+		cond.Message = fmt.Sprintf("The bootstrap patch is not in effect: %s. Routes are validated against Envoy's defaults, not the patch.", mountProblem)
 		return cond
 	}
 
@@ -344,19 +515,26 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 	// it applied.
 	cond.Status = metav1.ConditionTrue
 	cond.Reason = conditions.KgatewayReasonBootstrapPatchApplied
-	msg := []string{"The bootstrap patches are applied."}
+	msg := []string{"The bootstrap patch is applied."}
 	switch {
 	case len(outcome.ManagedPaths) == 0:
 	case outcome.ManagedPathsMode == apisettings.BootstrapPatchManagedPathsPrune:
 		cond.Reason = conditions.KgatewayReasonBootstrapPathsIgnored
 		msg = append(msg, fmt.Sprintf(
-			"These paths were dropped from them because the control plane manages them: %s.",
+			"These paths were dropped from it because the control plane manages them: %s.",
 			joinManagedPaths(outcome.ManagedPaths)))
 	default:
 		cond.Reason = conditions.KgatewayReasonBootstrapManagedPathsOverridden
 		msg = append(msg, fmt.Sprintf(
-			"They set paths the control plane manages, which can disconnect the proxy from the controller or break its probes: %s.",
+			"It sets paths the control plane manages, which can disconnect the proxy from the controller or break its probes: %s.",
 			joinManagedPaths(outcome.ManagedPaths)))
+	}
+
+	// Report each other generated entry the patches replace. The reason does not change.
+	if len(outcome.ReplacedEntries) > 0 {
+		msg = append(msg, fmt.Sprintf(
+			"It replaces these entries of the generated bootstrap, so the proxy runs the patch's version of each instead of kgateway's: %s.",
+			joinReplacedEntries(outcome.ReplacedEntries)))
 	}
 
 	// Report each listener port left off the Service.
@@ -365,13 +543,18 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 			"A static listener in the bootstrap uses Gateway listener port(s) %s, so those ports are left off the Service and the Gateway listeners on them are rejected.",
 			joinPorts(outcome.RemovedServicePorts)))
 	}
+	if len(outcome.RolloutServicePorts) > 0 {
+		msg = append(msg, fmt.Sprintf(
+			"Proxy pods still running an earlier bootstrap listen on Gateway listener port(s) %s, so those ports are left off the Service, and the Gateway listeners on them are rejected, until the rollout completes.",
+			joinPorts(outcome.RolloutServicePorts)))
+	}
 	cond.Message = strings.Join(msg, " ")
 	return cond
 }
 
 // bootstrapPatchEvents returns the Warning events that go with the
 // kgateway.dev/BootstrapPatchApplied condition cond: one for each managed path the
-// patches set.
+// patches set, and one for each other generated entry they replace.
 func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome) []deployer.ReportEvent {
 	// Patches that are not mounted have no other effect to report.
 	if cond.Reason == conditions.KgatewayReasonBootstrapNotMounted {
@@ -383,11 +566,17 @@ func bootstrapPatchEvents(cond metav1.Condition, outcome *BootstrapPatchOutcome)
 	for _, p := range outcome.ManagedPaths {
 		if outcome.ManagedPathsMode == apisettings.BootstrapPatchManagedPathsPrune {
 			out = append(out, bootstrapPatchEvent(conditions.KgatewayReasonBootstrapPathsIgnored,
-				fmt.Sprintf("Dropped %s from the bootstrap patches because the control plane manages it.", p)))
+				fmt.Sprintf("Dropped %s from the bootstrap patch because the control plane manages it.", p)))
 			continue
 		}
 		out = append(out, bootstrapPatchEvent(conditions.KgatewayReasonBootstrapManagedPathsOverridden,
-			fmt.Sprintf("Applied bootstrap patches that set %s, which the control plane manages.", p)))
+			fmt.Sprintf("Applied a bootstrap patch that sets %s, which the control plane manages.", p)))
+	}
+
+	// Report each other generated entry the patches replace.
+	for _, e := range outcome.ReplacedEntries {
+		out = append(out, bootstrapPatchEvent(generatedEntryReplacedEventReason,
+			fmt.Sprintf("Applied a bootstrap patch that replaces %s, an entry of the generated bootstrap.", e)))
 	}
 	return out
 }
@@ -418,6 +607,14 @@ func joinManagedPaths(paths []bootstrappatch.ManagedPath) string {
 	return strings.Join(out, ", ")
 }
 
+func joinReplacedEntries(entries []bootstrappatch.ReplacedEntry) string {
+	out := make([]string, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, e.String())
+	}
+	return strings.Join(out, ", ")
+}
+
 // findBootstrapConfigMap returns the rendered ConfigMap that holds the bootstrap.
 func findBootstrapConfigMap(objs []client.Object) *corev1.ConfigMap {
 	for _, obj := range objs {
@@ -428,6 +625,50 @@ func findBootstrapConfigMap(objs []client.Object) *corev1.ConfigMap {
 		}
 	}
 	return nil
+}
+
+// findDeployment returns the first rendered Deployment, the proxy's.
+func findDeployment(objs []client.Object) *appsv1.Deployment {
+	for _, obj := range objs {
+		if dep, ok := obj.(*appsv1.Deployment); ok {
+			return dep
+		}
+	}
+	return nil
+}
+
+// setProxyEnv sets the environment variable name to value on the proxy container of
+// each rendered Deployment, replacing any value it has.
+func setProxyEnv(objs []client.Object, name, value string) {
+	for _, obj := range objs {
+		dep, ok := obj.(*appsv1.Deployment)
+		if !ok {
+			continue
+		}
+		for i := range dep.Spec.Template.Spec.Containers {
+			c := &dep.Spec.Template.Spec.Containers[i]
+			if c.Name != wellknown.KgatewayContainerName {
+				continue
+			}
+			c.Env = slices.DeleteFunc(c.Env, func(e corev1.EnvVar) bool { return e.Name == name })
+			c.Env = append(c.Env, corev1.EnvVar{Name: name, Value: value})
+		}
+	}
+}
+
+// servicesKeepPorts reports whether every rendered Service keeps a port after the
+// ports whose target port is in ports are removed.
+func servicesKeepPorts(objs []client.Object, ports []int32) bool {
+	for _, obj := range objs {
+		svc, ok := obj.(*corev1.Service)
+		if !ok {
+			continue
+		}
+		if !slices.ContainsFunc(svc.Spec.Ports, func(p corev1.ServicePort) bool { return !slices.Contains(ports, p.TargetPort.IntVal) }) {
+			return false
+		}
+	}
+	return true
 }
 
 // setPodTemplateAnnotation sets an annotation on each rendered Deployment's pod

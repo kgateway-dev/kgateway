@@ -317,7 +317,9 @@ func TestHarnessGatewayValidationBootstrapsEquals(t *testing.T) {
 				{Subset: `{"current":true}`},
 				{Subset: `{"earlier":true}`, Pod: "proxy-a"},
 			},
-			ReservedPorts: []uint32{8082, 9091, 19000},
+			ReservedPorts:    []uint32{8082, 9091, 19000},
+			PodReservedPorts: []PodReservedPort{{Port: 8081, Pod: "proxy-a"}},
+			StaticClusters:   []string{"admin_port_cluster", "xds_cluster"},
 		}
 	}
 	eq := func(a, b GatewayValidationBootstraps) bool { return a.Equals(&b) }
@@ -331,6 +333,16 @@ func TestHarnessGatewayValidationBootstrapsEquals(t *testing.T) {
 		{
 			Field:  "ReservedPorts",
 			Mutate: func(g *GatewayValidationBootstraps) { g.ReservedPorts = append(g.ReservedPorts, 8443) },
+		},
+		{
+			Field: "PodReservedPorts",
+			Mutate: func(g *GatewayValidationBootstraps) {
+				g.PodReservedPorts = []PodReservedPort{{Port: 8081, Pod: "proxy-b"}}
+			},
+		},
+		{
+			Field:  "StaticClusters",
+			Mutate: func(g *GatewayValidationBootstraps) { g.StaticClusters = append(g.StaticClusters, "user_cluster") },
 		},
 	}, nil)
 }

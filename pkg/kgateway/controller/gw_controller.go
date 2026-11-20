@@ -36,6 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -208,12 +209,37 @@ func NewGatewayReconciler(
 		r.queue.Add(ref)
 	})
 
+	// Reconcile a Gateway when the bootstraps its proxy pods run change: a port an old
+	// pod listened on can return to the Service, and a bootstrap revision no pod uses
+	// can be removed from the generated ConfigMap.
+	if running := cfg.CommonCollections.GatewayIndex.RunningBootstraps; running != nil {
+		running.Register(func(o krt.Event[krtcollections.GatewayRunningBootstraps]) {
+			ref := o.Latest().Gateway
+			logger.Debug("reconciling Gateway due to a change in the bootstraps its proxies run", "ref", ref)
+			r.queue.Add(ref)
+		})
+	}
+
 	// Add a handler to reconcile the parent Gateway when child objects (Deployment, Service, etc.)
-	parentHandler := controllers.ObjectHandler(controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway))
+	enqueueParent := controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway)
+	parentHandler := controllers.ObjectHandler(enqueueParent)
 	r.deploymentClient.AddEventHandler(parentHandler)
 	r.svcAccountClient.AddEventHandler(parentHandler)
 	r.svcClient.AddEventHandler(parentHandler)
 	r.configMapClient.AddEventHandler(parentHandler)
+
+	// Reconcile the Gateway that owns a ReplicaSet's Deployment when the ReplicaSet
+	// changes, so a bootstrap revision is removed once no ReplicaSet can create a pod
+	// with it.
+	r.gwParams.GetReplicaSetClient().AddEventHandler(controllers.ObjectHandler(func(o controllers.Object) {
+		owner := metav1.GetControllerOf(o)
+		if owner == nil || owner.Kind != wellknown.DeploymentGVK.Kind {
+			return
+		}
+		if dep := r.deploymentClient.Get(owner.Name, o.GetNamespace()); dep != nil {
+			enqueueParent(dep)
+		}
+	}))
 
 	// Register controller extensions
 	if controllerExtension != nil {
@@ -259,6 +285,7 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 		r.gwClient,
 		r.gwClassClient,
 		r.gwParamClient,
+		r.gwParams.GetReplicaSetClient(),
 		r.nsClient,
 		r.deploymentClient,
 		r.svcAccountClient,
@@ -315,7 +342,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			return err
 		}
 		if patchErr, ok := errors.AsType[*internaldeployer.BootstrapPatchError](err); ok {
-			logger.Info("not deploying Gateway: its bootstrap patches were not applied", "ref", req, "reason", patchErr.Reason, "retry", patchErr.Retry, "error", patchErr)
+			logger.Info("not deploying Gateway: its bootstrap patch was not applied", "ref", req, "reason", patchErr.Reason, "retry", patchErr.Retry, "error", patchErr)
 			conds := []metav1.Condition{{
 				Type:               conditions.KgatewayConditionBootstrapPatchApplied,
 				Status:             metav1.ConditionFalse,
@@ -334,7 +361,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 					Status:             metav1.ConditionFalse,
 					ObservedGeneration: gw.Generation,
 					Reason:             string(gwv1.GatewayReasonInvalidParameters),
-					Message:            "No proxy is deployed until the bootstrap patches apply: " + patchErr.Error(),
+					Message:            "No proxy is deployed until the bootstrap patch applies: " + patchErr.Error(),
 				})
 			}
 			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil, patchErr.Events()); statusErr != nil {

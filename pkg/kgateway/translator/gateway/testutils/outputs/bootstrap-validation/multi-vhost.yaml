@@ -79,7 +79,7 @@ Statuses:
       - lastTransitionTime: null
         message: 'Some listeners are not programmed: bootstrap-port: invalid port
           9000 in listener: the proxy bootstrap, with the GatewayParameters bootstrap
-          patches applied, listens on it: port is reserved'
+          patch applied, listens on it: port is reserved'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -126,19 +126,19 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters
-            bootstrap patches applied, listens on it: port is reserved'
+            bootstrap patch applied, listens on it: port is reserved'
           reason: Invalid
           status: "True"
           type: Conflicted
         - lastTransitionTime: null
           message: 'invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters
-            bootstrap patches applied, listens on it: port is reserved'
+            bootstrap patch applied, listens on it: port is reserved'
           reason: Invalid
           status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: 'invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters
-            bootstrap patches applied, listens on it: port is reserved'
+            bootstrap patch applied, listens on it: port is reserved'
           reason: Invalid
           status: "False"
           type: Programmed

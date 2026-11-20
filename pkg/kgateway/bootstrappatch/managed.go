@@ -83,6 +83,49 @@ func managedPaths(base, overlay *envoybootstrapv3.Bootstrap) []string {
 	return paths
 }
 
+// replacedEntries returns the path of each entry of base, the generated bootstrap, that
+// overlay replaces by name and that is not a managed path, in a fixed order. A later
+// kgateway release can add such an entry with the name of one a stored overlay already
+// defines, so each replacement is reported.
+func replacedEntries(base, overlay *envoybootstrapv3.Bootstrap) []string {
+	// Static entries that are managed paths are reported as those.
+	managedC := managedClusters(base)
+	managedL := managedListeners(base)
+
+	// Collect each other generated entry the overlay has a name of.
+	var paths []string
+	baseSR, ovSR := base.GetStaticResources(), overlay.GetStaticResources()
+	for _, name := range sharedNames(baseSR.GetClusters(), ovSR.GetClusters()) {
+		if !slices.Contains(managedC, name) {
+			paths = append(paths, clusterPath(name))
+		}
+	}
+	for _, name := range sharedNames(baseSR.GetListeners(), ovSR.GetListeners()) {
+		if !slices.Contains(managedL, name) {
+			paths = append(paths, listenerPath(name))
+		}
+	}
+	for _, name := range sharedNames(baseSR.GetSecrets(), ovSR.GetSecrets()) {
+		paths = append(paths, fmt.Sprintf("static_resources.secrets[name=%s]", name))
+	}
+	for _, name := range sharedNames(base.GetOverloadManager().GetResourceMonitors(), overlay.GetOverloadManager().GetResourceMonitors()) {
+		paths = append(paths, fmt.Sprintf("overload_manager.resource_monitors[name=%s]", name))
+	}
+	return paths
+}
+
+// sharedNames returns the names of the overlay entries that a base entry also has, in
+// overlay order.
+func sharedNames[T namedEntry](base, overlay []T) []string {
+	var out []string
+	for _, e := range overlay {
+		if e.GetName() != "" && containsName(base, e.GetName()) {
+			out = append(out, e.GetName())
+		}
+	}
+	return out
+}
+
 // prune returns a copy of overlay without the managed paths managedPaths reports.
 func prune(base, overlay *envoybootstrapv3.Bootstrap) *envoybootstrapv3.Bootstrap {
 	// Clear the managed fields.

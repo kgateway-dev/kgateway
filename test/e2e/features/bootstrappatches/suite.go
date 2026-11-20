@@ -47,8 +47,8 @@ const (
 	pollInterval   = 2 * time.Second
 )
 
-// testingSuite tests the bootstrap patches in GatewayParameters
-// (spec.kube.envoyContainer.bootstrap.patches) against a running proxy. The patches are
+// testingSuite tests the bootstrap patch in GatewayParameters
+// (spec.kube.envoyContainer.bootstrap.patch) against a running proxy. The patch is
 // merged in pkg/kgateway/bootstrappatch and deployed by pkg/kgateway/deployer.
 type testingSuite struct {
 	*base.BaseTestingSuite
@@ -135,14 +135,12 @@ func (s *testingSuite) TestFragmentFeatureFlag() {
 
 	// Set the flag to false with a static runtime layer.
 	s.patchGatewayParameters(func(gwp *kgateway.GatewayParameters) {
-		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patches = &kgateway.BootstrapPatches{
-			Overlay: &kgateway.BootstrapOverlay{
-				MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
-				Value: apiextensionsv1.JSON{Raw: []byte(`{"layered_runtime": {"layers": [{
-					"name": "fragments",
-					"static_layer": {"envoy.reloadable_features.http_reject_path_with_fragment": false}
-				}]}}`)},
-			},
+		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patch = &kgateway.BootstrapPatch{
+			MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
+			Value: apiextensionsv1.JSON{Raw: []byte(`{"layered_runtime": {"layers": [{
+				"name": "fragments",
+				"static_layer": {"envoy.reloadable_features.http_reject_path_with_fragment": false}
+			}]}}`)},
 		}
 	})
 

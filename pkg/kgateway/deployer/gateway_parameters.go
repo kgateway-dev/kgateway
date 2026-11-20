@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
@@ -21,7 +24,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var (
@@ -53,7 +58,10 @@ type GatewayParameters struct {
 type kgatewayParameters struct {
 	gwParamClient kclient.Client[*kgateway.GatewayParameters]
 	gwClassClient kclient.Client[*gwv1.GatewayClass]
-	inputs        *deployer.Inputs
+	// replicaSetClient lists the ReplicaSets of proxy Deployments, to keep the
+	// bootstrap revisions they can still create pods with.
+	replicaSetClient kclient.Client[*appsv1.ReplicaSet]
+	inputs           *deployer.Inputs
 }
 
 func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.HelmValuesGenerator) *GatewayParameters {
@@ -65,6 +73,13 @@ func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.
 // This allows the reconciler to reuse the same client for watching changes.
 func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
 	return gp.kgwParameters.gwParamClient
+}
+
+// GetReplicaSetClient returns the client for the ReplicaSets of proxy Deployments.
+// The reconciler watches it to remove a bootstrap revision once no ReplicaSet can
+// create a pod with it.
+func (gp *GatewayParameters) GetReplicaSetClient() kclient.Client[*appsv1.ReplicaSet] {
+	return gp.kgwParameters.replicaSetClient
 }
 
 func LoadEnvoyChart() (*chart.Chart, error) {
@@ -81,8 +96,9 @@ func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 }
 
 func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
+	// The bootstrap patches read ReplicaSets with or without an override.
 	if gp.helmValuesGeneratorOverride != nil {
-		return gp.helmValuesGeneratorOverride.GetCacheSyncHandlers()
+		return append(gp.helmValuesGeneratorOverride.GetCacheSyncHandlers(), gp.kgwParameters.replicaSetClient.HasSynced)
 	}
 
 	return gp.kgwParameters.GetCacheSyncHandlers()
@@ -103,7 +119,7 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 //
 // An override HelmValuesGenerator that implements deployer.ObjectPostProcessor
 // replaces the object overlays. When it also implements BootstrapPatchProvider, it
-// chooses the bootstrap overlays and its post-processor runs after the merge;
+// chooses the bootstrap patches and its post-processor runs after the merge;
 // otherwise its post-processor replaces all of this, and there is no report.
 func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, *deployer.PostProcessReport, error) {
 	// Find which steps the override takes over.
@@ -130,23 +146,25 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 		OwnedConditionTypes: []string{conditions.KgatewayConditionBootstrapPatchApplied},
 	}
 
-	// Collect the bootstrap overlays, letting an override that provides them choose.
+	// Collect the bootstrap patches, letting an override that provides them choose.
 	gwNN := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
 	overlays := resolved.bootstrapOverlays()
 	if hasPatchProvider {
 		var err error
 		overlays, err = patchProvider.BootstrapOverlays(ctx, gw, overlays)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get the bootstrap patches for Gateway %s: %w", gwNN, err)
+			return nil, nil, fmt.Errorf("failed to get the bootstrap patch for Gateway %s: %w", gwNN, err)
 		}
 	}
 
 	// Merge the bootstrap patches first, so the object post-processing can still change any object.
 	var outcome *BootstrapPatchOutcome
+	running := gp.runningBootstraps(gwNN)
 	if len(overlays) > 0 {
 		var err error
 		outcome, err = ApplyBootstrapPatches(ctx, rendered, overlays, BootstrapPatchConfig{
 			ListenerPorts: deployer.GetGatewayIR(gw, gp.inputs.CommonCollections).Ports.List(),
+			PodPorts:      running.PodPorts,
 			ManagedPaths:  gp.inputs.BootstrapPatchManagedPaths,
 			Validator:     gp.inputs.BootstrapValidator,
 		})
@@ -175,13 +193,70 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 		return nil, nil, err
 	}
 
-	// Report the bootstrap patches against the final objects.
-	if outcome != nil {
-		cond := bootstrapPatchAppliedCondition(gw, outcome, rendered)
-		report.Conditions = append(report.Conditions, cond)
-		report.Events = append(report.Events, bootstrapPatchEvents(cond, outcome)...)
+	// Write the patched bootstrap's revision and validation data when the proxy reads
+	// the generated ConfigMap. Otherwise the proxy does not run the patches, so routes
+	// are validated against Envoy's defaults and the default ports.
+	if outcome == nil {
+		return rendered, report, nil
 	}
+	mountProblem := BootstrapMountProblem(rendered, outcome.ConfigMapName)
+	if mountProblem == "" {
+		revs := gp.bootstrapRevisions(gwNN, rendered, outcome.ConfigMapName, running.Revisions)
+		if err := WriteBootstrapRevision(rendered, outcome, revs); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	// Report the bootstrap patches against the final objects.
+	cond := bootstrapPatchAppliedCondition(gw, outcome, mountProblem)
+	report.Conditions = append(report.Conditions, cond)
+	report.Events = append(report.Events, bootstrapPatchEvents(cond, outcome)...)
 	return rendered, report, nil
+}
+
+// runningBootstraps returns what the Gateway's running proxy pods and its generated
+// ConfigMap say about the bootstraps its proxies run, or nothing when the controller
+// does not collect it.
+func (gp *GatewayParameters) runningBootstraps(gw types.NamespacedName) krtcollections.GatewayRunningBootstraps {
+	cols := gp.inputs.CommonCollections
+	if cols == nil || cols.GatewayIndex == nil || cols.GatewayIndex.RunningBootstraps == nil {
+		return krtcollections.GatewayRunningBootstraps{Gateway: gw}
+	}
+	if rb := cols.GatewayIndex.RunningBootstraps.GetKey(gw.String()); rb != nil {
+		return *rb
+	}
+	return krtcollections.GatewayRunningBootstraps{Gateway: gw}
+}
+
+// bootstrapRevisions returns the Gateway's live generated ConfigMap cmName and the
+// bootstrap revisions in use: podRevisions, from the Gateway's running pods, and those
+// of the ReplicaSets of the rendered proxy Deployment with replicas above zero.
+func (gp *GatewayParameters) bootstrapRevisions(gw types.NamespacedName, rendered []client.Object, cmName string, podRevisions []string) BootstrapRevisions {
+	// Read the live ConfigMap.
+	out := BootstrapRevisions{InUse: slices.Clone(podRevisions)}
+	if cols := gp.inputs.CommonCollections; cols != nil && cols.ConfigMaps != nil {
+		if live := cols.ConfigMaps.Collection().GetKey(gw.Namespace + "/" + cmName); live != nil {
+			out.Live = *live
+		}
+	}
+
+	// Add the revision of each ReplicaSet of the proxy Deployment that can still create
+	// a pod.
+	dep := findDeployment(rendered)
+	if dep == nil || gp.kgwParameters == nil {
+		return out
+	}
+	selector := labels.SelectorFromSet(labels.Set{wellknown.GatewayNameLabel: kubeutils.SafeGatewayLabelValue(gw.Name)})
+	for _, rs := range gp.kgwParameters.replicaSetClient.List(gw.Namespace, selector) {
+		owner := metav1.GetControllerOf(rs)
+		if owner == nil || owner.Kind != wellknown.DeploymentGVK.Kind || owner.Name != dep.Name {
+			continue
+		}
+		if ptr.Deref(rs.Spec.Replicas, 1) > 0 {
+			out.InUse = append(out.InUse, rs.Spec.Template.Annotations[bootstrapChecksumAnnotation])
+		}
+	}
+	return out
 }
 
 // applyObjectOverlays applies the resolved GatewayParameters object overlays to objs,
@@ -234,7 +309,11 @@ func newkgatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *kgate
 	return &kgatewayParameters{
 		gwParamClient: kclient.NewFilteredDelayed[*kgateway.GatewayParameters](cli, wellknown.GatewayParametersGVR, kclient.Filter{ObjectFilter: cli.ObjectFilter()}),
 		gwClassClient: kclient.NewFilteredDelayed[*gwv1.GatewayClass](cli, wellknown.GatewayClassGVR, kclient.Filter{ObjectFilter: cli.ObjectFilter()}),
-		inputs:        inputs,
+		replicaSetClient: kclient.NewFiltered[*appsv1.ReplicaSet](cli, kclient.Filter{
+			ObjectFilter:  cli.ObjectFilter(),
+			LabelSelector: wellknown.GatewayNameLabel,
+		}),
+		inputs: inputs,
 	}
 }
 
@@ -263,7 +342,7 @@ func (h *kgatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 }
 
 func (k *kgatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
-	return []cache.InformerSynced{k.gwClassClient.HasSynced, k.gwParamClient.HasSynced}
+	return []cache.InformerSynced{k.gwClassClient.HasSynced, k.gwParamClient.HasSynced, k.replicaSetClient.HasSynced}
 }
 
 // getGatewayParametersForGateway returns the merged GatewayParameters object resulting from the default GwParams object and

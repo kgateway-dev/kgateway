@@ -123,6 +123,55 @@ typed_dns_resolver_config:
 			},
 		},
 		{
+			name: "an Any with only a @type replaces the base Any with that type's defaults",
+			overlay: `
+typed_dns_resolver_config:
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig`,
+			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
+				// The Any keeps its type with an empty payload.
+				typed := merged.GetTypedDnsResolverConfig().GetTypedConfig()
+				assert.Equal(t, "type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig", typed.GetTypeUrl())
+				assert.Empty(t, typed.GetValue(), "the base Any's payload should be gone")
+
+				// The resolver gets c-ares's defaults, and the message around the Any still merges.
+				cares := &envoycaresv3.CaresDnsResolverConfig{}
+				require.NoError(t, typed.UnmarshalTo(cares))
+				assert.Nil(t, cares.GetUdpMaxQueries(), "the base Any's udp_max_queries should be gone")
+				assert.Equal(t, "envoy.network.dns_resolver.cares", merged.GetTypedDnsResolverConfig().GetName())
+			},
+		},
+		{
+			name: "an Any with a different @type and no fields keeps none of the base's bytes",
+			overlay: `
+typed_dns_resolver_config:
+  name: envoy.network.dns_resolver.getaddrinfo
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig`,
+			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
+				typed := merged.GetTypedDnsResolverConfig().GetTypedConfig()
+				assert.Equal(t, "type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig", typed.GetTypeUrl())
+				assert.Empty(t, typed.GetValue(), "the c-ares payload should not stay under the new type")
+			},
+		},
+		{
+			name: "an Any inside a list entry leaves the base's other entries alone",
+			overlay: `
+static_resources:
+  clusters:
+  - name: user_cluster
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions`,
+			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
+				// The overlay's cluster is added, and the base's Anys outside the list are kept.
+				assert.Equal(t, []string{"gw.default", "xds_cluster", "admin_port_cluster", "user_cluster"}, names(merged.GetStaticResources().GetClusters()))
+				cares := &envoycaresv3.CaresDnsResolverConfig{}
+				require.NoError(t, merged.GetTypedDnsResolverConfig().GetTypedConfig().UnmarshalTo(cares))
+				assert.Equal(t, uint32(100), cares.GetUdpMaxQueries().GetValue())
+			},
+		},
+		{
 			name:    "setting a different oneof option clears the base option",
 			overlay: `{stats_config: {stats_matcher: {reject_all: true}}}`,
 			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
@@ -253,7 +302,7 @@ func TestApplyInvalidOverlay(t *testing.T) {
 		{
 			name:     "unknown field",
 			overlays: []Overlay{{Source: gwParams, Raw: []byte(`{"layerd_runtime": {}}`)}},
-			wantErr:  `bootstrap overlay in GatewayParameters default/gw-params: does not parse as an Envoy Bootstrap: proto:`,
+			wantErr:  `bootstrap patch in GatewayParameters default/gw-params: does not parse as an Envoy Bootstrap: proto:`,
 		},
 		{
 			name: "type the controller does not link",
@@ -279,7 +328,7 @@ func TestApplyInvalidOverlay(t *testing.T) {
 		{
 			name:     "admin layer",
 			overlays: []Overlay{overlay(t, gwParams, `{layered_runtime: {layers: [{name: mine, admin_layer: {}}]}}`)},
-			wantErr:  `runtime layer "mine" sets admin_layer instead of static_layer; bootstrap patches can add only static runtime layers`,
+			wantErr:  `runtime layer "mine" sets admin_layer instead of static_layer; a bootstrap patch can add only static runtime layers`,
 		},
 		{
 			name:     "disk layer",
@@ -325,7 +374,7 @@ layered_runtime:
 				overlay(t, gcParams, `{layered_runtime: {layers: [{name: user, static_layer: {}}]}}`),
 				overlay(t, gwParams, `{layered_runtime: {layers: [{name: user, static_layer: {}}]}}`),
 			},
-			wantErr: `bootstrap overlay in GatewayParameters default/gw-params: runtime layer "user" is also defined in GatewayParameters kgateway-system/class-params`,
+			wantErr: `bootstrap patch in GatewayParameters default/gw-params: runtime layer "user" is also defined in GatewayParameters kgateway-system/class-params`,
 		},
 		{
 			name:     "cluster name repeated in one overlay",
@@ -397,6 +446,7 @@ staticResources:
 		// Every path is reported, gateway_proxy_sds is not since the base lacks it,
 		// and the overlays applied.
 		assert.Equal(t, wantPaths, res.ManagedPaths)
+		assert.Empty(t, res.ReplacedEntries, "a replaced managed entry should be reported only as a managed path")
 		assert.Equal(t, "other", res.Bootstrap.GetClusterManager().GetLocalClusterName())
 		assert.Equal(t, "z1", res.Bootstrap.GetNode().GetLocality().GetZone())
 		assert.Equal(t, int64(9), res.Bootstrap.GetStaticResources().GetClusters()[1].GetConnectTimeout().GetSeconds())
@@ -442,6 +492,85 @@ staticResources:
 		require.NoError(t, err)
 		assert.Empty(t, res.ManagedPaths)
 		assert.Equal(t, int64(10), res.Bootstrap.GetStatsFlushInterval().GetSeconds())
+	})
+}
+
+func TestApplyReplacedEntries(t *testing.T) {
+	// The generated bootstrap gets one entry of each named list that is not a managed
+	// path, as a later kgateway release could add.
+	withGeneratedEntries := func(t *testing.T) *envoybootstrapv3.Bootstrap {
+		t.Helper()
+		bs := parseBase(t)
+		extra := parseYAMLBootstrap(t, `
+static_resources:
+  clusters: [{name: generated_cluster}]
+  listeners:
+  - name: generated_listener
+    address: {socket_address: {address: 0.0.0.0, port_value: 9000}}
+  secrets: [{name: generated_secret}]
+overload_manager:
+  resource_monitors: [{name: envoy.resource_monitors.global_downstream_max_connections}]`)
+		mergeOverlay(bs, extra)
+		return bs
+	}
+
+	// The GatewayClass's overlay replaces each of them and a managed cluster, and adds
+	// a cluster of its own; the Gateway's replaces one of them again.
+	classOverlay := `
+static_resources:
+  clusters: [{name: generated_cluster}, {name: xds_cluster}, {name: user_cluster}]
+  listeners:
+  - name: generated_listener
+    address: {socket_address: {address: 0.0.0.0, port_value: 9001}}
+  secrets: [{name: generated_secret}]
+overload_manager:
+  resource_monitors: [{name: envoy.resource_monitors.global_downstream_max_connections}]`
+	gatewayOverlay := `{static_resources: {clusters: [{name: generated_cluster}]}}`
+	overlays := func(t *testing.T) []Overlay {
+		return []Overlay{overlay(t, gcParams, classOverlay), overlay(t, gwParams, gatewayOverlay)}
+	}
+	wantReplaced := []ReplacedEntry{
+		{Path: "static_resources.clusters[name=generated_cluster]", Source: gcParams},
+		{Path: "static_resources.listeners[name=generated_listener]", Source: gcParams},
+		{Path: "static_resources.secrets[name=generated_secret]", Source: gcParams},
+		{Path: "overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections]", Source: gcParams},
+		{Path: "static_resources.clusters[name=generated_cluster]", Source: gwParams},
+	}
+
+	for _, mode := range []apisettings.BootstrapPatchManagedPathsMode{
+		apisettings.BootstrapPatchManagedPathsWarn,
+		apisettings.BootstrapPatchManagedPathsPrune,
+	} {
+		t.Run(string(mode)+" applies and reports each replaced entry", func(t *testing.T) {
+			// Apply the overlays.
+			res, err := Apply(withGeneratedEntries(t), overlays(t), mode)
+			require.NoError(t, err)
+
+			// Each generated entry other than the managed cluster is reported once per
+			// overlay that replaces it; the managed cluster is reported as a managed
+			// path, and the overlay's own cluster not at all.
+			assert.Equal(t, wantReplaced, res.ReplacedEntries)
+			assert.Equal(t, []ManagedPath{{Path: "static_resources.clusters[name=xds_cluster]", Source: gcParams}}, res.ManagedPaths)
+
+			// The replacement applied.
+			listeners := res.Bootstrap.GetStaticResources().GetListeners()
+			assert.Equal(t, uint32(9001), listeners[len(listeners)-1].GetAddress().GetSocketAddress().GetPortValue(),
+				"the overlay's listener should replace the generated one")
+		})
+	}
+
+	t.Run("REJECT applies and reports replaced entries that are not managed paths", func(t *testing.T) {
+		// Apply an overlay that replaces only the resource monitor.
+		res, err := Apply(withGeneratedEntries(t), []Overlay{overlay(t, gwParams,
+			`{overload_manager: {resource_monitors: [{name: envoy.resource_monitors.global_downstream_max_connections}]}}`)},
+			apisettings.BootstrapPatchManagedPathsReject)
+
+		// It applies, and the replacement is reported.
+		require.NoError(t, err)
+		assert.Equal(t, []ReplacedEntry{{
+			Path:   "overload_manager.resource_monitors[name=envoy.resource_monitors.global_downstream_max_connections]",
+			Source: gwParams,
+		}}, res.ReplacedEntries)
 	})
 }
 
@@ -496,7 +625,7 @@ func TestSourceKind(t *testing.T) {
 	// Messages name a source of another kind by that kind.
 	proxyParams := Source{Kind: "ProxyParameters", Namespace: "default", Name: "proxy-params"}
 	_, err := Apply(parseBase(t), []Overlay{overlay(t, proxyParams, `{node: {id: x}, layered_runtime: {layers: [{name: admin_layer, static_layer: {}}]}}`)}, apisettings.BootstrapPatchManagedPathsWarn)
-	assert.ErrorContains(t, err, "bootstrap overlay in ProxyParameters default/proxy-params: ")
+	assert.ErrorContains(t, err, "bootstrap patch in ProxyParameters default/proxy-params: ")
 	res, err := Apply(parseBase(t), []Overlay{overlay(t, proxyParams, `{node: {id: x}}`)}, apisettings.BootstrapPatchManagedPathsWarn)
 	require.NoError(t, err)
 	require.Len(t, res.ManagedPaths, 1)

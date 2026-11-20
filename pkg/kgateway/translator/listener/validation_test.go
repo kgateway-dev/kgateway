@@ -170,11 +170,48 @@ func TestBootstrapReservedPort(t *testing.T) {
 	g.Expect(validListeners).To(HaveLen(2))
 	g.Expect([]gwv1.PortNumber{validListeners[0].Port, validListeners[1].Port}).To(ConsistOf(gwv1.PortNumber(8080), gwv1.PortNumber(8082)))
 	kinds := []gwv1.RouteGroupKind{{Group: GroupNameHelper(), Kind: "HTTPRoute"}, {Group: GroupNameHelper(), Kind: "GRPCRoute"}}
-	msg := "invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters bootstrap patches applied, listens on it: port is reserved"
+	msg := "invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters bootstrap patch applied, listens on it: port is reserved"
 	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, map[string]gwv1.ListenerStatus{
 		"http":       {Name: "http", SupportedKinds: kinds},
 		"freed-port": {Name: "freed-port", SupportedKinds: kinds},
 		"bootstrap-port": {Name: "bootstrap-port", SupportedKinds: kinds, Conditions: []metav1.Condition{
+			{Type: string(gwv1.ListenerConditionConflicted), Status: metav1.ConditionTrue, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionProgrammed), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+		}},
+	})
+}
+
+// A Gateway listener on a port the current bootstrap frees is rejected while a pod
+// still running an earlier bootstrap listens on it, since that pod would reject the
+// listener as a duplicate address.
+func TestBootstrapPortReservedByRunningPod(t *testing.T) {
+	// Build a Gateway with a listener on 8082, whose current bootstrap has moved the
+	// readiness listener to 8083 while pod proxy-old still listens on 8082.
+	gateway := simpleGwNoHostname()
+	gateway.Spec.Listeners = append(gateway.Spec.Listeners,
+		gwv1.Listener{Name: "freed-port", Port: 8082, Protocol: gwv1.HTTPProtocolType},
+	)
+	gwIR := gwToIr(gateway, nil, nil)
+	gwIR.ValidationBootstraps = &ir.GatewayValidationBootstraps{
+		ReservedPorts:    []uint32{8083, 9091, 19000},
+		PodReservedPorts: []ir.PodReservedPort{{Port: 8082, Pod: "proxy-old"}},
+	}
+
+	// Validate it.
+	report := reports.NewReportMap()
+	validListeners := validateGateway(gwIR, reports.NewReporter(&report))
+
+	// Only the listener on 8080 is valid; the one on 8082 names the pod and says the
+	// port is free once the rollout completes.
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+	g.Expect(validListeners[0].Port).To(Equal(gwv1.PortNumber(8080)))
+	kinds := []gwv1.RouteGroupKind{{Group: GroupNameHelper(), Kind: "HTTPRoute"}, {Group: GroupNameHelper(), Kind: "GRPCRoute"}}
+	msg := "invalid port 8082 in listener: proxy pod proxy-old still runs an earlier bootstrap that listens on it; the port is free once the rollout completes: port is reserved"
+	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, map[string]gwv1.ListenerStatus{
+		"http": {Name: "http", SupportedKinds: kinds},
+		"freed-port": {Name: "freed-port", SupportedKinds: kinds, Conditions: []metav1.Condition{
 			{Type: string(gwv1.ListenerConditionConflicted), Status: metav1.ConditionTrue, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
 			{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
 			{Type: string(gwv1.ListenerConditionProgrammed), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},

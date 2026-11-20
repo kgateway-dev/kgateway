@@ -348,6 +348,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// Resolved at construction; every scoping path checks ScopesClusters() and
 	// does nothing when it is false.
 	scoping := s.scoping
+	clusterConflicts := newStaticClusterConflicts(finalBackends)
 	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
 		// with controllerName matching s.controllerName (envoy controller). The filtering happens
@@ -358,6 +359,9 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		if xdsSnap == nil {
 			return nil
 		}
+
+		// Report static clusters from bootstrap patches that shadow translated clusters.
+		clusterConflicts.report(kctx, gw, &rm)
 
 		return toTranslationOutput(gw, *xdsSnap, rm, scoping)
 	}, krtopts.ToOptions("GatewayTranslationOutputs")...)

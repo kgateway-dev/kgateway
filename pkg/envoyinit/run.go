@@ -27,6 +27,7 @@ const (
 // RunEnvoy run Envoy with bootstrap configuration injected from a file
 func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 1. Transform the configuration using the Kubernetes Downward API
+	waitForInputConfig(inputPath)
 	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
 		// The "initializer failed" prefix is asserted by the envoy-wrapper

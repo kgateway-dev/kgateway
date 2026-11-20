@@ -16,10 +16,13 @@ type namedEntry interface {
 }
 
 // mergeOverlay merges overlay into base in place with proto.Merge semantics: a set
-// scalar replaces the base value, messages merge field by field, and an Any or a map
-// entry replaces the base value whole. A list puts the overlay's entries before the
-// base's, so an overlay entry wins in a list where Envoy uses the first matching entry,
-// such as stats_config.histogram_bucket_settings. Two kinds of list are exceptions:
+// scalar replaces the base value, messages merge field by field, and a map entry
+// replaces the base value whole. A google.protobuf.Any the overlay sets replaces the
+// base's whole, including one with only a type URL and an empty payload, which
+// proto.Merge alone would merge into the base's payload. A list puts the overlay's
+// entries before the base's, so an overlay entry wins in a list where Envoy uses the
+// first matching entry, such as stats_config.histogram_bucket_settings. Two kinds of
+// list are exceptions:
 //
 //   - static_resources.clusters, static_resources.listeners, static_resources.secrets
 //     and overload_manager.resource_monitors merge by name. An overlay entry replaces
@@ -46,6 +49,10 @@ func mergeOverlay(base, overlay *envoybootstrapv3.Bootstrap) {
 	if ov.OverloadManager != nil {
 		ov.OverloadManager.ResourceMonitors = nil
 	}
+
+	// Clear each base Any the overlay replaces, so proto.Merge copies the overlay's Any
+	// into an empty field rather than merging it into the base's payload.
+	clearReplacedAnys(base.ProtoReflect(), ov.ProtoReflect())
 
 	// Merge everything else with proto.Merge, then move the overlay's list entries,
 	// which proto.Merge appends, to the front of each list.
@@ -81,6 +88,34 @@ func mergeOverlay(base, overlay *envoybootstrapv3.Bootstrap) {
 		insertAt = len(baseLayers)
 	}
 	base.LayeredRuntime.Layers = slices.Insert(baseLayers, insertAt, layers...)
+}
+
+// anyFullName is the full name of google.protobuf.Any, the type of every typed_config
+// field in Envoy's API.
+const anyFullName protoreflect.FullName = "google.protobuf.Any"
+
+// clearReplacedAnys clears each google.protobuf.Any field in base at a path where
+// overlay sets one. proto.Merge treats an Any as a message with a type URL and a
+// serialized payload, and an empty payload as unset, so without this an overlay Any
+// with only a type URL would keep the base's payload, under the overlay's type. It
+// walks only singular message fields: proto.Merge appends list entries and replaces
+// map values whole, so an overlay Any inside either never merges into a base Any.
+func clearReplacedAnys(base, overlay protoreflect.Message) {
+	overlay.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		// Skip scalars, lists and maps.
+		if fd.IsList() || fd.IsMap() || fd.Message() == nil {
+			return true
+		}
+
+		// Clear the base's Any, or walk into a message the base also sets.
+		switch {
+		case fd.Message().FullName() == anyFullName:
+			base.Clear(fd)
+		case base.Has(fd):
+			clearReplacedAnys(base.Mutable(fd).Message(), v.Message())
+		}
+		return true
+	})
 }
 
 // prependOverlayEntries reorders the lists in merged, the result of proto.Merge(base,

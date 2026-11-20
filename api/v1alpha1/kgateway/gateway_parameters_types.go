@@ -436,45 +436,39 @@ type EnvoyBootstrap struct {
 	// +kubebuilder:validation:Maximum=9007199254740991
 	MaxDownstreamConnections *int64 `json:"maxDownstreamConnections,omitempty"`
 
-	// Patches change the generated Envoy bootstrap after the fields above are
-	// rendered into it. The controller merges them into the bootstrap, validates the
-	// result with Envoy, and writes it to the bootstrap ConfigMap, which restarts the
-	// proxy. The result is reported on the Gateway's kgateway.dev/BootstrapPatchApplied
-	// condition. When the patches cannot be applied, the controller leaves the Gateway's
-	// proxy objects as they are until the patches are fixed.
+	// Patch is a partial Envoy bootstrap merged into the generated one after the
+	// fields above are rendered into it. The controller merges it into the bootstrap,
+	// validates the result with Envoy, and writes it to the bootstrap ConfigMap, which
+	// restarts the proxy. The result is reported on the Gateway's
+	// kgateway.dev/BootstrapPatchApplied condition. When the patch cannot be applied,
+	// the controller leaves the Gateway's proxy objects as they are until the patch
+	// is fixed.
 	//
-	// When both the GatewayClass and the Gateway reference GatewayParameters with
-	// patches, the GatewayClass patches are applied first and the Gateway patches on top.
-	//
-	// +optional
-	Patches *BootstrapPatches `json:"patches,omitempty"`
-}
-
-// BootstrapPatches are changes merged into the generated Envoy bootstrap.
-type BootstrapPatches struct {
-	// Overlay is a partial Envoy bootstrap merged into the generated one.
+	// When both the GatewayClass and the Gateway reference GatewayParameters with a
+	// patch, the GatewayClass patch is applied first and the Gateway patch on top.
 	//
 	// +optional
-	Overlay *BootstrapOverlay `json:"overlay,omitempty"`
+	Patch *BootstrapPatch `json:"patch,omitempty"`
 }
 
-// BootstrapMergeStrategy selects how a bootstrap overlay is merged.
+// BootstrapMergeStrategy selects how a bootstrap patch is merged.
 // +kubebuilder:validation:Enum=StructuredMerge
 type BootstrapMergeStrategy string
 
 const (
-	// BootstrapMergeStrategyStructuredMerge merges the overlay as a protobuf merge:
+	// BootstrapMergeStrategyStructuredMerge merges the patch as a protobuf merge:
 	// a scalar replaces the generated value, a message merges field by field, an Any or
-	// a map entry replaces the generated value whole, and a list puts the overlay's
-	// entries before the generated ones. Two kinds of list are exceptions. Static clusters, listeners and secrets, and overload manager
-	// resource monitors merge by name: an overlay entry replaces the generated entry
-	// with the same name whole. Runtime layers are inserted before the admin layer, so
-	// values set through the admin endpoint /runtime_modify still take precedence.
+	// a map entry replaces the generated value whole, and a list puts the patch's
+	// entries before the generated ones. Two kinds of list are exceptions. Static
+	// clusters, listeners and secrets, and overload manager resource monitors merge by
+	// name: a patch entry replaces the generated entry with the same name whole.
+	// Runtime layers are inserted before the admin layer, so values set through the
+	// admin endpoint /runtime_modify still take precedence.
 	BootstrapMergeStrategyStructuredMerge BootstrapMergeStrategy = "StructuredMerge"
 )
 
-// BootstrapOverlay is a partial Envoy bootstrap merged into the generated one.
-type BootstrapOverlay struct {
+// BootstrapPatch is a partial Envoy bootstrap merged into the generated one.
+type BootstrapPatch struct {
 	// MergeStrategy selects how Value is merged into the generated bootstrap.
 	// StructuredMerge is the only strategy.
 	//
@@ -582,18 +576,11 @@ func (in *EnvoyBootstrap) GetMaxDownstreamConnections() *int64 {
 	return in.MaxDownstreamConnections
 }
 
-func (in *EnvoyBootstrap) GetPatches() *BootstrapPatches {
+func (in *EnvoyBootstrap) GetPatch() *BootstrapPatch {
 	if in == nil {
 		return nil
 	}
-	return in.Patches
-}
-
-func (in *BootstrapPatches) GetOverlay() *BootstrapOverlay {
-	if in == nil {
-		return nil
-	}
-	return in.Overlay
+	return in.Patch
 }
 
 func (in *DnsResolver) GetUdpMaxQueries() *int32 {

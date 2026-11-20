@@ -19,6 +19,14 @@ type GatewayValidationBootstraps struct {
 	// ReservedPorts are the ports the Gateway's current bootstrap listens on, which
 	// replace the static reserved ports. Empty means the static reserved ports.
 	ReservedPorts []uint32
+	// PodReservedPorts are the ports that the bootstrap of a running pod listens on and
+	// the current bootstrap does not, sorted by port. A Gateway listener on one of them
+	// is rejected until no running pod listens on it.
+	PodReservedPorts []PodReservedPort
+	// StaticClusters are the names of the static clusters in the Gateway's current
+	// patched bootstrap, sorted. Envoy ignores a translated cluster with one of these
+	// names. Empty when the Gateway has no bootstrap patches.
+	StaticClusters []string
 }
 
 // ValidationBootstrap is the validation subset of one bootstrap.
@@ -34,12 +42,27 @@ type ValidationBootstrap struct {
 	Bootstrap *envoybootstrapv3.Bootstrap `json:"-"`
 }
 
+// PodReservedPort is a port that a running pod's bootstrap listens on.
+type PodReservedPort struct {
+	Port uint32
+	// Pod names the first running pod, by name, whose bootstrap listens on Port.
+	Pod string
+}
+
 // GetReservedPorts returns ReservedPorts, or nil when g is nil.
 func (g *GatewayValidationBootstraps) GetReservedPorts() []uint32 {
 	if g == nil {
 		return nil
 	}
 	return g.ReservedPorts
+}
+
+// GetPodReservedPorts returns PodReservedPorts, or nil when g is nil.
+func (g *GatewayValidationBootstraps) GetPodReservedPorts() []PodReservedPort {
+	if g == nil {
+		return nil
+	}
+	return g.PodReservedPorts
 }
 
 // GetSubsets returns Subsets, or nil when g is nil.
@@ -50,12 +73,23 @@ func (g *GatewayValidationBootstraps) GetSubsets() []ValidationBootstrap {
 	return g.Subsets
 }
 
-// Equals compares the encoded subsets, the pods named for them and the reserved ports.
+// GetStaticClusters returns StaticClusters, or nil when g is nil.
+func (g *GatewayValidationBootstraps) GetStaticClusters() []string {
+	if g == nil {
+		return nil
+	}
+	return g.StaticClusters
+}
+
+// Equals compares the encoded subsets, the pods named for them, the reserved ports,
+// the ports running pods reserve and the static cluster names.
 func (g *GatewayValidationBootstraps) Equals(in *GatewayValidationBootstraps) bool {
 	if g == nil || in == nil {
 		return g == in
 	}
 	return slices.EqualFunc(g.Subsets, in.Subsets, func(a, b ValidationBootstrap) bool {
 		return a.Subset == b.Subset && a.Pod == b.Pod
-	}) && slices.Equal(g.ReservedPorts, in.ReservedPorts)
+	}) && slices.Equal(g.ReservedPorts, in.ReservedPorts) &&
+		slices.Equal(g.PodReservedPorts, in.PodReservedPorts) &&
+		slices.Equal(g.StaticClusters, in.StaticClusters)
 }

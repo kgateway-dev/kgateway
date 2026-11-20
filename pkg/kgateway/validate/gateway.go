@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 
-	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -14,35 +13,42 @@ import (
 
 var ErrListenerPortReserved = errors.New("port is reserved")
 
-// staticReservedPorts are the ports the generated bootstrap listens on. They are
-// reserved for every Gateway whose bootstrap has no patches.
-var staticReservedPorts = sets.New(
-	gwv1.PortNumber(wellknown.EnvoyMetricsPort),   //nolint:gosec // G115: the default ports fit in int32
-	gwv1.PortNumber(wellknown.EnvoyReadinessPort), //nolint:gosec // G115: the default ports fit in int32
-	gwv1.PortNumber(wellknown.EnvoyAdminPort),     //nolint:gosec // G115: the default ports fit in int32
-)
+// DefaultReservedPorts returns the ports the generated bootstrap listens on, sorted.
+// They are reserved for a Gateway whose bootstrap has no patches, and while a proxy pod
+// that started without the kgateway.dev/xds-validation-bootstrap annotation runs.
+func DefaultReservedPorts() []uint32 {
+	return []uint32{wellknown.EnvoyReadinessPort, wellknown.EnvoyMetricsPort, wellknown.EnvoyAdminPort}
+}
 
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
 func ListenerPort(listener ir.Listener, port gwv1.PortNumber) error {
 	return ListenerPortForBootstrap(port, nil)
 }
 
-// ListenerPortForBootstrap validates that port is not one the Gateway's proxy
-// bootstrap listens on. bootstrapPorts are those ports, read from a bootstrap with
-// patches, and replace the static reserved ports. When bootstrapPorts is empty, the
-// static reserved ports apply.
-func ListenerPortForBootstrap(port gwv1.PortNumber, bootstrapPorts []uint32) error {
+// ListenerPortForBootstrap validates that port is not one that a bootstrap of the
+// Gateway's proxies listens on: the current bootstrap, whose ports are vb's
+// ReservedPorts or, when those are empty, the default reserved ports; or the earlier
+// bootstrap of a pod that still runs, vb's PodReservedPorts. A nil vb means the default
+// reserved ports only.
+func ListenerPortForBootstrap(port gwv1.PortNumber, vb *ir.GatewayValidationBootstraps) error {
+	p := uint32(port) //nolint:gosec // G115: listener ports are positive
+
 	// Without a bootstrap with patches, the generated bootstrap's ports are reserved.
-	if len(bootstrapPorts) == 0 {
-		if staticReservedPorts.Has(port) {
+	current := vb.GetReservedPorts()
+	if len(current) == 0 {
+		if slices.Contains(DefaultReservedPorts(), p) {
 			return fmt.Errorf("invalid port %d in listener: %w", port, ErrListenerPortReserved)
 		}
-		return nil
+	} else if slices.Contains(current, p) {
+		return fmt.Errorf("invalid port %d in listener: the proxy bootstrap, with the GatewayParameters bootstrap patch applied, listens on it: %w", port, ErrListenerPortReserved)
 	}
 
-	// Otherwise exactly the ports the patched bootstrap listens on are reserved.
-	if slices.Contains(bootstrapPorts, uint32(port)) { //nolint:gosec // G115: listener ports are positive
-		return fmt.Errorf("invalid port %d in listener: the proxy bootstrap, with the GatewayParameters bootstrap patches applied, listens on it: %w", port, ErrListenerPortReserved)
+	// Every pod receives the same listeners, so a pod still running an earlier bootstrap
+	// that listens on the port would reject the listener as a duplicate address.
+	i := slices.IndexFunc(vb.GetPodReservedPorts(), func(r ir.PodReservedPort) bool { return r.Port == p })
+	if i >= 0 {
+		return fmt.Errorf("invalid port %d in listener: proxy pod %s still runs an earlier bootstrap that listens on it; the port is free once the rollout completes: %w",
+			port, vb.GetPodReservedPorts()[i].Pod, ErrListenerPortReserved)
 	}
 	return nil
 }

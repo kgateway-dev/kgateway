@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	regexenginesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/regex_engines/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -52,6 +53,19 @@ func TestValidationSubset(t *testing.T) {
 	assert.Equal(t, EmptyValidationSubset, empty)
 }
 
+// TestGoogleRE2HasNoFields guards leaving default_regex_engine out of ValidationSubset.
+// GoogleRE2 is the only engine the proxy's Envoy can load, and with no fields it
+// accepts what Envoy's default engine accepts. When go-control-plane adds a field to
+// it, an overlay can change which regexes Envoy accepts, and default_regex_engine
+// belongs in the subset.
+func TestGoogleRE2HasNoFields(t *testing.T) {
+	// Read GoogleRE2's fields from its descriptor.
+	fields := (&regexenginesv3.GoogleRE2{}).ProtoReflect().Descriptor().Fields()
+
+	// It has none.
+	assert.Zero(t, fields.Len(), "GoogleRE2 gained a field; add default_regex_engine to ValidationSubset with a test that shows the field changes what Envoy accepts")
+}
+
 func TestEncodeValidationSubset(t *testing.T) {
 	// Encode the subset.
 	subset := ValidationSubset(parseYAMLBootstrap(t, subsetSource))
@@ -80,20 +94,34 @@ func TestEncodeValidationSubset(t *testing.T) {
 }
 
 func TestValidationData(t *testing.T) {
-	// Encode a subset with ports out of order and repeated.
+	// Encode a subset with ports and cluster names out of order and repeated.
 	subset, err := EncodeValidationSubset(ValidationSubset(parseYAMLBootstrap(t, subsetSource)))
 	require.NoError(t, err)
-	encoded, err := EncodeValidationData(subset, []uint32{19000, 9000, 8082, 9000})
+	encoded, err := EncodeValidationData(subset, []uint32{19000, 9000, 8082, 9000}, []string{"xds_cluster", "a_cluster", "xds_cluster"})
 	require.NoError(t, err)
 
-	// Decoding gives back the subset byte for byte, so the translator can compare it
-	// with a pod annotation, and the ports sorted and without duplicates.
+	// Decoding gives back the subset byte for byte, so the translator can compare the
+	// subset in the key with the one in a pod annotation, and the ports and names sorted
+	// and without duplicates.
 	data, err := DecodeValidationData(encoded)
 	require.NoError(t, err)
 	assert.Equal(t, subset, string(data.Bootstrap))
 	assert.Equal(t, []uint32{8082, 9000, 19000}, data.ReservedPorts)
+	assert.Equal(t, []string{"a_cluster", "xds_cluster"}, data.StaticClusters)
+
+	// The annotation's encoding, without static cluster names, leaves the field out.
+	annotation, err := EncodeValidationData(subset, []uint32{8082}, nil)
+	require.NoError(t, err)
+	assert.NotContains(t, annotation, "staticClusters")
+	data, err = DecodeValidationData(annotation)
+	require.NoError(t, err)
+	assert.Equal(t, subset, string(data.Bootstrap))
+	assert.Equal(t, []uint32{8082}, data.ReservedPorts)
+
+	// The static cluster names are read from the bootstrap's static clusters.
+	assert.Equal(t, []string{"gw.default", "xds_cluster", "admin_port_cluster"}, StaticClusterNames(parseBase(t)))
 
 	// Data that is not JSON fails to decode.
 	_, err = DecodeValidationData("not json")
-	require.ErrorContains(t, err, ValidationKey+" does not decode")
+	require.ErrorContains(t, err, "the bootstrap validation data does not decode")
 }

@@ -1,4 +1,4 @@
-# Bootstrap patches that set no path the control plane manages: a stats flush
+# A bootstrap patch that sets no path the control plane manages: a stats flush
 # interval and a static runtime layer.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -9,13 +9,12 @@ spec:
   kube:
     envoyContainer:
       bootstrap:
-        patches:
-          overlay:
-            mergeStrategy: StructuredMerge
-            value:
-              stats_flush_interval: 7s
-              layered_runtime:
-                layers:
-                  - name: e2e_runtime
-                    static_layer:
-                      e2e.bootstrap_patches.marker: 1
+        patch:
+          mergeStrategy: StructuredMerge
+          value:
+            stats_flush_interval: 7s
+            layered_runtime:
+              layers:
+                - name: e2e_runtime
+                  static_layer:
+                    e2e.bootstrap_patches.marker: 1

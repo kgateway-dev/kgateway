@@ -1,4 +1,4 @@
-# Bootstrap patches that set node, a path the control plane manages. Adding a
+# A bootstrap patch that sets node, a path the control plane manages. Adding a
 # metadata key keeps the role the controller selects the proxy's configuration by.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
@@ -9,10 +9,9 @@ spec:
   kube:
     envoyContainer:
       bootstrap:
-        patches:
-          overlay:
-            mergeStrategy: StructuredMerge
-            value:
-              node:
-                metadata:
-                  e2e_marker: set
+        patch:
+          mergeStrategy: StructuredMerge
+          value:
+            node:
+              metadata:
+                e2e_marker: set

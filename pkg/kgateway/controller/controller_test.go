@@ -325,7 +325,7 @@ func (s *ControllerSuite) TestBootstrapPatchAppliedCondition() {
 	// An overlay with a template is rejected. The proxy keeps running, so the Gateway
 	// stays accepted.
 	s.updateOverlay(key, `{"layered_runtime": {"layers": [{"name": "{{ .Values.name }}", "static_layer": {}}]}}`)
-	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidOverlay, false)
+	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidPatch, false)
 
 	// Removing the patches removes the condition.
 	s.updateOverlay(key, "")
@@ -340,7 +340,7 @@ func (s *ControllerSuite) TestBootstrapPatchesInvalidOnNewGateway() {
 
 	// Create a Gateway whose GatewayParameters have an invalid overlay.
 	s.createGatewayWithOverlay(key, `{"layerd_runtime": {}}`)
-	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidOverlay, true)
+	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidPatch, true)
 	err := s.client.Get(ctx, key, &appsv1.Deployment{})
 	s.Require().True(k8serrors.IsNotFound(err), "no proxy should be deployed, got %v", err)
 
@@ -357,16 +357,16 @@ func (s *ControllerSuite) TestBootstrapPatchesInvalidOnNewGateway() {
 func (s *ControllerSuite) TestBootstrapPatchEvents() {
 	key := types.NamespacedName{Name: "bootstrap-patch-events", Namespace: defaultNamespace}
 
-	// Patches that set a managed path record a Warning event that names it.
+	// A patch that sets a managed path records a Warning event that names it.
 	s.createGatewayWithOverlay(key, `{"static_resources": {"clusters": [{"name": "xds_cluster", "connect_timeout": "9s"}]}}`)
 	s.waitForBootstrapPatchApplied(key, metav1.ConditionTrue, conditions.KgatewayReasonBootstrapManagedPathsOverridden, false)
 	s.waitForGatewayEvent(key, conditions.KgatewayReasonBootstrapManagedPathsOverridden,
-		"set static_resources.clusters[name=xds_cluster] (GatewayParameters default/bootstrap-patch-events)")
+		"sets static_resources.clusters[name=xds_cluster] (GatewayParameters default/bootstrap-patch-events)")
 
-	// Patches that fail record a Warning event with the error.
+	// A patch that fails records a Warning event with the error.
 	s.updateOverlay(key, `{"layerd_runtime": {}}`)
-	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidOverlay, false)
-	s.waitForGatewayEvent(key, conditions.KgatewayReasonBootstrapInvalidOverlay, "Applied none of the bootstrap patches")
+	s.waitForBootstrapPatchApplied(key, metav1.ConditionFalse, conditions.KgatewayReasonBootstrapInvalidPatch, false)
+	s.waitForGatewayEvent(key, conditions.KgatewayReasonBootstrapInvalidPatch, "Applied no bootstrap patch")
 }
 
 // TestGatewayClassStatus tests the Status conditions on GatewayClass
@@ -672,7 +672,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 //
 
 // createGatewayWithOverlay creates a Gateway and the GatewayParameters it uses, with
-// the given bootstrap overlay, both named by key, and deletes them when the test ends.
+// the given bootstrap patch, both named by key, and deletes them when the test ends.
 func (s *ControllerSuite) createGatewayWithOverlay(key types.NamespacedName, overlayJSON string) {
 	ctx := context.Background()
 
@@ -714,7 +714,7 @@ func (s *ControllerSuite) createGatewayWithOverlay(key types.NamespacedName, ove
 	s.Require().NoError(s.client.Create(ctx, gw))
 }
 
-// updateOverlay replaces the bootstrap overlay of the GatewayParameters named by key;
+// updateOverlay replaces the bootstrap patch of the GatewayParameters named by key;
 // an empty overlay removes the patches.
 func (s *ControllerSuite) updateOverlay(key types.NamespacedName, overlayJSON string) {
 	ctx := context.Background()
@@ -779,16 +779,16 @@ func (s *ControllerSuite) waitForGatewayEvent(key types.NamespacedName, reason, 
 	}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for event %s on Gateway %s", reason, key)
 }
 
-// setBootstrapOverlay sets the bootstrap overlay of gwp; an empty overlay removes the
-// patches.
+// setBootstrapOverlay sets the bootstrap patch of gwp; an empty value removes it.
 func setBootstrapOverlay(gwp *kgateway.GatewayParameters, overlayJSON string) {
-	gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patches = nil
+	// Remove any patch.
+	gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patch = nil
+
+	// Set the new one, if any.
 	if overlayJSON != "" {
-		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patches = &kgateway.BootstrapPatches{
-			Overlay: &kgateway.BootstrapOverlay{
-				MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
-				Value:         apiextensionsv1.JSON{Raw: []byte(overlayJSON)},
-			},
+		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patch = &kgateway.BootstrapPatch{
+			MergeStrategy: kgateway.BootstrapMergeStrategyStructuredMerge,
+			Value:         apiextensionsv1.JSON{Raw: []byte(overlayJSON)},
 		}
 	}
 }

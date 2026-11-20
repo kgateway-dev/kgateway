@@ -257,7 +257,10 @@ func isReporterOwnedGatewayConditionType(conditionType gwv1.GatewayConditionType
 	case gwv1.GatewayConditionAccepted,
 		gwv1.GatewayConditionProgrammed,
 		gwv1.GatewayConditionResolvedRefs,
-		gwv1.GatewayConditionInsecureFrontendValidationMode:
+		gwv1.GatewayConditionInsecureFrontendValidationMode,
+		// The proxy syncer sets it only for a Gateway with bootstrap patches, so it is
+		// removed when the patches are.
+		conditions.KgatewayConditionStaticClusterConflicted:
 		return true
 	default:
 		return false

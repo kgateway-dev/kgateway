@@ -9,7 +9,7 @@ metadata:
   labels:
     gateway.networking.k8s.io/gateway-name: example-gateway
   annotations:
-    kgateway.dev/xds-validation-bootstrap: '{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}}'
+    kgateway.dev/xds-validation-bootstrap: '{"bootstrap":{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}},"reservedPorts":[8082,9091,19000]}'
 spec:
   containers:
   - name: kgateway-proxy

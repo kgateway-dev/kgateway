@@ -103,18 +103,18 @@ func (v *ValidatorMode) Decode(value string) error {
 }
 
 // BootstrapPatchManagedPathsMode determines what the controller does with a
-// GatewayParameters bootstrap overlay that sets a path the control plane manages,
+// GatewayParameters bootstrap patch that sets a path the control plane manages,
 // such as the node, the xDS cluster or the readiness listener.
 type BootstrapPatchManagedPathsMode string
 
 const (
-	// BootstrapPatchManagedPathsWarn applies the overlay as written and reports each
+	// BootstrapPatchManagedPathsWarn applies the patch as written and reports each
 	// managed path it sets.
 	BootstrapPatchManagedPathsWarn BootstrapPatchManagedPathsMode = "WARN"
-	// BootstrapPatchManagedPathsPrune drops each managed path from the overlay before
+	// BootstrapPatchManagedPathsPrune drops each managed path from the patch before
 	// merging, applies the rest, and reports each dropped path.
 	BootstrapPatchManagedPathsPrune BootstrapPatchManagedPathsMode = "PRUNE"
-	// BootstrapPatchManagedPathsReject applies none of the overlay and reports the
+	// BootstrapPatchManagedPathsReject applies none of the patch and reports the
 	// managed paths it sets.
 	BootstrapPatchManagedPathsReject BootstrapPatchManagedPathsMode = "REJECT"
 )
@@ -377,13 +377,13 @@ type Settings struct {
 	ValidatorCacheSize int `split_words:"true"`
 
 	// BootstrapPatchManagedPaths determines what the controller does with a
-	// GatewayParameters bootstrap overlay that sets a path the control plane manages.
+	// GatewayParameters bootstrap patch that sets a path the control plane manages.
 	// Supported values:
-	// - "WARN" (default): apply the overlay as written and report each managed path
+	// - "WARN" (default): apply the patch as written and report each managed path
 	//   it sets on status, in an event and in a metric.
-	// - "PRUNE": drop each managed path from the overlay before merging, apply the
+	// - "PRUNE": drop each managed path from the patch before merging, apply the
 	//   rest, and report each dropped path.
-	// - "REJECT": apply none of the overlay and report the managed paths.
+	// - "REJECT": apply none of the patch and report the managed paths.
 	BootstrapPatchManagedPaths BootstrapPatchManagedPathsMode `split_words:"true" default:"WARN"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.

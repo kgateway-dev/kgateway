@@ -22,7 +22,7 @@ var bootstrapPatchManagedPaths = metrics.NewGauge(
 	metrics.GaugeOpts{
 		Subsystem: metricsSubsystem,
 		Name:      managedPathsMetric,
-		Help:      "Control-plane-managed bootstrap paths that a Gateway's GatewayParameters bootstrap patches set. The value is always 1.",
+		Help:      "Control-plane-managed bootstrap paths that a Gateway's GatewayParameters bootstrap patch sets. The value is always 1.",
 	},
 	[]string{namespaceLabel, nameLabel, managedPathLabel},
 )

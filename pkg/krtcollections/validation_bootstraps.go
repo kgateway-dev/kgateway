@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrappatch"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -17,33 +18,48 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
-// gatewayValidationBootstraps is a Gateway's validation bootstraps, keyed by the
-// Gateway.
-type gatewayValidationBootstraps struct {
-	key        string
-	bootstraps *ir.GatewayValidationBootstraps
+// GatewayRunningBootstraps describes the bootstraps a Gateway's proxies run, from the
+// ValidationKey of the Gateway's generated bootstrap ConfigMap and the annotations of
+// its proxy pods that have not exited.
+type GatewayRunningBootstraps struct {
+	Gateway types.NamespacedName
+	// Validation is what the translator validates the Gateway's configuration
+	// against. It is nil when every proxy runs Envoy's defaults and listens only on
+	// the default reserved ports.
+	Validation *ir.GatewayValidationBootstraps
+	// PodPorts are the ports the bootstraps of the Gateway's running pods listen on,
+	// sorted. A pod without the bootstrappatch.ValidationAnnotation listens on the
+	// default reserved ports.
+	PodPorts []uint32
+	// Revisions are the distinct bootstrappatch.ChecksumAnnotation values of the
+	// Gateway's running pods, sorted.
+	Revisions []string
 }
 
-func (g gatewayValidationBootstraps) ResourceName() string {
-	return g.key
+func (g GatewayRunningBootstraps) ResourceName() string {
+	return g.Gateway.String()
 }
 
 // Equals compares the encoded subsets rather than the ConfigMaps and pods they come
 // from, so a pod becoming Ready, or a change to another key of the ConfigMap, stops
 // here.
-func (g gatewayValidationBootstraps) Equals(in gatewayValidationBootstraps) bool {
-	return g.key == in.key && g.bootstraps.Equals(in.bootstraps)
+func (g GatewayRunningBootstraps) Equals(in GatewayRunningBootstraps) bool {
+	return g.Gateway == in.Gateway &&
+		g.Validation.Equals(in.Validation) &&
+		slices.Equal(g.PodPorts, in.PodPorts) &&
+		slices.Equal(g.Revisions, in.Revisions)
 }
 
-// newGatewayValidationBootstraps builds each Gateway's validation bootstraps: the
-// current subset and reserved ports from the ValidationKey of the generated
-// bootstrap ConfigMap the Gateway owns, and the subsets on the Gateway's proxy pods.
-func newGatewayValidationBootstraps(
+// newGatewayRunningBootstraps builds each Gateway's running bootstraps: the current
+// subset, reserved ports and static cluster names from the ValidationKey of the
+// generated bootstrap ConfigMap the Gateway owns, and the subsets, ports and checksums
+// on the Gateway's proxy pods.
+func newGatewayRunningBootstraps(
 	gateways krt.Collection[gatewaySpec],
 	configMaps krt.Collection[*corev1.ConfigMap],
 	pods krt.Collection[WrappedPod],
 	krtOpts krtutil.KrtOptions,
-) krt.Collection[gatewayValidationBootstraps] {
+) krt.Collection[GatewayRunningBootstraps] {
 	// Index the ConfigMaps that hold validation data by the Gateway that owns them.
 	configMapsByGateway := krtpkg.UnnamedIndex(configMaps, func(cm *corev1.ConfigMap) []types.NamespacedName {
 		if _, ok := cm.Data[bootstrappatch.ValidationKey]; !ok {
@@ -69,30 +85,50 @@ func newGatewayValidationBootstraps(
 		return []types.NamespacedName{{Namespace: pod.Namespace, Name: name}}
 	})
 
-	return krt.NewCollection(gateways, func(kctx krt.HandlerContext, spec gatewaySpec) *gatewayValidationBootstraps {
+	return krt.NewCollection(gateways, func(kctx krt.HandlerContext, spec gatewaySpec) *GatewayRunningBootstraps {
 		gw := types.NamespacedName{Namespace: spec.gw.Namespace, Name: spec.gw.Name}
 
-		// Read the current subset and reserved ports.
+		// Read the current subset, reserved ports and static cluster names.
 		configMaps := krt.Fetch(kctx, configMaps, krt.FilterIndex(configMapsByGateway, gw))
-		current, reservedPorts := currentValidationData(gw, configMaps)
+		current := currentValidationData(gw, configMaps)
 
-		// Read the subset each running pod started with.
+		// Read the bootstrap each running pod started with.
 		podKey := types.NamespacedName{Namespace: gw.Namespace, Name: kubeutils.SafeGatewayLabelValue(gw.Name)}
-		running := runningValidationSubsets(gw, krt.Fetch(kctx, pods, krt.FilterIndex(podsByGateway, podKey)))
+		running := runningBootstraps(gw, krt.Fetch(kctx, pods, krt.FilterIndex(podsByGateway, podKey)))
 
-		return &gatewayValidationBootstraps{
-			key:        krt.GetKey(spec.gw),
-			bootstraps: buildValidationBootstraps(current, reservedPorts, running),
+		return &GatewayRunningBootstraps{
+			Gateway:    gw,
+			Validation: buildValidationBootstraps(current, running),
+			PodPorts:   running.ports(),
+			Revisions:  running.revisions(),
 		}
-	}, krtOpts.ToOptions("GatewayValidationBootstraps")...)
+	}, krtOpts.ToOptions("GatewayRunningBootstraps")...)
 }
 
-// currentValidationData returns the subset and reserved ports in the ValidationKey of
-// the Gateway's generated bootstrap ConfigMap. Without the key, Envoy's defaults and
-// the static reserved ports apply.
-func currentValidationData(gw types.NamespacedName, configMaps []*corev1.ConfigMap) (ir.ValidationBootstrap, []uint32) {
+// currentValidation is what the ValidationKey of a Gateway's generated bootstrap
+// ConfigMap says about its current bootstrap.
+type currentValidation struct {
+	subset         ir.ValidationBootstrap
+	reservedPorts  []uint32
+	staticClusters []string
+}
+
+// effectivePorts returns the ports the current bootstrap listens on: the reserved
+// ports, or the default ones without validation data.
+func (c currentValidation) effectivePorts() []uint32 {
+	if len(c.reservedPorts) == 0 {
+		return validate.DefaultReservedPorts()
+	}
+	return c.reservedPorts
+}
+
+// currentValidationData returns the subset, reserved ports and static cluster names in
+// the ValidationKey of the Gateway's generated bootstrap ConfigMap. Without the key,
+// Envoy's defaults and the default reserved ports apply, and there are no static
+// clusters to check.
+func currentValidationData(gw types.NamespacedName, configMaps []*corev1.ConfigMap) currentValidation {
 	if len(configMaps) == 0 {
-		return ir.ValidationBootstrap{}, nil
+		return currentValidation{}
 	}
 
 	// The deployer writes one generated ConfigMap per Gateway; pick by name should
@@ -102,52 +138,138 @@ func currentValidationData(gw types.NamespacedName, configMaps []*corev1.ConfigM
 	if err != nil {
 		logger.Error("ignoring the bootstrap validation data; validating the Gateway's routes against Envoy's defaults",
 			"gateway", gw, "configmap", cm.Name, "error", err)
-		return ir.ValidationBootstrap{}, nil
+		return currentValidation{}
 	}
-	return parseValidationSubset(gw, string(data.Bootstrap), ""), data.ReservedPorts
+	return currentValidation{
+		subset:         parseValidationSubset(gw, string(data.Bootstrap), ""),
+		reservedPorts:  data.ReservedPorts,
+		staticClusters: data.StaticClusters,
+	}
 }
 
-// runningValidationSubsets returns each distinct subset the Gateway's running pods
-// carry, naming the first pod by name that carries it. A pod without the annotation
-// started with Envoy's defaults.
-func runningValidationSubsets(gw types.NamespacedName, pods []WrappedPod) []ir.ValidationBootstrap {
+// podBootstrap is what a running pod's annotations say about the bootstrap it started
+// with.
+type podBootstrap struct {
+	subset   ir.ValidationBootstrap
+	ports    []uint32
+	checksum string
+}
+
+// podBootstraps are the bootstraps of a Gateway's running pods, sorted by pod name.
+type podBootstraps []podBootstrap
+
+// runningBootstraps returns the bootstrap of each of the Gateway's pods that has not
+// exited, sorted by pod name. A pod without the validation annotation started with
+// Envoy's defaults and listens on the default reserved ports.
+func runningBootstraps(gw types.NamespacedName, pods []WrappedPod) podBootstraps {
 	slices.SortFunc(pods, func(a, b WrappedPod) int { return cmp.Compare(a.Name, b.Name) })
-	var out []ir.ValidationBootstrap
+	var out podBootstraps
 	for _, pod := range pods {
-		// A pod that has exited receives no configuration.
+		// A pod that has exited receives no configuration and restarts no container.
 		if pod.Terminal {
 			continue
 		}
 
-		// Keep the first pod that carries each subset.
-		v := parseValidationSubset(gw, pod.Annotations[bootstrappatch.ValidationAnnotation], pod.Name)
-		if !slices.ContainsFunc(out, func(o ir.ValidationBootstrap) bool { return o.Subset == v.Subset }) {
-			out = append(out, v)
+		// Read the pod's subset and ports, or the defaults without the annotation.
+		pb := podBootstrap{
+			subset:   ir.ValidationBootstrap{Pod: pod.Name},
+			ports:    validate.DefaultReservedPorts(),
+			checksum: pod.Annotations[bootstrappatch.ChecksumAnnotation],
+		}
+		if annotation, ok := pod.Annotations[bootstrappatch.ValidationAnnotation]; ok {
+			data, err := bootstrappatch.DecodeValidationData(annotation)
+			if err != nil {
+				logger.Error("ignoring a pod's bootstrap validation annotation; validating against Envoy's defaults and ports in its place",
+					"gateway", gw, "pod", pod.Name, "error", err)
+			} else {
+				pb.subset = parseValidationSubset(gw, string(data.Bootstrap), pod.Name)
+				pb.ports = data.ReservedPorts
+			}
+		}
+		out = append(out, pb)
+	}
+	return out
+}
+
+// subsets returns each distinct subset the pods carry, naming the first pod that
+// carries it.
+func (p podBootstraps) subsets() []ir.ValidationBootstrap {
+	var out []ir.ValidationBootstrap
+	for _, pb := range p {
+		if !slices.ContainsFunc(out, func(o ir.ValidationBootstrap) bool { return o.Subset == pb.subset.Subset }) {
+			out = append(out, pb.subset)
 		}
 	}
 	return out
 }
 
+// ports returns the ports any of the pods listens on, sorted.
+func (p podBootstraps) ports() []uint32 {
+	var out []uint32
+	for _, pb := range p {
+		out = append(out, pb.ports...)
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+// portsExcept returns each port a pod listens on that is not in exclude, naming the
+// first pod that listens on it, sorted by port.
+func (p podBootstraps) portsExcept(exclude []uint32) []ir.PodReservedPort {
+	var out []ir.PodReservedPort
+	for _, pb := range p {
+		for _, port := range pb.ports {
+			if slices.Contains(exclude, port) || slices.ContainsFunc(out, func(r ir.PodReservedPort) bool { return r.Port == port }) {
+				continue
+			}
+			out = append(out, ir.PodReservedPort{Port: port, Pod: pb.subset.Pod})
+		}
+	}
+	slices.SortFunc(out, func(a, b ir.PodReservedPort) int { return cmp.Compare(a.Port, b.Port) })
+	return out
+}
+
+// revisions returns the distinct checksums the pods carry, sorted.
+func (p podBootstraps) revisions() []string {
+	var out []string
+	for _, pb := range p {
+		if pb.checksum != "" {
+			out = append(out, pb.checksum)
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
 // buildValidationBootstraps returns the bootstraps to validate under: the current
-// subset first, then each other subset a running pod carries. It returns nil when
-// every bootstrap is Envoy's defaults and listens only on the static reserved ports.
-func buildValidationBootstraps(current ir.ValidationBootstrap, reservedPorts []uint32, running []ir.ValidationBootstrap) *ir.GatewayValidationBootstraps {
+// subset first, then each other subset a running pod carries, and the ports they
+// listen on. It returns nil when every bootstrap is Envoy's defaults, listens only on
+// the default reserved ports and has no static clusters to check.
+func buildValidationBootstraps(current currentValidation, running podBootstraps) *ir.GatewayValidationBootstraps {
 	// Validate under each distinct subset once.
-	subsets := []ir.ValidationBootstrap{current}
-	for _, r := range running {
-		if r.Subset != current.Subset {
+	subsets := []ir.ValidationBootstrap{current.subset}
+	for _, r := range running.subsets() {
+		if r.Subset != current.subset.Subset {
 			subsets = append(subsets, r)
 		}
 	}
 
 	// With only Envoy's defaults to validate under, validation needs no subset.
-	if len(subsets) == 1 && current.Subset == "" {
+	if len(subsets) == 1 && current.subset.Subset == "" {
 		subsets = nil
 	}
-	if len(subsets) == 0 && len(reservedPorts) == 0 {
+
+	// Reserve the ports running pods listen on that the current bootstrap does not.
+	podPorts := running.portsExcept(current.effectivePorts())
+	if len(subsets) == 0 && len(current.reservedPorts) == 0 && len(podPorts) == 0 && len(current.staticClusters) == 0 {
 		return nil
 	}
-	return &ir.GatewayValidationBootstraps{Subsets: subsets, ReservedPorts: reservedPorts}
+	return &ir.GatewayValidationBootstraps{
+		Subsets:          subsets,
+		ReservedPorts:    current.reservedPorts,
+		PodReservedPorts: podPorts,
+		StaticClusters:   current.staticClusters,
+	}
 }
 
 // parseValidationSubset parses an encoded subset that pod carries, or the current one

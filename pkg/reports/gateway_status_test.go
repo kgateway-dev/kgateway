@@ -19,8 +19,8 @@ func TestBuildGWStatusPreservesBootstrapPatchApplied(t *testing.T) {
 	bootstrapCond := metav1.Condition{
 		Type:    conditions.KgatewayConditionBootstrapPatchApplied,
 		Status:  metav1.ConditionFalse,
-		Reason:  conditions.KgatewayReasonBootstrapInvalidOverlay,
-		Message: "bootstrap overlay in GatewayParameters default/gwp: contains a template",
+		Reason:  conditions.KgatewayReasonBootstrapInvalidPatch,
+		Message: "bootstrap patch in GatewayParameters default/gwp: contains a template",
 	}
 	gw := &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default", Generation: 1},
@@ -42,4 +42,33 @@ func TestBuildGWStatusPreservesBootstrapPatchApplied(t *testing.T) {
 	require.Equal(t, bootstrapCond.Status, got.Status)
 	require.Equal(t, bootstrapCond.Reason, got.Reason)
 	require.Equal(t, bootstrapCond.Message, got.Message)
+}
+
+// TestBuildGWStatusDropsUnreportedStaticClusterConflicted checks that the translator
+// removes a kgateway.dev/StaticClusterConflicted condition it no longer reports, as
+// after the Gateway's bootstrap patches are removed.
+func TestBuildGWStatusDropsUnreportedStaticClusterConflicted(t *testing.T) {
+	// A Gateway whose status carries the condition from an earlier translation.
+	gw := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default", Generation: 1},
+		Spec: gwv1.GatewaySpec{
+			Listeners: []gwv1.Listener{{Name: "http", Protocol: gwv1.HTTPProtocolType, Port: 80}},
+		},
+		Status: gwv1.GatewayStatus{Conditions: []metav1.Condition{{
+			Type:    conditions.KgatewayConditionStaticClusterConflicted,
+			Status:  metav1.ConditionTrue,
+			Reason:  conditions.KgatewayReasonTranslatedClusterShadowed,
+			Message: `static cluster "kube_default_httpbin_8000" shadows the cluster for Service default/httpbin port 8000`,
+		}}},
+	}
+
+	// Build the status from a translation that does not report the condition.
+	rm := reports.NewReportMap()
+	reports.NewReporter(&rm).Gateway(gw)
+	status := rm.BuildGWStatus(*gw, nil)
+
+	// The condition is gone.
+	require.NotNil(t, status)
+	require.Nil(t, meta.FindStatusCondition(status.Conditions, conditions.KgatewayConditionStaticClusterConflicted),
+		"the translator must remove %s when it no longer reports it", conditions.KgatewayConditionStaticClusterConflicted)
 }

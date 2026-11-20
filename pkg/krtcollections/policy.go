@@ -473,6 +473,9 @@ func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectS
 type GatewayIndex struct {
 	Gateways            krt.Collection[ir.Gateway]
 	GatewaysForDeployer krt.Collection[ir.GatewayForDeployer]
+	// RunningBootstraps describes the bootstraps each Gateway's proxies run. It is nil
+	// when GatewayIndexConfig has no ConfigMaps or Pods.
+	RunningBootstraps krt.Collection[GatewayRunningBootstraps]
 }
 
 type GatewayIndexConfig struct {
@@ -484,9 +487,10 @@ type GatewayIndexConfig struct {
 	ListenerSets        krt.Collection[*gwv1.ListenerSet]
 	GatewayClasses      krt.Collection[*gwv1.GatewayClass]
 	Namespaces          krt.Collection[NamespaceMetadata]
-	// ConfigMaps and Pods supply each Gateway's ValidationBootstraps: the subsets of
-	// the bootstraps its proxies run. When either is nil, every Gateway is validated
-	// against Envoy's defaults.
+	// ConfigMaps and Pods supply each Gateway's RunningBootstraps, and with them its
+	// ValidationBootstraps: the subsets of the bootstraps its proxies run and the ports
+	// they listen on. When either is nil, every Gateway is validated against Envoy's
+	// defaults and the default reserved ports.
 	ConfigMaps krt.Collection[*corev1.ConfigMap]
 	Pods       krt.Collection[WrappedPod]
 
@@ -526,22 +530,21 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	gatewaySpecs := krt.NewCollection(config.Gateways, func(_ krt.HandlerContext, gw *gwv1.Gateway) *gatewaySpec {
 		return &gatewaySpec{gw: gw}
 	}, config.KrtOpts.ToOptions("GatewaySpecs")...)
-	// Each Gateway's validation bootstraps are built in a collection of their own, so a
+	// Each Gateway's running bootstraps are built in a collection of their own, so a
 	// pod change that leaves them alone does not re-run the Envoy transformation.
-	var validationBootstraps krt.Collection[gatewayValidationBootstraps]
 	if config.ConfigMaps != nil && config.Pods != nil {
-		validationBootstraps = newGatewayValidationBootstraps(gatewaySpecs, config.ConfigMaps, config.Pods, config.KrtOpts)
+		h.RunningBootstraps = newGatewayRunningBootstraps(gatewaySpecs, config.ConfigMaps, config.Pods, config.KrtOpts)
 	}
 	envoyTransformation := config.gatewaysForEnvoyTransformationFunc(&config)
 	h.Gateways = krt.NewCollection(gatewaySpecs, func(kctx krt.HandlerContext, gw gatewaySpec) *ir.Gateway {
 		// Set the validation bootstraps here rather than in the transformation, so they
 		// apply to a transformation passed with WithGatewayForEnvoyTransformationFunc.
 		out := envoyTransformation(kctx, gw.gw)
-		if out == nil || validationBootstraps == nil {
+		if out == nil || h.RunningBootstraps == nil {
 			return out
 		}
-		if vb := krt.FetchOne(kctx, validationBootstraps, krt.FilterKey(krt.GetKey(gw.gw))); vb != nil {
-			out.ValidationBootstraps = vb.bootstraps
+		if rb := krt.FetchOne(kctx, h.RunningBootstraps, krt.FilterKey(krt.GetKey(gw.gw))); rb != nil {
+			out.ValidationBootstraps = rb.Validation
 		}
 		return out
 	}, config.KrtOpts.ToOptions("gateways")...)
