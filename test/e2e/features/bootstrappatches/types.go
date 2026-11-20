@@ -41,5 +41,8 @@ var (
 		"TestFragmentFeatureFlag": {
 			Manifests: []string{paramsNoneManifest, gatewayManifest},
 		},
+		"TestStaticClusterConflicted": {
+			Manifests: []string{paramsOverlayManifest, gatewayManifest},
+		},
 	}
 )

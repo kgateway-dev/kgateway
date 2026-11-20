@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -31,6 +32,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_DEFAULT_IMAGE_REGISTRY":                    "my-registry",
 		"KGW_DEFAULT_IMAGE_TAG":                         "my-tag",
 		"KGW_DEFAULT_IMAGE_PULL_POLICY":                 "Always",
+		"KGW_CONTROLLER_IMAGE_TAG":                      "my-controller-tag",
 		"KGW_INGRESS_USE_WAYPOINTS":                     "true",
 		"KGW_LOG_LEVEL":                                 "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":             `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
@@ -151,6 +153,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "my-registry",
 				DefaultImageTag:                       "my-tag",
 				DefaultImagePullPolicy:                "Always",
+				ControllerImageTag:                    "my-controller-tag",
 				IngressUseWaypoints:                   true,
 				LogLevel:                              "debug",
 				DiscoveryNamespaceSelectors:           `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
@@ -392,6 +395,39 @@ func TestSettings(t *testing.T) {
 
 			diff := cmp.Diff(tc.expectedSettings, s)
 			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
+		})
+	}
+}
+
+// TestBootstrapPatchManagedPathsModeDecode tests that the managed paths mode accepts
+// exactly WARN, PRUNE and REJECT, in any case.
+func TestBootstrapPatchManagedPathsModeDecode(t *testing.T) {
+	tests := []struct {
+		value   string
+		want    BootstrapPatchManagedPathsMode
+		wantErr bool
+	}{
+		{value: "WARN", want: BootstrapPatchManagedPathsWarn},
+		{value: "PRUNE", want: BootstrapPatchManagedPathsPrune},
+		{value: "REJECT", want: BootstrapPatchManagedPathsReject},
+		{value: "prune", want: BootstrapPatchManagedPathsPrune},
+		{value: "", wantErr: true},
+		{value: "IGNORE", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			// Decode the value.
+			var mode BootstrapPatchManagedPathsMode
+			err := mode.Decode(tt.value)
+
+			// Check the mode, or the error for a value that is not a mode.
+			if tt.wantErr {
+				require.EqualError(t, err, fmt.Sprintf("invalid bootstrap patch managed paths mode: %q", tt.value))
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, mode)
 		})
 	}
 }

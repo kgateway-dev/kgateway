@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -52,6 +53,9 @@ type bootstrapTestCase struct {
 	managedPaths apisettings.BootstrapPatchManagedPathsMode
 	// override builds the override HelmValuesGenerator from kgateway's own; nil for none.
 	override func(kgatewayValues deployer.HelmValuesGenerator) deployer.HelmValuesGenerator
+	// controllerImageTag is the controller's own image tag; empty skips the proxy image
+	// check.
+	controllerImageTag string
 }
 
 // render renders the Gateway's objects through the full deployer, including post-processing.
@@ -90,6 +94,7 @@ func (tc bootstrapTestCase) render(t *testing.T) ([]client.Object, *deployer.Pos
 	inputs := defaultInputs(t, gwc, gw)
 	inputs.BootstrapValidator = tc.validator
 	inputs.BootstrapPatchManagedPaths = tc.managedPaths
+	inputs.ControllerImageTag = tc.controllerImageTag
 	gwp := NewGatewayParameters(fakeClient, inputs)
 	if tc.override != nil {
 		gwp.WithHelmValuesGeneratorOverride(tc.override(gwp.kgwParameters))
@@ -372,9 +377,15 @@ func TestBootstrapPatchesOverridePostProcessor(t *testing.T) {
 	assert.Equal(t, "true", deps[0].Labels["post-processed"])
 
 	// It replaced the bootstrap patches: none are merged, and nothing is reported.
-	_, bs := renderedBootstrap(t, objs)
+	envoyYaml, bs := renderedBootstrap(t, objs)
 	assert.Equal(t, []string{"admin_layer"}, runtimeLayerNames(bs))
 	assert.Nil(t, report)
+
+	// The generated bootstrap is still written as its own revision, after the
+	// post-processor, and the proxy reads it.
+	key := bootstrapRevisionKey(checksum(t, objs))
+	assert.Equal(t, envoyYaml, findBootstrapConfigMap(objs).Data[key])
+	assert.Equal(t, "/etc/envoy/"+key, proxyEnv(t, objs, inputConfigEnv))
 }
 
 func TestBootstrapPatchProvider(t *testing.T) {
@@ -860,11 +871,13 @@ func TestBootstrapPatchesRevisionKey(t *testing.T) {
 	objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
 	require.NoError(t, err)
 
-	// Its pods read envoy.yaml, the only bootstrap key.
-	assert.Empty(t, proxyEnv(t, objs, inputConfigEnv))
-	for key := range findBootstrapConfigMap(objs).Data {
-		assert.False(t, strings.HasPrefix(key, "envoy-"), "a Gateway without patches should have no revision key, got %s", key)
-	}
+	// The generated bootstrap is also under a key named by Helm's checksum, which
+	// INPUT_CONF points the proxy at, so adding a patch later changes only the next key.
+	cm := findBootstrapConfigMap(objs)
+	key := "envoy-" + checksum(t, objs) + ".yaml"
+	assert.Equal(t, cm.Data[bootstrapConfigKey], cm.Data[key])
+	assert.Equal(t, "/etc/envoy/"+key, proxyEnv(t, objs, inputConfigEnv))
+	assert.Equal(t, []string{key}, revisionKeys(cm), "a Gateway without patches should have one revision key")
 
 	// Render a Gateway with patches.
 	objs, _, err = bootstrapTestCase{gatewayParams: withOverlay(t, gatewayParams(), `{stats_flush_interval: 10s}`)}.render(t)
@@ -872,10 +885,38 @@ func TestBootstrapPatchesRevisionKey(t *testing.T) {
 
 	// The patched bootstrap is also under a key named by the pod template's checksum,
 	// which INPUT_CONF points the proxy at.
-	cm := findBootstrapConfigMap(objs)
-	key := "envoy-" + checksum(t, objs) + ".yaml"
+	cm = findBootstrapConfigMap(objs)
+	key = "envoy-" + checksum(t, objs) + ".yaml"
 	assert.Equal(t, cm.Data[bootstrapConfigKey], cm.Data[key])
 	assert.Equal(t, "/etc/envoy/"+key, proxyEnv(t, objs, inputConfigEnv))
+}
+
+// revisionKeys returns the revision keys of cm, sorted.
+func revisionKeys(cm *corev1.ConfigMap) []string {
+	var keys []string
+	for key := range cm.Data {
+		if strings.HasPrefix(key, "envoy-") {
+			keys = append(keys, key)
+		}
+	}
+	slices.Sort(keys)
+	return keys
+}
+
+// withoutRevisions removes the revision keys and INPUT_CONF that rendering wrote, for
+// a test that writes revisions itself.
+func withoutRevisions(objs []client.Object) []client.Object {
+	cm := findBootstrapConfigMap(objs)
+	for _, key := range revisionKeys(cm) {
+		delete(cm.Data, key)
+	}
+	for _, dep := range objectsOf[*appsv1.Deployment](objs) {
+		for i := range dep.Spec.Template.Spec.Containers {
+			c := &dep.Spec.Template.Spec.Containers[i]
+			c.Env = slices.DeleteFunc(c.Env, func(e corev1.EnvVar) bool { return e.Name == inputConfigEnv })
+		}
+	}
+	return objs
 }
 
 func TestWriteBootstrapRevision(t *testing.T) {
@@ -884,6 +925,7 @@ func TestWriteBootstrapRevision(t *testing.T) {
 		t.Helper()
 		objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
 		require.NoError(t, err)
+		objs = withoutRevisions(objs)
 		outcome, err := ApplyBootstrapPatches(t.Context(), objs, []bootstrappatch.Overlay{testOverlay(t, overlay)}, BootstrapPatchConfig{})
 		require.NoError(t, err)
 		return objs, outcome
@@ -903,12 +945,7 @@ func TestWriteBootstrapRevision(t *testing.T) {
 
 		// The new revision and the two in use are written; the unused one and the one
 		// the live ConfigMap does not hold are not.
-		var keys []string
-		for key := range findBootstrapConfigMap(objs).Data {
-			if strings.HasPrefix(key, "envoy-") {
-				keys = append(keys, key)
-			}
-		}
+		keys := revisionKeys(findBootstrapConfigMap(objs))
 		assert.ElementsMatch(t, []string{bootstrapRevisionKey(outcome.checksum), bootstrapRevisionKey("pod-sum"), bootstrapRevisionKey("rs-sum")}, keys)
 		assert.Equal(t, "pod bootstrap", findBootstrapConfigMap(objs).Data[bootstrapRevisionKey("pod-sum")])
 	})
@@ -941,6 +978,121 @@ func TestWriteBootstrapRevision(t *testing.T) {
 		require.ErrorAs(t, err, &patchErr)
 		assert.Equal(t, conditions.KgatewayReasonBootstrapConfigMapTooLarge, patchErr.Reason)
 		assert.ErrorContains(t, patchErr, "make the bootstrap patch smaller")
+	})
+}
+
+func TestWriteGeneratedBootstrapRevision(t *testing.T) {
+	// render returns a Gateway's objects without patches, before revisions are written.
+	render := func(t *testing.T) []client.Object {
+		t.Helper()
+		objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
+		require.NoError(t, err)
+		return withoutRevisions(objs)
+	}
+
+	t.Run("writes the generated bootstrap and keeps the revisions in use", func(t *testing.T) {
+		// The live ConfigMap holds the revision of a pod that ran patches and one nothing
+		// uses.
+		objs := render(t)
+		live := &corev1.ConfigMap{Data: map[string]string{
+			bootstrapRevisionKey("patched-sum"): "patched bootstrap",
+			bootstrapRevisionKey("unused-sum"):  "unused bootstrap",
+		}}
+		require.NoError(t, WriteGeneratedBootstrapRevision(objs, BootstrapRevisions{Live: live, InUse: []string{"patched-sum"}}))
+
+		// The generated bootstrap is written under Helm's checksum, and the proxy reads
+		// it; the patched pod's revision is kept, so removing the patches does not take
+		// its bootstrap away.
+		cm := findBootstrapConfigMap(objs)
+		key := bootstrapRevisionKey(checksum(t, objs))
+		assert.Equal(t, cm.Data[bootstrapConfigKey], cm.Data[key])
+		assert.Equal(t, "/etc/envoy/"+key, proxyEnv(t, objs, inputConfigEnv))
+		assert.ElementsMatch(t, []string{key, bootstrapRevisionKey("patched-sum")}, revisionKeys(cm))
+		assert.Equal(t, "patched bootstrap", cm.Data[bootstrapRevisionKey("patched-sum")])
+
+		// It writes no validation data.
+		assert.NotContains(t, cm.Data, bootstrappatch.ValidationKey)
+		assert.NotContains(t, podTemplateAnnotations(t, objs), bootstrappatch.ValidationAnnotation)
+	})
+
+	t.Run("sets a missing checksum", func(t *testing.T) {
+		// A pod template without the checksum annotation.
+		objs := render(t)
+		delete(objectsOf[*appsv1.Deployment](objs)[0].Spec.Template.Annotations, bootstrapChecksumAnnotation)
+		require.NoError(t, WriteGeneratedBootstrapRevision(objs, BootstrapRevisions{}))
+
+		// The checksum is the bootstrap's SHA-256, and names the revision.
+		cm := findBootstrapConfigMap(objs)
+		sum := sha256.Sum256([]byte(cm.Data[bootstrapConfigKey]))
+		assert.Equal(t, hex.EncodeToString(sum[:]), checksum(t, objs))
+		assert.Equal(t, []string{bootstrapRevisionKey(checksum(t, objs))}, revisionKeys(cm))
+	})
+
+	t.Run("earlier revisions exceed the size limit", func(t *testing.T) {
+		// The live ConfigMap holds a revision a running pod uses that leaves too little
+		// room for the new one.
+		objs := render(t)
+		live := &corev1.ConfigMap{Data: map[string]string{bootstrapRevisionKey("old-sum"): strings.Repeat("x", maxConfigMapDataSize)}}
+		err := WriteGeneratedBootstrapRevision(objs, BootstrapRevisions{Live: live, InUse: []string{"old-sum"}})
+
+		// Without patches there is no condition to report on, so the error is not a
+		// BootstrapPatchError; its event names the earlier revision's size.
+		var patchErr *BootstrapPatchError
+		assert.False(t, errors.As(err, &patchErr), "a Gateway without patches should not get a BootstrapPatchError")
+		var tooLarge *BootstrapConfigMapTooLargeError
+		require.ErrorAs(t, err, &tooLarge)
+		assert.Equal(t, "gw", tooLarge.ConfigMapName)
+		assert.ErrorContains(t, tooLarge, fmt.Sprintf("and 1 earlier bootstrap revisions that proxy pods or ReplicaSets still use take %d bytes", maxConfigMapDataSize))
+		require.Len(t, tooLarge.Events(), 1)
+		evt := tooLarge.Events()[0]
+		assert.Equal(t, corev1.EventTypeWarning, evt.Type)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapConfigMapTooLarge, evt.Reason)
+		assert.Equal(t, "Deployed none of the Gateway's objects: "+tooLarge.Error(), evt.Note)
+	})
+}
+
+func TestKeepBootstrapRevisions(t *testing.T) {
+	// The live ConfigMap holds the revision a pod that mounts the generated ConfigMap
+	// uses, and one nothing uses.
+	live := &corev1.ConfigMap{Data: map[string]string{
+		bootstrapRevisionKey("pod-sum"):    "pod bootstrap",
+		bootstrapRevisionKey("unused-sum"): "unused bootstrap",
+	}}
+	revs := BootstrapRevisions{Live: live, InUse: []string{"pod-sum"}}
+
+	t.Run("without patches", func(t *testing.T) {
+		// Keep the revisions of a Gateway without patches.
+		objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
+		require.NoError(t, err)
+		objs = withoutRevisions(objs)
+		require.NoError(t, KeepBootstrapRevisions(objs, nil, revs))
+
+		// Only the revision in use is written, and the proxy reads envoy.yaml from what
+		// it mounts.
+		assert.Equal(t, []string{bootstrapRevisionKey("pod-sum")}, revisionKeys(findBootstrapConfigMap(objs)))
+		assert.Empty(t, proxyEnv(t, objs, inputConfigEnv))
+	})
+
+	t.Run("with patches", func(t *testing.T) {
+		// Keep the revisions of a Gateway with patches.
+		objs, _, err := bootstrapTestCase{gatewayParams: gatewayParams()}.render(t)
+		require.NoError(t, err)
+		objs = withoutRevisions(objs)
+		outcome, err := ApplyBootstrapPatches(t.Context(), objs, []bootstrappatch.Overlay{testOverlay(t, `{stats_flush_interval: 10s}`)}, BootstrapPatchConfig{})
+		require.NoError(t, err)
+		require.NoError(t, KeepBootstrapRevisions(objs, outcome, revs))
+
+		// Only the revision in use is written, with no validation data.
+		cm := findBootstrapConfigMap(objs)
+		assert.Equal(t, []string{bootstrapRevisionKey("pod-sum")}, revisionKeys(cm))
+		assert.NotContains(t, cm.Data, bootstrappatch.ValidationKey)
+		assert.Empty(t, proxyEnv(t, objs, inputConfigEnv))
+
+		// A size failure is reported on the condition.
+		big := BootstrapRevisions{Live: &corev1.ConfigMap{Data: map[string]string{bootstrapRevisionKey("pod-sum"): strings.Repeat("x", maxConfigMapDataSize)}}, InUse: []string{"pod-sum"}}
+		var patchErr *BootstrapPatchError
+		require.ErrorAs(t, KeepBootstrapRevisions(objs, outcome, big), &patchErr)
+		assert.Equal(t, conditions.KgatewayReasonBootstrapConfigMapTooLarge, patchErr.Reason)
 	})
 }
 
@@ -991,6 +1143,51 @@ func TestBootstrapRevisionsLiveConfigMap(t *testing.T) {
 	})
 }
 
+func TestBootstrapRevisionsReplicaSets(t *testing.T) {
+	gw := types.NamespacedName{Namespace: defaultNamespace, Name: "gw"}
+
+	// replicaSet returns a ReplicaSet of the Gateway owned by the Deployment owner, with
+	// replicas and a pod template whose bootstrap checksum is sum.
+	replicaSet := func(name, owner string, replicas *int32, sum string) *appsv1.ReplicaSet {
+		return &appsv1.ReplicaSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: defaultNamespace,
+				Labels:    map[string]string{wellknown.GatewayNameLabel: gw.Name},
+				OwnerReferences: []metav1.OwnerReference{
+					*metav1.NewControllerRef(&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: owner}}, wellknown.DeploymentGVK),
+				},
+			},
+			Spec: appsv1.ReplicaSetSpec{
+				Replicas: replicas,
+				Template: corev1.PodTemplateSpec{ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{bootstrapChecksumAnnotation: sum},
+				}},
+			},
+		}
+	}
+
+	// The proxy Deployment has a ReplicaSet with pods, one scaled to a replica that has
+	// no pod yet, one with replicas unset, and one scaled down; another Deployment of the
+	// Gateway has a ReplicaSet too.
+	cli := fake.NewClient(t,
+		replicaSet("gw-current", "gw", new(int32(2)), "current-sum"),
+		replicaSet("gw-no-pods", "gw", new(int32(1)), "no-pods-sum"),
+		replicaSet("gw-unset", "gw", nil, "unset-sum"),
+		replicaSet("gw-scaled-down", "gw", new(int32(0)), "scaled-down-sum"),
+		replicaSet("other-current", "other", new(int32(1)), "other-sum"),
+	)
+	gp := NewGatewayParameters(cli, defaultInputs(t))
+	cli.RunAndWait(t.Context().Done())
+
+	// The revisions in use are the pods' and those of the proxy Deployment's ReplicaSets
+	// that can still create a pod.
+	rendered := []client.Object{&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: defaultNamespace}}}
+	revs, err := gp.bootstrapRevisions(t.Context(), gw, rendered, "gw", []string{"pod-sum"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pod-sum", "current-sum", "no-pods-sum", "unset-sum"}, revs.InUse)
+}
+
 func TestBootstrapPatchesPortsOfRunningPods(t *testing.T) {
 	// render returns a Gateway's objects with listeners on ports, and patches that move
 	// the readiness listener from 8082 to 8083 applied while pods running the default
@@ -1025,7 +1222,7 @@ func TestBootstrapPatchesPortsOfRunningPods(t *testing.T) {
 	assert.Equal(t, []int32{8080}, servicePorts(objs))
 	assert.Equal(t, []int32{8082}, outcome.RolloutServicePorts)
 	assert.Empty(t, outcome.RemovedServicePorts)
-	cond := bootstrapPatchAppliedCondition(&gwv1.Gateway{}, outcome, "")
+	cond := bootstrapPatchAppliedCondition(&gwv1.Gateway{}, outcome, "", "")
 	assert.Contains(t, cond.Message, "Proxy pods still running an earlier bootstrap listen on Gateway listener port(s) 8082")
 
 	// A Gateway whose only listener is on 8082 keeps it on the Service, so the objects

@@ -154,6 +154,8 @@ spec:
               value: {{ include "kgateway.imageTag" (.Values.image.tag | default .Chart.AppVersion) }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+            - name: KGW_CONTROLLER_IMAGE_TAG
+              value: {{ include "kgateway.imageTag" (.Values.controller.image.tag | default .Values.image.tag | default .Chart.AppVersion) }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS

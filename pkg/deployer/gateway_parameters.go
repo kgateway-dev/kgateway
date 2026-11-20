@@ -29,6 +29,11 @@ type Inputs struct {
 	// BootstrapPatchManagedPaths decides what happens to GatewayParameters bootstrap
 	// patches that set paths the control plane manages. Empty means WARN.
 	BootstrapPatchManagedPaths apisettings.BootstrapPatchManagedPathsMode
+	// ControllerImageTag is the controller's own image tag. A Gateway with bootstrap
+	// patches whose proxy image is not envoy-wrapper at this tag is reported, because
+	// the patches were validated with the Envoy in the controller's image. Empty skips
+	// the report.
+	ControllerImageTag string
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.

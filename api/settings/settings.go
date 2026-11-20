@@ -311,6 +311,11 @@ type Settings struct {
 	DefaultImageTag string `split_words:"true" default:""`
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
+	// ControllerImageTag is the image tag of the controller itself. The controller
+	// validates GatewayParameters bootstrap patches with the Envoy in its own image, and
+	// reports a patched Gateway whose proxy image is not envoy-wrapper at this tag. Empty
+	// skips that report.
+	ControllerImageTag string `split_words:"true" default:""`
 
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
 	// When enabled, ingress traffic from ambient-captured gateways (the

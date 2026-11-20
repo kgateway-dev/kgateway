@@ -47,6 +47,9 @@ const (
 
 	// applyBootstrapPatchesAction is the action of each bootstrap patch event.
 	applyBootstrapPatchesAction = "ApplyBootstrapPatches"
+	// writeBootstrapRevisionAction is the action of the event for a generated bootstrap
+	// ConfigMap that would exceed the API server's size limit.
+	writeBootstrapRevisionAction = "WriteBootstrapRevision"
 	// generatedEntryReplacedEventReason is the reason of the event for an entry of the
 	// generated bootstrap, other than a managed path, that bootstrap patches replace.
 	generatedEntryReplacedEventReason = "GeneratedEntryReplaced"
@@ -62,8 +65,9 @@ const (
 // The merge runs before the override's PostProcessObjects, when the override
 // implements deployer.ObjectPostProcessor, so the post-processor sees the patched
 // bootstrap. An override that implements deployer.ObjectPostProcessor without this
-// interface replaces all of the post-processing: no bootstrap patches are applied,
-// and no condition is reported.
+// interface replaces the bootstrap patches and the object overlays: no bootstrap
+// patches are applied, and no condition is reported. The controller still writes the
+// Gateway's bootstrap as its own revision after the post-processor runs.
 //
 // When a Gateway has bootstrap patches, the override's GetValues should build the
 // Service ports with deployer.GetPortsValuesForBootstrapPatches rather than
@@ -96,6 +100,9 @@ type BootstrapPatchError struct {
 	// Retry is set when applying the patches again can succeed without a change, for
 	// example after Envoy was killed for memory or timed out while validating them.
 	Retry bool
+	// Proxy is the proxy the deployer rendered and did not deploy, so the reconciler can
+	// report a proxy image the failure holds back.
+	Proxy RenderedProxy
 	Err   error
 }
 
@@ -339,6 +346,39 @@ type BootstrapRevisions struct {
 	InUse []string
 }
 
+// BootstrapConfigMapTooLargeError reports a generated bootstrap ConfigMap that would
+// exceed the API server's size limit with the revisions it has to hold. None of the
+// Gateway's objects are deployed. For a Gateway with bootstrap patches it is wrapped in
+// a *BootstrapPatchError; for a Gateway without them it is returned as is, and the
+// reconciler reports it as a Warning event.
+type BootstrapConfigMapTooLargeError struct {
+	// ConfigMapName is the name of the Gateway's generated bootstrap ConfigMap.
+	ConfigMapName string
+	// Proxy is the proxy the deployer rendered and did not deploy, so the reconciler can
+	// report a proxy image the failure holds back.
+	Proxy RenderedProxy
+	Err   error
+}
+
+// Events returns the Warning event that reports the failure for a Gateway without
+// bootstrap patches.
+func (e *BootstrapConfigMapTooLargeError) Events() []deployer.ReportEvent {
+	return []deployer.ReportEvent{{
+		Type:   corev1.EventTypeWarning,
+		Reason: conditions.KgatewayReasonBootstrapConfigMapTooLarge,
+		Action: writeBootstrapRevisionAction,
+		Note:   "Deployed none of the Gateway's objects: " + e.Error(),
+	}}
+}
+
+func (e *BootstrapConfigMapTooLargeError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *BootstrapConfigMapTooLargeError) Unwrap() error {
+	return e.Err
+}
+
 // WriteBootstrapRevision writes the patched bootstrap that ApplyBootstrapPatches
 // produced as its own revision: under the envoy-<checksum>.yaml key of the generated
 // ConfigMap, which INPUT_CONF on the proxy container points at, so a pod always reads
@@ -361,15 +401,71 @@ func WriteBootstrapRevision(objs []client.Object, outcome *BootstrapPatchOutcome
 	cm.Data[bootstrappatch.ValidationKey] = outcome.validationData
 	setPodTemplateAnnotation(objs, bootstrappatch.ValidationAnnotation, outcome.validationAnnotation)
 
+	// Write this revision and the earlier ones in use.
+	return outcome.wrapTooLarge(writeBootstrapRevisions(objs, cm, outcome.checksum, outcome.bootstrap, revs, true))
+}
+
+// WriteGeneratedBootstrapRevision is WriteBootstrapRevision for a Gateway without
+// bootstrap patches: it writes the generated bootstrap as its own revision, named by
+// the pod template's checksum annotation, and points INPUT_CONF at it, so adding or
+// removing a patch changes only the content of the next revision. It writes no
+// validation data. It does nothing when no bootstrap ConfigMap is rendered, and
+// returns a *BootstrapConfigMapTooLargeError when the ConfigMap would exceed the API
+// server's size limit.
+func WriteGeneratedBootstrapRevision(objs []client.Object, revs BootstrapRevisions) error {
+	// Find the generated bootstrap.
+	cm := findBootstrapConfigMap(objs)
+	if cm == nil {
+		return nil
+	}
+
+	// Name the revision by the pod template's checksum, which Helm computes from the
+	// bootstrap, so the key matches the annotation the pods carry. Without one, set it.
+	checksum := podTemplateAnnotation(objs, bootstrapChecksumAnnotation)
+	if checksum == "" {
+		sum := sha256.Sum256([]byte(cm.Data[bootstrapConfigKey]))
+		checksum = hex.EncodeToString(sum[:])
+		setPodTemplateAnnotation(objs, bootstrapChecksumAnnotation, checksum)
+	}
+
+	// Write this revision and the earlier ones in use.
+	return writeBootstrapRevisions(objs, cm, checksum, cm.Data[bootstrapConfigKey], revs, false)
+}
+
+// KeepBootstrapRevisions is for a proxy that does not mount the generated ConfigMap
+// (see BootstrapMountProblem): it writes no revision for the current bootstrap and
+// leaves INPUT_CONF unset, so envoyinit reads envoy.yaml from what the proxy mounts.
+// It keeps each earlier revision in revs.InUse that the live ConfigMap holds, so pods
+// that still mount the generated ConfigMap keep reading their own. outcome is nil for
+// a Gateway without bootstrap patches. It returns a *BootstrapPatchError, or without
+// patches a *BootstrapConfigMapTooLargeError, when the ConfigMap would exceed the API
+// server's size limit.
+func KeepBootstrapRevisions(objs []client.Object, outcome *BootstrapPatchOutcome, revs BootstrapRevisions) error {
+	cm := findBootstrapConfigMap(objs)
+	if cm == nil {
+		return nil
+	}
+	return outcome.wrapTooLarge(writeBootstrapRevisions(objs, cm, "", cm.Data[bootstrapConfigKey], revs, outcome != nil))
+}
+
+// writeBootstrapRevisions writes bootstrap under the revision key for checksum and
+// points INPUT_CONF on the proxy container at it; with an empty checksum it writes
+// neither. It then copies each earlier revision in revs.InUse that the live ConfigMap
+// holds, and checks the API server's size limit. A revision in use is never dropped
+// to make room: a pod reading it would wait for it when its container restarts.
+// patched says whether the Gateway has bootstrap patches, for the error message.
+func writeBootstrapRevisions(objs []client.Object, cm *corev1.ConfigMap, checksum, bootstrap string, revs BootstrapRevisions, patched bool) error {
 	// Write this revision, and point the proxy at it.
-	key := bootstrapRevisionKey(outcome.checksum)
-	cm.Data[key] = outcome.bootstrap
-	setProxyEnv(objs, inputConfigEnv, path.Join(bootstrapMountPath, key))
+	if checksum != "" {
+		key := bootstrapRevisionKey(checksum)
+		cm.Data[key] = bootstrap
+		setProxyEnv(objs, inputConfigEnv, path.Join(bootstrapMountPath, key))
+	}
 
 	// Keep each earlier revision in use that the live ConfigMap holds.
 	earlierCount, earlierSize := 0, 0
 	for _, sum := range slices.Compact(slices.Sorted(slices.Values(revs.InUse))) {
-		if sum == outcome.checksum || revs.Live == nil {
+		if sum == "" || sum == checksum || revs.Live == nil {
 			continue
 		}
 		if prev, ok := revs.Live.Data[bootstrapRevisionKey(sum)]; ok {
@@ -379,25 +475,37 @@ func WriteBootstrapRevision(objs []client.Object, outcome *BootstrapPatchOutcome
 		}
 	}
 
-	// Check the API server's size limit. A revision in use is never dropped to make
-	// room: a pod reading it would wait for it when its container restarts.
+	// Check the API server's size limit.
 	size := configMapDataSize(cm)
 	if size <= maxConfigMapDataSize {
 		return nil
 	}
 	msg := fmt.Sprintf("the generated ConfigMap %q would hold %d bytes, more than the %d bytes the API server allows; the new bootstrap takes %d bytes",
-		cm.Name, size, maxConfigMapDataSize, len(outcome.bootstrap))
-	if earlierCount > 0 {
+		cm.Name, size, maxConfigMapDataSize, len(bootstrap))
+	switch {
+	case earlierCount > 0:
 		msg += fmt.Sprintf(", and %d earlier bootstrap revisions that proxy pods or ReplicaSets still use take %d bytes; the change applies once the rollout finishes, or once the Gateway's old ReplicaSets are scaled down or their pods deleted",
 			earlierCount, earlierSize)
-	} else {
+	case patched:
 		msg += "; make the bootstrap patch smaller"
+	}
+	return &BootstrapConfigMapTooLargeError{ConfigMapName: cm.Name, Err: errors.New(msg)}
+}
+
+// wrapTooLarge returns err as a *BootstrapPatchError when it is a
+// *BootstrapConfigMapTooLargeError and the Gateway has bootstrap patches (o is not
+// nil), so it is reported on the kgateway.dev/BootstrapPatchApplied condition.
+// Otherwise it returns err unchanged.
+func (o *BootstrapPatchOutcome) wrapTooLarge(err error) error {
+	tooLarge, ok := errors.AsType[*BootstrapConfigMapTooLargeError](err)
+	if !ok || o == nil {
+		return err
 	}
 	return &BootstrapPatchError{
 		Reason:        conditions.KgatewayReasonBootstrapConfigMapTooLarge,
-		ConfigMapName: cm.Name,
-		ManagedPaths:  outcome.ManagedPaths,
-		Err:           errors.New(msg),
+		ConfigMapName: tooLarge.ConfigMapName,
+		ManagedPaths:  o.ManagedPaths,
+		Err:           tooLarge,
 	}
 }
 
@@ -495,8 +603,9 @@ func (r *resolvedKgatewayParameters) bootstrapOverlays() []bootstrappatch.Overla
 }
 
 // bootstrapPatchAppliedCondition reports patches that were applied. mountProblem is
-// BootstrapMountProblem of the final objects, after the object overlays.
-func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOutcome, mountProblem string) metav1.Condition {
+// BootstrapMountProblem, and imageNote is proxyImageNote, of the final objects, after
+// the object overlays.
+func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOutcome, mountProblem, imageNote string) metav1.Condition {
 	cond := metav1.Condition{
 		Type:               conditions.KgatewayConditionBootstrapPatchApplied,
 		ObservedGeneration: gw.Generation,
@@ -508,6 +617,9 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 		cond.Status = metav1.ConditionFalse
 		cond.Reason = conditions.KgatewayReasonBootstrapNotMounted
 		cond.Message = fmt.Sprintf("The bootstrap patch is not in effect: %s. Routes are validated against Envoy's defaults, not the patch.", mountProblem)
+		if imageNote != "" {
+			cond.Message += " " + imageNote
+		}
 		return cond
 	}
 
@@ -547,6 +659,12 @@ func bootstrapPatchAppliedCondition(gw *gwv1.Gateway, outcome *BootstrapPatchOut
 		msg = append(msg, fmt.Sprintf(
 			"Proxy pods still running an earlier bootstrap listen on Gateway listener port(s) %s, so those ports are left off the Service, and the Gateway listeners on them are rejected, until the rollout completes.",
 			joinPorts(outcome.RolloutServicePorts)))
+	}
+
+	// Report a proxy image that differs from the controller's. The reason does not
+	// change.
+	if imageNote != "" {
+		msg = append(msg, imageNote)
 	}
 	cond.Message = strings.Join(msg, " ")
 	return cond
@@ -669,6 +787,16 @@ func servicesKeepPorts(objs []client.Object, ports []int32) bool {
 		}
 	}
 	return true
+}
+
+// podTemplateAnnotation returns the annotation key on the first rendered Deployment's
+// pod template, or "" without one.
+func podTemplateAnnotation(objs []client.Object, key string) string {
+	dep := findDeployment(objs)
+	if dep == nil {
+		return ""
+	}
+	return dep.Spec.Template.Annotations[key]
 }
 
 // setPodTemplateAnnotation sets an annotation on each rendered Deployment's pod

@@ -182,6 +182,40 @@ func TestBootstrapReservedPort(t *testing.T) {
 	})
 }
 
+// A ListenerSet listener on a port the patched bootstrap listens on is rejected like a
+// Gateway listener, and the ListenerSet's other listeners stay valid.
+func TestBootstrapReservedPortListenerSet(t *testing.T) {
+	// Build a Gateway with a listener on 8080 and a ListenerSet with listeners on 8081
+	// and 9000, whose bootstrap listens on 9000.
+	gateway := simpleGwNoHostname()
+	listenerSet := simpleLsNoHostname()
+	listenerSet.Spec.Listeners = append(listenerSet.Spec.Listeners,
+		gwv1.ListenerEntry{Name: "bootstrap-port", Port: 9000, Protocol: gwv1.HTTPProtocolType},
+	)
+	gwIR := gwToIr(gateway, listenerSet, nil)
+	gwIR.ValidationBootstraps = &ir.GatewayValidationBootstraps{ReservedPorts: []uint32{8082, 9000, 9091, 19000}}
+
+	// Validate it.
+	report := reports.NewReportMap()
+	validListeners := validateGateway(gwIR, reports.NewReporter(&report))
+
+	// The listeners on 8080 and 8081 are valid; the ListenerSet's on 9000 says why it
+	// is not.
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(2))
+	g.Expect([]gwv1.PortNumber{validListeners[0].Port, validListeners[1].Port}).To(ConsistOf(gwv1.PortNumber(8080), gwv1.PortNumber(8081)))
+	kinds := []gwv1.RouteGroupKind{{Group: GroupNameHelper(), Kind: "HTTPRoute"}, {Group: GroupNameHelper(), Kind: "GRPCRoute"}}
+	msg := "invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters bootstrap patch applied, listens on it: port is reserved"
+	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), map[string]gwv1.ListenerStatus{
+		"http": {Name: "http", SupportedKinds: kinds},
+		"bootstrap-port": {Name: "bootstrap-port", SupportedKinds: kinds, Conditions: []metav1.Condition{
+			{Type: string(gwv1.ListenerConditionConflicted), Status: metav1.ConditionTrue, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionProgrammed), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+		}},
+	})
+}
+
 // A Gateway listener on a port the current bootstrap frees is rejected while a pod
 // still running an earlier bootstrap listens on it, since that pod would reject the
 // listener as a duplicate address.

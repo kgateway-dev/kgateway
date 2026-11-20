@@ -130,18 +130,29 @@ func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.
 // An override HelmValuesGenerator that implements deployer.ObjectPostProcessor
 // replaces the object overlays. When it also implements BootstrapPatchProvider, it
 // chooses the bootstrap patches and its post-processor runs after the merge;
-// otherwise its post-processor replaces all of this, and there is no report.
+// otherwise its post-processor replaces the patches and the object overlays, and
+// there is no report. Either way, every Gateway's bootstrap is then written as its
+// own revision (see WriteGeneratedBootstrapRevision).
 func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, *deployer.PostProcessReport, error) {
 	// Find which steps the override takes over.
 	overridePostProcessor, hasOverridePostProcessor := gp.helmValuesGeneratorOverride.(deployer.ObjectPostProcessor)
 	patchProvider, hasPatchProvider := gp.helmValuesGeneratorOverride.(BootstrapPatchProvider)
 
 	// An override that post-processes without choosing bootstrap patches handles the
-	// objects itself, as it does for any object that is not a Gateway.
+	// objects itself, as it does for any object that is not a Gateway. Its Gateways
+	// still get bootstrap revisions, written after it so the mount check sees the
+	// volumes it sets.
 	gw, isGateway := obj.(*gwv1.Gateway)
 	if hasOverridePostProcessor && (!hasPatchProvider || !isGateway) {
 		objs, err := overridePostProcessor.PostProcessObjects(ctx, obj, rendered)
-		return objs, nil, err
+		if err != nil || !isGateway {
+			return objs, nil, err
+		}
+		gwNN := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
+		if _, err := gp.writeBootstrapRevisions(ctx, gwNN, objs, nil, gp.runningBootstraps(gwNN)); err != nil {
+			return nil, nil, withRenderedProxy(err, objs)
+		}
+		return objs, nil, nil
 	}
 	if !isGateway {
 		return rendered, nil, nil
@@ -167,6 +178,15 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 		}
 	}
 
+	// Post-process the objects with the override's post-processor when it has one,
+	// otherwise the object overlays.
+	postProcess := func(objs []client.Object) ([]client.Object, error) {
+		if hasOverridePostProcessor {
+			return overridePostProcessor.PostProcessObjects(ctx, gw, objs)
+		}
+		return resolved.applyObjectOverlays(objs)
+	}
+
 	// Merge the bootstrap patches first, so the object post-processing can still change any object.
 	var outcome *BootstrapPatchOutcome
 	running := gp.runningBootstraps(gwNN)
@@ -183,48 +203,100 @@ func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, o
 		if patchErr, ok := errors.AsType[*BootstrapPatchError](err); ok && patchErr.pathsKnown() {
 			recordBootstrapPatchManagedPaths(gwNN, patchErr.ManagedPaths)
 		}
+
+		// Name the proxy the failure holds back, after the post-processing when it
+		// applies to the objects the patches were not merged into.
 		if err != nil {
-			return nil, nil, err
+			if final, ppErr := postProcess(rendered); ppErr == nil {
+				return nil, nil, withRenderedProxy(err, final)
+			}
+			return nil, nil, withRenderedProxy(err, rendered)
 		}
 		recordBootstrapPatchManagedPaths(gwNN, outcome.ManagedPaths)
 	} else {
 		ForgetBootstrapPatchMetrics(gwNN)
 	}
 
-	// Post-process the objects: the override's post-processor when it has one, otherwise
-	// the object overlays.
-	var err error
-	if hasOverridePostProcessor {
-		rendered, err = overridePostProcessor.PostProcessObjects(ctx, gw, rendered)
-	} else {
-		rendered, err = resolved.applyObjectOverlays(rendered)
-	}
+	// Post-process the objects.
+	rendered, err := postProcess(rendered)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Write the patched bootstrap's revision and validation data when the proxy reads
-	// the generated ConfigMap. Otherwise the proxy does not run the patches, so routes
-	// are validated against Envoy's defaults and the default ports.
+	// Write the bootstrap's revision, and the patches' validation data.
+	mountProblem, err := gp.writeBootstrapRevisions(ctx, gwNN, rendered, outcome, running)
+	if err != nil {
+		return nil, nil, withRenderedProxy(err, rendered)
+	}
 	if outcome == nil {
 		return rendered, report, nil
 	}
-	mountProblem := BootstrapMountProblem(rendered, outcome.ConfigMapName)
-	if mountProblem == "" {
-		revs, err := gp.bootstrapRevisions(ctx, gwNN, rendered, outcome.ConfigMapName, running.Revisions)
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := WriteBootstrapRevision(rendered, outcome, revs); err != nil {
-			return nil, nil, err
-		}
-	}
 
 	// Report the bootstrap patches against the final objects.
-	cond := bootstrapPatchAppliedCondition(gw, outcome, mountProblem)
+	cond := bootstrapPatchAppliedCondition(gw, outcome, mountProblem, proxyImageNote(rendered, gp.inputs.ControllerImageTag))
 	report.Conditions = append(report.Conditions, cond)
 	report.Events = append(report.Events, bootstrapPatchEvents(cond, outcome)...)
 	return rendered, report, nil
+}
+
+// withRenderedProxy records on a *BootstrapPatchError or *BootstrapConfigMapTooLargeError
+// the proxy in objs, which the failure keeps from being deployed, and returns err.
+func withRenderedProxy(err error, objs []client.Object) error {
+	if patchErr, ok := errors.AsType[*BootstrapPatchError](err); ok {
+		patchErr.Proxy = renderedProxy(objs)
+	}
+	if tooLarge, ok := errors.AsType[*BootstrapConfigMapTooLargeError](err); ok {
+		tooLarge.Proxy = renderedProxy(objs)
+	}
+	return err
+}
+
+// writeBootstrapRevisions writes the Gateway's current bootstrap revision into the
+// final objects, keeps the earlier revisions its pods and ReplicaSets still use, and
+// returns BootstrapMountProblem of the objects. outcome is nil for a Gateway without
+// bootstrap patches.
+//
+// When the proxy mounts the generated ConfigMap, the current revision is written, with
+// the patches' validation data when there are patches. Otherwise the proxy does not
+// read the generated bootstrap, so no current revision or validation data is written,
+// and routes are validated against Envoy's defaults and the default ports; the earlier
+// revisions are still kept for the pods that mount the generated ConfigMap.
+func (gp *GatewayParameters) writeBootstrapRevisions(
+	ctx context.Context,
+	gw types.NamespacedName,
+	objs []client.Object,
+	outcome *BootstrapPatchOutcome,
+	running krtcollections.GatewayRunningBootstraps,
+) (string, error) {
+	// Find the generated ConfigMap. Without patches, a Gateway that renders none has no
+	// revisions.
+	var cmName string
+	switch cm := findBootstrapConfigMap(objs); {
+	case outcome != nil:
+		cmName = outcome.ConfigMapName
+	case cm != nil:
+		cmName = cm.Name
+	default:
+		return "", nil
+	}
+
+	// Read the revisions in use.
+	mountProblem := BootstrapMountProblem(objs, cmName)
+	revs, err := gp.bootstrapRevisions(ctx, gw, objs, cmName, running.Revisions)
+	if err != nil {
+		return mountProblem, err
+	}
+
+	// Write the current revision when the proxy reads it, and keep the earlier ones.
+	switch {
+	case mountProblem != "":
+		err = KeepBootstrapRevisions(objs, outcome, revs)
+	case outcome != nil:
+		err = WriteBootstrapRevision(objs, outcome, revs)
+	default:
+		err = WriteGeneratedBootstrapRevision(objs, revs)
+	}
+	return mountProblem, err
 }
 
 // runningBootstraps returns what the Gateway's running proxy pods and its generated

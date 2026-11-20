@@ -380,6 +380,8 @@ spec:
               value: v0.0.1
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: IfNotPresent
+            - name: KGW_CONTROLLER_IMAGE_TAG
+              value: v0.0.1
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: "[]"
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS

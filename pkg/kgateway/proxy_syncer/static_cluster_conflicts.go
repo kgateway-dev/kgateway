@@ -70,9 +70,9 @@ func (s staticClusterConflicts) report(kctx krt.HandlerContext, gw ir.Gateway, r
 	if len(conflicts) > 0 {
 		cond.Status = metav1.ConditionTrue
 		cond.Reason = gwv1.GatewayConditionReason(conditions.KgatewayReasonTranslatedClusterShadowed)
-		cond.Message = "Envoy ignores the cluster translated for each of these backends because a static cluster in the bootstrap overlay has its name, " +
+		cond.Message = "Envoy ignores the cluster translated for each of these backends because a static cluster in the bootstrap patch has its name, " +
 			"so traffic to the backend goes through the static cluster and changes to the backend do not reach the proxy; " +
-			"rename the static cluster in the GatewayParameters bootstrap overlay: " + strings.Join(conflicts, "; ") + "."
+			"rename the static cluster in the GatewayParameters bootstrap patch: " + strings.Join(conflicts, "; ") + "."
 	}
 	reports.NewReporter(rm).Gateway(gw.Obj).SetCondition(cond)
 }

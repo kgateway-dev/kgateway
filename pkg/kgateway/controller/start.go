@@ -272,6 +272,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		CertWatcher:                c.cfg.SetupOpts.CertWatcher,
 		BootstrapValidator:         validator.BootstrapValidatorFor(c.cfg.Validator),
 		BootstrapPatchManagedPaths: globalSettings.BootstrapPatchManagedPaths,
+		ControllerImageTag:         globalSettings.ControllerImageTag,
 	}
 
 	setupLog.Info("creating base gateway controller")

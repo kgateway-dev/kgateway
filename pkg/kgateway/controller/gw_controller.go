@@ -361,6 +361,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			// left alone. A Gateway whose bootstrap ConfigMap does not exist yet has no
 			// proxy, so it is not accepted. Without the ConfigMap's name, which only a
 			// controller defect leaves out, Accepted is left alone.
+			evts := patchErr.Events()
 			if patchErr.ConfigMapName != "" && r.configMapClient.Get(patchErr.ConfigMapName, gw.Namespace) == nil {
 				conds = append(conds, metav1.Condition{
 					Type:               string(gwv1.GatewayConditionAccepted),
@@ -369,8 +370,13 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 					Reason:             string(gwv1.GatewayReasonInvalidParameters),
 					Message:            "No proxy is deployed until the bootstrap patch applies: " + patchErr.Error(),
 				})
+			} else if heldBack := r.heldBackProxyImage(gw, patchErr.Proxy); heldBack != "" {
+				// The existing proxy keeps its image too, which can hold back an Envoy
+				// upgrade; name both images.
+				conds[0].Message += " " + heldBack
+				evts = append(evts, internaldeployer.HeldBackProxyImageEvent(heldBack))
 			}
-			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil, patchErr.Events()); statusErr != nil {
+			if statusErr := r.applyGatewayConditions(ctx, gw, conds, nil, evts); statusErr != nil {
 				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
 			}
 
@@ -381,6 +387,22 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 			if patchErr.Retry {
 				return patchErr
 			}
+			return nil
+		}
+		if tooLarge, ok := errors.AsType[*internaldeployer.BootstrapConfigMapTooLargeError](err); ok {
+			// A Gateway without bootstrap patches has no BootstrapPatchApplied condition,
+			// so the failure is reported as an event, every time the reconcile hits it.
+			// The objects are left as they are; the pod and ReplicaSet changes that free
+			// earlier revisions start a new reconcile.
+			logger.Info("not deploying Gateway: its generated bootstrap ConfigMap would be too large", "ref", req, "error", tooLarge)
+			if statusErr := r.applyGatewayConditions(ctx, gw, nil, []string{conditions.KgatewayConditionBootstrapPatchApplied}, nil); statusErr != nil {
+				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+			evts := tooLarge.Events()
+			if heldBack := r.heldBackProxyImage(gw, tooLarge.Proxy); heldBack != "" {
+				evts = append(evts, internaldeployer.HeldBackProxyImageEvent(heldBack))
+			}
+			r.recordEvents(gw, evts)
 			return nil
 		}
 		// if we fail to either reference a valid GatewayParameters or
@@ -634,10 +656,25 @@ func (r *gatewayReconciler) applyGatewayConditions(
 	}
 
 	// Record the events that go with the new status.
+	r.recordEvents(gw, evts)
+	return nil
+}
+
+// heldBackProxyImage returns the sentence that names the image gw's live proxy
+// Deployment keeps running and the image of rendered, which was not deployed, or ""
+// when they are the same or either is unknown.
+func (r *gatewayReconciler) heldBackProxyImage(gw *gwv1.Gateway, rendered internaldeployer.RenderedProxy) string {
+	if rendered.DeploymentName == "" {
+		return ""
+	}
+	return internaldeployer.HeldBackProxyImage(r.deploymentClient.Get(rendered.DeploymentName, gw.Namespace), rendered)
+}
+
+// recordEvents records evts on gw.
+func (r *gatewayReconciler) recordEvents(gw *gwv1.Gateway, evts []deployer.ReportEvent) {
 	for _, e := range evts {
 		r.recorder.Eventf(gw, nil, e.Type, e.Reason, e.Action, "%s", e.Note)
 	}
-	return nil
 }
 
 // setupTLSCertificateWatch configures a watch for xDS TLS certificate changes.

@@ -5,6 +5,7 @@ package bootstrappatches
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -13,6 +14,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +40,9 @@ const (
 	// managedPathsEnv is the controller setting that decides what happens to bootstrap
 	// patches that set paths the control plane manages.
 	managedPathsEnv = "KGW_BOOTSTRAP_PATCH_MANAGED_PATHS"
+	// httpbinClusterName is the name of the cluster translated for the httpbin Service's
+	// port 8000, which the Gateway's route sends traffic to.
+	httpbinClusterName = "kube_default_httpbin_8000"
 
 	// statusTimeout bounds waiting for the controller to report on the Gateway, which
 	// can include a controller restart.
@@ -157,6 +162,74 @@ func (s *testingSuite) TestFragmentFeatureFlag() {
 			gomega.Not(gomega.ContainSubstring("e2e-fragment")),
 		),
 	}, fragmentRequest...)
+}
+
+// TestStaticClusterConflicted checks that a static cluster in the bootstrap patch with
+// the name of a cluster translated for a backend is reported on the Gateway, and that
+// Envoy sends the backend's traffic through the static cluster, as the report says.
+func (s *testingSuite) TestStaticClusterConflicted() {
+	// Patches without a static cluster: no conflict, and traffic reaches httpbin.
+	s.eventuallyBootstrapPatchApplied(metav1.ConditionTrue, conditions.KgatewayReasonBootstrapPatchApplied)
+	s.eventuallyStaticClusterConflicted(metav1.ConditionFalse, conditions.KgatewayReasonNoStaticClusterConflicts, "")
+	s.eventuallyRolledOut()
+	gw := s.gateway()
+	request := []curl.Option{curl.WithHostHeader("example.com"), curl.WithPort(8080), curl.WithPath("/status/200")}
+	gw.Send(s.T(), &matchers.HttpResponse{StatusCode: http.StatusOK}, request...)
+	oldChecksum := s.podTemplateChecksum()
+
+	// Add a static cluster with the name of httpbin's translated cluster, whose only
+	// endpoint refuses connections.
+	s.patchGatewayParameters(func(gwp *kgateway.GatewayParameters) {
+		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patch.Value = apiextensionsv1.JSON{Raw: []byte(`{"static_resources": {"clusters": [{
+			"name": "` + httpbinClusterName + `",
+			"type": "STATIC",
+			"connect_timeout": "1s",
+			"load_assignment": {
+				"cluster_name": "` + httpbinClusterName + `",
+				"endpoints": [{"lb_endpoints": [{"endpoint": {"address": {"socket_address": {"address": "127.0.0.1", "port_value": 1}}}}]}]
+			}
+		}]}}`)}
+	})
+
+	// The patches apply, the Gateway reports the shadowed backend, and once the pods
+	// roll, the backend's traffic goes to the static cluster's endpoint and fails.
+	s.eventuallyBootstrapPatchApplied(metav1.ConditionTrue, conditions.KgatewayReasonBootstrapPatchApplied)
+	s.eventuallyStaticClusterConflicted(metav1.ConditionTrue, conditions.KgatewayReasonTranslatedClusterShadowed,
+		`static cluster "`+httpbinClusterName+`" shadows the cluster for Service default/httpbin port 8000`)
+	s.eventuallyChecksumChangedFrom(oldChecksum)
+	s.eventuallyRolledOut()
+	gw.Send(s.T(), &matchers.HttpResponse{StatusCode: http.StatusServiceUnavailable}, request...)
+	shadowedChecksum := s.podTemplateChecksum()
+
+	// Renaming the static cluster clears the report, and once the pods roll, the
+	// translated cluster serves httpbin again.
+	s.patchGatewayParameters(func(gwp *kgateway.GatewayParameters) {
+		gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patch.Value = apiextensionsv1.JSON{Raw: []byte(strings.ReplaceAll(
+			string(gwp.Spec.Kube.EnvoyContainer.Bootstrap.Patch.Value.Raw), httpbinClusterName, "e2e_static_cluster"))}
+	})
+	s.eventuallyStaticClusterConflicted(metav1.ConditionFalse, conditions.KgatewayReasonNoStaticClusterConflicts, "")
+	s.eventuallyChecksumChangedFrom(shadowedChecksum)
+	s.eventuallyRolledOut()
+	gw.Send(s.T(), &matchers.HttpResponse{StatusCode: http.StatusOK}, request...)
+}
+
+// eventuallyStaticClusterConflicted waits for the Gateway's
+// kgateway.dev/StaticClusterConflicted condition to have status and reason, and a
+// message that contains message.
+func (s *testingSuite) eventuallyStaticClusterConflicted(status metav1.ConditionStatus, reason, message string) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		gw := &gwv1.Gateway{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Namespace: proxyObjectMeta.Namespace,
+			Name:      proxyObjectMeta.Name,
+		}, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		cond := meta.FindStatusCondition(gw.Status.Conditions, conditions.KgatewayConditionStaticClusterConflicted)
+		g.Expect(cond).NotTo(gomega.BeNil(), "the Gateway should have the %s condition", conditions.KgatewayConditionStaticClusterConflicted)
+		g.Expect(cond.Status).To(gomega.Equal(status))
+		g.Expect(cond.Reason).To(gomega.Equal(reason))
+		g.Expect(cond.Message).To(gomega.ContainSubstring(message))
+	}).WithTimeout(statusTimeout).WithPolling(pollInterval).Should(gomega.Succeed())
 }
 
 // gateway returns a handle for sending requests to the Gateway.

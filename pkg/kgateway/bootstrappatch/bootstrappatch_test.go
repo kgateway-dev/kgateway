@@ -99,6 +99,24 @@ func TestApplyMergeSemantics(t *testing.T) {
 			},
 		},
 		{
+			name:    "a scalar zero value counts as unset, except in a oneof",
+			overlay: `{admin: {address: {socket_address: {address: "", port_value: 0}}}}`,
+			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
+				sa := merged.GetAdmin().GetAddress().GetSocketAddress()
+				assert.Equal(t, "127.0.0.1", sa.GetAddress(), "an empty address should keep the base value")
+				assert.Zero(t, sa.GetPortValue(), "port_value is in the port_specifier oneof, so a zero value is set and replaces the base value")
+			},
+		},
+		{
+			name:    "a Struct merges by key",
+			overlay: `{node: {metadata: {extra: {a: 1}}}}`,
+			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
+				fields := merged.GetNode().GetMetadata().GetFields()
+				assert.Equal(t, float64(1), fields["extra"].GetStructValue().GetFields()["a"].GetNumberValue(), "the overlay key should be added")
+				assert.NotEmpty(t, fields["role"].GetStringValue(), "the base key the overlay leaves out should be kept")
+			},
+		},
+		{
 			name:    "a message merges field by field",
 			overlay: `{stats_flush_interval: 10s, stats_config: {use_all_default_tags: true}}`,
 			check: func(t *testing.T, merged *envoybootstrapv3.Bootstrap) {
@@ -317,7 +335,7 @@ func TestApplyInvalidOverlay(t *testing.T) {
 		},
 		{
 			name:     "template delimiter hidden by a JSON escape",
-			overlays: []Overlay{{Source: gwParams, Raw: []byte(`{"node": {"id": "{{.PodName}}"}}`)}},
+			overlays: []Overlay{{Source: gwParams, Raw: []byte(`{"node": {"id": "\u007b\u007b.PodName}}"}}`)}},
 			wantErr:  `contains "{{"`,
 		},
 		{
@@ -493,6 +511,53 @@ staticResources:
 		assert.Empty(t, res.ManagedPaths)
 		assert.Equal(t, int64(10), res.Bootstrap.GetStatsFlushInterval().GetSeconds())
 	})
+}
+
+func TestApplyTypedStruct(t *testing.T) {
+	for _, typedStruct := range []string{"udpa.type.v1.TypedStruct", "xds.type.v3.TypedStruct"} {
+		t.Run(typedStruct, func(t *testing.T) {
+			// A patch adds a bootstrap extension whose config is wrapped in a TypedStruct.
+			patch := overlay(t, gwParams, `
+bootstrap_extensions:
+- name: wrapped
+  typed_config:
+    "@type": type.googleapis.com/`+typedStruct+`
+    type_url: type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+    value: {use_resolvers_as_fallback: true}`)
+
+			// It parses and merges, keeping the wrapper.
+			res, err := Apply(parseBase(t), []Overlay{patch}, apisettings.BootstrapPatchManagedPathsWarn)
+			require.NoError(t, err)
+			exts := res.Bootstrap.GetBootstrapExtensions()
+			require.Len(t, exts, 1)
+			assert.Equal(t, "type.googleapis.com/"+typedStruct, exts[0].GetTypedConfig().GetTypeUrl())
+		})
+	}
+}
+
+func TestApplyNewGeneratedRuntimeLayer(t *testing.T) {
+	// The generated bootstrap gets a runtime layer that a later kgateway release could
+	// add, with the name of a layer a stored patch already adds.
+	newBase := func() *envoybootstrapv3.Bootstrap {
+		base := parseBase(t)
+		mergeOverlay(base, parseYAMLBootstrap(t, `{layered_runtime: {layers: [{name: user_runtime, static_layer: {}}]}}`))
+		return base
+	}
+	patch := overlay(t, gwParams, `{layered_runtime: {layers: [{name: user_runtime, static_layer: {a: 1}}]}}`)
+
+	// The patch is invalid under every mode, so the Gateway takes the invalid-merge
+	// fallback rather than replacing or dropping either layer.
+	for _, mode := range []apisettings.BootstrapPatchManagedPathsMode{
+		apisettings.BootstrapPatchManagedPathsWarn,
+		apisettings.BootstrapPatchManagedPathsPrune,
+		apisettings.BootstrapPatchManagedPathsReject,
+	} {
+		res, err := Apply(newBase(), []Overlay{patch}, mode)
+		var invalid *InvalidOverlayError
+		require.ErrorAs(t, err, &invalid, "mode %s", mode)
+		assert.ErrorContains(t, err, `runtime layer "user_runtime" has the name of a layer in the generated bootstrap`, "mode %s", mode)
+		assert.Nil(t, res)
+	}
 }
 
 func TestApplyReplacedEntries(t *testing.T) {

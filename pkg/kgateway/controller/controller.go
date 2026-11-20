@@ -58,6 +58,9 @@ type GatewayConfig struct {
 	// BootstrapPatchManagedPaths decides what happens to GatewayParameters bootstrap
 	// patches that set paths the control plane manages. Empty means WARN.
 	BootstrapPatchManagedPaths apisettings.BootstrapPatchManagedPathsMode
+	// ControllerImageTag is the controller's own image tag, which the proxy image of a
+	// Gateway with bootstrap patches is compared with. Empty skips the comparison.
+	ControllerImageTag string
 }
 
 type HelmValuesGeneratorOverrideFunc func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -104,6 +107,7 @@ func watchGw(
 		GatewayClassName:           cfg.GatewayClassName,
 		BootstrapValidator:         cfg.BootstrapValidator,
 		BootstrapPatchManagedPaths: cfg.BootstrapPatchManagedPaths,
+		ControllerImageTag:         cfg.ControllerImageTag,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)
