@@ -40,6 +40,7 @@ const (
 	OauthCodeVerifierCookiePrefix = "OauthCodeVerifier"
 
 	defaultRedictURI            = "%REQ(x-forwarded-proto)%://%REQ(:authority)%/oauth2/redirect"
+	clientIDKey                 = "client-id"
 	clientSecretKey             = "client-secret"
 	defaultTokenEndpointTimeout = 15 * time.Second
 
@@ -249,6 +250,24 @@ func buildOAuth2ProviderConfig(
 		return nil, fmt.Errorf("%s not found or empty in secret %s referenced by GatewayExtension %s",
 			clientSecretKey, credSecret.ResourceName(), ext.ResourceName())
 	}
+	clientID := in.Credentials.ClientID
+	if in.Credentials.ClientIDRef != nil {
+		idSecret, err := secrets.GetSecret(krtctx,
+			krtcollections.From{GroupKind: wellknown.GatewayExtensionGVK.GroupKind(), Namespace: ext.Namespace},
+			gwv1.SecretObjectReference{
+				Name: gwv1.ObjectName(in.Credentials.ClientIDRef.Name), Namespace: new(gwv1.Namespace(ext.Namespace)),
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+		clientIDData, ok := idSecret.Data[clientIDKey]
+		if !ok || len(clientIDData) == 0 {
+			return nil, fmt.Errorf("%s not found or empty in secret %s referenced by GatewayExtension %s",
+				clientIDKey, idSecret.ResourceName(), ext.ResourceName())
+		}
+		clientID = string(clientIDData)
+	}
 	// TODO(shashank): customize cookie names for collisions
 	hmacSecret, err := secrets.GetSecretWithoutRefGrant(krtctx, wellknown.OAuth2HMACSecret.Name, wellknown.OAuth2HMACSecret.Namespace)
 	if err != nil {
@@ -302,7 +321,7 @@ func buildOAuth2ProviderConfig(
 			PreserveAuthorizationHeader: !forwardBearerToken,
 			AuthScopes:                  in.Scopes,
 			Credentials: &envoyoauth2v3.OAuth2Credentials{
-				ClientId: in.Credentials.ClientID,
+				ClientId: clientID,
 				TokenSecret: &envoytlsv3.SdsSecretConfig{
 					Name:      oauthClientSecretName(in.Credentials.ClientSecretRef.Name, ext.Namespace),
 					SdsConfig: adsConfigSource(),

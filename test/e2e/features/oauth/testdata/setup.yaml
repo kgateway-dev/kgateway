@@ -355,6 +355,8 @@ kind: Secret
 metadata:
   name: oauth-client-secret
 data:
+  # kgateway-client-id; must match the clientId created in Keycloak
+  client-id: a2dhdGV3YXktY2xpZW50LWlk
   # kgateway-client-secret; must match the client secret created in Keycloak
   client-secret: a2dhdGV3YXktY2xpZW50LXNlY3JldA==
 ---
