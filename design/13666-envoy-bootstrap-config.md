@@ -313,7 +313,7 @@ principle). It merges each kind of field as follows:
 
 | Field kind | Example | Result |
 |---|---|---|
-| Scalar | `cluster_manager.local_cluster_name`, `admin.address.socket_address.port_value` | The patch's value replaces the base's. A zero value (`false`, `0`, `""`) counts as unset, so the patch cannot reset a field to it. |
+| Scalar | `cluster_manager.local_cluster_name`, `admin.address.socket_address.address` | The patch's value replaces the base's. A zero value (`false`, `0`, `""`) counts as unset, so the patch cannot reset a field to it. A scalar in a `oneof`, such as `admin.address.socket_address.port_value`, is the exception: a zero value is set and replaces the base's. |
 | Message | `stats_config`, `admin`, `stats_flush_interval` (a `Duration`) | Merged field by field, by these same rules. |
 | `google.protobuf.Any` | `typed_dns_resolver_config.typed_config`, the `typed_config` of a listener filter or cluster extension | The patch's value replaces the base's whole, including a patch `Any` with an empty payload. See `Any` fields below. |
 | `oneof` | `stats_config.stats_matcher` (`inclusion_list`, `exclusion_list` or `reject_all`) | Setting the same option merges it. Setting a different option clears the base's option. |
@@ -650,7 +650,9 @@ port off the `Service` and lists each colliding port in the
 patch, so a ListenerSet added later cannot make a working patch fall back. The
 one exception is a collision on every Gateway listener port: the `Service` would
 have no ports, which Kubernetes does not accept, so the deployer takes the
-invalid-merge fallback with `InvalidPatch` and names the ports.
+invalid-merge fallback with `InvalidPatch` and names the ports. When the patched
+bootstrap is not mounted (`BootstrapNotMounted`), the constant ports are the
+reserved set for both the translator and the `Service`.
 
 ##### Invalid-merge fallback
 
@@ -705,7 +707,10 @@ kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
   (`pkg/kgateway/deployer/gateway_parameters.go`), after Helm renders the
   Gateway's objects and before `deploymentOverlay`, `serviceOverlay` and
   `serviceAccountOverlay` are applied, so an object overlay can still change
-  anything in the `Deployment`.
+  anything in the `Deployment`. The `Service` ports are the exception: the
+  deployer removes the ports the proxy's bootstrap listens on after the object
+  overlays, once it knows which bootstrap the proxy mounts (see the `/etc/envoy`
+  check below), so a `serviceOverlay` cannot add such a port back.
 - **Only Gateways with `patch` set are merged.** A Gateway whose resolved
   `GatewayParameters` have no `patch` keeps the Helm-rendered `envoy.yaml` byte
   for byte, and gets no validation key and no pod-template annotation. It is not
@@ -744,9 +749,12 @@ kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
   routes against runtime layers the proxy never loads. The merge and
   `envoy --mode validate` still run, so the condition still reports whether the
   patches are valid. The combination is not rejected: that would take the
-  invalid-merge fallback and hold back unrelated `Deployment` changes. The deployer
-  runs the same mount check for a Gateway without a `patch`, where it only decides
-  whether to set `INPUT_CONF` and reports nothing.
+  invalid-merge fallback and hold back unrelated `Deployment` changes. The
+  `Service` is built as for a Gateway without a `patch`: the constant reserved
+  ports are left off, and no port is left off for the patch's static listeners,
+  since the proxy does not run them. The condition message lists the ports left
+  off. The deployer runs the same mount check for a Gateway without a `patch`,
+  where it only decides whether to set `INPUT_CONF` and reports nothing.
 - **Proxy image check.** Also after applying the object overlays, the deployer
   reads the image of the `kgateway-proxy` container in the final `Deployment` and
   compares it with the controller's own image tag, so an image set by
@@ -820,7 +828,9 @@ the next key; old pods keep reading theirs.
   Gateway reconciler is triggered by the per-Gateway collection of pod annotations
   (see Listener ports) and by the Gateway's ReplicaSets (selected by the
   `gateway.networking.k8s.io/gateway-name` label), so a key is removed soon after
-  its last user is gone. Earlier keys are copied from the `ConfigMap` as read from
+  its last user is gone. The reconciler waits for that collection to sync before
+  its first reconcile, so a controller restart does not read an empty pod set as
+  no pods and prune a key a terminating pod still mounts. Earlier keys are copied from the `ConfigMap` as read from
   the API server, not the informer cache, whose copy could be stale and lack a key
   a pod still uses. NotFound means the `ConfigMap` does not exist yet; any other
   error fails the reconcile without changing the Gateway's objects or status, and
@@ -888,6 +898,11 @@ translator also writes Gateway conditions but preserves types it does not own
 apply, and a routine report must not read as a broken Gateway to anyone alerting on
 condition status. `False` means the patches are not in effect on the proxy.
 
+When the deployer cannot render a Gateway's objects at all (`Accepted=False`,
+`InvalidParameters`), the `BootstrapPatchApplied` condition is removed: nothing
+says whether the patch would apply. An override that implements
+`ObjectPostProcessor` without `BootstrapPatchProvider` removes it too.
+
 **A proxy image that differs from the controller's.** When the `kgateway-proxy`
 image in the final `Deployment` is not `envoy-wrapper` at the controller's own
 image tag, or is pinned by digest, the condition message names the proxy image and
@@ -906,7 +921,9 @@ says the same (see Envoy versions and proto types).
 
 Also emit a `Warning` event for each overridden, dropped or denied path, and a
 metric labeled by Gateway, namespace and path, so a platform team can find the
-affected Gateways. The reconciler has no event recorder today; Phase 1 wires a
+affected Gateways. The events are recorded when the condition's status, reason or
+message changes, not on every reconcile, so an unrelated Gateway edit does not
+repeat them. The reconciler has no event recorder today; Phase 1 wires a
 `record.EventRecorder` into it. The metric has a series only for a Gateway whose
 patch sets a managed path, so its cardinality is bounded by the number of such
 Gateways. Other kgateway metrics already carry the same Gateway labels, such as
@@ -1020,7 +1037,10 @@ own, with a node, a cluster manager and static resources but no `layered_runtime
   not resolve `GatewayParameters` a second time and does not parse `envoy.yaml`,
   so it needs none of the Envoy types a patch uses. Its `Equals` compares the
   strings, so a pod becoming Ready, or a `ConfigMap` change outside the key, does
-  not revalidate the Gateway's routes. Because the key is written together with
+  not revalidate the Gateway's routes. It also compares the pod named for each
+  subset and port, so that status messages name a pod that still exists;
+  replacing that pod with one carrying the same bootstrap re-translates the
+  Gateway once. Because the key is written together with
   `envoy.yaml`:
   - an invalid patch leaves both unchanged, and validation keeps using the
     last-good subset;
@@ -1201,18 +1221,24 @@ image, and Alternatives for a check of stored patches before an upgrade.
   controller's own image tag. Helm passes that tag to the controller in a new
   `KGW_CONTROLLER_IMAGE_TAG` variable, set with the same expression as the
   controller container's image (`controller.image.tag`, else `image.tag`, else the
-  chart's `appVersion`). If the repository is not `envoy-wrapper`, the tag differs,
-  or the image is pinned by digest, the condition message names the proxy image
-  and the controller's tag and says that validation used the controller's Envoy
-  (see Reporting). The registry is not compared, so a mirror is not reported.
+  chart's `appVersion`). It adds no Helm value: the chart derives it from the
+  values that already set the controller image. An install that does not set the
+  variable, such as one not made from this chart, gets no image report. If the
+  repository is not `envoy-wrapper`, the tag differs, or the image is pinned by
+  digest, the condition message names the proxy image and the controller's tag and
+  says that validation used the controller's Envoy (see Reporting). The registry is
+  not compared, so a mirror is not reported.
   Comparing with the deployer's default proxy image (`KGW_DEFAULT_IMAGE_TAG`) was
   not chosen: it comes from `image.tag`, so a Helm install that sets
   `controller.image.tag` apart from it gives every proxy a different Envoy from the
   validator and reports nothing. Comparing with the version compiled into the
-  controller binary was not chosen either: release builds tag images with a
-  staging tag that differs from that version. The controller cannot tell which
-  Envoy version an arbitrary image holds without pulling it, so it reports the
-  difference in image, not a version mismatch.
+  controller binary was not chosen either: an install that retags the images, such
+  as a private mirror that pushes them under its own tags, runs the controller and
+  the proxy under a tag that differs from that version, so every patched Gateway
+  would report a difference that does not exist. kgateway's release pipeline does
+  the same while it validates images under a staging tag. The controller cannot
+  tell which Envoy version an arbitrary image holds without pulling it, so it
+  reports the difference in image, not a version mismatch.
 - **The reconciler reports a proxy image the fallback holds back.** After an
   upgrade whose new Envoy rejects a stored patch, the invalid-merge fallback
   keeps the Gateway's old `Deployment`, and so its old Envoy, with no time limit,
