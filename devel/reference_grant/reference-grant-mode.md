@@ -2,7 +2,7 @@
 
 ## Overview
 
-The [Gateway API ReferenceGrant](https://gateway-api.sigs.k8s.io/api-types/referencegrant/)
+The [Gateway API ReferenceGrant](https://gateway-api.sigs.k8s.io/reference/api-types/referencegrant/)
 mechanism controls whether a resource in one namespace may reference a resource
 in another namespace. Without a ReferenceGrant in the target namespace, the
 reference is denied.
