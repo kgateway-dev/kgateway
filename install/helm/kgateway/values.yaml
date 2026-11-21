@@ -333,9 +333,8 @@ validation:
   #    Default is "standard".
   level: standard
 
-# -- Enable attaching dev.kgateway.route_source filter metadata to every Envoy route.
-# This metadata includes the Kubernetes source object (kind, group, name, namespace, rule)
-# for each route, which helps correlate Envoy routes with their originating Kubernetes resources.
-# Default is false (disabled).
-# Note: This feature is experimental and subject to breaking changes in future releases.
-enableRouteSourceMetadata: false
+# -- Attach stable dev.kgateway.route_source filter metadata to Envoy routes derived from
+# Gateway API routes. The metadata contains string fields for kind, group, name, namespace,
+# rule, and match. Unnamed rules use _rule-<index> and matches use _match-<index>, both with
+# zero-based indices. Set to false to disable.
+enableRouteSourceMetadata: true

@@ -4174,6 +4174,72 @@ func TestSetupScenarios(t *testing.T) {
 	}
 }
 
+func TestDefaultRouteSourceMetadata(t *testing.T) {
+	const setting = "KGW_ENABLE_ROUTE_SOURCE_METADATA"
+	const metadataKey = "dev.kgateway.route_source"
+	tc := translatortest.TestCase{
+		InputFiles: []string{filepath.Join(fsutils.MustGetThisDir(), "testutils/inputs/route-source-metadata/ambiguous-sources.yaml")},
+	}
+	gateway := types.NamespacedName{Namespace: "default", Name: "example-gateway"}
+	for _, test := range []struct {
+		name    string
+		enabled bool
+	}{
+		{name: "default", enabled: true},
+		{name: "opt_out", enabled: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv(setting, "false")
+			if test.enabled {
+				require.NoError(t, os.Unsetenv(setting))
+			}
+
+			results, err := tc.Run(t, t.Context(), translatortest.NewScheme(nil), translatortest.ExtraConfig{})
+			require.NoError(t, err)
+			require.Contains(t, results, gateway)
+			proxy := results[gateway].Proxy
+			require.Len(t, proxy.Routes, 1)
+			vhosts := proxy.Routes[0].GetVirtualHosts()
+			require.Len(t, vhosts, 1)
+			routes := vhosts[0].GetRoutes()
+			require.Len(t, routes, 2)
+
+			byPath := make(map[string]*envoyroutev3.Route, len(routes))
+			for _, route := range routes {
+				byPath[route.GetMatch().GetPath()] = route
+			}
+			for _, source := range []struct {
+				path      string
+				name      string
+				namespace string
+			}{
+				{path: "/one", name: "orders", namespace: "team-a"},
+				{path: "/two", name: "orders-team", namespace: "a"},
+			} {
+				route := byPath[source.path]
+				require.NotNil(t, route, "expected an Envoy route for %s", source.path)
+				require.Contains(t, route.GetName(), "-httproute-orders-team-a-0-0-matcher-0")
+				require.NotNil(t, route.GetRedirect())
+
+				metadata := route.GetMetadata().GetFilterMetadata()
+				if !test.enabled {
+					require.NotContains(t, metadata, metadataKey)
+					continue
+				}
+				require.Contains(t, metadata, metadataKey, "default route metadata must identify %s/%s", source.namespace, source.name)
+				require.Equal(t, map[string]any{
+					"group":     "gateway.networking.k8s.io",
+					"kind":      "HTTPRoute",
+					"name":      source.name,
+					"namespace": source.namespace,
+					"rule":      "_rule-0",
+					"match":     "_match-0",
+				}, metadata[metadataKey].AsMap())
+			}
+		})
+	}
+}
+
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
 	ctx := t.Context()
 
