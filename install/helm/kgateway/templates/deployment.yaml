@@ -162,15 +162,15 @@ spec:
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
               value: {{ include "kgateway.validationLevel" . | quote }}
-            {{- if .Values.enableRouteSourceMetadata }}
+            {{- $extraEnv := .Values.controller.extraEnv | default dict }}
+            {{- if and (not (kindIs "invalid" .Values.enableRouteSourceMetadata)) (not (hasKey $extraEnv "KGW_ENABLE_ROUTE_SOURCE_METADATA")) }}
             - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
-              value: "true"
+              value: {{ .Values.enableRouteSourceMetadata | quote }}
             {{- end }}
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
-            {{- $extraEnv := .Values.controller.extraEnv | default dict }}
             {{- $xdsScoping := .Values.controller.xds.scoping | default dict }}
             {{- /* Each entry: controller.xds.scoping key, variable, validator. A set value
               is validated even when extraEnv overrides it, and an extraEnv value is

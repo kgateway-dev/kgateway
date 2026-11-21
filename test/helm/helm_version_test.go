@@ -362,6 +362,36 @@ func lookupContainerEnvVar(container corev1.Container, name string) (corev1.EnvV
 	return corev1.EnvVar{}, false
 }
 
+func TestControllerRouteSourceMetadata(t *testing.T) {
+	const key = "KGW_ENABLE_ROUTE_SOURCE_METADATA"
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		want       string
+	}{
+		{name: "default", want: "true"},
+		{name: "opt_out", valuesYAML: "enableRouteSourceMetadata: false", want: "false"},
+		{name: "explicit_opt_in", valuesYAML: "enableRouteSourceMetadata: true", want: "true"},
+		{name: "extra_env_override", valuesYAML: `controller:
+  extraEnv:
+    KGW_ENABLE_ROUTE_SOURCE_METADATA: "false"
+`, want: "false"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := renderHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			deployment := findDeployment(t, output)
+			container := deployment.Spec.Template.Spec.Containers[0]
+			var values []string
+			for _, env := range container.Env {
+				if env.Name == key {
+					values = append(values, env.Value)
+				}
+			}
+			require.Equal(t, []string{test.want}, values, "render exactly one %s setting", key)
+		})
+	}
+}
+
 func TestControllerGOMAXPROCS(t *testing.T) {
 	t.Run("uses the Go runtime's container-aware default", func(t *testing.T) {
 		output := renderHelmTemplate(t, "kgateway", "", nil)

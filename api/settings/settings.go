@@ -403,13 +403,11 @@ type Settings struct {
 	// TCPRoute v1, work whether this setting is enabled or not.
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
 
-	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata
-	// to every Envoy route. This metadata includes the Kubernetes source object (kind, group,
-	// name, namespace, rule) for each route, which can be useful for debugging and observability.
-	// Disabled by default.
-	//
-	// Note: This feature is experimental and subject to breaking changes in future releases.
-	EnableRouteSourceMetadata bool `split_words:"true" default:"false"`
+	// EnableRouteSourceMetadata attaches stable dev.kgateway.route_source filter metadata
+	// to Envoy routes derived from Gateway API routes. Fields are strings and include the
+	// source kind, group, name, namespace, rule, and match. Unnamed rules use "_rule-<index>"
+	// and matches use "_match-<index>", both with zero-based indices. Enabled by default.
+	EnableRouteSourceMetadata bool `split_words:"true" default:"true"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
 	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),
