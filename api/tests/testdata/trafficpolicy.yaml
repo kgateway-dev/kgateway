@@ -119,6 +119,38 @@ spec:
       gateway: example
   statPrefix: "{{route_namespace}}.{{route_name}}"
 ---
+# TrafficPolicy: local rate limit statPrefix requires tokenBucket
+_err: statPrefix requires tokenBucket to be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-local-rate-limit-stat-prefix-no-bucket
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  rateLimit:
+    local:
+      statPrefix: "payments"
+---
+# TrafficPolicy: local rate limit statPrefix with tokenBucket may target a Gateway
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-local-rate-limit-stat-prefix-gateway
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 10
+        fillInterval: 60s
+      statPrefix: "payments.{{route_name}}"
+---
 # TrafficPolicy: empty generic key and value in rate limit descriptor
 _errs:
 - 'spec.rateLimit.global.descriptors[0].entries[0].generic.key in body should be at least 1 chars long'

@@ -476,6 +476,7 @@ type RateLimit struct {
 
 // LocalRateLimitPolicy configures local rate limiting using a token bucket.
 // +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"
+// +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || has(self.tokenBucket)",message="statPrefix requires tokenBucket to be set"
 type LocalRateLimitPolicy struct {
 	// TokenBucket configures the local rate limiter's token bucket.
 	// +optional
@@ -518,6 +519,9 @@ type LocalRateLimitPolicy struct {
 	// tokens have no value, because one rate limit config is shared by all its routes.
 	//
 	// For example, `{{route_namespace}}.{{route_name}}` becomes `my-ns.my-route`.
+	//
+	// Requires tokenBucket: an empty `local` block disables local rate limiting, and a
+	// stat prefix alone has no rate limit to name.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=256

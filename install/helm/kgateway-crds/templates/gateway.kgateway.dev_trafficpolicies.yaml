@@ -1981,6 +1981,9 @@ spec:
                           tokens have no value, because one rate limit config is shared by all its routes.
 
                           For example, `{{ "{{route_namespace}}" }}.{{ "{{route_name}}" }}` becomes `my-ns.my-route`.
+
+                          Requires tokenBucket: an empty `local` block disables local rate limiting, and a
+                          stat prefix alone has no rate limit to name.
                         maxLength: 256
                         minLength: 1
                         pattern: ^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$
@@ -2025,6 +2028,8 @@ spec:
                     - message: shareAcrossGateway requires tokenBucket to be set
                       rule: '!has(self.shareAcrossGateway) || !self.shareAcrossGateway
                         || has(self.tokenBucket)'
+                    - message: statPrefix requires tokenBucket to be set
+                      rule: '!has(self.statPrefix) || has(self.tokenBucket)'
                 type: object
               rbac:
                 description: |-

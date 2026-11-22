@@ -280,10 +280,16 @@ func TestLocalRateLimitStatPrefix(t *testing.T) {
 			wantPrefix: "payments.checkout",
 		},
 		{
-			name:         "templated prefix keeps the default until resolved per route",
+			name:         "template with only route tokens falls back to the default outside a route",
 			statPrefix:   new("{{route_namespace}}.{{route_name}}"),
 			wantPrefix:   localRateLimitStatPrefix,
 			wantTemplate: "{{route_namespace}}.{{route_name}}",
+		},
+		{
+			name:         "template keeps its literal segments outside a route",
+			statPrefix:   new("payments.{{route_name}}"),
+			wantPrefix:   "payments",
+			wantTemplate: "payments.{{route_name}}",
 		},
 	}
 
@@ -372,4 +378,30 @@ func TestApplyForRouteResolvesLocalRateLimitStatPrefix(t *testing.T) {
 	assert.Equal(t, "ns.route-b", applyFor("route-b"))
 	assert.Equal(t, localRateLimitStatPrefix, policy.spec.localRateLimit.config.GetStatPrefix(),
 		"resolving for a route must not modify the shared policy IR")
+}
+
+func TestHandleLocalRateLimitUsesBuiltConfig(t *testing.T) {
+	// Outside a single route, the config built with the IR is used as is: no copy and
+	// no template work on each rebuild.
+	out := &trafficPolicySpecIr{}
+	constructLocalRateLimit(&kgateway.TrafficPolicy{
+		Spec: kgateway.TrafficPolicySpec{
+			RateLimit: &kgateway.RateLimit{
+				Local: &kgateway.LocalRateLimitPolicy{
+					TokenBucket: &kgateway.TokenBucket{MaxTokens: 10, FillInterval: metav1.Duration{Duration: time.Second}},
+					StatPrefix:  new("payments.{{route_name}}"),
+				},
+			},
+		},
+	}, out)
+	require.NotNil(t, out.localRateLimit)
+
+	plugin := &trafficPolicyPluginGwPass{}
+	var typedFilterConfig ir.TypedFilterConfigMap
+	plugin.handleLocalRateLimit("listener~80", &typedFilterConfig, out.localRateLimit)
+
+	got, ok := typedFilterConfig.GetTypedConfig(localRateLimitFilterNamePrefix).(*localratelimitv3.LocalRateLimit)
+	require.True(t, ok, "expected a local rate limit config")
+	assert.Same(t, out.localRateLimit.config, got)
+	assert.Equal(t, "payments", got.GetStatPrefix())
 }

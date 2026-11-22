@@ -21,10 +21,12 @@ const (
 )
 
 type localRateLimitIR struct {
+	// config is ready to use wherever no single route is known (Gateway, listener,
+	// virtual host, route backend): its stat prefix is already resolved, with the
+	// route tokens of a template left empty.
 	config *localratelimitv3.LocalRateLimit
-	// statPrefixTemplate holds the stat prefix when it has template tokens. The route
-	// isn't known yet when the IR is built, so forRoute resolves it later and config
-	// keeps the default prefix until then.
+	// statPrefixTemplate holds the stat prefix when it has template tokens, so
+	// forRoute can resolve it for each route in ApplyForRoute.
 	statPrefixTemplate string
 }
 
@@ -57,12 +59,21 @@ func constructLocalRateLimit(in *kgateway.TrafficPolicy, out *trafficPolicySpecI
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
 		return
 	}
-	localRateLimit := toLocalRateLimitFilterConfig(in.Spec.RateLimit.Local)
+	local := in.Spec.RateLimit.Local
+	localRateLimit := toLocalRateLimitFilterConfig(local)
 	out.localRateLimit = &localRateLimitIR{
 		config: localRateLimit,
 	}
-	if sp := in.Spec.RateLimit.Local.StatPrefix; sp != nil && statPrefixTemplateVar.MatchString(*sp) {
-		out.localRateLimit.statPrefixTemplate = *sp
+
+	// The stat prefix is worked out once, here. The config gets the prefix with the
+	// route tokens empty, which is what every level without a single route uses. A
+	// template is also kept so ApplyForRoute can resolve it per route.
+	// The CRD requires tokenBucket with statPrefix, so this is never the disabled config.
+	if sp := local.StatPrefix; sp != nil {
+		localRateLimit.StatPrefix = localRateLimitStatPrefixOrDefault(resolveStatPrefixTemplate(*sp, "", "", ""))
+		if statPrefixTemplateVar.MatchString(*sp) {
+			out.localRateLimit.statPrefixTemplate = *sp
+		}
 	}
 }
 
@@ -96,14 +107,8 @@ func toLocalRateLimitFilterConfig(t *kgateway.LocalRateLimitPolicy) *localrateli
 		filterEnforced = uint32(*t.PercentEnforced) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
-	// A literal stat prefix can be set now. A templated one is resolved per route in forRoute.
-	statPrefix := localRateLimitStatPrefix
-	if t.StatPrefix != nil && !statPrefixTemplateVar.MatchString(*t.StatPrefix) {
-		statPrefix = localRateLimitStatPrefixOrDefault(resolveStatPrefixTemplate(*t.StatPrefix, "", "", ""))
-	}
-
 	var lrl *localratelimitv3.LocalRateLimit = &localratelimitv3.LocalRateLimit{
-		StatPrefix:  statPrefix,
+		StatPrefix:  localRateLimitStatPrefix,
 		TokenBucket: tokenBucket,
 		// By default filter is enabled for 0% of the requests.
 		FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
@@ -176,10 +181,9 @@ func (p *trafficPolicyPluginGwPass) handleLocalRateLimit(fcn string, typedFilter
 	if localRateLimit == nil {
 		return
 	}
-	// ApplyForRoute has already resolved the stat prefix for its route. At the other levels
-	// (listener, virtual host, route backend) one config is shared by all routes, so the
-	// route tokens resolve to empty.
-	localRateLimit = localRateLimit.forRoute("", "", "")
+	// The config is used as built: ApplyForRoute has resolved the stat prefix for its
+	// route, and at the other levels the IR already holds the prefix with the route
+	// tokens empty.
 	typedFilterConfig.AddTypedConfig(localRateLimitFilterNamePrefix, localRateLimit.config)
 
 	// Add a filter to the chain. When having a rate limit for a route we need to also have a

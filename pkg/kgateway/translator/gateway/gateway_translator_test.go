@@ -722,6 +722,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with local rate limiting stat prefix on a Gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-stat-prefix-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-stat-prefix-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with local rate limiting stat prefix on a listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-stat-prefix-listener.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-stat-prefix-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with local rate limiting shared across the gateway", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
