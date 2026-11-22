@@ -12,6 +12,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/storage"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
@@ -560,6 +564,106 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 			require.Contains(t, stderr, test.message)
 		})
 	}
+}
+
+func TestControllerGoMemLimitPercentNotes(t *testing.T) {
+	const (
+		warning  = "WARNING: controller.goMemLimitPercent is 90"
+		moveHint = "controller.resources replaces the deprecated top-level resources"
+	)
+
+	for _, test := range []struct {
+		name         string
+		valuesYAML   string
+		wantWarning  bool
+		wantMoveHint bool
+	}{
+		{
+			name: "stays quiet by default",
+		},
+		{
+			name: "stays quiet without a percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: null
+`,
+		},
+		{
+			name: "warns without a memory limit",
+			valuesYAML: `controller:
+  goMemLimitPercent: 90
+`,
+			wantWarning: true,
+		},
+		{
+			name: "warns when only other limits are set",
+			valuesYAML: `controller:
+  goMemLimitPercent: 90
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      memory: 1Gi
+`,
+			wantWarning: true,
+		},
+		{
+			name: "stays quiet with a controller memory limit",
+			valuesYAML: `controller:
+  goMemLimitPercent: 90
+  resources:
+    limits:
+      memory: 1Gi
+`,
+		},
+		{
+			name: "stays quiet with a deprecated top-level memory limit",
+			valuesYAML: `resources:
+  limits:
+    memory: 1Gi
+controller:
+  goMemLimitPercent: 90
+`,
+		},
+		{
+			name: "says controller.resources replaces deprecated top-level resources",
+			valuesYAML: `resources:
+  requests:
+    memory: 128Mi
+controller:
+  goMemLimitPercent: 90
+`,
+			wantWarning:  true,
+			wantMoveHint: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			notes := renderHelmNotes(t, "kgateway", test.valuesYAML)
+			require.Equal(t, test.wantWarning, strings.Contains(notes, warning), "missing memory limit warning in notes:\n%s", notes)
+			require.Equal(t, test.wantMoveHint, strings.Contains(notes, moveHint), "deprecated resources hint in notes:\n%s", notes)
+		})
+	}
+}
+
+// renderHelmNotes renders the chart's NOTES.txt. The helm CLI prints notes only
+// for an install, which needs a reachable cluster even as a dry run, so this
+// goes through the Helm library in client-only mode instead.
+func renderHelmNotes(t *testing.T, chartName string, valuesYAML string) string {
+	t.Helper()
+
+	chart, err := loader.Load(filepath.Join("..", "..", "install", "helm", chartName))
+	require.NoError(t, err, "failed to load helm chart")
+
+	values := map[string]any{}
+	require.NoError(t, yaml.Unmarshal([]byte(valuesYAML), &values), "failed to parse values")
+
+	install := action.NewInstall(&action.Configuration{Releases: storage.Init(driver.NewMemory())})
+	install.ReleaseName = "test-release"
+	install.Namespace = "default"
+	install.DryRun = true
+	install.ClientOnly = true
+	release, err := install.Run(chart, values)
+	require.NoError(t, err, "failed to render helm chart")
+	return release.Info.Notes
 }
 
 func TestControllerXdsScoping(t *testing.T) {

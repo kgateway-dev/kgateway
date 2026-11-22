@@ -576,6 +576,12 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
+// TLS configures TLS origination to the backend.
+//
+// Exactly one trust source must be set: secretRef, files, wellKnownCACertificates,
+// or insecureSkipVerify. To validate the backend against the system CA certificates,
+// set wellKnownCACertificates to System.
+//
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
@@ -594,21 +600,34 @@ type TLS struct {
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
+	// When sni is set and verifySubjectAltNames is empty, the certificate must also
+	// be valid for the sni.
+	// WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+	// chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+	// whatever name it was issued for. Dynamic forward proxy backends are the exception:
+	// they always check the certificate against the request's host.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == 'System'",message="wellKnownCACertificates only supports System"
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// It can only be set to true; leave it unset to verify the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self",message="insecureSkipVerify can only be set to true; remove it to verify the backend certificate"
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
-	// The SNI domains that should be considered for TLS connection
+	// Sni is the server name sent in the TLS handshake (Server Name Indication).
+	// When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+	// the backend's certificate must also be valid for this name.
+	// For dynamic forward proxy backends, the request's host is sent instead.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
-	// note that a root_ca must be provided if this option is used.
+	// When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+	// When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
 	// +optional
 	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 

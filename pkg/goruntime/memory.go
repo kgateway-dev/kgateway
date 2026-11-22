@@ -65,7 +65,13 @@ func configureMemoryLimit(ctx context.Context, provider memlimit.Provider, refre
 		return nil
 	}
 	if limit == math.MaxInt64 {
-		logger.Warn("container has no finite memory limit; AUTOMEMLIMIT will not constrain the Go runtime until a limit is available")
+		// On cgroup v2 a private cgroup namespace hides the pod and node-level
+		// ancestors, so a container without its own limit reads as unlimited.
+		logger.Warn(
+			"container has no finite memory limit, so AUTOMEMLIMIT leaves GOMEMLIMIT unconstrained until one is available; "+
+				"set a container memory limit for it to take effect",
+			"automemlimit", autoMemoryLimit,
+		)
 	}
 	return nil
 }

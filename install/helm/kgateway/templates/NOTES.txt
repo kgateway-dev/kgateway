@@ -17,3 +17,17 @@ To learn how to access and use kgateway, please visit the official documentation
 To uninstall the kgateway deployment:
 
   helm uninstall {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+{{- /* Mirror the controller resources fallback in deployment.yaml. A LimitRange can still supply a limit that the chart cannot see. */}}
+{{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) | default dict }}
+{{- $goMemLimitPercent := int .Values.controller.goMemLimitPercent }}
+{{- if and (ne $goMemLimitPercent 0) (not (get (get $controllerResources "limits" | default dict) "memory")) }}
+
+WARNING: controller.goMemLimitPercent is {{ $goMemLimitPercent }}, but these values set no memory limit
+on the controller container. Unless a LimitRange supplies one, the percentage has
+no container limit to apply to and GOMEMLIMIT normally remains unconstrained.
+Set controller.resources.limits.memory.
+{{- if and (kindIs "invalid" .Values.controller.resources) .Values.resources }}
+controller.resources replaces the deprecated top-level resources as a whole, so move
+its other settings there too.
+{{- end }}
+{{- end }}
