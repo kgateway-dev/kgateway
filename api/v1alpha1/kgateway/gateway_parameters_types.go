@@ -301,6 +301,11 @@ type EnvoyContainer struct {
 	// set here: `--disable-hot-restart`, `--service-node`, `--log-level`, and
 	// `--component-log-level`. Consider using a DeploymentOverlay to override these values if desired.
 	//
+	// By default, kgateway starts Envoy with `--drain-time-s 60` and
+	// `--drain-strategy immediate`. A flag that you set here replaces its default.
+	// For example, set `--drain-time-s 600` and `--drain-strategy gradual` to
+	// restore the Envoy defaults.
+	//
 	// +optional
 	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:MinItems=1
@@ -423,8 +428,11 @@ type EnvoyBootstrap struct {
 	// MaxDownstreamConnections caps active downstream connections across all listeners. Unset by default (no limit).
 	// This is bootstrap configuration, so changing it restarts the proxy.
 	//
+	// Must be at most 9007199254740991 (2^53-1).
+	//
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=9007199254740991
 	MaxDownstreamConnections *int64 `json:"maxDownstreamConnections,omitempty"`
 }
 
@@ -717,6 +725,11 @@ func (in *IstioContainer) GetIstioMetaClusterId() *string {
 // Configuration for the stats server.
 type StatsConfig struct {
 	// Whether to expose metrics annotations and ports for scraping metrics.
+	// When enabled, the proxy has the http-monitoring container port (9091), and
+	// the pod has the annotations for scraping. If you disable stats, the proxy
+	// has neither. The container port also matters when you set hostNetwork in a
+	// deployment overlay, because the scheduler does not place two pods that use
+	// the same host port on one node.
 	//
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`

@@ -389,7 +389,18 @@ type Settings struct {
 
 	PolicyMerge string `split_words:"true" default:"{}"`
 
-	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
+	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental
+	// Gateway API features and legacy API versions. When disabled, kgateway ignores:
+	//   - the sessionPersistence field of HTTPRoute and GRPCRoute rules, which is
+	//     part of the experimental channel (the sessionPersistence field of a
+	//     BackendConfigPolicy is not affected),
+	//   - the legacy XListenerSet resource in the gateway.networking.x-k8s.io API
+	//     group, and
+	//   - the pre-v1 API versions of TCPRoutes and TLSRoutes, when the Gateway API
+	//     CRDs do not serve v1.
+	//
+	// Features in the standard channel, such as retry, CORS, ListenerSet, and
+	// TCPRoute v1, work whether this setting is enabled or not.
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
 
 	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata
@@ -437,9 +448,11 @@ type Settings struct {
 	// The budget times installation in the controller's xDS cache. It is not a
 	// deadline for a pod to go Ready, or for Envoy to receive or apply config:
 	// translation before the first deferred build, KGW_XDS_FIRST_CONNECT_DELAY,
-	// delivery, Envoy's fetch timeouts and cluster warming all add to it. Keep
-	// it well below the proxy's startup probe window (60s by default); above
-	// it, the first publish comes too late and the crash loop returns.
+	// delivery, Envoy's fetch timeouts and cluster warming all add to it. A new
+	// proxy whose endpoints are still not derived at expiry waits up to Envoy's
+	// 15s EDS initial_fetch_timeout more before it starts listeners. Keep it
+	// well below the proxy's startup probe window (60s by default); above it,
+	// the first publish comes too late and the crash loop returns.
 	//
 	// 0 or a negative value removes both deadlines: an unpublished client waits
 	// for a coherent build, and a held flip for its cluster, indefinitely.

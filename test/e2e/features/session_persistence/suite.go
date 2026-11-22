@@ -225,35 +225,42 @@ func (s *testingSuite) assertSessionPersistenceWithCookie(gatewayName, persisten
 		curl.WithRetryConnectionRefused(true),
 	}
 
-	firstResp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
-	s.Require().NoError(err, "first request should succeed")
-
-	firstPodName := s.extractPodNameFromResponse(firstResp.StdOut)
-	s.Require().NotEmpty(firstPodName, "should be able to extract pod name from first response")
+	// The gateway can take a moment to serve traffic after its pod turns ready, so poll the first request
+	// until it reaches a backend and carries the session cookie or header.
+	var firstPodName, sessionValue string
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		firstResp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "first request should succeed")
+		firstPodName = s.extractPodNameFromResponse(firstResp.StdOut)
+		g.Expect(firstPodName).NotTo(gomega.BeEmpty(), "should be able to extract pod name from first response")
+		if persistenceType == "cookie" {
+			sessionValue = extractCookie(firstResp.StdOut, cookieName)
+			g.Expect(sessionValue).NotTo(gomega.BeEmpty(), "should have received a session cookie")
+		} else {
+			sessionValue = s.extractSessionHeaderFromResponse(firstResp.StdOut)
+			g.Expect(sessionValue).NotTo(gomega.BeEmpty(), "should have received a session header")
+		}
+	}).WithTimeout(60 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
 
 	var subsequentCurlOpts []curl.Option
 	if persistenceType == "cookie" {
-		cookie := extractCookie(firstResp.StdOut, cookieName)
-		s.Require().NotEmpty(cookie, "should have received a session cookie")
 		subsequentCurlOpts = []curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 			curl.WithHostHeader("echo.local"),
 			curl.WithPort(8080),
 			curl.Silent(),
-			curl.WithHeader("Cookie", cookie),
+			curl.WithHeader("Cookie", sessionValue),
 			curl.WithConnectionTimeout(10),
 			curl.WithRetries(5, 0, 10),
 			curl.WithRetryConnectionRefused(true),
 		}
 	} else {
-		headerValue := s.extractSessionHeaderFromResponse(firstResp.StdOut)
-		s.Require().NotEmpty(headerValue, "should have received a session header")
 		subsequentCurlOpts = []curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 			curl.WithHostHeader("echo.local"),
 			curl.WithPort(8080),
 			curl.Silent(),
-			curl.WithHeader("session-a", headerValue),
+			curl.WithHeader("session-a", sessionValue),
 			curl.WithConnectionTimeout(10),
 			curl.WithRetries(3, 0, 10),
 			curl.WithRetryConnectionRefused(true),

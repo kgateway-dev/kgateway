@@ -69,6 +69,13 @@ spec:
                       allowing different listeners on the same port to enforce different mTLS trust boundaries.
                       When configured on a ListenerPolicy targeting a specific listener (via sectionName),
                       it overrides any Gateway-level mTLS configuration for that listener.
+                      When configured on a ListenerPolicy targeting the whole Gateway (no sectionName), it applies to
+                      every TLS-terminating listener of the Gateway, including those of attached ListenerSets, and it
+                      overrides the Gateway's spec.tls.frontend validation (default and perPort) for those listeners.
+                      A ListenerPolicy targeting a specific listener takes precedence over it, even when that policy's CA
+                      certificates cannot be fetched: if it requires client certificates the listener fails, otherwise the
+                      Gateway's spec.tls.frontend validation applies to the listener.
+                      CA certificate references without a namespace are resolved in the ListenerPolicy's namespace.
 
                       Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
                       wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,
@@ -81,7 +88,9 @@ spec:
                         description: |-
                           CACertificateRefs contains references to Kubernetes Secrets or ConfigMaps containing
                           CA certificates. Multiple references will be combined into a single trusted CA pool for the listener.
-                          The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data
+                          The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data.
+                          A reference without a namespace is resolved in the ListenerPolicy's namespace. A reference to another
+                          namespace requires a ReferenceGrant in that namespace that allows references from ListenerPolicy.
                         items:
                           description: |-
                             ObjectReference identifies an API object including its namespace.
@@ -159,7 +168,7 @@ spec:
                       accessLog:
                         description: |-
                           AccessLoggingConfig contains various settings for Envoy's access logging service.
-                          See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
                         items:
                           description: AccessLog represents the top-level access log
                             configuration.
@@ -170,7 +179,7 @@ spec:
                                 jsonFormat:
                                   description: |-
                                     the format object by which to envoy will emit the logs in a structured way.
-                                    https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-dictionaries
                                   type: object
                                   x-kubernetes-preserve-unknown-fields: true
                                 path:
@@ -180,7 +189,7 @@ spec:
                                 stringFormat:
                                   description: |-
                                     the format string by which envoy will format the log lines
-                                    https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-strings
                                   type: string
                               required:
                               - path
@@ -201,11 +210,11 @@ spec:
                                 andFilter:
                                   description: |-
                                     Performs a logical "and" operation on the result of each individual filter.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                                   items:
                                     description: |-
                                       FilterType represents the type of filter to apply (only one of these should be set).
-                                      Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                      Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                     maxProperties: 1
                                     minProperties: 1
                                     properties:
@@ -216,7 +225,7 @@ spec:
                                           match:
                                             description: |-
                                               The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                              see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                              see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                             type: string
                                         required:
                                         - match
@@ -224,7 +233,7 @@ spec:
                                       durationFilter:
                                         description: |-
                                           DurationFilter filters based on request duration.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -247,7 +256,7 @@ spec:
                                       grpcStatusFilter:
                                         description: |-
                                           GrpcStatusFilter filters gRPC requests based on their response status.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                         properties:
                                           exclude:
                                             type: boolean
@@ -280,7 +289,7 @@ spec:
                                       headerFilter:
                                         description: |-
                                           HeaderFilter filters requests based on headers.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                         properties:
                                           header:
                                             description: |-
@@ -346,12 +355,12 @@ spec:
                                       notHealthCheckFilter:
                                         description: |-
                                           Filters for requests that are not health check requests.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                         type: boolean
                                       responseFlagFilter:
                                         description: |-
                                           ResponseFlagFilter filters based on response flags.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                         properties:
                                           flags:
                                             items:
@@ -364,7 +373,7 @@ spec:
                                       runtimeFilter:
                                         description: |-
                                           Filters for random sampling of access logs.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                         properties:
                                           percentSampled:
                                             description: |-
@@ -386,6 +395,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -408,7 +418,7 @@ spec:
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -431,7 +441,7 @@ spec:
                                       traceableFilter:
                                         description: |-
                                           Filters for requests that are traceable.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                         type: boolean
                                     type: object
                                   minItems: 2
@@ -443,7 +453,7 @@ spec:
                                     match:
                                       description: |-
                                         The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                        see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                        see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                       type: string
                                   required:
                                   - match
@@ -451,7 +461,7 @@ spec:
                                 durationFilter:
                                   description: |-
                                     DurationFilter filters based on request duration.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                   properties:
                                     op:
                                       description: Op represents comparison operators.
@@ -473,7 +483,7 @@ spec:
                                 grpcStatusFilter:
                                   description: |-
                                     GrpcStatusFilter filters gRPC requests based on their response status.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                   properties:
                                     exclude:
                                       type: boolean
@@ -506,7 +516,7 @@ spec:
                                 headerFilter:
                                   description: |-
                                     HeaderFilter filters requests based on headers.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                   properties:
                                     header:
                                       description: |-
@@ -572,16 +582,16 @@ spec:
                                 notHealthCheckFilter:
                                   description: |-
                                     Filters for requests that are not health check requests.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                   type: boolean
                                 orFilter:
                                   description: |-
                                     Performs a logical "or" operation on the result of each individual filter.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                                   items:
                                     description: |-
                                       FilterType represents the type of filter to apply (only one of these should be set).
-                                      Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                      Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                     maxProperties: 1
                                     minProperties: 1
                                     properties:
@@ -592,7 +602,7 @@ spec:
                                           match:
                                             description: |-
                                               The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                              see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                              see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                             type: string
                                         required:
                                         - match
@@ -600,7 +610,7 @@ spec:
                                       durationFilter:
                                         description: |-
                                           DurationFilter filters based on request duration.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -623,7 +633,7 @@ spec:
                                       grpcStatusFilter:
                                         description: |-
                                           GrpcStatusFilter filters gRPC requests based on their response status.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                         properties:
                                           exclude:
                                             type: boolean
@@ -656,7 +666,7 @@ spec:
                                       headerFilter:
                                         description: |-
                                           HeaderFilter filters requests based on headers.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                         properties:
                                           header:
                                             description: |-
@@ -722,12 +732,12 @@ spec:
                                       notHealthCheckFilter:
                                         description: |-
                                           Filters for requests that are not health check requests.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                         type: boolean
                                       responseFlagFilter:
                                         description: |-
                                           ResponseFlagFilter filters based on response flags.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                         properties:
                                           flags:
                                             items:
@@ -740,7 +750,7 @@ spec:
                                       runtimeFilter:
                                         description: |-
                                           Filters for random sampling of access logs.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                         properties:
                                           percentSampled:
                                             description: |-
@@ -762,6 +772,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -784,7 +795,7 @@ spec:
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -807,7 +818,7 @@ spec:
                                       traceableFilter:
                                         description: |-
                                           Filters for requests that are traceable.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                         type: boolean
                                     type: object
                                   minItems: 2
@@ -815,7 +826,7 @@ spec:
                                 responseFlagFilter:
                                   description: |-
                                     ResponseFlagFilter filters based on response flags.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                   properties:
                                     flags:
                                       items:
@@ -828,7 +839,7 @@ spec:
                                 runtimeFilter:
                                   description: |-
                                     Filters for random sampling of access logs.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                   properties:
                                     percentSampled:
                                       description: |-
@@ -850,6 +861,7 @@ spec:
                                           description: Specifies the numerator. Defaults
                                             to 0.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 0
                                           type: integer
                                       required:
@@ -872,7 +884,7 @@ spec:
                                 statusCodeFilter:
                                   description: |-
                                     StatusCodeFilter filters based on HTTP status code.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                   properties:
                                     op:
                                       description: Op represents comparison operators.
@@ -894,7 +906,7 @@ spec:
                                 traceableFilter:
                                   description: |-
                                     Filters for requests that are traceable.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                   type: boolean
                               type: object
                             grpcService:
@@ -1042,6 +1054,7 @@ spec:
                                     Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                     Defaults to 0, which means unlimited.
                                   format: int32
+                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 retryPolicy:
@@ -1053,6 +1066,7 @@ spec:
                                       description: Specifies the allowed number of
                                         retries. Defaults to 1.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryBackOff:
@@ -1062,14 +1076,16 @@ spec:
                                       properties:
                                         baseInterval:
                                           description: The base interval to be used
-                                            for the next back off computation. It
-                                            should be greater than zero and less than
-                                            or equal to max_interval.
+                                            for the next back off computation. Must
+                                            be at least 1ms and less than or equal
+                                            to max_interval.
                                           maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
                                           - message: invalid duration value
                                             rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: must be at least 1ms
+                                            rule: duration(self) >= duration('1ms')
                                         maxInterval:
                                           description: Specifies the maximum interval
                                             between retries. This parameter is optional,
@@ -1285,6 +1301,7 @@ spec:
                                         Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                         Defaults to 0, which means unlimited.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryPolicy:
@@ -1296,6 +1313,7 @@ spec:
                                           description: Specifies the allowed number
                                             of retries. Defaults to 1.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 1
                                           type: integer
                                         retryBackOff:
@@ -1306,13 +1324,15 @@ spec:
                                             baseInterval:
                                               description: The base interval to be
                                                 used for the next back off computation.
-                                                It should be greater than zero and
-                                                less than or equal to max_interval.
+                                                Must be at least 1ms and less than
+                                                or equal to max_interval.
                                               maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
                                               - message: invalid duration value
                                                 rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: must be at least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             maxInterval:
                                               description: Specifies the maximum interval
                                                 between retries. This parameter is
@@ -1671,7 +1691,7 @@ spec:
                             - type: string
                             description: |-
                               InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-                              Same range and default value as InitialStreamWindowSize.
+                              Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
                               Values can be specified with units like "64Ki".
                             pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
@@ -1682,7 +1702,7 @@ spec:
                             description: |-
                               InitialStreamWindowSize is the initial window size for the stream.
                               Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-                              Defaults to 268435456 (256 * 1024 * 1024).
+                              Defaults to 16777216 (16 * 1024 * 1024).
                               Values can be specified with units like "64Ki".
                             pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
@@ -1809,11 +1829,11 @@ spec:
                                     andFilter:
                                       description: |-
                                         Performs a logical "and" operation on the result of each individual filter.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                                       items:
                                         description: |-
                                           FilterType represents the type of filter to apply (only one of these should be set).
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                         maxProperties: 1
                                         minProperties: 1
                                         properties:
@@ -1825,7 +1845,7 @@ spec:
                                               match:
                                                 description: |-
                                                   The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                  see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                  see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                 type: string
                                             required:
                                             - match
@@ -1833,7 +1853,7 @@ spec:
                                           durationFilter:
                                             description: |-
                                               DurationFilter filters based on request duration.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                             properties:
                                               op:
                                                 description: Op represents comparison
@@ -1856,7 +1876,7 @@ spec:
                                           grpcStatusFilter:
                                             description: |-
                                               GrpcStatusFilter filters gRPC requests based on their response status.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                             properties:
                                               exclude:
                                                 type: boolean
@@ -1889,7 +1909,7 @@ spec:
                                           headerFilter:
                                             description: |-
                                               HeaderFilter filters requests based on headers.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                             properties:
                                               header:
                                                 description: |-
@@ -1955,12 +1975,12 @@ spec:
                                           notHealthCheckFilter:
                                             description: |-
                                               Filters for requests that are not health check requests.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                             type: boolean
                                           responseFlagFilter:
                                             description: |-
                                               ResponseFlagFilter filters based on response flags.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                             properties:
                                               flags:
                                                 items:
@@ -1973,7 +1993,7 @@ spec:
                                           runtimeFilter:
                                             description: |-
                                               Filters for random sampling of access logs.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                             properties:
                                               percentSampled:
                                                 description: |-
@@ -1995,6 +2015,7 @@ spec:
                                                     description: Specifies the numerator.
                                                       Defaults to 0.
                                                     format: int32
+                                                    maximum: 2147483647
                                                     minimum: 0
                                                     type: integer
                                                 required:
@@ -2017,7 +2038,7 @@ spec:
                                           statusCodeFilter:
                                             description: |-
                                               StatusCodeFilter filters based on HTTP status code.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                             properties:
                                               op:
                                                 description: Op represents comparison
@@ -2040,7 +2061,7 @@ spec:
                                           traceableFilter:
                                             description: |-
                                               Filters for requests that are traceable.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                             type: boolean
                                         type: object
                                       minItems: 2
@@ -2052,7 +2073,7 @@ spec:
                                         match:
                                           description: |-
                                             The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                            see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                            see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                           type: string
                                       required:
                                       - match
@@ -2060,7 +2081,7 @@ spec:
                                     durationFilter:
                                       description: |-
                                         DurationFilter filters based on request duration.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                       properties:
                                         op:
                                           description: Op represents comparison operators.
@@ -2082,7 +2103,7 @@ spec:
                                     grpcStatusFilter:
                                       description: |-
                                         GrpcStatusFilter filters gRPC requests based on their response status.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                       properties:
                                         exclude:
                                           type: boolean
@@ -2115,7 +2136,7 @@ spec:
                                     headerFilter:
                                       description: |-
                                         HeaderFilter filters requests based on headers.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                       properties:
                                         header:
                                           description: |-
@@ -2181,16 +2202,16 @@ spec:
                                     notHealthCheckFilter:
                                       description: |-
                                         Filters for requests that are not health check requests.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                       type: boolean
                                     orFilter:
                                       description: |-
                                         Performs a logical "or" operation on the result of each individual filter.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                                       items:
                                         description: |-
                                           FilterType represents the type of filter to apply (only one of these should be set).
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                         maxProperties: 1
                                         minProperties: 1
                                         properties:
@@ -2202,7 +2223,7 @@ spec:
                                               match:
                                                 description: |-
                                                   The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                  see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                  see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                 type: string
                                             required:
                                             - match
@@ -2210,7 +2231,7 @@ spec:
                                           durationFilter:
                                             description: |-
                                               DurationFilter filters based on request duration.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                             properties:
                                               op:
                                                 description: Op represents comparison
@@ -2233,7 +2254,7 @@ spec:
                                           grpcStatusFilter:
                                             description: |-
                                               GrpcStatusFilter filters gRPC requests based on their response status.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                             properties:
                                               exclude:
                                                 type: boolean
@@ -2266,7 +2287,7 @@ spec:
                                           headerFilter:
                                             description: |-
                                               HeaderFilter filters requests based on headers.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                             properties:
                                               header:
                                                 description: |-
@@ -2332,12 +2353,12 @@ spec:
                                           notHealthCheckFilter:
                                             description: |-
                                               Filters for requests that are not health check requests.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                             type: boolean
                                           responseFlagFilter:
                                             description: |-
                                               ResponseFlagFilter filters based on response flags.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                             properties:
                                               flags:
                                                 items:
@@ -2350,7 +2371,7 @@ spec:
                                           runtimeFilter:
                                             description: |-
                                               Filters for random sampling of access logs.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                             properties:
                                               percentSampled:
                                                 description: |-
@@ -2372,6 +2393,7 @@ spec:
                                                     description: Specifies the numerator.
                                                       Defaults to 0.
                                                     format: int32
+                                                    maximum: 2147483647
                                                     minimum: 0
                                                     type: integer
                                                 required:
@@ -2394,7 +2416,7 @@ spec:
                                           statusCodeFilter:
                                             description: |-
                                               StatusCodeFilter filters based on HTTP status code.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                             properties:
                                               op:
                                                 description: Op represents comparison
@@ -2417,7 +2439,7 @@ spec:
                                           traceableFilter:
                                             description: |-
                                               Filters for requests that are traceable.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                             type: boolean
                                         type: object
                                       minItems: 2
@@ -2425,7 +2447,7 @@ spec:
                                     responseFlagFilter:
                                       description: |-
                                         ResponseFlagFilter filters based on response flags.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                       properties:
                                         flags:
                                           items:
@@ -2438,7 +2460,7 @@ spec:
                                     runtimeFilter:
                                       description: |-
                                         Filters for random sampling of access logs.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                       properties:
                                         percentSampled:
                                           description: |-
@@ -2460,6 +2482,7 @@ spec:
                                               description: Specifies the numerator.
                                                 Defaults to 0.
                                               format: int32
+                                              maximum: 2147483647
                                               minimum: 0
                                               type: integer
                                           required:
@@ -2482,7 +2505,7 @@ spec:
                                     statusCodeFilter:
                                       description: |-
                                         StatusCodeFilter filters based on HTTP status code.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                       properties:
                                         op:
                                           description: Op represents comparison operators.
@@ -2504,7 +2527,7 @@ spec:
                                     traceableFilter:
                                       description: |-
                                         Filters for requests that are traceable.
-                                        Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                        Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                       type: boolean
                                   type: object
                                 headers:
@@ -2724,10 +2747,10 @@ spec:
                                       >= 1'
                                 statusCode:
                                   description: New response status code for the reply
-                                    if specified.
+                                    if specified. Must be between 200 and 599.
                                   format: int32
                                   maximum: 599
-                                  minimum: 100
+                                  minimum: 200
                                   type: integer
                               required:
                               - filter
@@ -2764,6 +2787,7 @@ spec:
                           stream reset for HTTP/2. If unset, defaults to Envoy's built-in default of 100.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-headers-count
                         format: int32
+                        maximum: 2147483647
                         minimum: 1
                         type: integer
                       maxRequestHeadersKb:
@@ -2784,6 +2808,7 @@ spec:
                           If set to 0 or unspecified, defaults to unlimited.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       mergeSlashes:
@@ -3012,6 +3037,7 @@ spec:
                               request paths to meet the needs of a tracing backend.
                               Default: 256'
                             format: int32
+                            maximum: 2147483647
                             minimum: 1
                             type: integer
                           overallSampling:
@@ -3157,6 +3183,7 @@ spec:
                                           Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                           Defaults to 0, which means unlimited.
                                         format: int32
+                                        maximum: 2147483647
                                         minimum: 1
                                         type: integer
                                       retryPolicy:
@@ -3168,6 +3195,7 @@ spec:
                                             description: Specifies the allowed number
                                               of retries. Defaults to 1.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryBackOff:
@@ -3178,13 +3206,15 @@ spec:
                                               baseInterval:
                                                 description: The base interval to
                                                   be used for the next back off computation.
-                                                  It should be greater than zero and
-                                                  less than or equal to max_interval.
+                                                  Must be at least 1ms and less than
+                                                  or equal to max_interval.
                                                 maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
                                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                - message: must be at least 1ms
+                                                  rule: duration(self) >= duration('1ms')
                                               maxInterval:
                                                 description: Specifies the maximum
                                                   interval between retries. This parameter
@@ -3291,7 +3321,7 @@ spec:
                       upgradeConfig:
                         description: |-
                           UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-                          See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/upgrades
                         properties:
                           enabledUpgrades:
                             description: |-
@@ -3337,6 +3367,7 @@ spec:
                           This is mutually exclusive with XffTrustedCIDRs.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       xffTrustedCIDRs:
@@ -3377,6 +3408,7 @@ spec:
                       If unspecified, an implementation-defined default is applied (1MiB).
                       See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-per-connection-buffer-limit-bytes
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   proxyProtocol:
@@ -3423,6 +3455,7 @@ spec:
                         description: Maximum number of keep-alive probes to send before
                           dropping the connection.
                         format: int32
+                        maximum: 2147483647
                         minimum: 0
                         type: integer
                       keepAliveTime:
@@ -3458,7 +3491,7 @@ spec:
                                 jsonFormat:
                                   description: |-
                                     the format object by which to envoy will emit the logs in a structured way.
-                                    https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-dictionaries
                                   type: object
                                   x-kubernetes-preserve-unknown-fields: true
                                 path:
@@ -3468,7 +3501,7 @@ spec:
                                 stringFormat:
                                   description: |-
                                     the format string by which envoy will format the log lines
-                                    https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-strings
                                   type: string
                               required:
                               - path
@@ -3489,11 +3522,11 @@ spec:
                                 andFilter:
                                   description: |-
                                     Performs a logical "and" operation on the result of each individual filter.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                                   items:
                                     description: |-
                                       FilterType represents the type of filter to apply (only one of these should be set).
-                                      Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                      Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                     maxProperties: 1
                                     minProperties: 1
                                     properties:
@@ -3504,7 +3537,7 @@ spec:
                                           match:
                                             description: |-
                                               The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                              see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                              see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                             type: string
                                         required:
                                         - match
@@ -3512,7 +3545,7 @@ spec:
                                       durationFilter:
                                         description: |-
                                           DurationFilter filters based on request duration.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -3535,7 +3568,7 @@ spec:
                                       grpcStatusFilter:
                                         description: |-
                                           GrpcStatusFilter filters gRPC requests based on their response status.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                         properties:
                                           exclude:
                                             type: boolean
@@ -3568,7 +3601,7 @@ spec:
                                       headerFilter:
                                         description: |-
                                           HeaderFilter filters requests based on headers.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                         properties:
                                           header:
                                             description: |-
@@ -3634,12 +3667,12 @@ spec:
                                       notHealthCheckFilter:
                                         description: |-
                                           Filters for requests that are not health check requests.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                         type: boolean
                                       responseFlagFilter:
                                         description: |-
                                           ResponseFlagFilter filters based on response flags.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                         properties:
                                           flags:
                                             items:
@@ -3652,7 +3685,7 @@ spec:
                                       runtimeFilter:
                                         description: |-
                                           Filters for random sampling of access logs.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                         properties:
                                           percentSampled:
                                             description: |-
@@ -3674,6 +3707,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -3696,7 +3730,7 @@ spec:
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -3719,7 +3753,7 @@ spec:
                                       traceableFilter:
                                         description: |-
                                           Filters for requests that are traceable.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                         type: boolean
                                     type: object
                                   minItems: 2
@@ -3731,7 +3765,7 @@ spec:
                                     match:
                                       description: |-
                                         The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                        see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                        see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                       type: string
                                   required:
                                   - match
@@ -3739,7 +3773,7 @@ spec:
                                 durationFilter:
                                   description: |-
                                     DurationFilter filters based on request duration.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                   properties:
                                     op:
                                       description: Op represents comparison operators.
@@ -3761,7 +3795,7 @@ spec:
                                 grpcStatusFilter:
                                   description: |-
                                     GrpcStatusFilter filters gRPC requests based on their response status.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                   properties:
                                     exclude:
                                       type: boolean
@@ -3794,7 +3828,7 @@ spec:
                                 headerFilter:
                                   description: |-
                                     HeaderFilter filters requests based on headers.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                   properties:
                                     header:
                                       description: |-
@@ -3860,16 +3894,16 @@ spec:
                                 notHealthCheckFilter:
                                   description: |-
                                     Filters for requests that are not health check requests.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                   type: boolean
                                 orFilter:
                                   description: |-
                                     Performs a logical "or" operation on the result of each individual filter.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                                   items:
                                     description: |-
                                       FilterType represents the type of filter to apply (only one of these should be set).
-                                      Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                      Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                     maxProperties: 1
                                     minProperties: 1
                                     properties:
@@ -3880,7 +3914,7 @@ spec:
                                           match:
                                             description: |-
                                               The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                              see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                              see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                             type: string
                                         required:
                                         - match
@@ -3888,7 +3922,7 @@ spec:
                                       durationFilter:
                                         description: |-
                                           DurationFilter filters based on request duration.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -3911,7 +3945,7 @@ spec:
                                       grpcStatusFilter:
                                         description: |-
                                           GrpcStatusFilter filters gRPC requests based on their response status.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                         properties:
                                           exclude:
                                             type: boolean
@@ -3944,7 +3978,7 @@ spec:
                                       headerFilter:
                                         description: |-
                                           HeaderFilter filters requests based on headers.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                         properties:
                                           header:
                                             description: |-
@@ -4010,12 +4044,12 @@ spec:
                                       notHealthCheckFilter:
                                         description: |-
                                           Filters for requests that are not health check requests.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                         type: boolean
                                       responseFlagFilter:
                                         description: |-
                                           ResponseFlagFilter filters based on response flags.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                         properties:
                                           flags:
                                             items:
@@ -4028,7 +4062,7 @@ spec:
                                       runtimeFilter:
                                         description: |-
                                           Filters for random sampling of access logs.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                         properties:
                                           percentSampled:
                                             description: |-
@@ -4050,6 +4084,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -4072,7 +4107,7 @@ spec:
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -4095,7 +4130,7 @@ spec:
                                       traceableFilter:
                                         description: |-
                                           Filters for requests that are traceable.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                         type: boolean
                                     type: object
                                   minItems: 2
@@ -4103,7 +4138,7 @@ spec:
                                 responseFlagFilter:
                                   description: |-
                                     ResponseFlagFilter filters based on response flags.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                   properties:
                                     flags:
                                       items:
@@ -4116,7 +4151,7 @@ spec:
                                 runtimeFilter:
                                   description: |-
                                     Filters for random sampling of access logs.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                   properties:
                                     percentSampled:
                                       description: |-
@@ -4138,6 +4173,7 @@ spec:
                                           description: Specifies the numerator. Defaults
                                             to 0.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 0
                                           type: integer
                                       required:
@@ -4160,7 +4196,7 @@ spec:
                                 statusCodeFilter:
                                   description: |-
                                     StatusCodeFilter filters based on HTTP status code.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                   properties:
                                     op:
                                       description: Op represents comparison operators.
@@ -4182,7 +4218,7 @@ spec:
                                 traceableFilter:
                                   description: |-
                                     Filters for requests that are traceable.
-                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                   type: boolean
                               type: object
                             grpcService:
@@ -4330,6 +4366,7 @@ spec:
                                     Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                     Defaults to 0, which means unlimited.
                                   format: int32
+                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 retryPolicy:
@@ -4341,6 +4378,7 @@ spec:
                                       description: Specifies the allowed number of
                                         retries. Defaults to 1.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryBackOff:
@@ -4350,14 +4388,16 @@ spec:
                                       properties:
                                         baseInterval:
                                           description: The base interval to be used
-                                            for the next back off computation. It
-                                            should be greater than zero and less than
-                                            or equal to max_interval.
+                                            for the next back off computation. Must
+                                            be at least 1ms and less than or equal
+                                            to max_interval.
                                           maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
                                           - message: invalid duration value
                                             rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          - message: must be at least 1ms
+                                            rule: duration(self) >= duration('1ms')
                                         maxInterval:
                                           description: Specifies the maximum interval
                                             between retries. This parameter is optional,
@@ -4573,6 +4613,7 @@ spec:
                                         Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                         Defaults to 0, which means unlimited.
                                       format: int32
+                                      maximum: 2147483647
                                       minimum: 1
                                       type: integer
                                     retryPolicy:
@@ -4584,6 +4625,7 @@ spec:
                                           description: Specifies the allowed number
                                             of retries. Defaults to 1.
                                           format: int32
+                                          maximum: 2147483647
                                           minimum: 1
                                           type: integer
                                         retryBackOff:
@@ -4594,13 +4636,15 @@ spec:
                                             baseInterval:
                                               description: The base interval to be
                                                 used for the next back off computation.
-                                                It should be greater than zero and
-                                                less than or equal to max_interval.
+                                                Must be at least 1ms and less than
+                                                or equal to max_interval.
                                               maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
                                               - message: invalid duration value
                                                 rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: must be at least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             maxInterval:
                                               description: Specifies the maximum interval
                                                 between retries. This parameter is
@@ -4723,7 +4767,7 @@ spec:
                             accessLog:
                               description: |-
                                 AccessLoggingConfig contains various settings for Envoy's access logging service.
-                                See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
                               items:
                                 description: AccessLog represents the top-level access
                                   log configuration.
@@ -4734,7 +4778,7 @@ spec:
                                       jsonFormat:
                                         description: |-
                                           the format object by which to envoy will emit the logs in a structured way.
-                                          https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
+                                          https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-dictionaries
                                         type: object
                                         x-kubernetes-preserve-unknown-fields: true
                                       path:
@@ -4744,7 +4788,7 @@ spec:
                                       stringFormat:
                                         description: |-
                                           the format string by which envoy will format the log lines
-                                          https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
+                                          https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-strings
                                         type: string
                                     required:
                                     - path
@@ -4765,11 +4809,11 @@ spec:
                                       andFilter:
                                         description: |-
                                           Performs a logical "and" operation on the result of each individual filter.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                                         items:
                                           description: |-
                                             FilterType represents the type of filter to apply (only one of these should be set).
-                                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                            Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                           maxProperties: 1
                                           minProperties: 1
                                           properties:
@@ -4781,7 +4825,7 @@ spec:
                                                 match:
                                                   description: |-
                                                     The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                    see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                    see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                   type: string
                                               required:
                                               - match
@@ -4789,7 +4833,7 @@ spec:
                                             durationFilter:
                                               description: |-
                                                 DurationFilter filters based on request duration.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -4812,7 +4856,7 @@ spec:
                                             grpcStatusFilter:
                                               description: |-
                                                 GrpcStatusFilter filters gRPC requests based on their response status.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                               properties:
                                                 exclude:
                                                   type: boolean
@@ -4845,7 +4889,7 @@ spec:
                                             headerFilter:
                                               description: |-
                                                 HeaderFilter filters requests based on headers.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                               properties:
                                                 header:
                                                   description: |-
@@ -4911,12 +4955,12 @@ spec:
                                             notHealthCheckFilter:
                                               description: |-
                                                 Filters for requests that are not health check requests.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                               type: boolean
                                             responseFlagFilter:
                                               description: |-
                                                 ResponseFlagFilter filters based on response flags.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                               properties:
                                                 flags:
                                                   items:
@@ -4929,7 +4973,7 @@ spec:
                                             runtimeFilter:
                                               description: |-
                                                 Filters for random sampling of access logs.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                               properties:
                                                 percentSampled:
                                                   description: |-
@@ -4951,6 +4995,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -4973,7 +5018,7 @@ spec:
                                             statusCodeFilter:
                                               description: |-
                                                 StatusCodeFilter filters based on HTTP status code.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -4996,7 +5041,7 @@ spec:
                                             traceableFilter:
                                               description: |-
                                                 Filters for requests that are traceable.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                               type: boolean
                                           type: object
                                         minItems: 2
@@ -5008,7 +5053,7 @@ spec:
                                           match:
                                             description: |-
                                               The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                              see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                              see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                             type: string
                                         required:
                                         - match
@@ -5016,7 +5061,7 @@ spec:
                                       durationFilter:
                                         description: |-
                                           DurationFilter filters based on request duration.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -5039,7 +5084,7 @@ spec:
                                       grpcStatusFilter:
                                         description: |-
                                           GrpcStatusFilter filters gRPC requests based on their response status.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                         properties:
                                           exclude:
                                             type: boolean
@@ -5072,7 +5117,7 @@ spec:
                                       headerFilter:
                                         description: |-
                                           HeaderFilter filters requests based on headers.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                         properties:
                                           header:
                                             description: |-
@@ -5138,16 +5183,16 @@ spec:
                                       notHealthCheckFilter:
                                         description: |-
                                           Filters for requests that are not health check requests.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                         type: boolean
                                       orFilter:
                                         description: |-
                                           Performs a logical "or" operation on the result of each individual filter.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                                         items:
                                           description: |-
                                             FilterType represents the type of filter to apply (only one of these should be set).
-                                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                            Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                           maxProperties: 1
                                           minProperties: 1
                                           properties:
@@ -5159,7 +5204,7 @@ spec:
                                                 match:
                                                   description: |-
                                                     The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                    see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                    see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                   type: string
                                               required:
                                               - match
@@ -5167,7 +5212,7 @@ spec:
                                             durationFilter:
                                               description: |-
                                                 DurationFilter filters based on request duration.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -5190,7 +5235,7 @@ spec:
                                             grpcStatusFilter:
                                               description: |-
                                                 GrpcStatusFilter filters gRPC requests based on their response status.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                               properties:
                                                 exclude:
                                                   type: boolean
@@ -5223,7 +5268,7 @@ spec:
                                             headerFilter:
                                               description: |-
                                                 HeaderFilter filters requests based on headers.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                               properties:
                                                 header:
                                                   description: |-
@@ -5289,12 +5334,12 @@ spec:
                                             notHealthCheckFilter:
                                               description: |-
                                                 Filters for requests that are not health check requests.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                               type: boolean
                                             responseFlagFilter:
                                               description: |-
                                                 ResponseFlagFilter filters based on response flags.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                               properties:
                                                 flags:
                                                   items:
@@ -5307,7 +5352,7 @@ spec:
                                             runtimeFilter:
                                               description: |-
                                                 Filters for random sampling of access logs.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                               properties:
                                                 percentSampled:
                                                   description: |-
@@ -5329,6 +5374,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -5351,7 +5397,7 @@ spec:
                                             statusCodeFilter:
                                               description: |-
                                                 StatusCodeFilter filters based on HTTP status code.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -5374,7 +5420,7 @@ spec:
                                             traceableFilter:
                                               description: |-
                                                 Filters for requests that are traceable.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                               type: boolean
                                           type: object
                                         minItems: 2
@@ -5382,7 +5428,7 @@ spec:
                                       responseFlagFilter:
                                         description: |-
                                           ResponseFlagFilter filters based on response flags.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                         properties:
                                           flags:
                                             items:
@@ -5395,7 +5441,7 @@ spec:
                                       runtimeFilter:
                                         description: |-
                                           Filters for random sampling of access logs.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                         properties:
                                           percentSampled:
                                             description: |-
@@ -5417,6 +5463,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -5439,7 +5486,7 @@ spec:
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -5462,7 +5509,7 @@ spec:
                                       traceableFilter:
                                         description: |-
                                           Filters for requests that are traceable.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                         type: boolean
                                     type: object
                                   grpcService:
@@ -5610,6 +5657,7 @@ spec:
                                           Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                           Defaults to 0, which means unlimited.
                                         format: int32
+                                        maximum: 2147483647
                                         minimum: 1
                                         type: integer
                                       retryPolicy:
@@ -5621,6 +5669,7 @@ spec:
                                             description: Specifies the allowed number
                                               of retries. Defaults to 1.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryBackOff:
@@ -5631,13 +5680,15 @@ spec:
                                               baseInterval:
                                                 description: The base interval to
                                                   be used for the next back off computation.
-                                                  It should be greater than zero and
-                                                  less than or equal to max_interval.
+                                                  Must be at least 1ms and less than
+                                                  or equal to max_interval.
                                                 maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
                                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                - message: must be at least 1ms
+                                                  rule: duration(self) >= duration('1ms')
                                               maxInterval:
                                                 description: Specifies the maximum
                                                   interval between retries. This parameter
@@ -5860,6 +5911,7 @@ spec:
                                               Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                               Defaults to 0, which means unlimited.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryPolicy:
@@ -5871,6 +5923,7 @@ spec:
                                                 description: Specifies the allowed
                                                   number of retries. Defaults to 1.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 1
                                                 type: integer
                                               retryBackOff:
@@ -5881,14 +5934,16 @@ spec:
                                                   baseInterval:
                                                     description: The base interval
                                                       to be used for the next back
-                                                      off computation. It should be
-                                                      greater than zero and less than
-                                                      or equal to max_interval.
+                                                      off computation. Must be at
+                                                      least 1ms and less than or equal
+                                                      to max_interval.
                                                     maxLength: 32
                                                     type: string
                                                     x-kubernetes-validations:
                                                     - message: invalid duration value
                                                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                    - message: must be at least 1ms
+                                                      rule: duration(self) >= duration('1ms')
                                                   maxInterval:
                                                     description: Specifies the maximum
                                                       interval between retries. This
@@ -6254,7 +6309,7 @@ spec:
                                   - type: string
                                   description: |-
                                     InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-                                    Same range and default value as InitialStreamWindowSize.
+                                    Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
                                     Values can be specified with units like "64Ki".
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
@@ -6265,7 +6320,7 @@ spec:
                                   description: |-
                                     InitialStreamWindowSize is the initial window size for the stream.
                                     Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-                                    Defaults to 268435456 (256 * 1024 * 1024).
+                                    Defaults to 16777216 (16 * 1024 * 1024).
                                     Values can be specified with units like "64Ki".
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
@@ -6392,11 +6447,11 @@ spec:
                                           andFilter:
                                             description: |-
                                               Performs a logical "and" operation on the result of each individual filter.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                                             items:
                                               description: |-
                                                 FilterType represents the type of filter to apply (only one of these should be set).
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                               maxProperties: 1
                                               minProperties: 1
                                               properties:
@@ -6408,7 +6463,7 @@ spec:
                                                     match:
                                                       description: |-
                                                         The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                        see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                        see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                       type: string
                                                   required:
                                                   - match
@@ -6416,7 +6471,7 @@ spec:
                                                 durationFilter:
                                                   description: |-
                                                     DurationFilter filters based on request duration.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                                   properties:
                                                     op:
                                                       description: Op represents comparison
@@ -6440,7 +6495,7 @@ spec:
                                                 grpcStatusFilter:
                                                   description: |-
                                                     GrpcStatusFilter filters gRPC requests based on their response status.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                                   properties:
                                                     exclude:
                                                       type: boolean
@@ -6473,7 +6528,7 @@ spec:
                                                 headerFilter:
                                                   description: |-
                                                     HeaderFilter filters requests based on headers.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                                   properties:
                                                     header:
                                                       description: |-
@@ -6539,12 +6594,12 @@ spec:
                                                 notHealthCheckFilter:
                                                   description: |-
                                                     Filters for requests that are not health check requests.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                                   type: boolean
                                                 responseFlagFilter:
                                                   description: |-
                                                     ResponseFlagFilter filters based on response flags.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                                   properties:
                                                     flags:
                                                       items:
@@ -6557,7 +6612,7 @@ spec:
                                                 runtimeFilter:
                                                   description: |-
                                                     Filters for random sampling of access logs.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                                   properties:
                                                     percentSampled:
                                                       description: |-
@@ -6580,6 +6635,7 @@ spec:
                                                             numerator. Defaults to
                                                             0.
                                                           format: int32
+                                                          maximum: 2147483647
                                                           minimum: 0
                                                           type: integer
                                                       required:
@@ -6603,7 +6659,7 @@ spec:
                                                 statusCodeFilter:
                                                   description: |-
                                                     StatusCodeFilter filters based on HTTP status code.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                                   properties:
                                                     op:
                                                       description: Op represents comparison
@@ -6627,7 +6683,7 @@ spec:
                                                 traceableFilter:
                                                   description: |-
                                                     Filters for requests that are traceable.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                                   type: boolean
                                               type: object
                                             minItems: 2
@@ -6640,7 +6696,7 @@ spec:
                                               match:
                                                 description: |-
                                                   The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                  see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                  see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                 type: string
                                             required:
                                             - match
@@ -6648,7 +6704,7 @@ spec:
                                           durationFilter:
                                             description: |-
                                               DurationFilter filters based on request duration.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                             properties:
                                               op:
                                                 description: Op represents comparison
@@ -6671,7 +6727,7 @@ spec:
                                           grpcStatusFilter:
                                             description: |-
                                               GrpcStatusFilter filters gRPC requests based on their response status.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                             properties:
                                               exclude:
                                                 type: boolean
@@ -6704,7 +6760,7 @@ spec:
                                           headerFilter:
                                             description: |-
                                               HeaderFilter filters requests based on headers.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                             properties:
                                               header:
                                                 description: |-
@@ -6770,16 +6826,16 @@ spec:
                                           notHealthCheckFilter:
                                             description: |-
                                               Filters for requests that are not health check requests.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                             type: boolean
                                           orFilter:
                                             description: |-
                                               Performs a logical "or" operation on the result of each individual filter.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                                             items:
                                               description: |-
                                                 FilterType represents the type of filter to apply (only one of these should be set).
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                               maxProperties: 1
                                               minProperties: 1
                                               properties:
@@ -6791,7 +6847,7 @@ spec:
                                                     match:
                                                       description: |-
                                                         The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                        see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                        see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                       type: string
                                                   required:
                                                   - match
@@ -6799,7 +6855,7 @@ spec:
                                                 durationFilter:
                                                   description: |-
                                                     DurationFilter filters based on request duration.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                                   properties:
                                                     op:
                                                       description: Op represents comparison
@@ -6823,7 +6879,7 @@ spec:
                                                 grpcStatusFilter:
                                                   description: |-
                                                     GrpcStatusFilter filters gRPC requests based on their response status.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                                   properties:
                                                     exclude:
                                                       type: boolean
@@ -6856,7 +6912,7 @@ spec:
                                                 headerFilter:
                                                   description: |-
                                                     HeaderFilter filters requests based on headers.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                                   properties:
                                                     header:
                                                       description: |-
@@ -6922,12 +6978,12 @@ spec:
                                                 notHealthCheckFilter:
                                                   description: |-
                                                     Filters for requests that are not health check requests.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                                   type: boolean
                                                 responseFlagFilter:
                                                   description: |-
                                                     ResponseFlagFilter filters based on response flags.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                                   properties:
                                                     flags:
                                                       items:
@@ -6940,7 +6996,7 @@ spec:
                                                 runtimeFilter:
                                                   description: |-
                                                     Filters for random sampling of access logs.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                                   properties:
                                                     percentSampled:
                                                       description: |-
@@ -6963,6 +7019,7 @@ spec:
                                                             numerator. Defaults to
                                                             0.
                                                           format: int32
+                                                          maximum: 2147483647
                                                           minimum: 0
                                                           type: integer
                                                       required:
@@ -6986,7 +7043,7 @@ spec:
                                                 statusCodeFilter:
                                                   description: |-
                                                     StatusCodeFilter filters based on HTTP status code.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                                   properties:
                                                     op:
                                                       description: Op represents comparison
@@ -7010,7 +7067,7 @@ spec:
                                                 traceableFilter:
                                                   description: |-
                                                     Filters for requests that are traceable.
-                                                    Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                    Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                                   type: boolean
                                               type: object
                                             minItems: 2
@@ -7018,7 +7075,7 @@ spec:
                                           responseFlagFilter:
                                             description: |-
                                               ResponseFlagFilter filters based on response flags.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                             properties:
                                               flags:
                                                 items:
@@ -7031,7 +7088,7 @@ spec:
                                           runtimeFilter:
                                             description: |-
                                               Filters for random sampling of access logs.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                             properties:
                                               percentSampled:
                                                 description: |-
@@ -7053,6 +7110,7 @@ spec:
                                                     description: Specifies the numerator.
                                                       Defaults to 0.
                                                     format: int32
+                                                    maximum: 2147483647
                                                     minimum: 0
                                                     type: integer
                                                 required:
@@ -7075,7 +7133,7 @@ spec:
                                           statusCodeFilter:
                                             description: |-
                                               StatusCodeFilter filters based on HTTP status code.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                             properties:
                                               op:
                                                 description: Op represents comparison
@@ -7098,7 +7156,7 @@ spec:
                                           traceableFilter:
                                             description: |-
                                               Filters for requests that are traceable.
-                                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                              Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                             type: boolean
                                         type: object
                                       headers:
@@ -7318,10 +7376,11 @@ spec:
                                             >= 1'
                                       statusCode:
                                         description: New response status code for
-                                          the reply if specified.
+                                          the reply if specified. Must be between
+                                          200 and 599.
                                         format: int32
                                         maximum: 599
-                                        minimum: 100
+                                        minimum: 200
                                         type: integer
                                     required:
                                     - filter
@@ -7358,6 +7417,7 @@ spec:
                                 stream reset for HTTP/2. If unset, defaults to Envoy's built-in default of 100.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-headers-count
                               format: int32
+                              maximum: 2147483647
                               minimum: 1
                               type: integer
                             maxRequestHeadersKb:
@@ -7378,6 +7438,7 @@ spec:
                                 If set to 0 or unspecified, defaults to unlimited.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-requests-per-connection
                               format: int32
+                              maximum: 2147483647
                               minimum: 0
                               type: integer
                             mergeSlashes:
@@ -7610,6 +7671,7 @@ spec:
                                     to truncate lengthy request paths to meet the
                                     needs of a tracing backend. Default: 256'
                                   format: int32
+                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 overallSampling:
@@ -7760,6 +7822,7 @@ spec:
                                                 Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                                 Defaults to 0, which means unlimited.
                                               format: int32
+                                              maximum: 2147483647
                                               minimum: 1
                                               type: integer
                                             retryPolicy:
@@ -7772,6 +7835,7 @@ spec:
                                                     number of retries. Defaults to
                                                     1.
                                                   format: int32
+                                                  maximum: 2147483647
                                                   minimum: 1
                                                   type: integer
                                                 retryBackOff:
@@ -7782,15 +7846,18 @@ spec:
                                                     baseInterval:
                                                       description: The base interval
                                                         to be used for the next back
-                                                        off computation. It should
-                                                        be greater than zero and less
-                                                        than or equal to max_interval.
+                                                        off computation. Must be at
+                                                        least 1ms and less than or
+                                                        equal to max_interval.
                                                       maxLength: 32
                                                       type: string
                                                       x-kubernetes-validations:
                                                       - message: invalid duration
                                                           value
                                                         rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                      - message: must be at least
+                                                          1ms
+                                                        rule: duration(self) >= duration('1ms')
                                                     maxInterval:
                                                       description: Specifies the maximum
                                                         interval between retries.
@@ -7901,7 +7968,7 @@ spec:
                             upgradeConfig:
                               description: |-
                                 UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-                                See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/upgrades
                               properties:
                                 enabledUpgrades:
                                   description: |-
@@ -7947,6 +8014,7 @@ spec:
                                 This is mutually exclusive with XffTrustedCIDRs.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                               format: int32
+                              maximum: 2147483647
                               minimum: 0
                               type: integer
                             xffTrustedCIDRs:
@@ -7987,6 +8055,7 @@ spec:
                             If unspecified, an implementation-defined default is applied (1MiB).
                             See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-per-connection-buffer-limit-bytes
                           format: int32
+                          maximum: 2147483647
                           minimum: 0
                           type: integer
                         proxyProtocol:
@@ -8035,6 +8104,7 @@ spec:
                               description: Maximum number of keep-alive probes to
                                 send before dropping the connection.
                               format: int32
+                              maximum: 2147483647
                               minimum: 0
                               type: integer
                             keepAliveTime:
@@ -8070,7 +8140,7 @@ spec:
                                       jsonFormat:
                                         description: |-
                                           the format object by which to envoy will emit the logs in a structured way.
-                                          https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
+                                          https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-dictionaries
                                         type: object
                                         x-kubernetes-preserve-unknown-fields: true
                                       path:
@@ -8080,7 +8150,7 @@ spec:
                                       stringFormat:
                                         description: |-
                                           the format string by which envoy will format the log lines
-                                          https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
+                                          https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-strings
                                         type: string
                                     required:
                                     - path
@@ -8101,11 +8171,11 @@ spec:
                                       andFilter:
                                         description: |-
                                           Performs a logical "and" operation on the result of each individual filter.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                                         items:
                                           description: |-
                                             FilterType represents the type of filter to apply (only one of these should be set).
-                                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                            Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                           maxProperties: 1
                                           minProperties: 1
                                           properties:
@@ -8117,7 +8187,7 @@ spec:
                                                 match:
                                                   description: |-
                                                     The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                    see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                    see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                   type: string
                                               required:
                                               - match
@@ -8125,7 +8195,7 @@ spec:
                                             durationFilter:
                                               description: |-
                                                 DurationFilter filters based on request duration.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -8148,7 +8218,7 @@ spec:
                                             grpcStatusFilter:
                                               description: |-
                                                 GrpcStatusFilter filters gRPC requests based on their response status.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                               properties:
                                                 exclude:
                                                   type: boolean
@@ -8181,7 +8251,7 @@ spec:
                                             headerFilter:
                                               description: |-
                                                 HeaderFilter filters requests based on headers.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                               properties:
                                                 header:
                                                   description: |-
@@ -8247,12 +8317,12 @@ spec:
                                             notHealthCheckFilter:
                                               description: |-
                                                 Filters for requests that are not health check requests.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                               type: boolean
                                             responseFlagFilter:
                                               description: |-
                                                 ResponseFlagFilter filters based on response flags.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                               properties:
                                                 flags:
                                                   items:
@@ -8265,7 +8335,7 @@ spec:
                                             runtimeFilter:
                                               description: |-
                                                 Filters for random sampling of access logs.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                               properties:
                                                 percentSampled:
                                                   description: |-
@@ -8287,6 +8357,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -8309,7 +8380,7 @@ spec:
                                             statusCodeFilter:
                                               description: |-
                                                 StatusCodeFilter filters based on HTTP status code.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -8332,7 +8403,7 @@ spec:
                                             traceableFilter:
                                               description: |-
                                                 Filters for requests that are traceable.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                               type: boolean
                                           type: object
                                         minItems: 2
@@ -8344,7 +8415,7 @@ spec:
                                           match:
                                             description: |-
                                               The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                              see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                              see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                             type: string
                                         required:
                                         - match
@@ -8352,7 +8423,7 @@ spec:
                                       durationFilter:
                                         description: |-
                                           DurationFilter filters based on request duration.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -8375,7 +8446,7 @@ spec:
                                       grpcStatusFilter:
                                         description: |-
                                           GrpcStatusFilter filters gRPC requests based on their response status.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                         properties:
                                           exclude:
                                             type: boolean
@@ -8408,7 +8479,7 @@ spec:
                                       headerFilter:
                                         description: |-
                                           HeaderFilter filters requests based on headers.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                         properties:
                                           header:
                                             description: |-
@@ -8474,16 +8545,16 @@ spec:
                                       notHealthCheckFilter:
                                         description: |-
                                           Filters for requests that are not health check requests.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                         type: boolean
                                       orFilter:
                                         description: |-
                                           Performs a logical "or" operation on the result of each individual filter.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                                         items:
                                           description: |-
                                             FilterType represents the type of filter to apply (only one of these should be set).
-                                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+                                            Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                                           maxProperties: 1
                                           minProperties: 1
                                           properties:
@@ -8495,7 +8566,7 @@ spec:
                                                 match:
                                                   description: |-
                                                     The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-                                                    see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+                                                    see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
                                                   type: string
                                               required:
                                               - match
@@ -8503,7 +8574,7 @@ spec:
                                             durationFilter:
                                               description: |-
                                                 DurationFilter filters based on request duration.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -8526,7 +8597,7 @@ spec:
                                             grpcStatusFilter:
                                               description: |-
                                                 GrpcStatusFilter filters gRPC requests based on their response status.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                               properties:
                                                 exclude:
                                                   type: boolean
@@ -8559,7 +8630,7 @@ spec:
                                             headerFilter:
                                               description: |-
                                                 HeaderFilter filters requests based on headers.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                               properties:
                                                 header:
                                                   description: |-
@@ -8625,12 +8696,12 @@ spec:
                                             notHealthCheckFilter:
                                               description: |-
                                                 Filters for requests that are not health check requests.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                               type: boolean
                                             responseFlagFilter:
                                               description: |-
                                                 ResponseFlagFilter filters based on response flags.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                               properties:
                                                 flags:
                                                   items:
@@ -8643,7 +8714,7 @@ spec:
                                             runtimeFilter:
                                               description: |-
                                                 Filters for random sampling of access logs.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                               properties:
                                                 percentSampled:
                                                   description: |-
@@ -8665,6 +8736,7 @@ spec:
                                                       description: Specifies the numerator.
                                                         Defaults to 0.
                                                       format: int32
+                                                      maximum: 2147483647
                                                       minimum: 0
                                                       type: integer
                                                   required:
@@ -8687,7 +8759,7 @@ spec:
                                             statusCodeFilter:
                                               description: |-
                                                 StatusCodeFilter filters based on HTTP status code.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                               properties:
                                                 op:
                                                   description: Op represents comparison
@@ -8710,7 +8782,7 @@ spec:
                                             traceableFilter:
                                               description: |-
                                                 Filters for requests that are traceable.
-                                                Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                                Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                               type: boolean
                                           type: object
                                         minItems: 2
@@ -8718,7 +8790,7 @@ spec:
                                       responseFlagFilter:
                                         description: |-
                                           ResponseFlagFilter filters based on response flags.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                         properties:
                                           flags:
                                             items:
@@ -8731,7 +8803,7 @@ spec:
                                       runtimeFilter:
                                         description: |-
                                           Filters for random sampling of access logs.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
                                         properties:
                                           percentSampled:
                                             description: |-
@@ -8753,6 +8825,7 @@ spec:
                                                 description: Specifies the numerator.
                                                   Defaults to 0.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 0
                                                 type: integer
                                             required:
@@ -8775,7 +8848,7 @@ spec:
                                       statusCodeFilter:
                                         description: |-
                                           StatusCodeFilter filters based on HTTP status code.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                         properties:
                                           op:
                                             description: Op represents comparison
@@ -8798,7 +8871,7 @@ spec:
                                       traceableFilter:
                                         description: |-
                                           Filters for requests that are traceable.
-                                          Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+                                          Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                         type: boolean
                                     type: object
                                   grpcService:
@@ -8946,6 +9019,7 @@ spec:
                                           Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                           Defaults to 0, which means unlimited.
                                         format: int32
+                                        maximum: 2147483647
                                         minimum: 1
                                         type: integer
                                       retryPolicy:
@@ -8957,6 +9031,7 @@ spec:
                                             description: Specifies the allowed number
                                               of retries. Defaults to 1.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryBackOff:
@@ -8967,13 +9042,15 @@ spec:
                                               baseInterval:
                                                 description: The base interval to
                                                   be used for the next back off computation.
-                                                  It should be greater than zero and
-                                                  less than or equal to max_interval.
+                                                  Must be at least 1ms and less than
+                                                  or equal to max_interval.
                                                 maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
                                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                - message: must be at least 1ms
+                                                  rule: duration(self) >= duration('1ms')
                                               maxInterval:
                                                 description: Specifies the maximum
                                                   interval between retries. This parameter
@@ -9196,6 +9273,7 @@ spec:
                                               Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
                                               Defaults to 0, which means unlimited.
                                             format: int32
+                                            maximum: 2147483647
                                             minimum: 1
                                             type: integer
                                           retryPolicy:
@@ -9207,6 +9285,7 @@ spec:
                                                 description: Specifies the allowed
                                                   number of retries. Defaults to 1.
                                                 format: int32
+                                                maximum: 2147483647
                                                 minimum: 1
                                                 type: integer
                                               retryBackOff:
@@ -9217,14 +9296,16 @@ spec:
                                                   baseInterval:
                                                     description: The base interval
                                                       to be used for the next back
-                                                      off computation. It should be
-                                                      greater than zero and less than
-                                                      or equal to max_interval.
+                                                      off computation. Must be at
+                                                      least 1ms and less than or equal
+                                                      to max_interval.
                                                     maxLength: 32
                                                     type: string
                                                     x-kubernetes-validations:
                                                     - message: invalid duration value
                                                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                                    - message: must be at least 1ms
+                                                      rule: duration(self) >= duration('1ms')
                                                   maxInterval:
                                                     description: Specifies the maximum
                                                       interval between retries. This
@@ -9706,6 +9787,7 @@ spec:
                               For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                               with respect to the current state of the instance.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 0
                             type: integer
                           reason:

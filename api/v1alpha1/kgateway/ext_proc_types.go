@@ -37,20 +37,23 @@ type ExtProcProvider struct {
 	AllowedProcessingModeOverrides []*ProcessingMode `json:"allowedProcessingModeOverrides,omitempty"`
 
 	// MessageTimeout is the timeout for each message sent to the external processing server.
+	// Must be between 1ms and 1h.
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('1h')",message="timeout must be at most 1h."
 	MessageTimeout *metav1.Duration `json:"messageTimeout,omitempty"`
 
 	// MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
-	// The default value 0, which effectively disables the override_message_timeout API.
+	// Must be between 1ms and 1h. If unset, the override_message_timeout API is disabled.
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('1h')",message="timeout must be at most 1h."
 	MaxMessageTimeout *metav1.Duration `json:"maxMessageTimeout,omitempty"`
 
 	// StatPrefix is an optional prefix to include when emitting stats from the extproc filter,

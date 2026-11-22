@@ -51,10 +51,7 @@ func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing gateway target
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
-		s.Ctx,
-		policyWithMissingGwManifest,
-	)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(policyWithMissingGwManifest)
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains

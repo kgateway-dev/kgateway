@@ -35,8 +35,18 @@ import (
 // against it would republish old routes, and carrying from it would resurrect
 // deleted backends. A reconnected client goes through first publish.
 //
-// First publish: an unpublished client has nothing to hold or carry, and
-// publishing routes to unready clusters would 503 them, so it is withheld.
+// First publish: an unpublished client has nothing to hold or carry, so it is
+// withheld while its build is deferred. Routes to a cluster missing from CDS
+// fail (503 NC) on any proxy, and routes to a cluster still warming fail on a
+// reconnecting proxy, which applies them at once. A new Envoy waits for
+// endpoints on its own: it starts no listeners until each cluster's CLA
+// arrives or its EDS initial_fetch_timeout (15s) passes, and
+// settleSynthesizedEndpoints leaves underived CLAs out of the first publish.
+// For a new client whose only gaps are underived endpoints, the withhold adds
+// to that wait, so it can take about the budget plus 15s to go Ready. It
+// applies anyway because a new client cannot be told from a reconnecting one
+// when its first build arrives: warmth is read from a listener request, which
+// a new Envoy sends only after its clusters warm.
 // Unbounded, a permanently unready reference leaves the pod without listeners:
 // it never goes Ready and crash-loops, re-triggering the per-client fan-out on
 // every restart. The budget starts when the client's first deferred build
@@ -158,6 +168,9 @@ type publishGate struct {
 	// in an open reference-ahead window, timed before installation; sending is
 	// not observed. clientDeparted clears it.
 	aheadSent map[string]map[string]time.Time
+	// publishedRefs memoizes published routing targets for flipBlockingClusters.
+	// clientDeparted releases a client's entry.
+	publishedRefs *referencedClustersMemo
 }
 
 type pendingFirstPublish struct {
@@ -227,6 +240,7 @@ func newPublishGate(budget time.Duration, checkConsistency bool, clientState krt
 		publishedEDS:     make(map[string]map[string]uint64),
 		dereferenced:     make(map[string]*dereferenceState),
 		aheadSent:        make(map[string]map[string]time.Time),
+		publishedRefs:    newReferencedClustersMemo(),
 	}
 }
 
@@ -422,8 +436,8 @@ func (g *publishGate) resolveDeferredLocked(
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Not yet published on this connection: nothing to hold or carry, and
-		// publishing would 503 unready routes. Withhold up to the first-publish
-		// budget (firePending).
+		// publishing could fail routes (see publishGate). Withhold up to the
+		// first-publish budget (firePending).
 		g.offerColdLocked(ctx, cache, snapWrap)
 		return nil
 	}
@@ -439,10 +453,12 @@ func (g *publishGate) resolveDeferredLocked(
 	if pf := g.pendingFlips[snapWrap.proxyKey]; pf != nil {
 		pending = pf.blocking
 	}
-	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published, pending)) > 0
+	// pending preserves gaps across listeners installed by an earlier hold.
+	flipBlocking := flipBlockingClusters(g.publishedRefs.get(snapWrap.proxyKey, published), snapWrap, published, pending)
+	holding := len(newlyEmitted) > 0 || len(flipBlocking) > 0
 	graced, opened := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, holding, now)
-	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, pending, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, flipBlocking, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	switch {
 	case len(heldBlocking) > 0:
@@ -800,7 +816,7 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	now := time.Now()
 	graced, opened := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, false, now)
-	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, nil, graced, g.lastPublishedEDSLocked(proxyKey))
+	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, nil, graced, g.lastPublishedEDSLocked(proxyKey))
 	// A reference-ahead window closing on its own is expected. Warn and count a
 	// bounded publish only when the budget cut one short.
 	mode := boundedPublishFlipRelease
@@ -855,6 +871,7 @@ func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	delete(g.carriedSince, proxyKey)
 	delete(g.publishedEDS, proxyKey)
 	delete(g.aheadSent, proxyKey)
+	g.publishedRefs.release(proxyKey)
 }
 
 // connectionStarted forgets the previous connection, as clientDeparted does,

@@ -267,9 +267,8 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 }
 
 func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
-	finishMetrics := collectReconciliationMetrics("gateway", req)
 	defer func() {
-		finishMetrics(rErr)
+		recordReconciliation("gateway", rErr)
 	}()
 
 	gw := r.gwClient.Get(req.Name, req.Namespace)

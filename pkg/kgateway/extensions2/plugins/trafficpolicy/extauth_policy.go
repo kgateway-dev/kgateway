@@ -60,6 +60,12 @@ type extAuthIR struct {
 type perProviderExtAuthConfig struct {
 	provider       *TrafficPolicyGatewayExtensionIR
 	perRouteConfig *envoy_ext_authz_v3.ExtAuthzPerRoute
+	// mergeOrigins holds the IDs of the policies this config came from. It is only set
+	// on copies made while merging, so that a field's merge origins can be rebuilt from
+	// the configs that survive a merge; nil means the config has not been merged yet.
+	// It is merge bookkeeping, not policy config.
+	// +noKrtEquals
+	mergeOrigins sets.Set[string]
 }
 
 var _ PolicySubIR = &extAuthIR{}
@@ -211,4 +217,14 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 		// Set the AuthSucceeded metadata field to indicate that the request has successfully been authed
 		AddAuthMetadataIfNeeded(pCtxTypedFilterConfig, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
+}
+
+func (c *perProviderExtAuthConfig) getMergeOrigins() sets.Set[string] {
+	return c.mergeOrigins
+}
+
+func (c *perProviderExtAuthConfig) withMergeOrigins(origins sets.Set[string]) *perProviderExtAuthConfig {
+	cp := *c
+	cp.mergeOrigins = origins
+	return &cp
 }

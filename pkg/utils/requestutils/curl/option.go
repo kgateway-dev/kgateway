@@ -57,6 +57,14 @@ func WithContext(ctx context.Context) Option {
 	}
 }
 
+// WithDialContext returns the Option to open connections with dial instead of the default dialer,
+// e.g. to send through a port-forward. Only ExecuteRequest honors it; the curl binary ignores it.
+func WithDialContext(dial func(ctx context.Context, network, addr string) (net.Conn, error)) Option {
+	return func(config *requestConfig) {
+		config.dialContext = dial
+	}
+}
+
 // VerboseOutput returns the Option to emit a verbose output for the  curl request
 // https://curl.se/docs/manpage.html#-v
 func VerboseOutput() Option {
@@ -205,6 +213,15 @@ func WithPostBody(body string) Option {
 		WithMethod(http.MethodPost)(config)
 		WithBody(body)(config)
 		WithContentType("application/json")(config)
+	}
+}
+
+// WithFormBody returns the Option to send body with a form Content-Type, the way `curl -d` does.
+// ExecuteRequest sends no Content-Type for a plain WithBody, which some servers treat as binary.
+func WithFormBody(body string) Option {
+	return func(config *requestConfig) {
+		WithBody(body)(config)
+		WithContentType("application/x-www-form-urlencoded")(config)
 	}
 }
 

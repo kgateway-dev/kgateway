@@ -1,6 +1,7 @@
 package krtcollections
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -60,9 +61,9 @@ func TestResolveDeployerPorts(t *testing.T) {
 	}
 }
 
-// TestSortListenerSetsByPrecedence guards the order the deployer and Envoy transforms both rely on
+// TestListenerSetPrecedence guards the order the deployer and Envoy transforms both rely on
 // to resolve a same-port protocol conflict, oldest by creation timestamp then by namespace/name.
-func TestSortListenerSetsByPrecedence(t *testing.T) {
+func TestListenerSetPrecedence(t *testing.T) {
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	mk := func(name string, created time.Time) *gwv1.ListenerSet {
 		return &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{
@@ -74,11 +75,11 @@ func TestSortListenerSetsByPrecedence(t *testing.T) {
 
 	// Oldest first by creation timestamp.
 	sets := []*gwv1.ListenerSet{mk("newer", base.Add(time.Hour)), mk("older", base)}
-	sortListenerSetsByPrecedence(sets, func(ls *gwv1.ListenerSet) metav1.Object { return ls })
+	slices.SortFunc(sets, func(a, b *gwv1.ListenerSet) int { return ListenerSetPrecedence(a, b) })
 	assert.Equal(t, []string{"older", "newer"}, []string{sets[0].Name, sets[1].Name})
 
 	// Equal timestamps fall back to "{namespace}/{name}" order.
 	tied := []*gwv1.ListenerSet{mk("b", base), mk("a", base)}
-	sortListenerSetsByPrecedence(tied, func(ls *gwv1.ListenerSet) metav1.Object { return ls })
+	slices.SortFunc(tied, func(a, b *gwv1.ListenerSet) int { return ListenerSetPrecedence(a, b) })
 	assert.Equal(t, []string{"a", "b"}, []string{tied[0].Name, tied[1].Name})
 }

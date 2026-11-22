@@ -9,15 +9,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"istio.io/istio/pkg/test/util/retry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -56,10 +57,10 @@ func (s *testingSuite) TestLeaderAndFollowerAction() {
 	// - It should be translated by the follower
 	// - It should not have a status set since the leader is deleted but the lease has not expired
 	// - Once a leader is elected, it should be accepted
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(routeManifest)
 	s.NoError(err)
 	defer func() {
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, routeManifest)
 		s.NoError(err)
 	}()
 
@@ -89,10 +90,10 @@ func (s *testingSuite) TestLeaderWritesBackendStatus() {
 
 	// The backend status is written in an event handler and not part of translation per-se.
 	// This verifies that the status of resources not parsed through translation is also written by the leader.
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, backendManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(backendManifest)
 	s.NoError(err)
 	defer func() {
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, backendManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, backendManifest)
 		s.NoError(err)
 	}()
 
@@ -124,10 +125,10 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 	s.killLeader(leader)
 
 	// Create a gateway. It should not be deployed until a new leader is elected
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, gatewayManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(gatewayManifest)
 	s.NoError(err)
 	defer func() {
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, gatewayManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, gatewayManifest)
 		s.NoError(err)
 	}()
 
@@ -185,19 +186,20 @@ func (s *testingSuite) killLeader(leader string) {
 }
 
 func (s *testingSuite) assertCurlResponseCode(code int) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
+	gw.SendWithRetry(
 		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/status/200"),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-		},
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: code,
 		},
-		20*time.Second,
-		2*time.Second,
+		[]retry.Option{retry.Timeout(20 * time.Second)},
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPort(8080),
+		curl.WithPath("/status/200"),
 	)
 }
 

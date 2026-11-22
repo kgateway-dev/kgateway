@@ -20,8 +20,8 @@ import (
 // endpoint hook it gates.
 type EndpointsCase struct {
 	// Plugin is the registration under test. PerClientEndpointsMayApply must be
-	// set, along with one of PerClientEditEndpoints or PerClientProcessEndpoints;
-	// checking a predicate without the hook it gates is meaningless and fails.
+	// set, along with PerClientEditEndpoints; checking a predicate without the
+	// hook it gates is meaningless and fails.
 	Plugin sdk.PolicyPlugin
 	// Backends are the fixtures checked. At least one must be ruled out by the
 	// predicate, because a backend it admits proves nothing, and at least one
@@ -155,21 +155,13 @@ func BackendEndpointInputs(backend ir.BackendObjectIR) endpoints.EndpointsInputs
 }
 
 // endpointHook normalizes a plugin's endpoint hook onto the resolver, the way
-// OrderedEndpointPlugins does, so a legacy plugin is checked through the same
-// isolation boundary the framework gives it.
+// OrderedEndpointPlugins does.
 func endpointHook(plugin sdk.PolicyPlugin) func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, *endpoints.EndpointInputsResolver) uint64 {
-	switch {
-	case plugin.PerClientEditEndpoints != nil:
-		edit := plugin.PerClientEditEndpoints
-		return func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-			return edit(kctx, ctx, ucc, out)
-		}
-	case plugin.PerClientProcessEndpoints != nil: //nolint:staticcheck // the legacy hook is gated by the same predicate
-		legacy := plugin.PerClientProcessEndpoints //nolint:staticcheck // isolated below exactly as the framework isolates it
-		return func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
-			return legacy(kctx, ctx, ucc, out.LegacyMutableInputs())
-		}
-	default:
+	edit := plugin.PerClientEditEndpoints
+	if edit == nil {
 		return nil
+	}
+	return func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointInputsResolver) uint64 {
+		return edit(kctx, ctx, ucc, out)
 	}
 }

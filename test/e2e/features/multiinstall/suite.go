@@ -10,9 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -46,9 +48,13 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 
 func (s *tsuite) TestPolicies() {
 	// Verify response transformation with TrafficPolicy
-	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(s.ctx, defaults.CurlPodExecOpt,
-		[]curl.Option{curl.WithHostPort(ProxyHostPort(s.namespace)), curl.WithPath("/get")},
-		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Headers: map[string]any{"x-foo": "bar"}})
+	gw := common.NewGateway(s.ctx, s.T(), s.ti, types.NamespacedName{
+		Name:      Gateway(s.namespace).Name,
+		Namespace: s.namespace,
+	})
+	gw.Send(s.T(),
+		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Headers: map[string]any{"x-foo": "bar"}},
+		curl.WithPort(gatewayPort), curl.WithPath("/get"))
 
 	// Verify access logs with ListenerPolicy
 	pods, err := s.ti.Actions.Kubectl().GetPodsInNsWithLabel(

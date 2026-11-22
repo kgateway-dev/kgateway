@@ -15,6 +15,14 @@ data:
 {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
   ca.crt: |
 {{ $gateway.xds.tls.caCert | indent 4 }}
+  xds_ca_sds.json: |
+    {"resources":[{
+      "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
+      "name":"xds-ca",
+      "validation_context": {
+        "trusted_ca":{"filename":"/etc/envoy/ca.crt"}
+      }
+    }]}
 {{- end }}
   xds_service_account_token.json: |
     {"resources":[{
@@ -38,9 +46,6 @@ data:
         socket_address: { address: 127.0.0.1, port_value: 19000 }
     layered_runtime:
       layers:
-      - name: static_layer
-        static_layer:
-          envoy.restart_features.use_eds_cache_for_ads: true
       - name: admin_layer
         admin_layer: {}
     {{- with $gateway.maxDownstreamConnections }}
@@ -49,7 +54,7 @@ data:
         - name: envoy.resource_monitors.global_downstream_max_connections
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
-            max_active_downstream_connections: {{ . }}
+            max_active_downstream_connections: {{ int64 . }}
     {{- end }}
     node:
       cluster: {{ $localClusterName | quote }}
@@ -91,15 +96,6 @@ data:
     {{- end -}}
     {{ end }}
     static_resources:
-      {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
-      secrets:
-        - name: validation_context_sds
-          validation_context:
-            trusted_ca:
-              filename: /etc/envoy/ca.crt
-            watched_directory:
-              path: /etc/envoy
-      {{- end }}
       listeners:
       - name: readiness_listener
         address:
@@ -237,7 +233,11 @@ data:
               "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
               common_tls_context:
                 validation_context_sds_secret_config:
-                  name: validation_context_sds
+                  name: xds-ca
+                  sds_config:
+                    path_config_source:
+                      path: /etc/envoy/xds_ca_sds.json
+                    resource_api_version: V3
           {{- end }}
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -287,7 +287,11 @@ data:
         {{- if $gateway.istio.enabled }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
-          http2_protocol_options: {}
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
           load_assignment:
             cluster_name: gateway_proxy_sds
             endpoints:

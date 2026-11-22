@@ -3,6 +3,7 @@ package curl
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -123,6 +124,8 @@ type requestConfig struct {
 	// ctx is used by ExecuteRequest to build the http.Request and aborts the
 	// in-flight call when ctx cancels. Set via WithContext.
 	ctx context.Context
+	// dialContext, when set, replaces the dialer ExecuteRequest uses. Set via WithDialContext.
+	dialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
 func (c *requestConfig) generateArgs() []string {
