@@ -4725,6 +4725,10 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "unresolved_ref.yaml")
 	})
 
+	t.Run("Unresolved child reference alongside a resolved one in the same rule", func(t *testing.T) {
+		test(t, "unresolved_ref_multiple_backendrefs.yaml")
+	})
+
 	t.Run("Policy deep merge", func(t *testing.T) {
 		test(t, "policy_deep_merge.yaml")
 	})

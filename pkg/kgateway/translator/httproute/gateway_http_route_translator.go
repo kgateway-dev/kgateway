@@ -177,6 +177,12 @@ func setRouteAction(
 	routesVisited sets.Set[types.NamespacedName],
 ) {
 	backends := rule.Backends
+	// A failed delegation only replaces the parent match with a direct response when no
+	// delegating backendRef in the rule resolved; otherwise the direct response would shadow
+	// the delegatee routes produced by the resolved backendRefs. A backendRef with a FiltersErr
+	// is not translated, so it does not count as resolved.
+	var delegationErr error
+	delegationResolved := false
 	for _, backend := range backends {
 		// If the backend is an HTTPRoute, it implies route delegation
 		// for which delegated routes are recursively flattened and translated
@@ -202,7 +208,9 @@ func setRouteAction(
 			)
 			if err != nil {
 				query.ProcessBackendError(err, reporter)
-				outputRoute.RouteReplacementError = err
+				delegationErr = errors.Join(delegationErr, err)
+			} else {
+				delegationResolved = true
 			}
 			continue
 		}
@@ -218,6 +226,9 @@ func setRouteAction(
 			FiltersErr:       backend.FiltersErr,
 		}
 		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
+	}
+	if !delegationResolved {
+		outputRoute.RouteReplacementError = delegationErr
 	}
 }
 

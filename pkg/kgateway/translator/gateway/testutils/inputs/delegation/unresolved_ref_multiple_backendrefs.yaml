@@ -1,0 +1,58 @@
+# This test contains a parent route rule that delegates to child routes in two different
+# namespaces, one of which does not have any routes.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace and to routes in "b" namespace -> the latter
+#     results in an unresolved reference
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a:
+#   - /a goes to a/svc-a
+#
+# Expected output routes:
+# - /a -> a/svc-a (the unresolved reference is reported on the parent, but does not result
+#   in a 500 direct response for /a, which would shadow the child route)
+# - /* -> infra/example-svc
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+    # Unresolved ref
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: b
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - name: svc-a
+      port: 8080
