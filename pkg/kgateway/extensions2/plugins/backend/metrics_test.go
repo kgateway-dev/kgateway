@@ -198,7 +198,10 @@ func TestDiscoveryStatusForBackendRecordsErrorStateForUnresolvedSecret(t *testin
 	}
 	backend := backendObjectIR(be, nil)
 
-	c := &ec2EndpointsCollection{enabled: true}
+	c := &ec2EndpointsCollection{
+		enabled:  true,
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{backend}),
+	}
 	if got := c.discoveryStatusForBackend(krt.TestingDummyContext{}, backend); got == nil {
 		t.Fatal("discoveryStatusForBackend() = nil, want a CredentialError status")
 	}
@@ -216,6 +219,82 @@ func TestDiscoveryStatusForBackendRecordsErrorStateForUnresolvedSecret(t *testin
 	// poll_total / poll_duration_seconds stay poll-scoped: no poll occurred, so no
 	// per-backend series is recorded for this backend.
 	gathered.AssertMetricNotExists(pollDurationMetric)
+}
+
+// ec2InstanceListerFunc adapts a function to ec2InstanceLister so a test can act
+// while a poll is in flight.
+type ec2InstanceListerFunc func(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error)
+
+func (f ec2InstanceListerFunc) ListInstances(ctx context.Context, source ec2CredentialSource) ([]ec2DiscoveredInstance, error) {
+	return f(ctx, source)
+}
+
+func TestComputeStateSkipsMetricsForBackendDeletedDuringPoll(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		err  error
+	}{
+		{name: "successful poll"},
+		{name: "failed poll", err: fmt.Errorf("describe instances: %w", &smithy.GenericAPIError{Code: "AuthFailure", Message: "auth failed"})},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ResetEc2DiscoveryMetrics()
+
+			secret := newTestAWSSecret("aws-creds", "default", "1")
+			deleted := backendObjectIR(newEc2Backend("backend-a", "arn:aws:iam::123456789012:role/shared", nil), secret)
+			kept := backendObjectIR(newEc2Backend("backend-b", "arn:aws:iam::123456789012:role/shared", nil), secret)
+			backends := krt.NewMutableCollection(nil, []ir.BackendObjectIR{deleted, kept})
+			c := &ec2EndpointsCollection{
+				backends: backends.AsCollection(),
+				// The Backend was listed by this poll, and both its removal and its
+				// one-shot metrics cleanup happen before AWS answers.
+				lister: ec2InstanceListerFunc(func(context.Context, ec2CredentialSource) ([]ec2DiscoveredInstance, error) {
+					backends.DeleteObject(deleted.ResourceName())
+					deleteEc2DiscoveryMetrics("default", "backend-a")
+					return []ec2DiscoveredInstance{{instanceID: "i-1", privateIP: "10.0.0.10"}}, tc.err
+				}),
+			}
+
+			_, _ = c.computeState(context.Background())
+
+			// Only the surviving Backend is recorded; nothing would ever remove
+			// series written for the deleted one.
+			gathered := metricstest.MustGatherMetrics(t)
+			gathered.AssertMetricsLabels(errorStateMetric, [][]metrics.Label{
+				backendIdentityLabels("default", "backend-b"),
+			})
+			result := ec2PollResultSuccess
+			if tc.err != nil {
+				result = ec2PollResultError
+			}
+			gathered.AssertMetricsLabels(pollDurationMetric, [][]metrics.Label{
+				pollDurationLabels("default", "backend-b", result),
+			})
+		})
+	}
+}
+
+func TestDiscoveryStatusForBackendSkipsMetricsForDeletedBackend(t *testing.T) {
+	ResetEc2DiscoveryMetrics()
+
+	be := newEc2Backend("backend-a", "", nil)
+	be.Spec.Aws.Auth = &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "missing-secret"},
+	}
+
+	// The transform is still running for a Backend that has already left the collection.
+	c := &ec2EndpointsCollection{
+		enabled:  true,
+		backends: krt.NewStaticCollection[ir.BackendObjectIR](nil, nil),
+	}
+	if got := c.discoveryStatusForBackend(krt.TestingDummyContext{}, backendObjectIR(be, nil)); got == nil {
+		t.Fatal("discoveryStatusForBackend() = nil, want a CredentialError status")
+	}
+
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetricNotExists(errorStateMetric)
+	gathered.AssertMetricNotExists(endpointsActiveMetric)
 }
 
 func TestDeleteEc2DiscoveryMetricsRemovesBackendSeries(t *testing.T) {
