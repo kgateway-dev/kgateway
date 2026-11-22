@@ -1003,9 +1003,9 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 
 	// udp_proxy routes to a single cluster. With more than one backend, route to a route-scoped
 	// synthetic cluster whose endpoints are the weighted union of all backends. A single backend
-	// targets its own cluster directly.
+	// targets its own cluster directly, unless its weight is 0.
 	var aggregateClusterName string
-	if len(backends) > 1 {
+	if ir.UdpRouteUsesAggregateCluster(backends) {
 		aggregateClusterName = ir.UdpAggregateClusterName(uRoute.Namespace, uRoute.Name)
 	}
 

@@ -1471,6 +1471,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("udp gateway drops traffic for a sole zero-weight backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"udp-routing/zero-weight-backend.yaml"},
+			outputFile: "udp-routing/zero-weight-backend-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("udp gateway applies a backend policy per backend count", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"udp-routing/backend-policy.yaml"},

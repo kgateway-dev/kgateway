@@ -45,6 +45,8 @@ TCPRoute, with these exceptions:
 - A BackendTLSPolicy targets the Service, not the route. Without a `sectionName` it also covers the
   Service's UDP ports, for example on a DNS Service that serves TCP and UDP. The route reports it as
   not applied.
+- A backendRef with weight 0 receives no traffic. When it is the route's only backendRef, the route
+  drops every datagram.
 
 ## Several backendRefs
 

@@ -174,8 +174,8 @@ type UdpIR struct {
 	BackendRefs     []BackendRefIR
 	// AggregateClusterName is the route-scoped synthetic cluster a multi-backend
 	// route sends udp_proxy to. udp_proxy cannot weight across clusters, so the
-	// cluster's endpoints are the weighted union of all backends. A single-backend
-	// route leaves it empty and targets BackendRefs[0].ClusterName.
+	// cluster's endpoints are the weighted union of all backends. A route with one
+	// backend of nonzero weight leaves it empty and targets BackendRefs[0].ClusterName.
 	AggregateClusterName string
 	// HashPolicy is the udp_proxy hash policy for hash-based load balancers, from the backend's
 	// policies. Only a single-backend route sets it.
@@ -202,6 +202,12 @@ type UdpProxyPolicy struct {
 // prefix and absence of a port segment keep the name from colliding with real backend cluster names
 // (which are "<gvPrefix>_<ns>_<name>[_<extraKey>]_<port>").
 const UdpAggregateClusterPrefix = "udpagg_"
+
+// UdpRouteUsesAggregateCluster reports whether a UDPRoute with these backends routes to its
+// aggregate cluster. A sole backend with weight 0 does too, so that the route forwards nothing.
+func UdpRouteUsesAggregateCluster(backends []BackendRefIR) bool {
+	return len(backends) > 1 || (len(backends) == 1 && backends[0].Weight == 0)
+}
 
 // UdpAggregateClusterName is the deterministic, route-scoped name of the synthetic
 // cluster used to weight traffic across a multi-backend UDPRoute.

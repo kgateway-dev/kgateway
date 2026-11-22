@@ -230,3 +230,21 @@ func TestPolicyAttEquals(t *testing.T) {
 		})
 	}
 }
+
+func TestUdpRouteUsesAggregateCluster(t *testing.T) {
+	tests := []struct {
+		name     string
+		backends []BackendRefIR
+		want     bool
+	}{
+		{name: "no backends"},
+		{name: "one weighted backend", backends: []BackendRefIR{{Weight: 1}}},
+		{name: "one zero-weight backend", backends: []BackendRefIR{{Weight: 0}}, want: true},
+		{name: "several backends", backends: []BackendRefIR{{Weight: 1}, {Weight: 1}}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, UdpRouteUsesAggregateCluster(tt.backends))
+		})
+	}
+}

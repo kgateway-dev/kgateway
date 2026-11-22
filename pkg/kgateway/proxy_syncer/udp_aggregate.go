@@ -58,18 +58,18 @@ func (u udpAggregate) Equals(o udpAggregate) bool {
 		slices.Equal(u.members, o.members)
 }
 
-// newUdpAggregateCollection derives one aggregate descriptor per multi-backend UDPRoute. Invalid
-// backends contribute no endpoints, only their weight into dropWeight.
+// newUdpAggregateCollection derives one aggregate descriptor per UDPRoute that routes to its
+// aggregate cluster. Invalid backends contribute no endpoints, only their weight into dropWeight.
 func newUdpAggregateCollection(
 	krtopts krtutil.KrtOptions,
 	udpRoutes krt.Collection[ir.UdpRouteIR],
 ) krt.Collection[udpAggregate] {
 	return krt.NewCollection(udpRoutes, func(_ krt.HandlerContext, r ir.UdpRouteIR) *udpAggregate {
 		// A multi-backend route uses a synthetic aggregate cluster. A single-backend route targets
-		// its backend directly. The descriptor only supplies the members.
+		// its backend directly, unless its weight is 0. The descriptor only supplies the members.
 		// newAcceptedUdpAggregateCollection decides which clients receive the CLA, so a rejected
 		// route's descriptor goes unused.
-		if len(r.Backends) <= 1 {
+		if !ir.UdpRouteUsesAggregateCluster(r.Backends) {
 			return nil
 		}
 		members := make([]udpAggregateMember, 0, len(r.Backends))
