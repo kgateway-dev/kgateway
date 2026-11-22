@@ -312,6 +312,175 @@ func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
 	})
 }
 
+// transformationAtt builds a TrafficPolicy attachment that applies transform to both the
+// request and the response.
+func transformationAtt(
+	t *testing.T,
+	name string,
+	transform kgateway.Transform,
+	hierarchicalPriority int,
+	prio apiannotations.InheritedPolicyPriorityValue,
+) ir.PolicyAtt {
+	t.Helper()
+	gk := schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy"}
+	tp := &TrafficPolicy{ct: time.Now()}
+	in := &kgateway.TrafficPolicy{Spec: kgateway.TrafficPolicySpec{
+		Transformation: &kgateway.TransformationPolicy{Request: &transform, Response: &transform},
+	}}
+	require.NoError(t, constructRustformation(in, &tp.spec))
+	return ir.PolicyAtt{
+		GroupKind:               gk,
+		PolicyIr:                tp,
+		PolicyRef:               &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Name: name, Namespace: "default"},
+		HierarchicalPriority:    hierarchicalPriority,
+		InheritedPolicyPriority: prio,
+	}
+}
+
+// mergedTransformationJSON returns the rustformation JSON config of the merged policy.
+func mergedTransformationJSON(t *testing.T, merged ir.PolicyAtt) string {
+	t.Helper()
+	tp, ok := merged.PolicyIr.(*TrafficPolicy)
+	require.True(t, ok, "merged PolicyIr should be a *TrafficPolicy")
+	require.NotNil(t, tp.spec.rustformation, "merged policy should have a transformation")
+	sv := &wrapperspb.StringValue{}
+	require.NoError(t, tp.spec.rustformation.config.GetFilterConfig().UnmarshalTo(sv))
+	return sv.GetValue()
+}
+
+// mergeTransformationsEachWay merges a preferred and an other transformation under every
+// deep merge mode and returns the merged JSON keyed by mode. The preferred one is the parent
+// under DeepMergePreferParent, the child under DeepMergePreferChild, and the first (oldest)
+// policy under the policyMerge DeepMerge setting.
+func mergeTransformationsEachWay(t *testing.T, preferred, other kgateway.Transform) map[string]string {
+	t.Helper()
+	return map[string]string{
+		"DeepMergePreferParent": mergedTransformationJSON(t, policy.MergePolicies([]ir.PolicyAtt{
+			transformationAtt(t, "child", other, 0, ""),
+			transformationAtt(t, "parent", preferred, -1, apiannotations.DeepMergePreferParent),
+		}, mergeTrafficPolicies, "")),
+		"DeepMergePreferChild": mergedTransformationJSON(t, policy.MergePolicies([]ir.PolicyAtt{
+			transformationAtt(t, "child", preferred, 0, ""),
+			transformationAtt(t, "parent", other, -1, apiannotations.DeepMergePreferChild),
+		}, mergeTrafficPolicies, "")),
+		"policyMerge setting": mergedTransformationJSON(t, policy.MergePolicies([]ir.PolicyAtt{
+			transformationAtt(t, "first", preferred, 0, ""),
+			transformationAtt(t, "second", other, 0, ""),
+		}, mergeTrafficPolicies, `{"trafficPolicy":{"transformation":"DeepMerge"}}`)),
+	}
+}
+
+// TestMergeTransformationConflictAcrossActions covers two policies that act on the same header
+// through different actions. rustformation runs every set, then every add, then every remove,
+// so the order within each merged list cannot make the preferred policy win these conflicts.
+func TestMergeTransformationConflictAcrossActions(t *testing.T) {
+	headers := func(value string, names ...string) []kgateway.HeaderTransformation {
+		var out []kgateway.HeaderTransformation
+		for _, name := range names {
+			out = append(out, kgateway.HeaderTransformation{Name: kgateway.HeaderName(name), Value: kgateway.InjaTemplate(value)})
+		}
+		return out
+	}
+
+	tests := []struct {
+		name      string
+		preferred kgateway.Transform
+		other     kgateway.Transform
+		want      string
+	}{
+		{
+			name:      "set wins over remove",
+			preferred: kgateway.Transform{Set: headers("p", "x-pinned")},
+			other:     kgateway.Transform{Remove: []string{"X-Pinned", "x-other"}},
+			want:      `{"set":[{"name":"x-pinned","value":"p"}],"remove":["x-other"]}`,
+		},
+		{
+			name:      "add wins over remove",
+			preferred: kgateway.Transform{Add: headers("p", "x-pinned")},
+			other:     kgateway.Transform{Remove: []string{"X-Pinned"}},
+			want:      `{"add":[{"name":"x-pinned","value":"p"}],"remove":[]}`,
+		},
+		{
+			name:      "set wins over add",
+			preferred: kgateway.Transform{Set: headers("p", "x-pinned")},
+			other:     kgateway.Transform{Add: headers("o", "X-Pinned", "x-other")},
+			want:      `{"set":[{"name":"x-pinned","value":"p"}],"add":[{"name":"x-other","value":"o"}]}`,
+		},
+		{
+			name:      "remove already runs after set and add",
+			preferred: kgateway.Transform{Remove: []string{"x-pinned"}},
+			other:     kgateway.Transform{Set: headers("o", "x-pinned"), Add: headers("o", "x-pinned")},
+			want:      `{"set":[{"name":"x-pinned","value":"o"}],"add":[{"name":"x-pinned","value":"o"}],"remove":["x-pinned"]}`,
+		},
+		{
+			name:      "add appends to set and add",
+			preferred: kgateway.Transform{Add: headers("p", "x-pinned")},
+			other:     kgateway.Transform{Set: headers("o", "x-pinned"), Add: headers("o", "x-pinned")},
+			want:      `{"set":[{"name":"x-pinned","value":"o"}],"add":[{"name":"x-pinned","value":"o"},{"name":"x-pinned","value":"p"}]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for mode, got := range mergeTransformationsEachWay(t, tt.preferred, tt.other) {
+				assert.JSONEq(t, `{"request":`+tt.want+`,"response":`+tt.want+`}`, got, mode)
+			}
+		})
+	}
+}
+
+// TestMergeTransformationDynamicMetadata covers deep merging dynamicMetadata. rustformation
+// applies the entries in order and entries with the same namespace and key share one template,
+// so the entries of both policies are kept and the preferred policy's come last.
+func TestMergeTransformationDynamicMetadata(t *testing.T) {
+	tenant := func(value string) string {
+		return `{"namespace":"platform.audit","key":"tenant","value":{"stringValue":"` + value + `"}}`
+	}
+	withMetadata := func(value string) kgateway.Transform {
+		v := kgateway.InjaTemplate(value)
+		return kgateway.Transform{DynamicMetadata: []kgateway.DynamicMetadataTransformation{{
+			Namespace: "platform.audit",
+			Key:       "tenant",
+			Value:     kgateway.DynamicMetadataValue{StringValue: &v},
+		}}}
+	}
+	withoutMetadata := kgateway.Transform{Remove: []string{"x-none"}}
+
+	tests := []struct {
+		name      string
+		preferred kgateway.Transform
+		other     kgateway.Transform
+		want      string
+	}{
+		{
+			name:      "preferred policy wins a conflict",
+			preferred: withMetadata("preferred"),
+			other:     withMetadata("other"),
+			want:      `{"dynamicMetadata":[` + tenant("other") + `,` + tenant("preferred") + `]}`,
+		},
+		{
+			name:      "other policy without metadata keeps the preferred one's",
+			preferred: withMetadata("preferred"),
+			other:     withoutMetadata,
+			want:      `{"dynamicMetadata":[` + tenant("preferred") + `],"remove":["x-none"]}`,
+		},
+		{
+			name:      "preferred policy without metadata keeps the other one's",
+			preferred: withoutMetadata,
+			other:     withMetadata("other"),
+			want:      `{"dynamicMetadata":[` + tenant("other") + `],"remove":["x-none"]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for mode, got := range mergeTransformationsEachWay(t, tt.preferred, tt.other) {
+				assert.JSONEq(t, `{"request":`+tt.want+`,"response":`+tt.want+`}`, got, mode)
+			}
+		})
+	}
+}
+
 // TestMergeDeepMergeConflictUsesPreferredPolicy covers the conflicts a deep merge cannot
 // combine: p1 (the child) must win with AugmentedDeepMerge (DeepMergePreferChild) and p2
 // (the parent) with OverridableDeepMerge (DeepMergePreferParent).
