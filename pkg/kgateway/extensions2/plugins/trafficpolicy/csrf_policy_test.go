@@ -1,13 +1,21 @@
 package trafficpolicy
 
 import (
+	"slices"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	csrfv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestCsrfIREquals(t *testing.T) {
@@ -193,5 +201,62 @@ func TestCsrfIRValidate(t *testing.T) {
 				assert.NoError(t, err)
 			}
 		})
+	}
+}
+
+// The CSRF filter compares the request's Origin with its Host. A filter that can rewrite request
+// headers must not run first, or a policy that merges into the route next to the CSRF policy (e.g.
+// from a delegated child route) makes every request look same-origin.
+func TestCsrfFilterRunsBeforeFiltersThatRewriteRequestHeaders(t *testing.T) {
+	const filterChainName = "test-filter-chain"
+
+	provider := &TrafficPolicyGatewayExtensionIR{
+		Name:    "test-extension",
+		ExtAuth: &envoy_ext_authz_v3.ExtAuthz{},
+		ExtProc: &envoymatchingv3.ExtensionWithMatcher{},
+		Jwt:     &envoymatchingv3.ExtensionWithMatcher{},
+	}
+	providers := func(stage filters.HTTPFilterStage) ProviderNeededMap {
+		return ProviderNeededMap{
+			Providers: map[string][]Provider{
+				filterChainName: {{Name: provider.Name, Extension: provider, FilterStage: stage}},
+			},
+		}
+	}
+	plugin := &trafficPolicyPluginGwPass{
+		setTransformationInChain: map[string]bool{
+			filterChainName: true,
+		},
+		headerMutationInChain: map[string]*header_mutationv3.HeaderMutationPerRoute{
+			filterChainName: {},
+		},
+		extAuthPerProvider: providers(filters.DuringStage(filters.AuthNStage)),
+		extProcPerProvider: providers(defaultExtProcFilterStage),
+		jwtPerProvider:     providers(filters.DuringStage(filters.AuthNStage)),
+	}
+	plugin.handleCsrf(filterChainName, &ir.TypedFilterConfigMap{}, &csrfIR{policy: &csrfv3.CsrfPolicy{}})
+
+	httpFilters, err := plugin.HttpFilters(
+		ir.HttpFiltersContext{},
+		ir.FilterChainCommon{FilterChainName: filterChainName},
+	)
+	require.NoError(t, err)
+
+	sortedFilters := filters.StagedHttpFilterList(httpFilters)
+	sortedFilters.Sort()
+	names := filterNames(sortedFilters)
+
+	csrfIdx := slices.Index(names, csrfExtensionFilterName)
+	require.NotEqual(t, -1, csrfIdx, "csrf missing from %v", names)
+	for _, name := range []string{
+		rustformationFilterNamePrefix,
+		headerMutationFilterName,
+		extAuthFilterName(provider.Name),
+		extProcFilterName(provider.Name),
+		jwtFilterName(provider.Name),
+	} {
+		idx := slices.Index(names, name)
+		require.NotEqual(t, -1, idx, "%s missing from %v", name, names)
+		assert.Less(t, csrfIdx, idx, "csrf must sort ahead of %s, got %v", name, names)
 	}
 }

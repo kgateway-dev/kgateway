@@ -657,9 +657,10 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Add global CSRF http filter
+	// Add global CSRF http filter. It compares the Origin and Host headers the client sent, so it must run before
+	// the filters that can rewrite them (transformation, header modifiers, ext_authz, ext_proc, JWT claimsToHeaders).
 	if f := p.csrfInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(csrfExtensionFilterName, f, filters.DuringStage(filters.RouteStage))
+		filter := filters.MustNewStagedFilter(csrfExtensionFilterName, f, filters.AfterStage(filters.CorsStage))
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}
