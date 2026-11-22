@@ -3,6 +3,7 @@ package irtranslator
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -451,6 +452,51 @@ func TestCheapRouteFailuresRemainBatched(t *testing.T) {
 	}
 }
 
+func TestEnvoyOnlyRouteFailuresAreBisected(t *testing.T) {
+	const marker = "invalid-for-envoy"
+	const count = 1000
+	for _, tc := range []struct {
+		name     string
+		invalid  []int
+		maxCalls int
+	}{
+		{name: "first", invalid: []int{0}, maxCalls: 30},
+		{name: "last", invalid: []int{count - 1}, maxCalls: 30},
+		{name: "scattered", invalid: []int{3, 500, 501, 998}, maxCalls: 100},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			inner := invalidClusterValidator(t, marker)
+			v := &routeMockValidator{validateFunc: func(ctx context.Context, b *envoybootstrapv3.Bootstrap) error {
+				calls++
+				return inner.Validate(ctx, b)
+			}}
+			h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+			vh := &ir.VirtualHost{Name: "vhost", Hostname: "example.com"}
+			for i := range count {
+				vh.Rules = append(vh.Rules, testRouteIR(i, "/route-"+strconv.Itoa(i), "cluster-"+strconv.Itoa(i)))
+			}
+			for _, i := range tc.invalid {
+				vh.Rules[i].Backends[0].Backend.ClusterName = marker
+			}
+			cfg := h.ComputeRouteConfiguration(t.Context(), []*ir.VirtualHost{vh})
+			assert.LessOrEqual(t, calls, tc.maxCalls, "an Envoy-only failure must not cause one Envoy invocation per healthy route")
+			require.Len(t, cfg.VirtualHosts, 1)
+			require.Len(t, cfg.VirtualHosts[0].Routes, count)
+			var replaced []int
+			for i, route := range cfg.VirtualHosts[0].Routes {
+				assert.Equal(t, "/route-"+strconv.Itoa(i), route.GetMatch().GetPathSeparatedPrefix(), "isolation must preserve route order")
+				if route.GetDirectResponse().GetStatus() == 500 {
+					replaced = append(replaced, i)
+					continue
+				}
+				require.Equal(t, "cluster-"+strconv.Itoa(i), route.GetRoute().GetCluster(), "healthy siblings must keep their forwarding action")
+			}
+			assert.Equal(t, tc.invalid, replaced)
+		})
+	}
+}
+
 func TestCheapRouteDropPreservesSourceAttribution(t *testing.T) {
 	const marker = "invalid-appended-route"
 	rm := reports.NewReportMap()
@@ -506,6 +552,41 @@ func TestRouteValidationCacheReusesUnchangedVirtualHosts(t *testing.T) {
 	}})
 	h.ComputeRouteConfiguration(t.Context(), inputs)
 	require.Len(t, validated, 3, "shared settings changes must invalidate all dependent scopes")
+}
+
+// One HTTPRoute with several hostnames puts the same routes in several virtual hosts.
+func TestRouteIsolationIsSharedBetweenVirtualHosts(t *testing.T) {
+	const marker = "invalid-for-envoy"
+	const vhosts, routes = 16, 128
+	calls := 0
+	reject := invalidClusterValidator(t, marker)
+	inner := &routeMockValidator{validateFunc: func(ctx context.Context, b *envoybootstrapv3.Bootstrap) error {
+		calls++
+		if err := reject.Validate(ctx, b); err != nil {
+			return fmt.Errorf("%w: %w", validator.ErrInvalidXDS, err)
+		}
+		return nil
+	}}
+	h := testHTTPRouteTranslator(validator.NewCaching(inner, 0), apisettings.ValidationStrict)
+	var inputs []*ir.VirtualHost
+	for i := range vhosts {
+		vh := &ir.VirtualHost{Name: "vhost-" + strconv.Itoa(i), Hostname: strconv.Itoa(i) + ".example.com"}
+		for j := range routes {
+			vh.Rules = append(vh.Rules, testRouteIR(j, "/route-"+strconv.Itoa(j), marker+strconv.Itoa(j)))
+		}
+		inputs = append(inputs, vh)
+	}
+	cfg := h.ComputeRouteConfiguration(t.Context(), inputs)
+	assert.LessOrEqual(t, calls, 4*(vhosts+routes), "isolating the same routes under another hostname must reuse the verdicts")
+	require.Len(t, cfg.VirtualHosts, vhosts)
+	for i, vh := range cfg.VirtualHosts {
+		assert.Equal(t, []string{strconv.Itoa(i) + ".example.com"}, vh.Domains)
+		require.Len(t, vh.Routes, routes)
+		for _, route := range vh.Routes {
+			assert.NotEmpty(t, route.GetName(), "isolation must not change the emitted routes")
+			require.EqualValues(t, 500, route.GetDirectResponse().GetStatus())
+		}
+	}
 }
 
 func TestRouteValidationScopeDoesNotMutateSource(t *testing.T) {

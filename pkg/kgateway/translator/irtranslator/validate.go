@@ -279,11 +279,33 @@ func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyrout
 type routeValidationScope struct {
 	config *envoyroutev3.RouteConfiguration
 	vhost  *envoyroutev3.VirtualHost
+	// anonymous leaves the names of the vhost and its routes and the vhost's
+	// domains out of the validated configuration. See forIsolation.
+	anonymous bool
+}
+
+// forIsolation returns the scope to use while searching a rejected vhost for its
+// invalid routes. An HTTPRoute is expanded into one vhost per hostname, each with
+// all of its routes, and those copies differ only in names and domains. Keeping
+// these out of the cache key lets every copy after the first reuse the verdicts,
+// so the search costs hostnames + routes Envoy invocations, not hostnames * routes.
+// The caller validates the vhost under its own identity before and after.
+func (s routeValidationScope) forIsolation() routeValidationScope {
+	s.anonymous = true
+	return s
 }
 
 func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoyroutev3.RouteConfiguration {
 	config := cloneWithoutField(s.config, "virtual_hosts")
 	vhost := cloneWithoutField(s.vhost, "routes")
+	if s.anonymous {
+		vhost.Name, vhost.Domains = "validation", []string{"*"}
+		unnamed := make([]*envoyroutev3.Route, len(routes))
+		for i, route := range routes {
+			unnamed[i] = cloneWithoutField(route, "name")
+		}
+		routes = unnamed
+	}
 	vhost.Routes = routes
 	config.VirtualHosts = []*envoyroutev3.VirtualHost{vhost}
 	return config
