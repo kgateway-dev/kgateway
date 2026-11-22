@@ -305,17 +305,17 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		for _, ep := range eps {
 			localityWeight += uint64(ep.GetLoadBalancingWeight().GetValue())
 		}
+		// Set Locality even when it is empty. Envoy drops the load_balancing_weight of a group
+		// without one, so the blackhole and endpoints without topology labels get no traffic.
 		lle := &envoyendpointv3.LocalityLbEndpoints{
-			LbEndpoints: eps,
-			//nolint:gosec // G115: localityWeight sums endpoint weights already scaled below the uint32 max
-			LoadBalancingWeight: wrapperspb.UInt32(uint32(localityWeight)),
-		}
-		if locality != (ir.PodLocality{}) {
-			lle.Locality = &envoycorev3.Locality{
+			Locality: &envoycorev3.Locality{
 				Region:  locality.Region,
 				Zone:    locality.Zone,
 				SubZone: locality.Subzone,
-			}
+			},
+			LbEndpoints: eps,
+			//nolint:gosec // G115: localityWeight sums endpoint weights already scaled below the uint32 max
+			LoadBalancingWeight: wrapperspb.UInt32(uint32(localityWeight)),
 		}
 		cla.Endpoints = append(cla.GetEndpoints(), lle)
 	}

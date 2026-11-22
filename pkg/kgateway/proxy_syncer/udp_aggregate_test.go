@@ -200,6 +200,26 @@ func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
 	}
 }
 
+// Envoy ignores the weight of a group without a Locality under locality-weighted LB, so the
+// blackhole and endpoints without topology labels need one next to zoned endpoints.
+func TestMergeUdpAggregateLoadAssignment_EmptyLocalityKeepsWeight(t *testing.T) {
+	zoned := udpEps("10.0.0.1")
+	zoned.locality = &envoycorev3.Locality{Region: "r1", Zone: "z1"}
+	members := []udpMemberEndpoints{
+		{weight: 20, cla: udpMemberCLA(zoned)},
+		{weight: 30, cla: udpMemberCLA(udpEps("10.0.1.1"))},
+	}
+
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 50)
+	require.Len(t, cla.GetEndpoints(), 2)
+	for _, lle := range cla.GetEndpoints() {
+		assert.NotNil(t, lle.GetLocality(), "every group needs a Locality to keep its weight")
+	}
+	unzoned := cla.GetEndpoints()[0]
+	require.Empty(t, unzoned.GetLocality().GetRegion(), "the empty locality sorts first")
+	assert.Equal(t, udpW(80), unzoned.GetLoadBalancingWeight().GetValue(), "the blackhole shares the empty locality")
+}
+
 // Cross-backend weights take precedence over a member's priorities: every endpoint lands at
 // priority 0, so a member whose endpoints are all at a lower priority for this client still gets its
 // share instead of losing it to the member at priority 0.
