@@ -5,6 +5,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	udpproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -53,10 +54,18 @@ func TestBackendConfigPolicyUdpProxy(t *testing.T) {
 			name: "settings that only act on HTTP or TCP are ignored",
 			ir: BackendConfigPolicyIR{
 				commonHttpProtocolOptions: &envoycorev3.HttpProtocolOptions{},
+				http1ProtocolOptions:      &envoycorev3.Http1ProtocolOptions{},
+				http2ProtocolOptions:      &envoycorev3.Http2ProtocolOptions{},
+				tlsConfig:                 &envoytlsv3.UpstreamTlsContext{},
 				tcpKeepalive:              &envoycorev3.TcpKeepalive{},
+				upstreamProxyProtocol:     &envoycorev3.ProxyProtocolConfig{},
+				tunnel:                    &tunnelIR{},
 				sessionPersistence:        &sessionPersistenceIR{},
 			},
-			wantIgnored: []string{"sessionPersistence", "commonHttpProtocolOptions", "tcpKeepalive"},
+			wantIgnored: []string{
+				"sessionPersistence", "commonHttpProtocolOptions", "http1ProtocolOptions", "http2ProtocolOptions",
+				"tls", "tcpKeepalive", "upstreamProxyProtocol", "tunnel",
+			},
 		},
 	}
 	for _, tc := range tests {
