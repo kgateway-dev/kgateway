@@ -933,8 +933,8 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 	r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
+	winner := keyOfRoute(r)
 	if len(parent.routesWithHosts) > 1 {
-		winner := keyOfRoute(r)
 		for _, other := range parent.routesWithHosts {
 			// The winning route can also be attached through another parentRef,
 			// it must not conflict with itself.
@@ -952,9 +952,13 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 		return nil
 	}
 
-	parentRefReporters := make([]reports.ParentRefReporter, 0, len(uRoute.ParentRefs))
-	for _, parentRef := range uRoute.ParentRefs {
-		parentRefReporters = append(parentRefReporters, reporter.Route(uRoute.SourceObject).ParentRef(&parentRef))
+	// Report only the parentRefs that attach the winning route to this listener. A parentRef the
+	// route sets for another listener, or one that matches no listener, keeps its own status.
+	var parentRefReporters []reports.ParentRefReporter
+	for _, ri := range parent.routesWithHosts {
+		if keyOfRoute(ri) == winner {
+			parentRefReporters = append(parentRefReporters, reporter.Route(uRoute.SourceObject).ParentRef(&ri.ParentRef))
+		}
 	}
 
 	udpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, uRoute.Namespace, uRoute.Name, 0)

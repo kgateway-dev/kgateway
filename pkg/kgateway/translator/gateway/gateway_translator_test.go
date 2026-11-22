@@ -1460,6 +1460,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("udp route keeps the status of a parentRef that matches no listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"udp-routing/missing-section-parentref.yaml"},
+			outputFile: "udp-routing/missing-section-parentref-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("udp gateway applies a backend policy per backend count", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"udp-routing/backend-policy.yaml"},
