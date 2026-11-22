@@ -59,40 +59,44 @@ func (u udpAggregate) Equals(o udpAggregate) bool {
 }
 
 // newUdpAggregateCollection derives one aggregate descriptor per UDPRoute that routes to its
-// aggregate cluster. Invalid backends contribute no endpoints, only their weight into dropWeight.
+// aggregate cluster.
 func newUdpAggregateCollection(
 	krtopts krtutil.KrtOptions,
 	udpRoutes krt.Collection[ir.UdpRouteIR],
 ) krt.Collection[udpAggregate] {
 	return krt.NewCollection(udpRoutes, func(_ krt.HandlerContext, r ir.UdpRouteIR) *udpAggregate {
-		// A multi-backend route uses a synthetic aggregate cluster. A single-backend route targets
-		// its backend directly, unless its weight is 0. The descriptor only supplies the members.
-		// newAcceptedUdpAggregateCollection decides which clients receive the CLA, so a rejected
-		// route's descriptor goes unused.
-		if !ir.UdpRouteUsesAggregateCluster(r.Backends) {
-			return nil
-		}
-		members := make([]udpAggregateMember, 0, len(r.Backends))
-		var dropWeight uint32
-		for _, b := range r.Backends {
-			if b.Weight == 0 {
-				continue
-			}
-			if b.BackendObject == nil {
-				dropWeight += b.Weight
-				continue
-			}
-			members = append(members, udpAggregateMember{
-				backendResourceName: b.BackendObject.ResourceName(),
-				weight:              b.Weight,
-			})
-		}
-		return &udpAggregate{
-			clusterName: ir.UdpAggregateClusterName(r.Namespace, r.Name),
-			members:     members,
-			dropWeight:  dropWeight,
-		}
+		return udpAggregateForRoute(r)
 	}, krtopts.ToOptions("UdpAggregates")...)
+}
+
+// udpAggregateForRoute returns the route's aggregate descriptor, or nil when the route targets its
+// backend directly. Invalid backends contribute no endpoints, only their weight into dropWeight.
+// newAcceptedUdpAggregateCollection decides which clients receive the CLA, so a rejected route's
+// descriptor goes unused.
+func udpAggregateForRoute(r ir.UdpRouteIR) *udpAggregate {
+	if !ir.UdpRouteUsesAggregateCluster(r.Backends) {
+		return nil
+	}
+	members := make([]udpAggregateMember, 0, len(r.Backends))
+	var dropWeight uint32
+	for _, b := range r.Backends {
+		if b.Weight == 0 {
+			continue
+		}
+		if b.BackendObject == nil {
+			dropWeight += b.Weight
+			continue
+		}
+		members = append(members, udpAggregateMember{
+			backendResourceName: b.BackendObject.ResourceName(),
+			weight:              b.Weight,
+		})
+	}
+	return &udpAggregate{
+		clusterName: ir.UdpAggregateClusterName(r.Namespace, r.Name),
+		members:     members,
+		dropWeight:  dropWeight,
+	}
 }
 
 // acceptedUdpAggregate names one aggregate cluster in a gateway's CDS, keyed by that gateway's
@@ -117,16 +121,21 @@ func newAcceptedUdpAggregateCollection(
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 ) krt.Collection[acceptedUdpAggregate] {
 	return krt.NewManyCollection(mostXdsSnapshots, func(_ krt.HandlerContext, snap GatewayXdsResources) []acceptedUdpAggregate {
-		var out []acceptedUdpAggregate
-		for _, c := range snap.Clusters {
-			cluster, ok := c.Resource.(*envoyclusterv3.Cluster)
-			if !ok || !strings.HasPrefix(cluster.GetName(), ir.UdpAggregateClusterPrefix) {
-				continue
-			}
-			out = append(out, acceptedUdpAggregate{role: snap.ResourceName(), clusterName: cluster.GetName()})
-		}
-		return out
+		return acceptedUdpAggregates(snap)
 	}, krtopts.ToOptions("AcceptedUdpAggregates")...)
+}
+
+// acceptedUdpAggregates returns the aggregate clusters in a gateway's CDS.
+func acceptedUdpAggregates(snap GatewayXdsResources) []acceptedUdpAggregate {
+	var out []acceptedUdpAggregate
+	for _, c := range snap.Clusters {
+		cluster, ok := c.Resource.(*envoyclusterv3.Cluster)
+		if !ok || !strings.HasPrefix(cluster.GetName(), ir.UdpAggregateClusterPrefix) {
+			continue
+		}
+		out = append(out, acceptedUdpAggregate{role: snap.ResourceName(), clusterName: cluster.GetName()})
+	}
+	return out
 }
 
 // NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. A

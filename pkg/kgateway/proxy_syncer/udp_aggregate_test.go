@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 	"testing"
 
@@ -523,4 +524,261 @@ func TestNewPerClientUdpAggregateEndpointsEndpointRemovalAndRestore(t *testing.T
 	expect(step{name: "full", weights: map[string]uint32{
 		"10.0.0.1": udpW(30), "10.0.0.2": udpW(30), "10.0.1.1": udpW(30), udpBlackholeAddr: udpW(10),
 	}})
+}
+
+func TestUdpAggregateForRoute(t *testing.T) {
+	be := func(name string) *ir.BackendObjectIR {
+		obj := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: name}, 53, "", "kube")
+		return &obj
+	}
+	route := func(backends ...ir.BackendRefIR) ir.UdpRouteIR {
+		return ir.UdpRouteIR{ObjectSource: ir.ObjectSource{Namespace: "ns", Name: "route"}, Backends: backends}
+	}
+	clusterName := ir.UdpAggregateClusterName("ns", "route")
+
+	assert.Nil(t, udpAggregateForRoute(route(ir.BackendRefIR{Weight: 1, BackendObject: be("a")})),
+		"a single weighted backend targets its own cluster")
+
+	assert.Equal(t, &udpAggregate{clusterName: clusterName, members: []udpAggregateMember{}},
+		udpAggregateForRoute(route(ir.BackendRefIR{Weight: 0, BackendObject: be("a")})),
+		"a sole zero-weight backend gets an aggregate with nothing to forward to")
+
+	got := udpAggregateForRoute(route(
+		ir.BackendRefIR{Weight: 0, BackendObject: be("zero")},
+		ir.BackendRefIR{Weight: 70, BackendObject: be("a")},
+		ir.BackendRefIR{Weight: 20},
+		ir.BackendRefIR{Weight: 0},
+		ir.BackendRefIR{Weight: 5},
+		ir.BackendRefIR{Weight: 10, BackendObject: be("b")},
+	))
+	assert.Equal(t, &udpAggregate{
+		clusterName: clusterName,
+		members: []udpAggregateMember{
+			{backendResourceName: be("a").ResourceName(), weight: 70},
+			{backendResourceName: be("b").ResourceName(), weight: 10},
+		},
+		dropWeight: 25,
+	}, got, "zero weights are skipped and invalid backends add their weight to the drop")
+}
+
+func TestUdpAggregateEquals(t *testing.T) {
+	base := func() udpAggregate {
+		return udpAggregate{
+			clusterName: "udpagg_ns_route",
+			members:     []udpAggregateMember{{backendResourceName: "a", weight: 1}},
+			dropWeight:  2,
+		}
+	}
+	assert.True(t, base().Equals(base()))
+	for name, mutate := range map[string]func(*udpAggregate){
+		"cluster name":  func(u *udpAggregate) { u.clusterName = "udpagg_ns_other" },
+		"drop weight":   func(u *udpAggregate) { u.dropWeight = 3 },
+		"member weight": func(u *udpAggregate) { u.members[0].weight = 2 },
+		"member name":   func(u *udpAggregate) { u.members[0].backendResourceName = "b" },
+		"member count":  func(u *udpAggregate) { u.members = append(u.members, udpAggregateMember{backendResourceName: "b"}) },
+	} {
+		other := base()
+		mutate(&other)
+		assert.False(t, base().Equals(other), name)
+		assert.False(t, other.Equals(base()), name)
+	}
+}
+
+func TestAcceptedUdpAggregates(t *testing.T) {
+	aggName := ir.UdpAggregateClusterName("ns", "route")
+	snap := GatewayXdsResources{
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Clusters: []envoycachetypes.ResourceWithTTL{
+			{Resource: &envoyclusterv3.Cluster{Name: "kube_ns_backend_53"}},
+			{Resource: &envoyclusterv3.Cluster{Name: aggName}},
+			{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: ir.UdpAggregateClusterName("ns", "cla")}},
+		},
+	}
+	got := acceptedUdpAggregates(snap)
+	require.Equal(t, []acceptedUdpAggregate{{role: snap.ResourceName(), clusterName: aggName}}, got,
+		"only aggregate clusters count, other clusters and non-cluster resources do not")
+
+	a := got[0]
+	assert.Equal(t, snap.ResourceName()+"/"+aggName, a.ResourceName())
+	assert.True(t, a.Equals(acceptedUdpAggregate{role: a.role, clusterName: a.clusterName}))
+	for _, other := range []acceptedUdpAggregate{
+		{role: "other", clusterName: a.clusterName},
+		{role: a.role, clusterName: "udpagg_ns_other"},
+	} {
+		assert.False(t, a.Equals(other))
+		assert.False(t, other.Equals(a))
+	}
+}
+
+// The blackhole is the loopback discard port, so dropped datagrams go nowhere.
+func TestBlackholeLbEndpoint(t *testing.T) {
+	sa := blackholeLbEndpoint().GetEndpoint().GetAddress().GetSocketAddress()
+	assert.Equal(t, "127.0.0.1", sa.GetAddress())
+	assert.Equal(t, uint32(9), sa.GetPortValue())
+}
+
+// Members that add nothing, pending or empty, must not stop the merge of the members after them.
+func TestMergeUdpAggregateLoadAssignment_SkipsMembersThatAddNothing(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 10},
+		{weight: 30, cla: udpMemberCLA(udpTestLocality{})},
+		{weight: 60, cla: udpMemberCLA(udpEps("10.0.0.1"))},
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 1)
+
+	w, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok, "the member after a pending and an empty one is merged")
+	assert.Equal(t, udpW(60), w)
+	bh, ok := endpointWeight(cla, udpBlackholeAddr)
+	require.True(t, ok, "a drop weight of 1 still adds the blackhole")
+	assert.Equal(t, udpW(31), bh, "the empty Service's weight joins the drop weight")
+}
+
+// An endpoint whose share rounds down to 0 keeps weight 1, since Envoy rejects weight 0. Unset
+// weights count as 1 when splitting the member's share.
+func TestMergeUdpAggregateLoadAssignment_TinyShareKeepsWeightOne(t *testing.T) {
+	members := []udpMemberEndpoints{{weight: 1, cla: udpMemberCLA(udpTestLocality{eps: []*envoyendpointv3.LbEndpoint{
+		weightedUdpEndpoint("10.0.0.1", math.MaxUint32),
+		udpTestEndpoint("10.0.0.2").LbEndpoint,
+	}})}}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+
+	heavy, _ := endpointWeight(cla, "10.0.0.1")
+	light, ok := endpointWeight(cla, "10.0.0.2")
+	require.True(t, ok)
+	assert.Equal(t, uint32(1), light, "1e6*1/(2^32) rounds to 0 and keeps weight 1")
+	assert.Equal(t, uint32(999_999), heavy, "the unset weight counts as 1 in the member total")
+}
+
+// Scaling down keeps every endpoint at weight 1 or more, even one whose scaled share is 0.
+func TestMergeUdpAggregateLoadAssignment_ScaleDownKeepsWeightOne(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 1_000_000, cla: udpMemberCLA(udpEps("10.0.0.1"))},
+		{weight: 1_000_000, cla: udpMemberCLA(udpEps("10.0.0.2"))},
+		{weight: 1_000_000, cla: udpMemberCLA(udpEps("10.0.0.3"))},
+		{weight: 1, cla: udpMemberCLA(udpTestLocality{eps: []*envoyendpointv3.LbEndpoint{
+			weightedUdpEndpoint("10.0.1.1", math.MaxUint32),
+			udpTestEndpoint("10.0.1.2").LbEndpoint,
+		}})},
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+
+	// The total of 3e12 + 1e6 scales by ceil(total / (2^32 - 1 - 5)) = 699.
+	big, _ := endpointWeight(cla, "10.0.0.1")
+	assert.Equal(t, uint32(1_000_000_000_000/699), big)
+	mid, _ := endpointWeight(cla, "10.0.1.1")
+	assert.Equal(t, uint32(999_999/699), mid)
+	tiny, ok := endpointWeight(cla, "10.0.1.2")
+	require.True(t, ok)
+	assert.Equal(t, uint32(1), tiny, "a share that scales to 0 keeps weight 1")
+}
+
+// The aggregate row hash changes with every input of its CLA, so KRT republishes the CLA.
+func TestHashUdpAggregate(t *testing.T) {
+	agg := udpAggregate{clusterName: "udpagg_ns_route", dropWeight: 1}
+	members := func() []udpMemberEndpoints {
+		return []udpMemberEndpoints{
+			{weight: 60, cla: udpMemberCLA(udpEps("10.0.0.1")), hash: 7},
+			{weight: 40},
+		}
+	}
+	base := hashUdpAggregate(agg, members())
+	assert.Equal(t, base, hashUdpAggregate(agg, members()), "the hash is deterministic")
+
+	for name, change := range map[string]func(*udpAggregate, []udpMemberEndpoints){
+		"cluster name":   func(a *udpAggregate, _ []udpMemberEndpoints) { a.clusterName = "udpagg_ns_other" },
+		"drop weight":    func(a *udpAggregate, _ []udpMemberEndpoints) { a.dropWeight = 2 },
+		"member weight":  func(_ *udpAggregate, m []udpMemberEndpoints) { m[0].weight = 61 },
+		"member hash":    func(_ *udpAggregate, m []udpMemberEndpoints) { m[0].hash = 8 },
+		"member pending": func(_ *udpAggregate, m []udpMemberEndpoints) { m[0].cla = nil },
+		"member arrives": func(_ *udpAggregate, m []udpMemberEndpoints) {
+			m[1].cla = udpMemberCLA(udpEps("10.0.1.1"))
+		},
+	} {
+		a, m := agg, members()
+		change(&a, m)
+		assert.NotEqual(t, base, hashUdpAggregate(a, m), name)
+	}
+
+	// A pending member does not hide the members after it.
+	pendingFirst := []udpMemberEndpoints{{weight: 40}, {weight: 60, cla: udpMemberCLA(udpEps("10.0.0.1")), hash: 7}}
+	changed := slices.Clone(pendingFirst)
+	changed[1].hash = 8
+	assert.NotEqual(t, hashUdpAggregate(agg, pendingFirst), hashUdpAggregate(agg, changed))
+}
+
+func TestMergeUdpAggregateLoadAssignment_DropWeightOne(t *testing.T) {
+	members := []udpMemberEndpoints{{weight: 99, cla: udpMemberCLA(udpEps("10.0.0.1"))}}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 1)
+	bh, ok := endpointWeight(cla, udpBlackholeAddr)
+	require.True(t, ok, "a drop weight of 1 adds the blackhole")
+	assert.Equal(t, udpW(1), bh)
+}
+
+// An endpoint without a weight counts as 1, as Envoy treats it.
+func TestMergeUdpAggregateLoadAssignment_UnsetEndpointWeightCountsAsOne(t *testing.T) {
+	members := []udpMemberEndpoints{{weight: 3, cla: udpMemberCLA(udpTestLocality{eps: []*envoyendpointv3.LbEndpoint{
+		weightedUdpEndpoint("10.0.0.1", 2),
+		udpTestEndpoint("10.0.0.2").LbEndpoint,
+	}})}}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	weighted, _ := endpointWeight(cla, "10.0.0.1")
+	unset, _ := endpointWeight(cla, "10.0.0.2")
+	assert.Equal(t, udpW(2), weighted)
+	assert.Equal(t, udpW(1), unset)
+}
+
+// Endpoints come out in address order whatever order the members list them in, so an unchanged
+// set of endpoints yields the same CLA.
+func TestMergeUdpAggregateLoadAssignment_SortsEndpoints(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 1, cla: udpMemberCLA(udpEps("10.0.0.3", "10.0.0.1"))},
+		{weight: 1, cla: udpMemberCLA(udpEps("10.0.0.2"))},
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	require.Len(t, cla.GetEndpoints(), 1)
+	var got []string
+	for _, ep := range cla.GetEndpoints()[0].GetLbEndpoints() {
+		got = append(got, ep.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+	}
+	assert.Equal(t, []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"}, got)
+}
+
+// A client gets no row for an aggregate cluster whose descriptor is gone, and a member whose row
+// has not landed adds nothing until it does.
+func TestNewPerClientUdpAggregateEndpointsMissingDescriptorAndMemberRow(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	withDescriptor := ir.UdpAggregateClusterName("ns", "route")
+	client := udpTestClient("gw")
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{client})
+	snapshots := krt.NewStaticCollection(nil, []GatewayXdsResources{{
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Clusters: []envoycachetypes.ResourceWithTTL{
+			{Resource: &envoyclusterv3.Cluster{Name: ir.UdpAggregateClusterName("ns", "gone")}},
+			{Resource: &envoyclusterv3.Cluster{Name: withDescriptor}},
+		},
+	}})
+	aggregates := krt.NewStaticCollection(nil, []udpAggregate{{
+		clusterName: withDescriptor,
+		members: []udpAggregateMember{
+			{backendResourceName: "no-row", weight: 50},
+			{backendResourceName: "be1", weight: 50},
+		},
+	}})
+	rows := krt.NewStaticCollection(nil, []UccWithEndpoints{
+		udpMemberRow(client, "be1", 1, udpMemberCLA(udpEps("10.0.0.1"))),
+	})
+
+	eps := NewPerClientUdpAggregateEndpoints(krtutil.KrtOptions{}, uccs, aggregates, snapshots, udpMemberRows(rows))
+	g.Eventually(func() int { return len(eps.endpoints.List()) }).Should(gomega.Equal(1),
+		"only the cluster with a descriptor gets a row")
+
+	cla := eps.endpoints.List()[0].Endpoints.Clone()
+	g.Expect(cla.GetClusterName()).To(gomega.Equal(withDescriptor))
+	w, ok := endpointWeight(cla, "10.0.0.1")
+	g.Expect(ok).To(gomega.BeTrue())
+	g.Expect(w).To(gomega.Equal(udpW(50)))
+	_, hasBlackhole := endpointWeight(cla, udpBlackholeAddr)
+	g.Expect(hasBlackhole).To(gomega.BeFalse(), "a member without a row is pending, not dropped")
 }
