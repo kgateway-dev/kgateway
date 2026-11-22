@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
@@ -14,6 +16,7 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/security"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -289,6 +292,13 @@ func New(opts ...func(*setup)) (*setup, error) {
 func (s *setup) Start(ctx context.Context) error {
 	logger.Info("starting kgateway")
 
+	apiClient := s.apiClient
+	discoveryAddress := s.globalSettings.DiscoveryScopeBindAddress
+	var informerResources func() []schema.GroupVersionResource
+	if discoveryAddress != "" {
+		apiClient, informerResources = apiclient.TrackInformerResources(apiClient)
+	}
+
 	mgrOpts := s.ctrlMgrOptionsInitFunc(ctx)
 
 	metrics.SetRegistry(s.globalSettings.EnableBuiltinDefaultMetrics, nil)
@@ -308,7 +318,7 @@ func (s *setup) Start(ctx context.Context) error {
 	uniqueClientCallbacks, uccBuilder, xdsClientState := krtcollections.NewUniquelyConnectedClients(s.globalSettings.XdsAuth)
 
 	authenticators := []security.Authenticator{
-		NewKubeJWTAuthenticator(s.apiClient.Kube()),
+		NewKubeJWTAuthenticator(apiClient.Kube()),
 	}
 
 	// Create shared certificate watcher if TLS is enabled. This watcher is used by both the xDS server
@@ -345,7 +355,7 @@ func (s *setup) Start(ctx context.Context) error {
 	commoncol, err := collections.NewCommonCollections(
 		ctx,
 		krtOpts,
-		s.apiClient,
+		apiClient,
 		s.gatewayControllerName,
 		*s.globalSettings,
 		s.commonCollectionsOptions...,
@@ -356,7 +366,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	for _, mgrCfgFunc := range s.extraManagerConfig {
-		err := mgrCfgFunc(ctx, mgr, s.apiClient.ObjectFilter())
+		err := mgrCfgFunc(ctx, mgr, apiClient.ObjectFilter())
 		if err != nil {
 			return err
 		}
@@ -376,9 +386,27 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	err = s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, uccBuilder, xdsClientState)
+	builder, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, uccBuilder, xdsClientState)
 	if err != nil {
 		return err
+	}
+
+	if discoveryAddress != "" {
+		listener, err := net.Listen("tcp", discoveryAddress)
+		if err != nil {
+			return fmt.Errorf("binding discovery scope server: %w", err)
+		}
+		server := &http.Server{
+			Handler:           admin.NewDiscoveryScopeHandler(commoncol, builder.ControllerNames(), informerResources),
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+		defer server.Close()
+		logger.Info("starting discovery scope server", "address", listener.Addr())
+		go func() {
+			if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+				logger.Warn("discovery scope server stopped", "error", err)
+			}
+		}()
 	}
 
 	logger.Info("starting admin server")
@@ -407,7 +435,7 @@ func (s *setup) buildKgatewayWithConfig(
 	commonCollections *collections.CommonCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBuilder,
 	xdsClientState krtcollections.XDSClientState,
-) error {
+) (*controller.ControllerBuilder, error) {
 	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
@@ -437,7 +465,7 @@ func (s *setup) buildKgatewayWithConfig(
 		HelmValuesGeneratorOverride: s.helmValuesGeneratorOverride,
 		RestConfig:                  s.restConfig,
 		SetupOpts:                   setupOpts,
-		Client:                      s.apiClient,
+		Client:                      commonCollections.Client,
 		AugmentedPods:               augmentedPods,
 		UniqueClients:               ucc,
 		XDSClientState:              xdsClientState,
@@ -450,23 +478,23 @@ func (s *setup) buildKgatewayWithConfig(
 	})
 	if err != nil {
 		logger.Error("failed initializing controller: ", "error", err)
-		return err
+		return nil, err
 	}
 
 	logger.Info("waiting for cache sync")
 
 	err = c.Build(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// RunAndWait must be called AFTER all Informers clients have been created
-	s.apiClient.RunAndWait(ctx.Done())
+	commonCollections.Client.RunAndWait(ctx.Done())
 
 	// Wait for extra Informer caches to sync
-	s.apiClient.WaitForCacheSync("extra-informers", ctx.Done(), s.extraInformerCacheSyncHandlers...)
+	commonCollections.Client.WaitForCacheSync("extra-informers", ctx.Done(), s.extraInformerCacheSyncHandlers...)
 
-	return nil
+	return c, nil
 }
 
 // SetupLogging configures the global slog logger

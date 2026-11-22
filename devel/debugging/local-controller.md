@@ -78,6 +78,19 @@ Using a local web browser:
 - GET http://localhost:9095/snapshots/krt to inspect the KRT snapshot.
 - GET http://localhost:9095/snapshots/xds to inspect the XDS snapshot.
 
+To inspect discovery scope, set `KGW_DISCOVERY_SCOPE_BIND_ADDRESS=127.0.0.1:9096`
+before starting the controller and request `GET http://127.0.0.1:9096/discovery-scope`.
+Helm users can set the environment variable through `controller.extraEnv`.
+The listener is disabled by default and serves only the discovery scope endpoint.
+
+The JSON response includes the controller identity, build version, Gateway API
+controller names, parsed Kubernetes selector strings, selected namespaces, and
+the resources observed by the controller's informers, including their API versions.
+An empty selector array means all namespaces are selected. A custom object filter
+can make the selector and namespace fields unavailable, in which case both are
+`null`. Resources from extensions can be identified by group, version, and
+plural resource name even if their Kind is unavailable.
+
 When finished testing:
 
 ```sh
