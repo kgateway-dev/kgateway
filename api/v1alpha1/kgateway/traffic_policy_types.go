@@ -265,9 +265,11 @@ type RequestMirrorPolicy struct {
 	// HostRewriteLiteral replaces the entire Host/:authority header of mirrored requests with this
 	// value. The original port is not preserved, so include a port here if the mirror destination
 	// needs one. This implicitly disables appending the "-shadow" suffix, regardless of
-	// disableShadowHostSuffixAppend.
+	// disableShadowHostSuffixAppend. The value is a host name or IP address with an optional port,
+	// so it is at most 259 characters long (a 253-character DNS name plus ":65535").
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=259
 	HostRewriteLiteral *string `json:"hostRewriteLiteral,omitempty"`
 }
 
