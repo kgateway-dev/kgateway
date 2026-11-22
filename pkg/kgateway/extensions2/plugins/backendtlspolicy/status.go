@@ -108,12 +108,14 @@ func isStatusSummaryAncestor(key reports.ParentRefKey) bool {
 }
 
 // isGatewayAncestor reports whether an ancestor names a Gateway-side parent: the Gateway
-// itself, or the XListenerSet that contributed the listener a route attached to. Those are
-// the ancestors route translation reports. Every other ancestor in a BackendTLSPolicy's
-// report is a target ancestor from the per-backend status path.
+// itself, or the ListenerSet (or legacy XListenerSet) that contributed the listener a route
+// attached to. Those are the ancestors route translation reports. Every other ancestor in a
+// BackendTLSPolicy's report is a target ancestor from the per-backend status path.
 func isGatewayAncestor(key reports.ParentRefKey) bool {
 	switch {
 	case key.Group == wellknown.GatewayGroup && key.Kind == wellknown.GatewayKind:
+		return true
+	case key.Group == wellknown.ListenerSetGroup && key.Kind == wellknown.ListenerSetKind:
 		return true
 	case key.Group == wellknown.XListenerSetGroup && key.Kind == wellknown.XListenerSetKind:
 		return true

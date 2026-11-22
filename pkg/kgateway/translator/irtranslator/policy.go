@@ -217,35 +217,31 @@ func reportBackendObjectPolicyStatus(
 	}
 }
 
-// reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.
-// we can infer the attachment level of the policy based on a combination of PolicyRef.SectionName and the
-// listener's PolicyAncestorRef kind: empty sectionName indicates a gateway-wide policy attachment, non-empty
-// sectionName indicates a listener-level policy attachment. For ListenerSet reporting, we cannot rely on the
-// sectionName value alone, so we check the ancestor reference kind to make sure we report on that resource
-// instead of the Gateway.
+// reportRouteConfigPolicyErrors reports route-config policy errors on the resource the policy is attached to.
+// listenerPolicies are attached to the Gateway API listener the route config was built for, either by sectionName
+// or, for a ListenerSet listener, to the ListenerSet as a whole; they are reported on that listener. gatewayPolicies
+// are attached to the whole Gateway and are reported on the Gateway. The callers keep the two apart because the
+// level cannot be inferred later: an empty PolicyRef.SectionName does not distinguish a ListenerSet-wide policy from
+// a Gateway-wide one, and on a shared port the merged Envoy listener's ancestor is the Gateway regardless.
 //
 // Note: this function has different reporting behavior for HTTP vs HTTPS listeners due to how policy attachment
 // is handled at higher levels. For HTTPS listeners, this function is called from ComputeRouteConfiguration for
-// each attached GK, which can result in condition message overwrites when both Gateway-wide and listener-level
-// policies fail. The last SetCondition call wins, which is typically Gateway-wide due to processing order. For HTTP
-// listeners, policy errors are handled in runVhostPlugins at the vhost scope and do not call this function,
-// avoiding the overwrite issue.
-func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listener ir.ListenerIR, fc ir.FilterChainCommon, policies ...ir.PolicyAtt) {
-	for _, policy := range policies {
-		if policy.PolicyRef == nil {
+// each attached GK. For HTTP listeners, policy errors are handled in runVhostPlugins at the vhost scope and do not
+// call this function.
+func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, fc ir.FilterChainCommon, listenerPolicies, gatewayPolicies []ir.PolicyAtt) {
+	for _, policy := range listenerPolicies {
+		if policy.PolicyRef == nil || len(policy.Errors) == 0 {
 			continue
 		}
-		if len(policy.Errors) == 0 {
-			continue
-		}
-		if policy.PolicyRef.SectionName != "" || *listener.PolicyAncestorRef.Kind == wellknown.XListenerSetKind {
-			listenerReporter := getReporterForFilterChain(gw, r, fc)
-			listenerReporter.SetCondition(reporter.ListenerCondition{
-				Type:    gwv1.ListenerConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  reporter.ListenerReplacedReason,
-				Message: policy.FormatErrors(),
-			})
+		getReporterForFilterChain(gw, r, fc).SetCondition(reporter.ListenerCondition{
+			Type:    gwv1.ListenerConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  reporter.ListenerReplacedReason,
+			Message: policy.FormatErrors(),
+		})
+	}
+	for _, policy := range gatewayPolicies {
+		if policy.PolicyRef == nil || len(policy.Errors) == 0 {
 			continue
 		}
 		r.Gateway(gw.SourceObject.Obj).SetCondition(reporter.GatewayCondition{

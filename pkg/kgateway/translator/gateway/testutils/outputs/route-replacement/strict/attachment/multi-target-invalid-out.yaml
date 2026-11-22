@@ -339,9 +339,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Listener
-          reason: Accepted
-          status: "True"
+          message: 'extauth: gwtest/missing-extauth: gateway extension not found'
+          reason: ListenerReplaced
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully verified that Listener has no conflicts
