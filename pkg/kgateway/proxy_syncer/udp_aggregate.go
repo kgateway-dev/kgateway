@@ -268,9 +268,11 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 	// Envoy caps both the endpoint weights summed within a locality and the locality weights summed
 	// across a priority at the uint32 max. Each locality weight is the sum of its endpoints, so
 	// scaling every endpoint weight down by one divisor until the grand total fits keeps both sums
-	// under the cap while preserving the backendRef proportions.
+	// under the cap while preserving the backendRef proportions. Rounding a weight up to 1 adds at
+	// most 1 per endpoint, so the divisor leaves that much headroom.
 	if total > math.MaxUint32 {
-		div := (total + math.MaxUint32 - 1) / math.MaxUint32
+		limit := math.MaxUint32 - uint64(len(collected))
+		div := (total + limit - 1) / limit
 		for i := range collected {
 			scaled := collected[i].weight / div
 			if scaled == 0 {
