@@ -3,6 +3,7 @@ package deployer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 
@@ -14,6 +15,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 // staticValues is a HelmValuesGenerator that always returns the same values.
@@ -53,4 +56,35 @@ func TestGetObjsToDeployDoesNotLogValues(t *testing.T) {
 
 	assert.Contains(t, logs.String(), "got deployer helm values", "the debug line should still be logged")
 	assert.NotContains(t, logs.String(), secret)
+}
+
+// failingValues is a HelmValuesGenerator whose GetValues always fails.
+type failingValues struct{}
+
+func (failingValues) GetValues(context.Context, client.Object) (map[string]any, error) {
+	return nil, errors.New("invalid parameters")
+}
+
+func (failingValues) GetCacheSyncHandlers() []cache.InformerSynced {
+	return nil
+}
+
+// TestGetObjsToDeployErrorNamesKindStably guards the helm values error, which the Gateway
+// status reports: it must name the object's kind, and must not depend on whether the object
+// came with its TypeMeta set, which differs between informer paths.
+func TestGetObjsToDeployErrorNamesKindStably(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, gwv1.Install(scheme))
+	d := NewDeployer("test", scheme, nil, nil, failingValues{},
+		func(client.Object) (string, string) { return "test", "default" })
+
+	withoutTypeMeta := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"}}
+	withTypeMeta := withoutTypeMeta.DeepCopy()
+	withTypeMeta.SetGroupVersionKind(wellknown.GatewayGVK)
+
+	_, errWithout := d.GetObjsToDeploy(t.Context(), withoutTypeMeta)
+	_, errWith := d.GetObjsToDeploy(t.Context(), withTypeMeta)
+	require.EqualError(t, errWithout,
+		"failed to get helm values for object gateway.networking.k8s.io/v1, Kind=Gateway default/gw: invalid parameters")
+	require.EqualError(t, errWith, errWithout.Error(), "the message must not depend on TypeMeta")
 }

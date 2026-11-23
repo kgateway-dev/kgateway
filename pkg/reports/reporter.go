@@ -36,6 +36,9 @@ type GatewayReport struct {
 	listeners            map[string]*ListenerReport
 	observedGeneration   int64
 	attachedListenerSets int32
+	// parameters is the deployer's verdict on the Gateway's infrastructure parameters,
+	// merged in by ReduceStatusContributions.
+	parameters *GatewayParametersReport
 }
 
 type ListenerSetReport struct {

@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -174,6 +175,18 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 	return []byte(release.Manifest), nil
 }
 
+// objectGVK returns obj's GVK from the scheme, falling back to its TypeMeta for a type the
+// scheme does not know. TypeMeta alone is empty on some informer paths, and the GVK ends up in
+// errors reported in status, which must not change from one attempt to the next.
+func (d *Deployer) objectGVK(obj client.Object) schema.GroupVersionKind {
+	if d.scheme != nil {
+		if gvk, err := apiutil.GVKForObject(obj, d.scheme); err == nil {
+			return gvk
+		}
+	}
+	return obj.GetObjectKind().GroupVersionKind()
+}
+
 // GetObjsToDeploy does the following:
 //
 // * uses HelmValuesGenerator to perform lookup/merging etc to get a final set of helm values
@@ -189,7 +202,7 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetNamespace(), obj.GetName(), err)
+		return nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", d.objectGVK(obj).String(), obj.GetNamespace(), obj.GetName(), err)
 	}
 	if vals == nil {
 		return nil, nil
