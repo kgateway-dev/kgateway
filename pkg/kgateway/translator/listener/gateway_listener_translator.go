@@ -1059,12 +1059,6 @@ func translateTLSConfig(
 		return nil, err
 	}
 
-	// Validate that VerifySubjectAltNames requires a trusted CA to be configured
-	hasTrustedCA := frontendSource != nil && len(frontendSource.refs) > 0
-	if len(tlsConfig.VerifySubjectAltNames) > 0 && !hasTrustedCA {
-		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
-	}
-
 	fetchCA := func(r caCertRef) ([]byte, error) {
 		data, err := buildCaCertificateReference(kctx, ctx, queries, r.ref, r.fromGVK, r.fromNamespace)
 		return []byte(data), err
@@ -1074,7 +1068,26 @@ func translateTLSConfig(
 		return nil, errors.Join(certErr, validationErr)
 	}
 	tlsConfig.ClientCertificateValidation = validation
+
+	if !subjectAltNamesHaveCA(tlsConfig) {
+		// A failed CA lookup is the cause, so report it as the unresolved ref it is.
+		if validationErr != nil {
+			return nil, errors.Join(certErr, validationErr)
+		}
+		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+	}
+
 	return tlsConfig, errors.Join(certErr, validationErr)
+}
+
+// subjectAltNamesHaveCA reports whether tlsConfig either does not verify subject alt names or has a
+// client CA configured from the Gateway-level or ListenerPolicy validation. SAN verification
+// without a trusted CA is rejected by Envoy, so a CA ref that failed to resolve does not count.
+func subjectAltNamesHaveCA(tlsConfig *ir.TLSConfig) bool {
+	if len(tlsConfig.VerifySubjectAltNames) == 0 {
+		return true
+	}
+	return tlsConfig.ClientCertificateValidation != nil && len(tlsConfig.ClientCertificateValidation.CACertificates) > 0
 }
 
 // clientCertSource is one source of a listener's client certificate validation: the ListenerPolicies
