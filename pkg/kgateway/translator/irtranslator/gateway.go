@@ -126,7 +126,11 @@ func (t *Translator) ComputeListener(
 			pluginPass:      pass,
 		}
 
-		// compute routes
+		// TODO: make sure that all matchers are unique
+		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainCommon)
+		fc := fct.initFilterChain(hfc.FilterChainCommon)
+
+		// compute routes, and the filter chain once routes have been translated
 		hr := httpRouteConfigurationTranslator{
 			gw:                        gw,
 			listener:                  lis,
@@ -140,6 +144,12 @@ func (t *Translator) ComputeListener(
 			validationLevel:           t.ValidationLevel,
 			validator:                 t.Validator,
 			enableRouteSourceMetadata: t.EnableRouteSourceMetadata,
+			filterChain: &httpFilterChain{
+				out:      fc,
+				compute:  func() []*envoylistenerv3.Filter { return fct.computeHttpFilters(hfc, lis, rl) },
+				fallback: func() ([]*envoylistenerv3.Filter, error) { return fct.fallbackHttpFilters(hfc) },
+				reporter: rl,
+			},
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {
@@ -155,12 +165,6 @@ func (t *Translator) ComputeListener(
 			}
 		}
 
-		// compute chains
-
-		// TODO: make sure that all matchers are unique
-		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainCommon)
-		fc := fct.initFilterChain(hfc.FilterChainCommon)
-		fc.Filters = fct.computeHttpFilters(hfc, lis, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(hfc.Matcher.SniDomains) > 0 {
 			hasTls = true
