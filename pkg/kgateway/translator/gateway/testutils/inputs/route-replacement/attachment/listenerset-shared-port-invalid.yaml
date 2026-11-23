@@ -1,0 +1,48 @@
+# Validate that a ListenerSet-wide invalid policy reports to the ListenerSet's listener, and
+# not to the Gateway, when a Gateway listener shares the ListenerSet listener's port.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 8443
+    hostname: gateway.example.com
+  allowedListeners:
+    namespaces:
+      from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: test-listenerset
+  namespace: gwtest
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 8443
+    hostname: listenerset.example.com
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: invalid-traffic-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+  - name: test-listenerset
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
+  extAuth:
+    extensionRef:
+      name: missing-extauth

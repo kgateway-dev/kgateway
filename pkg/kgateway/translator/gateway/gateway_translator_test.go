@@ -4415,6 +4415,12 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
+			name:      "ListenerSet/Shared Port",
+			category:  "attachment",
+			inputFile: "listenerset-shared-port-invalid.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
+		{
 			name:      "HTTPRoute",
 			category:  "attachment",
 			inputFile: "httproute-invalid.yaml",

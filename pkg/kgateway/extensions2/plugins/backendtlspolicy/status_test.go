@@ -204,7 +204,8 @@ func TestBuildDesiredPolicyStatusSuppressesTargetAncestors(t *testing.T) {
 	serviceRef := ref("", wellknown.ServiceKind, "svc")
 	backendRef := ref(wellknown.BackendGVK.Group, wellknown.BackendGVK.Kind, "oauth-backend")
 	gatewayRef := ref(wellknown.GatewayGroup, wellknown.GatewayKind, "gw")
-	listenerSetRef := ref(wellknown.XListenerSetGroup, wellknown.XListenerSetKind, "ls")
+	listenerSetRef := ref(wellknown.ListenerSetGroup, wellknown.ListenerSetKind, "ls")
+	xListenerSetRef := ref(wellknown.XListenerSetGroup, wellknown.XListenerSetKind, "ls")
 	summaryRef := pluginreporter.PolicyStatusSummaryAncestorRef()
 
 	build := func(t *testing.T, refs ...gwv1.ParentReference) []gwv1.PolicyAncestorStatus {
@@ -243,10 +244,16 @@ func TestBuildDesiredPolicyStatusSuppressesTargetAncestors(t *testing.T) {
 			"a routed policy should report the same ancestors it reported before target ancestors existed")
 	})
 
-	t.Run("an XListenerSet ancestor suppresses target ancestors", func(t *testing.T) {
+	t.Run("a ListenerSet ancestor suppresses target ancestors", func(t *testing.T) {
 		got := build(t, serviceRef, listenerSetRef)
-		require.Equal(t, []string{"XListenerSet/ls"}, names(got),
+		require.Equal(t, []string{"ListenerSet/ls"}, names(got),
 			"a route attached through a listener set reports the listener set, not the target")
+	})
+
+	t.Run("an XListenerSet ancestor suppresses target ancestors", func(t *testing.T) {
+		got := build(t, serviceRef, xListenerSetRef)
+		require.Equal(t, []string{"XListenerSet/ls"}, names(got),
+			"a route attached through a legacy listener set reports the listener set, not the target")
 	})
 
 	t.Run("suppression is per policy, not per target", func(t *testing.T) {

@@ -1,5 +1,5 @@
-# Validate that XListenerSet-wide invalid policy reports to XListenerSet status
-# and affects all listeners within that XListenerSet.
+# Validate that ListenerSet-wide invalid policy reports to ListenerSet status
+# and affects all listeners within that ListenerSet.
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
