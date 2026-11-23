@@ -28,7 +28,11 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       commonTlsContext:
         combinedValidationContext:
-          defaultValidationContext: {}
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: external.example.com
+              sanType: DNS
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: external.example.com
@@ -75,7 +79,11 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       commonTlsContext:
         combinedValidationContext:
-          defaultValidationContext: {}
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: proxy.example.com
+              sanType: DNS
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: proxy.example.com

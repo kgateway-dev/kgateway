@@ -485,14 +485,14 @@ type CommonHttpProtocolOptions struct {
 type Http2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Defaults to 16777216 (16 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-	// Same range and default value as InitialStreamWindowSize.
+	// Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
@@ -576,9 +576,20 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
+// TLS configures TLS origination to the backend.
+//
+// Exactly one trust source must be set: secretRef, files, wellKnownCACertificates,
+// or insecureSkipVerify. To validate the backend against the system CA certificates,
+// set wellKnownCACertificates to System.
+//
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
-	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
+	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
+	//   - tls.crt: the client certificate chain, used for mTLS.
+	//   - tls.key: the client private key, used for mTLS.
+	//   - ca.crt: the root CA used to validate the backend's certificate. If omitted, the
+	//     backend's certificate is not verified, and verifySubjectAltNames cannot be used.
+	// tls.crt and tls.key must be set together or both omitted. Other keys are ignored.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
@@ -589,21 +600,34 @@ type TLS struct {
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
+	// When sni is set and verifySubjectAltNames is empty, the certificate must also
+	// be valid for the sni.
+	// WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+	// chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+	// whatever name it was issued for. Dynamic forward proxy backends are the exception:
+	// they always check the certificate against the request's host.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == 'System'",message="wellKnownCACertificates only supports System"
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// It can only be set to true; leave it unset to verify the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self",message="insecureSkipVerify can only be set to true; remove it to verify the backend certificate"
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
-	// The SNI domains that should be considered for TLS connection
+	// Sni is the server name sent in the TLS handshake (Server Name Indication).
+	// When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+	// the backend's certificate must also be valid for this name.
+	// For dynamic forward proxy backends, the request's host is sent instead.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
-	// note that a root_ca must be provided if this option is used.
+	// When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+	// When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
 	// +optional
 	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 

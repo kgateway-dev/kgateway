@@ -142,6 +142,13 @@ type ListenerDefaultConfig struct {
 	// allowing different listeners on the same port to enforce different mTLS trust boundaries.
 	// When configured on a ListenerPolicy targeting a specific listener (via sectionName),
 	// it overrides any Gateway-level mTLS configuration for that listener.
+	// When configured on a ListenerPolicy targeting the whole Gateway (no sectionName), it applies to
+	// every TLS-terminating listener of the Gateway, including those of attached ListenerSets, and it
+	// overrides the Gateway's spec.tls.frontend validation (default and perPort) for those listeners.
+	// A ListenerPolicy targeting a specific listener takes precedence over it, even when that policy's CA
+	// certificates cannot be fetched: if it requires client certificates the listener fails, otherwise the
+	// Gateway's spec.tls.frontend validation applies to the listener.
+	// CA certificate references without a namespace are resolved in the ListenerPolicy's namespace.
 	//
 	// Security Note: Per-listener CA certificate validation can be bypassed in scenarios where
 	// wildcard listeners (e.g., *.example.com) overlap with more specific hostnames on the same port,
@@ -484,13 +491,13 @@ type LocalReplyMapper struct {
 type ListenerHTTP2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Defaults to 16777216 (16 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-	// Same range and default value as InitialStreamWindowSize.
+	// Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
@@ -1226,7 +1233,9 @@ type ClientCertificateValidationConfig struct {
 
 	// CACertificateRefs contains references to Kubernetes Secrets or ConfigMaps containing
 	// CA certificates. Multiple references will be combined into a single trusted CA pool for the listener.
-	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data
+	// The referenced Secrets/ConfigMaps must have a ca.crt key containing the PEM data.
+	// A reference without a namespace is resolved in the ListenerPolicy's namespace. A reference to another
+	// namespace requires a ReferenceGrant in that namespace that allows references from ListenerPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=8
 	// +required

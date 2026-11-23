@@ -196,6 +196,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with verify subject alt names and ListenerPolicy ca certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/verify-subject-alt-names-listenerpolicy-ca.yaml"},
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-listenerpolicy-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with invalid conditions", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/invalid-conditions.yaml"},
@@ -482,6 +493,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/extauth-http.yaml"},
 			outputFile: "traffic-policy/extauth-http.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy on backendRef with errors fails closed", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/backendref-policy-errors.yaml"},
+			outputFile: "traffic-policy/backendref-policy-errors.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -1416,6 +1438,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcp route accepted only on the parentRefs attached to the listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/unmatched-parentref.yaml"},
+			outputFile: "tcp-routing/unmatched-parentref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/basic.yaml"},
@@ -1497,6 +1530,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/tls-multiple-certificates.yaml"},
 			outputFile: "tcp-routing/tls-multiple-certificates.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tls route accepted only on the parentRefs attached to the listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/unmatched-parentref.yaml"},
+			outputFile: "tls-routing/unmatched-parentref.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3788,6 +3832,75 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with mTLS for the whole Gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls.yaml"},
+			outputFile: "listener-policy/gateway-mtls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS selecting the Gateway by label, including from the global policy namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-selectors.yaml"},
+			outputFile: "listener-policy/gateway-mtls-selectors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		},
+			func(s *apisettings.Settings) {
+				s.GlobalPolicyNamespace = "kgateway-system"
+			})
+	})
+
+	t.Run("ListenerPolicy with mTLS for the whole Gateway overrides frontend TLS validation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS needs a ReferenceGrant from ListenerPolicy for CA refs to other namespaces", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-refgrant.yaml"},
+			outputFile: "listener-policy/gateway-mtls-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation whose CA is missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-missing-ca.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-missing-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation with unsupported CA kinds", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-invalid-kind.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-invalid-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy merge happens in the default and perPort fields", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/deep-merge.yaml"},
@@ -4547,6 +4660,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Parent delegates to multiple chidren", func(t *testing.T) {
 		test(t, "multiple_children.yaml")
+	})
+
+	t.Run("Parent rule delegates to multiple backendRefs", func(t *testing.T) {
+		test(t, "multiple_delegates_per_rule.yaml")
 	})
 
 	t.Run("Child is invalid as it is delegatee and specifies hostnames", func(t *testing.T) {

@@ -464,15 +464,12 @@ func (s *ControllerSuite) TestMetrics() {
 		setup(t)
 
 		gathered := metricstest.MustGatherMetricsContext(ctx, t,
-			"kgateway_controller_reconciliations_total",
-			"kgateway_controller_reconcile_duration_seconds")
+			"kgateway_controller_reconciliations_total")
 
 		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gateway"},
-					{Name: "namespace", Value: defaultNamespace},
-					{Name: "name", Value: gw.Name},
 					{Name: "result", Value: "success"},
 				},
 				Test: metricstest.GreaterOrEqual(1),
@@ -480,27 +477,14 @@ func (s *ControllerSuite) TestMetrics() {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "controller", Value: "gatewayclass"},
-					{Name: "namespace", Value: defaultNamespace},
-					{Name: "name", Value: gw.Name},
-					{Name: "result", Value: "success"},
-				},
-				Test: metricstest.GreaterOrEqual(1),
-			},
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gatewayclass-provisioner"},
-					{Name: "namespace", Value: defaultNamespace},
-					{Name: "name", Value: gw.Name},
 					{Name: "result", Value: "success"},
 				},
 				Test: metricstest.GreaterOrEqual(1),
 			},
 		})
-
-		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
+		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconciliations_total", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
-			{Name: "name", Value: gw.Name},
-			{Name: "namespace", Value: defaultNamespace},
+			{Name: "result", Value: "success"},
 		}})
 	})
 
@@ -523,7 +507,6 @@ func (s *ControllerSuite) TestMetrics() {
 
 		gathered := metricstest.MustGatherMetrics(t)
 		gathered.AssertMetricNotExists("kgateway_controller_reconciliations_total")
-		gathered.AssertMetricNotExists("kgateway_controller_reconcile_duration_seconds")
 	})
 }
 

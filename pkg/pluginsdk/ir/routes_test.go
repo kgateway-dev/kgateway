@@ -299,6 +299,14 @@ func TestHTTPRouteIREquals(t *testing.T) {
 		Backends:         []HttpBackendOrDelegate{{Backend: nil, AttachedPolicies: emptyPolicies}},
 		Name:             "ruleA",
 	}}
+	backendFiltersErr := makeHttpBackendOrDelegate("clusterA", 5)
+	backendFiltersErr.FiltersErr = errors.New("policy not found")
+	ruleBackendFiltersErr := []HttpRouteRuleIR{{
+		ExtensionRefs:    emptyPolicies,
+		AttachedPolicies: emptyPolicies,
+		Backends:         []HttpBackendOrDelegate{backendFiltersErr},
+		Name:             "ruleA",
+	}}
 	ruleBackendPolicyDiff := []HttpRouteRuleIR{{
 		ExtensionRefs:    emptyPolicies,
 		AttachedPolicies: emptyPolicies,
@@ -665,6 +673,46 @@ func TestHTTPRouteIREquals(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "diff_rules_backend_filters_err",
+			a: HttpRouteIR{
+				ObjectSource:                   ObjectSource{Namespace: "test-ns", Name: "route1"},
+				SourceObject:                   base,
+				AttachedPolicies:               emptyPolicies,
+				Rules:                          ruleA,
+				PrecedenceWeight:               0,
+				DelegationInheritParentMatcher: false,
+			},
+			b: HttpRouteIR{
+				ObjectSource:                   ObjectSource{Namespace: "test-ns", Name: "route1"},
+				SourceObject:                   base,
+				AttachedPolicies:               emptyPolicies,
+				Rules:                          ruleBackendFiltersErr,
+				PrecedenceWeight:               0,
+				DelegationInheritParentMatcher: false,
+			},
+			want: false,
+		},
+		{
+			name: "identical_with_backend_filters_err",
+			a: HttpRouteIR{
+				ObjectSource:                   ObjectSource{Namespace: "test-ns", Name: "route1"},
+				SourceObject:                   base,
+				AttachedPolicies:               emptyPolicies,
+				Rules:                          ruleBackendFiltersErr,
+				PrecedenceWeight:               0,
+				DelegationInheritParentMatcher: false,
+			},
+			b: HttpRouteIR{
+				ObjectSource:                   ObjectSource{Namespace: "test-ns", Name: "route1"},
+				SourceObject:                   base,
+				AttachedPolicies:               emptyPolicies,
+				Rules:                          ruleBackendFiltersErr,
+				PrecedenceWeight:               0,
+				DelegationInheritParentMatcher: false,
+			},
+			want: true,
+		},
+		{
 			name: "identical_with_rules",
 			a: HttpRouteIR{
 				ObjectSource:                   ObjectSource{Namespace: "test-ns", Name: "route1"},
@@ -751,7 +799,7 @@ func TestHTTPRouteIREquals(t *testing.T) {
 			a := assert.New(t)
 
 			got := tt.a.Equals(tt.b)
-			a.Equal(tt.want, got, cmp.Diff(tt.a, tt.b, cmpopts.IgnoreUnexported(BackendObjectIR{})))
+			a.Equal(tt.want, got, cmp.Diff(tt.a, tt.b, cmpopts.IgnoreUnexported(BackendObjectIR{}), cmpopts.EquateErrors()))
 		})
 	}
 }
