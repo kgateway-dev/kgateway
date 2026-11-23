@@ -5,9 +5,11 @@ set -euo pipefail
 
 : "${GITHUB_REPOSITORY:?}"
 : "${GITHUB_RUN_ID:?}"
-# The image build job's name, and the name of its step that uploads the image archive.
+# The image build job's name, the name of its step that uploads the image archive,
+# and the name of the uploaded artifact.
 : "${BUILD_JOB_NAME:?}"
 : "${UPLOAD_STEP_NAME:?}"
+: "${ARTIFACT_NAME:?}"
 
 # GITHUB_TOKEN requests per hour per repository are shared by every shard of
 # every concurrent run. kgateway-dev is on GitHub Enterprise (15,000 per hour),
@@ -28,13 +30,14 @@ max_missing=$((60 / poll_interval))
 
 api_errors=0
 missing=0
+uploaded=false
 # The workflow step has a slightly longer timeout as a second bound on API calls.
 deadline=$((SECONDS + 2700))
 while (( SECONDS < deadline )); do
   # Inspect the latest execution of the build job in this run. This also supports
   # rerunning only failed shards, which reuse the successful build and its artifact.
-  # The artifact can be downloaded as soon as its upload step succeeds, about a
-  # minute before the job's post-job cache saves finish, so that is enough.
+  # The upload step succeeds about a minute before the job's post-job cache
+  # saves finish, so it is the earliest signal.
   if ! state=$(gh api --paginate \
     "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100" \
     --jq '.jobs[] | select(.name == env.BUILD_JOB_NAME)
@@ -53,8 +56,8 @@ while (( SECONDS < deadline )); do
   state=${state%%$'\n'*}
   case "$state" in
     success)
-      echo "Shared e2e images uploaded."
-      exit 0
+      uploaded=true
+      break
       ;;
     "")
       missing=$((missing + 1))
@@ -74,5 +77,22 @@ while (( SECONDS < deadline )); do
   sleep "$poll_interval"
 done
 
-echo "Timed out waiting for shared e2e image build." >&2
+if [[ "$uploaded" != true ]]; then
+  echo "Timed out waiting for shared e2e image build." >&2
+  exit 1
+fi
+
+# The artifact can be missing for a second or two after its upload step
+# succeeds, and downloading it then fails. Wait until the run lists it.
+for _ in $(seq 1 60); do
+  if count=$(gh api \
+    "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$ARTIFACT_NAME" \
+    --jq '[.artifacts[] | select(.expired | not)] | length') && (( count > 0 )); then
+    echo "Shared e2e images uploaded."
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "Upload step succeeded, but run $GITHUB_RUN_ID never listed artifact '$ARTIFACT_NAME'." >&2
 exit 1
