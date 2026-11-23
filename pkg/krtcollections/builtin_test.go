@@ -1391,3 +1391,90 @@ func TestReportSessionPersistenceOverridden(t *testing.T) {
 		assert.NotPanics(t, func() { pass.applyRulePolicy(single, ruleIR{sessionPersistence: routeSP}, mergeOpts, newRoute()) })
 	})
 }
+
+// Envoy rejects Host in request_headers_to_add and NACKs the whole route
+// configuration. A rule's request `set: Host` becomes host_rewrite_literal.
+func TestRequestHeaderModifierSetHost(t *testing.T) {
+	routeWithAction := func() *envoyroutev3.Route {
+		return &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}}
+	}
+	filter := &gwv1.HTTPHeaderFilter{
+		Set:    []gwv1.HTTPHeader{{Name: "hOsT", Value: "api.example.com"}, {Name: "X-Forwarded-Host", Value: "orig.example.com"}},
+		Add:    []gwv1.HTTPHeader{{Name: "x-add", Value: "a"}},
+		Remove: []string{"x-remove"},
+	}
+
+	t.Run("request rule rewrites host", func(t *testing.T) {
+		hm := convertHeaderModifierIR(nil, filter, true)
+		route := routeWithAction()
+		hm.apply(route, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge})
+		assert.Equal(t, "api.example.com", route.GetRoute().GetHostRewriteLiteral())
+		var names []string
+		for _, h := range route.GetRequestHeadersToAdd() {
+			names = append(names, h.GetHeader().GetKey())
+		}
+		assert.Equal(t, []string{"x-add", "X-Forwarded-Host"}, names, "Host must not remain a header")
+		assert.Equal(t, []string{"x-remove"}, route.GetRequestHeadersToRemove())
+	})
+
+	t.Run("higher-priority host rewrite wins", func(t *testing.T) {
+		hm := convertHeaderModifierIR(nil, filter, true)
+		route := routeWithAction()
+		route.GetRoute().HostRewriteSpecifier = &envoyroutev3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "child.example.com"}
+		hm.apply(route, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge})
+		assert.Equal(t, "child.example.com", route.GetRoute().GetHostRewriteLiteral())
+	})
+
+	t.Run("redirect route ignores host", func(t *testing.T) {
+		hm := convertHeaderModifierIR(nil, filter, true)
+		route := &envoyroutev3.Route{Action: &envoyroutev3.Route_Redirect{Redirect: &envoyroutev3.RedirectAction{}}}
+		hm.apply(route, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge})
+		assert.Nil(t, route.GetRoute())
+		assert.Len(t, route.GetRequestHeadersToAdd(), 2)
+	})
+
+	t.Run("value with % stays a header for validation to reject", func(t *testing.T) {
+		hm := convertHeaderModifierIR(nil, &gwv1.HTTPHeaderFilter{Set: []gwv1.HTTPHeader{{Name: "Host", Value: "%REQ(x-host)%"}}}, true)
+		require.Nil(t, hm.HostRewrite)
+		require.Len(t, hm.Add, 1)
+		assert.Equal(t, "Host", hm.Add[0].GetHeader().GetKey())
+	})
+
+	t.Run("response Host stays a header for validation to reject", func(t *testing.T) {
+		hm := convertHeaderModifierIR(nil, filter, false)
+		require.Nil(t, hm.HostRewrite)
+		require.Len(t, hm.Add, 3)
+	})
+
+	t.Run("backendRef keeps Host as a header", func(t *testing.T) {
+		hm := convertHeaderModifierIR(nil, filter, true)
+		var pCtx ir.RouteBackendContext
+		hm.applyToBackend(&pCtx)
+		var names []string
+		for _, h := range pCtx.RequestHeadersToAdd {
+			names = append(names, h.GetHeader().GetKey())
+		}
+		assert.Equal(t, []string{"x-add", "X-Forwarded-Host", "Host"}, names)
+		assert.Len(t, hm.Add, 2, "applyToBackend must not grow the shared IR slice")
+	})
+}
+
+func TestRuleHostRewriteConflict(t *testing.T) {
+	rewrite := func(host string) gwv1.HTTPRouteFilter {
+		h := gwv1.PreciseHostname(host)
+		return gwv1.HTTPRouteFilter{Type: gwv1.HTTPRouteFilterURLRewrite, URLRewrite: &gwv1.HTTPURLRewriteFilter{Hostname: &h}}
+	}
+	setHost := func(host string) gwv1.HTTPRouteFilter {
+		return gwv1.HTTPRouteFilter{Type: gwv1.HTTPRouteFilterRequestHeaderModifier, RequestHeaderModifier: &gwv1.HTTPHeaderFilter{
+			Set: []gwv1.HTTPHeader{{Name: "Host", Value: host}},
+		}}
+	}
+	require.NoError(t, ruleHostRewriteConflict(nil))
+	require.NoError(t, ruleHostRewriteConflict([]gwv1.HTTPRouteFilter{rewrite("a.example.com")}))
+	require.NoError(t, ruleHostRewriteConflict([]gwv1.HTTPRouteFilter{setHost("a.example.com")}))
+	require.NoError(t, ruleHostRewriteConflict([]gwv1.HTTPRouteFilter{rewrite("a.example.com"), setHost("a.example.com")}), "agreeing filters are not a conflict")
+	require.NoError(t, ruleHostRewriteConflict([]gwv1.HTTPRouteFilter{rewrite("a.example.com"), setHost("%REQ(x)%")}), "a non-literal Host is rejected by route validation instead")
+	require.EqualError(t,
+		ruleHostRewriteConflict([]gwv1.HTTPRouteFilter{setHost("b.example.com"), rewrite("a.example.com")}),
+		`URLRewrite hostname "a.example.com" conflicts with RequestHeaderModifier set Host "b.example.com"`)
+}

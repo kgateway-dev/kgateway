@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyheaders"
 )
 
 func convertLocalReplyConfig(
@@ -84,6 +85,11 @@ func translateLocalReplyBodyMapper(krtctx krt.HandlerContext, from krtcollection
 		}
 		options, err := pluginutils.ConvertMutationsToOptions(pluginutils.ConvertMutations(gwFilter))
 		if err != nil {
+			return nil, err
+		}
+		// Envoy parses these with its route HeaderParser; one it rejects
+		// would NACK the whole listener.
+		if err := envoyheaders.ValidateMutations(options, nil); err != nil {
 			return nil, err
 		}
 		envoyMapper.HeadersToAdd = options
