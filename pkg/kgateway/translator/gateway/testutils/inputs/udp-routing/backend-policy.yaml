@@ -1,0 +1,92 @@
+# A BackendConfigPolicy on a backend that a single-backend UDPRoute and a multi-backend UDPRoute
+# both reference. The single-backend route reaches the backend through its own cluster, which keeps
+# the policy, and udp_proxy picks up its sourceIP hash policy. The settings that have no effect on
+# UDP are reported on that route. The multi-backend route reaches it through the aggregate cluster,
+# which carries none of the policy's cluster settings, and reports that.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: udp-single
+    protocol: UDP
+    port: 8080
+  - name: udp-weighted
+    protocol: UDP
+    port: 8081
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: UDPRoute
+metadata:
+  name: single-backend
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: udp-single
+  rules:
+  - backendRefs:
+    - name: udp-svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: UDPRoute
+metadata:
+  name: weighted
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: udp-weighted
+  rules:
+  - backendRefs:
+    - name: udp-svc-a
+      port: 8080
+      weight: 70
+    - name: udp-svc-b
+      port: 8080
+      weight: 30
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: udp-svc-a-policy
+spec:
+  targetRefs:
+  - name: udp-svc-a
+    group: ""
+    kind: Service
+  tcpKeepalive:
+    keepAliveProbes: 3
+    keepAliveTime: 30s
+    keepAliveInterval: 5s
+  loadBalancer:
+    ringHash:
+      hashPolicies:
+      - sourceIP: {}
+      - header:
+          name: x-user
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udp-svc-a
+spec:
+  selector:
+    app: udp-a
+  ports:
+  - protocol: UDP
+    port: 8080
+    targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udp-svc-b
+spec:
+  selector:
+    app: udp-b
+  ports:
+  - protocol: UDP
+    port: 8080
+    targetPort: 80

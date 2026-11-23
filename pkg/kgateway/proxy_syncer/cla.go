@@ -148,14 +148,15 @@ func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
 }
 
 // PerClientEnvoyEndpoints indexes [UccWithEndpoints] rows by client for EDS
-// assembly. Backend and local-cluster endpoint collections both use this shape.
+// assembly. Backend, local-cluster and UDP aggregate endpoint collections all
+// use this shape.
 type PerClientEnvoyEndpoints struct {
 	endpoints krt.Collection[UccWithEndpoints]
 	index     krt.Index[string, UccWithEndpoints]
-	// sources are the backend endpoint inputs, indexed by the CLA each produces.
-	// Nil when unknown (test doubles).
-	sources          krt.Collection[ir.EndpointsForBackend]
-	sourcesByCluster krt.Index[string, ir.EndpointsForBackend]
+	// hasSource reports whether an input derives the named CLA, registering a
+	// KRT dependency on the name. Nil when unknown (test doubles, and the local
+	// cluster's collection).
+	hasSource func(kctx krt.HandlerContext, claName string) bool
 }
 
 // FetchEndpointsForClient returns every CLA belonging to ucc, registering a KRT
@@ -174,10 +175,21 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 // endpoint rows. It registers a KRT dependency on the name. Without a source
 // index (test doubles) it reports true, assuming the endpoints are on their way.
 func (ie *PerClientEnvoyEndpoints) HasEndpointsSource(kctx krt.HandlerContext, claName string) bool {
-	if ie.sources == nil {
+	if ie.hasSource == nil {
 		return true
 	}
-	return len(krt.Fetch(kctx, ie.sources, krt.FilterIndex(ie.sourcesByCluster, claName))) > 0
+	return ie.hasSource(kctx, claName)
+}
+
+// backendEndpointsSource reports whether a backend's endpoints input derives
+// the named CLA.
+func backendEndpointsSource(sources krt.Collection[ir.EndpointsForBackend]) func(krt.HandlerContext, string) bool {
+	byCluster := krtpkg.UnnamedIndex(sources, func(ep ir.EndpointsForBackend) []string {
+		return []string{ep.ClusterName}
+	})
+	return func(kctx krt.HandlerContext, claName string) bool {
+		return len(krt.Fetch(kctx, sources, krt.FilterIndex(byCluster, claName))) > 0
+	}
 }
 
 // NewPerClientEnvoyEndpoints resolves endpoints for each (client, backend) pair
@@ -233,15 +245,11 @@ func NewPerClientEnvoyEndpoints(
 	idx := krtpkg.UnnamedIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
-	sourcesByCluster := krtpkg.UnnamedIndex(kgatewayEndpoints, func(ep ir.EndpointsForBackend) []string {
-		return []string{ep.ClusterName}
-	})
 
 	return PerClientEnvoyEndpoints{
-		endpoints:        eps,
-		index:            idx,
-		sources:          kgatewayEndpoints,
-		sourcesByCluster: sourcesByCluster,
+		endpoints: eps,
+		index:     idx,
+		hasSource: backendEndpointsSource(kgatewayEndpoints),
 	}
 }
 

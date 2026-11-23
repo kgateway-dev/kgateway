@@ -121,6 +121,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		backend.ObjIr = backendIR
 		backend.Errors = backendIR.errors
 		backend.SupportedRouteKinds = supportedRouteKinds(i)
+		backend.InlineEndpoints = inlineEndpoints(i)
 
 		// Parse common annotations
 		ir.ParseObjectAnnotations(&backend, i)
@@ -164,6 +165,13 @@ func supportedRouteKinds(be *kgateway.Backend) []schema.GroupKind {
 		return ir.HTTPRouteKinds
 	}
 	return nil
+}
+
+// inlineEndpoints reports whether the Backend's cluster carries its own
+// endpoints. Static and PriorityGroups Backends build STATIC or DNS clusters
+// with an inline load assignment and contribute no endpoint rows.
+func inlineEndpoints(be *kgateway.Backend) bool {
+	return be.Spec.Static != nil || len(be.Spec.PriorityGroups) > 0
 }
 
 // buildTranslateFunc builds a function that translates a Backend to a backendIr that

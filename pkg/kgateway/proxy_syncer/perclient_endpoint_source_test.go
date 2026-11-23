@@ -66,10 +66,7 @@ func newSourceFixture(t *testing.T, state krtcollections.XDSClientState, routed 
 	endpoints := PerClientEnvoyEndpoints{
 		endpoints: f.rows.AsCollection(),
 		index:     krtpkg.UnnamedIndex(f.rows.AsCollection(), func(ep UccWithEndpoints) []string { return []string{ep.Client.ResourceName()} }),
-		sources:   sourceCol,
-		sourcesByCluster: krtpkg.UnnamedIndex(sourceCol, func(ep ir.EndpointsForBackend) []string {
-			return []string{ep.ClusterName}
-		}),
+		hasSource: backendEndpointsSource(sourceCol),
 	}
 	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs.AsCollection(), gateways, endpoints,
 		newTestPerClientClustersFromCol(krt.NewStaticCollection[uccWithCluster](nil, clusterRows), f.uccs.AsCollection()), clusterScoping{})

@@ -41,6 +41,11 @@ type LoadBalancerConfigIR struct {
 	useHostnameForHashing      bool
 	hasZoneAware               bool
 	zoneAwareForceMinEndpoints *uint32
+	// udpHash is what the Ring Hash or Maglev hash policies mean for udp_proxy. Translation
+	// computes it once so a UDPRoute does not unmarshal loadBalancingPolicy, which Equals already
+	// compares.
+	// +noKrtEquals
+	udpHash udpHashPolicies
 }
 
 func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, policyNamespace string) (*LoadBalancerConfigIR, error) {
@@ -81,8 +86,10 @@ func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, poli
 		out.loadBalancingPolicy, err = buildRoundRobinPolicy(config, policyName, policyNamespace)
 	case config.RingHash != nil:
 		out.loadBalancingPolicy, out.useHostnameForHashing, err = buildRingHashPolicy(config)
+		out.udpHash = translateUdpHashPolicies(config.RingHash.HashPolicies)
 	case config.Maglev != nil:
 		out.loadBalancingPolicy, out.useHostnameForHashing, err = buildMaglevPolicy(config)
+		out.udpHash = translateUdpHashPolicies(config.Maglev.HashPolicies)
 	case config.Random != nil:
 		out.loadBalancingPolicy, err = buildRandomPolicy(config)
 	}

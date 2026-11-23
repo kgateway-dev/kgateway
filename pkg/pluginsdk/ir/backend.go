@@ -217,6 +217,13 @@ type BackendObjectIR struct {
 	// the route translator reject the reference with ResolvedRefs=False/InvalidKind
 	// instead.
 	SupportedRouteKinds []schema.GroupKind
+
+	// InlineEndpoints marks a backend whose endpoints live in its own cluster (a
+	// STATIC or DNS cluster) rather than in EndpointsForBackend rows served over
+	// EDS. A UDPRoute rule with several backendRefs routes to one cluster built
+	// from its backends' endpoint rows, so it cannot send traffic to such a
+	// backend, and route translation rejects it there.
+	InlineEndpoints bool
 }
 
 // HTTPRouteKinds is the set of route kinds that carry HTTP traffic. A backend plugin
@@ -322,6 +329,9 @@ func (c *BackendObjectIR) Equals(in *BackendObjectIR) bool {
 		return false
 	}
 	if !slices.Equal(c.SupportedRouteKinds, in.SupportedRouteKinds) {
+		return false
+	}
+	if c.InlineEndpoints != in.InlineEndpoints {
 		return false
 	}
 	return true
@@ -546,6 +556,9 @@ type GatewayForDeployer struct {
 	ControllerName string
 	// All ports from all listeners
 	Ports smallset.Set[int32]
+	// UDPPorts is the subset of Ports whose listener protocol is UDP, so the deployer creates the
+	// proxy Service and container ports with the UDP protocol instead of the default TCP.
+	UDPPorts smallset.Set[int32]
 }
 
 func (c GatewayForDeployer) ResourceName() string {
@@ -555,7 +568,8 @@ func (c GatewayForDeployer) ResourceName() string {
 func (c GatewayForDeployer) Equals(in GatewayForDeployer) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) &&
 		c.ControllerName == in.ControllerName &&
-		slices.Equal(c.Ports.List(), in.Ports.List())
+		slices.Equal(c.Ports.List(), in.Ports.List()) &&
+		slices.Equal(c.UDPPorts.List(), in.UDPPorts.List())
 }
 
 type ListenerForDeployer struct {

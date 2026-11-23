@@ -288,6 +288,13 @@ func routeInformerGate(
 	}
 }
 
+// servesOnlyOtherVersions reports whether a kind's CRD is installed and serves versions, but not gvr.
+// An absent CRD or unreadable versions are not reported: a delayed writer handles a CRD that
+// appears later, and only a CRD serving other versions leaves its watch unable to sync.
+func servesOnlyOtherVersions(served sets.Set[string], gvr schema.GroupVersionResource) bool {
+	return served.Len() > 0 && !served.Contains(gvr.Version)
+}
+
 // servedVersionGate is routeInformerGate for a kind with a single known version, where
 // being served is the whole question.
 func servedVersionGate(src routeVersionSource, gvr schema.GroupVersionResource) informerGate {

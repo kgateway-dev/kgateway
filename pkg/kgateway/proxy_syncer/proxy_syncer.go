@@ -384,6 +384,21 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.uniqueClients,
 	)
 
+	// Weighted multi-backend UDPRoutes route to a synthetic cluster whose CLA is the weighted union
+	// of their backends' per-client CLAs, emitted only to the gateways whose CDS carries the cluster
+	// (see NewPerClientUdpAggregateEndpoints).
+	extraEndpoints := []PerClientEnvoyEndpoints{localClusterEpPerClient}
+	if s.commonCols.ResolvedUDPRoutes != nil {
+		udpAggregates := newUdpAggregateCollection(krtopts, s.commonCols.ResolvedUDPRoutes)
+		extraEndpoints = append(extraEndpoints, NewPerClientUdpAggregateEndpoints(
+			krtopts,
+			s.uniqueClients,
+			udpAggregates,
+			s.mostXdsSnapshots,
+			epPerClient,
+		))
+	}
+
 	s.perclientSnapCollection = snapshotPerClient(
 		krtopts,
 		s.uniqueClients,
@@ -391,7 +406,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		epPerClient,
 		clustersPerClient,
 		scoping,
-		localClusterEpPerClient,
+		extraEndpoints...,
 	)
 
 	backendPolicyContributions := backendPolicyStatusContributions(finalBackendsWithPolicyStatus, clustersPerClient.StatusClusters(), krtopts)

@@ -54,6 +54,12 @@ func getSupportedRouteKindsForListener(listener gwv1.Listener) map[groupName][]r
 				wellknown.TCPRouteKind,
 			},
 		}
+	case gwv1.UDPProtocolType:
+		return map[groupName][]routeKind{
+			gwv1.GroupName: {
+				wellknown.UDPRouteKind,
+			},
+		}
 	case gwv1.TLSProtocolType:
 		return getSupportedTLSRouteKindsForMode(listener.TLS)
 	case gwv1.ProtocolType(istioprotocol.HBONE):

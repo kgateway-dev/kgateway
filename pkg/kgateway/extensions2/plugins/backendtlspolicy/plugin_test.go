@@ -208,3 +208,9 @@ func TestEqualsObservesCARotation(t *testing.T) {
 	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocketWithCA(t, "other.example.com", testCAPEM)}),
 		"a changed hostname must not compare equal")
 }
+
+func TestBackendTLSPolicyUdpProxy(t *testing.T) {
+	got := (&backendTlsPolicy{transportSocket: tlsSocket(t, "example.com")}).UdpProxy()
+	assert.Nil(t, got.HashPolicy)
+	assert.Equal(t, []string{"validation"}, got.Ignored, "udp_proxy does not originate TLS")
+}
