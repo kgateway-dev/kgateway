@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -240,8 +241,18 @@ func policyTargetStatusContributions(
 // unresolvedPolicyTargets returns one message per explicit targetRef that does not resolve, in
 // targetRefs order. Label selectors (refs without a Name) and kinds without a resolver are
 // skipped: a selector matching nothing is a valid state, not a missing target.
+//
+// A BackendTLSPolicy's refs of a kind it cannot attach to (for example an HTTPRoute) come
+// first. Its plugin keeps them out of policy.TargetRefs so they attach to nothing, so they are
+// read back from the policy itself.
 func unresolvedPolicyTargets(kctx krt.HandlerContext, policy ir.PolicyWrapper, resolvers policyTargetResolvers) []string {
 	var problems []string
+	if btp, ok := policy.Policy.(*gwv1.BackendTLSPolicy); ok {
+		_, unsupported := backendtlspolicyplugin.SplitTargetRefs(btp.Spec.TargetRefs)
+		for _, err := range unsupported {
+			problems = append(problems, err.Error())
+		}
+	}
 	for _, ref := range policy.TargetRefs {
 		if ref.Name == "" {
 			continue
