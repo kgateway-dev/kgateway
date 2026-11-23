@@ -4317,6 +4317,26 @@ func (in *OAuth2JWTConfig) DeepCopyInto(out *OAuth2JWTConfig) {
 		*out = new(apisv1.BackendObjectReference)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.CacheDuration != nil {
+		in, out := &in.CacheDuration, &out.CacheDuration
+		*out = new(v1.Duration)
+		**out = **in
+	}
+	if in.AsyncFetch != nil {
+		in, out := &in.AsyncFetch, &out.AsyncFetch
+		*out = new(JWKSAsyncFetch)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.RetryPolicy != nil {
+		in, out := &in.RetryPolicy, &out.RetryPolicy
+		*out = new(JWKSRetryPolicy)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Timeout != nil {
+		in, out := &in.Timeout, &out.Timeout
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.AccessToken != nil {
 		in, out := &in.AccessToken, &out.AccessToken
 		*out = new(OAuth2JWTProcessingConfig)
