@@ -64,9 +64,9 @@ func AssertXDSWireTrafficIsEncrypted(ctx context.Context, t *testing.T, testInst
 	markerHost := fmt.Sprintf("xds-wire-%d.example.com", time.Now().UnixNano())
 	markerRoute := xdsWireProbeRouteManifest(markerHost)
 	testutils.Cleanup(t, func() {
-		_ = testInstallation.ActionsProvider().Kubectl().Delete(context.Background(), []byte(markerRoute))
+		_ = testInstallation.Cluster().Manifests().Delete(context.Background(), markerRoute)
 	})
-	if err := testInstallation.ActionsProvider().Kubectl().Apply(ctx, []byte(markerRoute)); err != nil {
+	if err := testInstallation.Cluster().Manifests().Apply(markerRoute); err != nil {
 		t.Fatalf("failed to apply xDS wire probe route: %v", err)
 	}
 	testInstallation.Assertions(t).EventuallyHTTPRouteCondition(

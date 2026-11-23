@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -411,9 +412,14 @@ func validateObjectsAgainstAPIServer(
 	assert.NoError(t, errors.Join(errs...), "rendered objects must pass API server validation")
 }
 
-// sanitizeOutput removes things that change often but are not relevant to the tests
+// configChecksumRegex matches the pod template's bootstrap checksum annotation line.
+var configChecksumRegex = regexp.MustCompile(`(?m)^[ \t]*kgateway\.dev/checksum-config: [0-9a-f]{64}\n`)
+
+// sanitizeOutput removes things that change often but are not relevant to the tests.
+// The bootstrap checksum changes with any bootstrap edit, so the golden files leave it
+// out; pkg/kgateway/deployer/checksum_test.go covers the checksum itself.
 func sanitizeOutput(got []byte) []byte {
-	return got
+	return configChecksumRegex.ReplaceAll(got, nil)
 }
 
 // objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"

@@ -286,10 +286,17 @@ type HttpBackendOrDelegate struct {
 	AttachedPolicies AttachedPolicies
 	Backend          *BackendRefIR
 	Delegate         *ObjectSource
+
+	// FiltersErr contains any error resolving the backendRef's filters (e.g. an ExtensionRef
+	// to a missing policy), so that translation fails closed for this backend.
+	FiltersErr error
 }
 
 func (h HttpBackendOrDelegate) Equals(other HttpBackendOrDelegate) bool {
 	if !h.AttachedPolicies.Equals(other.AttachedPolicies) {
+		return false
+	}
+	if !errorsEqual(h.FiltersErr, other.FiltersErr) {
 		return false
 	}
 	if h.Backend != nil && other.Backend != nil {

@@ -235,3 +235,63 @@ func TestSecretsBySelectorSearchScope(t *testing.T) {
 		})
 	}
 }
+
+// TestSecretsBySelectorLabelMatch pins that a selector matches the way the API server
+// matches it: every label has to be present on the secret with the selected value. A
+// marker label has an empty value, and a secret without that label must not pass for
+// one that carries it.
+func TestSecretsBySelectorLabelMatch(t *testing.T) {
+	labeled := func(name string, labels map[string]string) *corev1.Secret {
+		sec := testSecret()
+		sec.Namespace, sec.Name, sec.Labels = "app-ns", name, labels
+		return sec
+	}
+	objs := []any{
+		labeled("gold", map[string]string{"keys.example.com/gold": "", "tier": "gold"}),
+		labeled("free", map[string]string{"keys.example.com/free": "", "tier": "free"}),
+		labeled("gold-valued", map[string]string{"keys.example.com/gold": "true"}),
+		labeled("unlabeled", nil),
+	}
+
+	tests := []struct {
+		name     string
+		selector map[string]string
+		want     []string
+	}{
+		{
+			name:     "value",
+			selector: map[string]string{"tier": "gold"},
+			want:     []string{"gold"},
+		},
+		{
+			name:     "empty value needs the label to be present",
+			selector: map[string]string{"keys.example.com/gold": ""},
+			want:     []string{"gold"},
+		},
+		{
+			name:     "empty value of a label no secret has",
+			selector: map[string]string{"keys.example.com/platinum": ""},
+		},
+		{
+			name:     "all labels have to match",
+			selector: map[string]string{"keys.example.com/gold": "", "tier": "free"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secrets, err := newTestSecretIndex(t, objs...).GetSecretsBySelector(krt.TestingDummyContext{},
+				From{GroupKind: sourceGK, Namespace: "app-ns"}, secretGK, tt.selector)
+			if err != nil {
+				t.Fatalf("GetSecretsBySelector() = %v, want no error", err)
+			}
+			var got []string
+			for _, sec := range secrets {
+				got = append(got, sec.Name)
+			}
+			slices.Sort(got)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("GetSecretsBySelector() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

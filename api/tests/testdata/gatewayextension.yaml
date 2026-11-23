@@ -198,3 +198,31 @@ spec:
             YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
             CwIDAQAB
             -----END PUBLIC KEY-----
+---
+# GatewayExtension: extAuth statusOnError must be a status code Envoy defines
+_err: 'spec.extAuth.statusOnError: Unsupported value: 418'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: gwext-extauth-status-on-error-undefined
+spec:
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 80
+    statusOnError: 418
+---
+# GatewayExtension: extProc messageTimeout must be at most 1h
+_err: 'timeout must be at most 1h.'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: gwext-extproc-message-timeout-too-large
+spec:
+  extProc:
+    grpcService:
+      backendRef:
+        name: ext-proc
+        port: 80
+    messageTimeout: 2h

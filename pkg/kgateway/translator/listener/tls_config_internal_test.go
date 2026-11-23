@@ -97,7 +97,11 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 				Parent:   gw,
 			}
 
-			tlsConfig, err := translateTLSConfig(krt.TestingDummyContext{}, context.Background(), l, tls, queries, tt.validation, "default")
+			tlsConfig, err := translateTLSConfig(krt.TestingDummyContext{}, context.Background(), l, tls, queries, &ir.Gateway{
+				ObjectSource:      ir.ObjectSource{Kind: "Gateway", Namespace: "default", Name: "gw"},
+				Obj:               gw,
+				FrontendTLSConfig: &ir.FrontendTLSConfigIR{DefaultValidation: tt.validation},
+			})
 			if tt.wantSANErr || tt.wantCAErr != "" {
 				if tt.wantSANErr {
 					assert.ErrorIs(t, err, sslutils.ErrVerifySubjectAltNamesRequiresCA)

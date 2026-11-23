@@ -8,6 +8,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,17 +51,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 	testutils.Cleanup(s.T(), func() {
-		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithServiceManifest)
+		err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, routeWithServiceManifest)
 		s.NoError(err, "can delete manifest")
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, serviceManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, serviceManifest)
 		s.NoError(err, "can delete manifest")
 	})
 
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithServiceManifest)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(routeWithServiceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	// apply the service manifest separately, after the route table is applied, to ensure it can be applied after the route table
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, serviceManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(serviceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
@@ -77,30 +78,39 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 
 func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWithoutTCPRoute() {
 	// Get the current TCPRoute CRD before deleting it. We don't know until runtime which version is installed.
-	tcpRouteCrdYaml, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "get", "crd", "tcproutes.gateway.networking.k8s.io", "-o", "yaml")
+	tcpRouteCrd := &apiextv1.CustomResourceDefinition{}
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKeyFromObject(&wellknown.TCPRouteCRD), tcpRouteCrd)
 	s.Assert().NoError(err, "can get TCPRoute CRD")
 
 	testutils.Cleanup(s.T(), func() {
-		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithServiceManifest)
+		err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, routeWithServiceManifest)
 		s.Assert().NoError(err, "can delete manifest")
-		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, serviceManifest)
+		err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, serviceManifest)
 		s.Assert().NoError(err, "can delete manifest")
 
 		// Restore the TCPRoute CRD using the saved content
-		err = s.TestInstallation.Actions.Kubectl().Create(s.Ctx, []byte(tcpRouteCrdYaml))
+		restored := &apiextv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        tcpRouteCrd.Name,
+				Labels:      tcpRouteCrd.Labels,
+				Annotations: tcpRouteCrd.Annotations,
+			},
+			Spec: tcpRouteCrd.Spec,
+		}
+		err = s.TestInstallation.ClusterContext.Client.Create(s.Ctx, restored)
 		s.NoError(err, "can apply TCPRoute CRD")
 		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.Ctx, &wellknown.TCPRouteCRD)
 	})
 
 	// Remove the TCPRoute CRD to assert HTTPRoute services still work.
-	err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, tcpRouteCrdManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, tcpRouteCrdManifest)
 	s.Assert().NoError(err, "can delete manifest")
 
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithServiceManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(routeWithServiceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	// apply the service manifest separately, after the route table is applied, to ensure it can be applied after the route table
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, serviceManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(serviceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
@@ -118,11 +128,11 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 func (s *testingSuite) TestClearStaleStatus() {
 	testutils.Cleanup(s.T(), func() {
 		// routeMissingGwManifest only modify the route thus cleaning up routeWithServiceManifest is enough.
-		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithGwManifest)
+		err := s.TestInstallation.ClusterContext.Manifests().DeleteFiles(s.Ctx, routeWithGwManifest)
 		s.NoError(err, "can delete manifest")
 	})
 
-	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithGwManifest)
+	err := s.TestInstallation.ClusterContext.Manifests().ApplyFiles(routeWithGwManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	controllerName := s.gatewayClassControllerName(wellknown.DefaultGatewayClassName)
@@ -139,7 +149,7 @@ func (s *testingSuite) TestClearStaleStatus() {
 	})
 
 	// Modify route to reference missing-gw
-	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeMissingGwManifest)
+	err = s.TestInstallation.ClusterContext.Manifests().ApplyFiles(routeMissingGwManifest)
 	s.Require().NoError(err, "can apply manifest")
 
 	// Verify kgateway status is cleared but other controller status remains

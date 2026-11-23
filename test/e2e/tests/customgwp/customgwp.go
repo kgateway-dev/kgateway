@@ -122,7 +122,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	// a stale entry with the wrong parametersRef races the reconciler below.
 	deleteStaleKgatewayGatewayClasses(ctx, t, testInstallation)
 
-	if err := testInstallation.ActionsProvider().Kubectl().Apply(ctx, []byte(kgatewayGWP)); err != nil {
+	if err := testInstallation.Cluster().Manifests().Apply(kgatewayGWP); err != nil {
 		t.Fatalf("failed to create GatewayParameters: %v", err)
 	}
 
@@ -132,7 +132,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultGatewayClassName},
 	})
 
-	if err := testInstallation.ActionsProvider().Kubectl().Apply(ctx, []byte(kgatewayGateway)); err != nil {
+	if err := testInstallation.Cluster().Manifests().Apply(kgatewayGateway); err != nil {
 		t.Fatalf("failed to create Gateway: %v", err)
 	}
 
@@ -185,7 +185,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	// pods must stay running.
 	testInstallation.Assertions(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
-	if err := testInstallation.ActionsProvider().Kubectl().Apply(ctx, []byte(kgatewayGWP2)); err != nil {
+	if err := testInstallation.Cluster().Manifests().Apply(kgatewayGWP2); err != nil {
 		t.Fatalf("failed to create GatewayParameters kgatewayGWP2: %v", err)
 	}
 

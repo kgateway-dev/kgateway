@@ -4,26 +4,12 @@ package routereplacement
 
 import (
 	"path/filepath"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
-
-const defaultNamespace = "route-replacement-test"
-
-func installNamespace() string {
-	ns, _ := envutils.LookupOrDefault(testutils.InstallNamespace, "route-replacement-test")
-	return ns
-}
-
-func transformInstallNamespace(content string) string {
-	return strings.ReplaceAll(content, defaultNamespace, installNamespace())
-}
 
 var (
 	setupManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
@@ -35,13 +21,6 @@ var (
 	listenerMergeBlastRadiusManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-merge-blast-radius.yaml")
 	missingExtensionManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-attached-missing-extension.yaml")
 	dualErrorManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-attached-dual-error.yaml")
-
-	// Service that fronts the kgateway controller's /metrics endpoint, created
-	// by setup.yaml in the install namespace (where the controller pod lives).
-	kgatewayMetricsObjectMeta = metav1.ObjectMeta{
-		Name:      "kgateway-metrics",
-		Namespace: installNamespace(),
-	}
 
 	invalidPolicy = metav1.ObjectMeta{
 		Name:      "invalid-traffic-policy",
