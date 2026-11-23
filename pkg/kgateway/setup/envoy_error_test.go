@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/security"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -70,7 +71,7 @@ func expectedGauge(val float64, typeURL string) *metricstest.ExpectedMetric {
 
 func TestSingleErrorLifecycle(t *testing.T) {
 	resetMetrics()
-	cb := newLogNackCallback(true)
+	cb := newLogNackCallback(true, nil)
 	require.NoError(t, cb.OnStreamOpen(authenticatedContext(), 1, ""))
 
 	// First request with an error -> increments total and gauge
@@ -107,7 +108,7 @@ func TestSingleErrorLifecycle(t *testing.T) {
 
 func TestMultipleResourcesAndStreams(t *testing.T) {
 	resetMetrics()
-	cb := newLogNackCallback(true)
+	cb := newLogNackCallback(true, nil)
 	require.NoError(t, cb.OnStreamOpen(authenticatedContext(), 1, ""))
 
 	// Stream 1 errors on resource A and B
@@ -178,7 +179,7 @@ func TestRejectionMetricIdentityAndCardinality(t *testing.T) {
 			// Reset seeds an empty-label series; exclude it from cardinality assertions.
 			xdsRejectsTotal.DeletePartialMatch(kmetrics.Label{Name: gwNameLabel, Value: ""})
 			xdsRejectsCurrent.DeletePartialMatch(kmetrics.Label{Name: gwNameLabel, Value: ""})
-			cb := newLogNackCallback(auth)
+			cb := newLogNackCallback(auth, nil)
 			ctx, cancel := context.WithCancel(authenticatedContext())
 			defer cancel()
 			clients, build, _ := krtcollections.NewUniquelyConnectedClients(auth)
@@ -221,7 +222,7 @@ func TestUnauthenticatedRejectionOfNonGatewayRole(t *testing.T) {
 	t.Cleanup(resetMetrics)
 	xdsRejectsTotal.DeletePartialMatch(kmetrics.Label{Name: gwNameLabel, Value: ""})
 	xdsRejectsCurrent.DeletePartialMatch(kmetrics.Label{Name: gwNameLabel, Value: ""})
-	cb := newLogNackCallback(false)
+	cb := newLogNackCallback(false, nil)
 	ctx := t.Context()
 	clients, build, _ := krtcollections.NewUniquelyConnectedClients(false)
 	col := build(ctx, krtutil.KrtOptions{Stop: ctx.Done()}, nil)
@@ -238,7 +239,7 @@ func TestUnauthenticatedRejectionOfNonGatewayRole(t *testing.T) {
 func TestRejectionRequiresAcceptedStream(t *testing.T) {
 	resetMetrics()
 	t.Cleanup(resetMetrics)
-	cb := newLogNackCallback(true)
+	cb := newLogNackCallback(true, nil)
 	require.ErrorContains(t, cb.OnStreamOpen(context.Background(), 1, ""), "missing authenticated xDS peer")
 	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "rejected"})))
 	require.Empty(t, cb.streamState)
@@ -286,7 +287,7 @@ func TestRejectionMetricsFollowResolvedIdentity(t *testing.T) {
 	clients, build, _ := krtcollections.NewUniquelyConnectedClients(true)
 	col := build(ctx, krtutil.KrtOptions{Stop: ctx.Done()}, pods.AsCollection())
 	require.True(t, col.WaitUntilSynced(ctx.Done()))
-	metricsCallback := newLogNackCallback(true)
+	metricsCallback := newLogNackCallback(true, nil)
 	chain := chainCallbacks(clients, metricsCallback)
 	require.NoError(t, chain.OnStreamOpen(ctx, 1, ""))
 	req := dr(fullType, &status.Status{Message: "rejected"})
@@ -324,4 +325,42 @@ func TestRejectionMetricsFollowResolvedIdentity(t *testing.T) {
 	assertMetrics("second-gateway", 1, 0)
 	chain.OnStreamClosed(2, req.Node)
 	require.Empty(t, metricsCallback.streamIdentity)
+}
+
+// Rejections from a resolved Gateway reach the tracker, including a changed message on a
+// repeated NACK, and resolve on ACK and on stream close.
+func TestRejectionsFeedTracker(t *testing.T) {
+	resetMetrics()
+	t.Cleanup(resetMetrics)
+	tracker := xds.NewRejectionTracker()
+	cb := newLogNackCallback(true, tracker)
+	gw := types.NamespacedName{Namespace: ns, Name: name}
+	rows := func() []xds.GatewayXdsRejection { return tracker.Rejections().List() }
+
+	require.NoError(t, cb.OnStreamOpen(authenticatedContext(), 1, ""))
+	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom"})))
+	require.Equal(t, []xds.GatewayXdsRejection{{Gateway: gw, Rejections: []xds.TypeRejection{{TypeURL: typeURL, Message: "boom"}}}}, rows())
+
+	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom again"})))
+	require.Equal(t, "boom again", rows()[0].Rejections[0].Message)
+
+	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, nil)))
+	require.Empty(t, rows(), "an ACK resolves the rejection")
+
+	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom"})))
+	require.Len(t, rows(), 1)
+	cb.OnStreamClosed(1, nil)
+	require.Empty(t, rows(), "a closed stream no longer rejects anything")
+}
+
+func TestUnresolvedRoleRejectionsDoNotFeedTracker(t *testing.T) {
+	resetMetrics()
+	t.Cleanup(resetMetrics)
+	tracker := xds.NewRejectionTracker()
+	cb := newLogNackCallback(true, tracker)
+	require.NoError(t, cb.OnStreamOpen(authenticatedContext(), 1, ""))
+	req := dr(fullType, &status.Status{Message: "rejected"})
+	req.Node.Metadata.Fields[xds.RoleKey] = structpb.NewStringValue("some-other-proxy~ns~name")
+	require.NoError(t, cb.OnStreamRequest(1, req))
+	require.Empty(t, tracker.Rejections().List())
 }
