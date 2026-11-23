@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -62,6 +63,13 @@ func TestBackendConfigPolicyIREquals(t *testing.T) {
 		a, b = base(), base()
 		b.dnsJitter = durationpb.New(1 * time.Second)
 		assert.False(t, a.Equals(b))
+	})
+
+	t.Run("differing outlierDetectionHttpOptions is not equal", func(t *testing.T) {
+		a, b := base(), base()
+		b.outlierDetectionHttpOptions = &envoy_upstreams_v3.HttpProtocolOptions_OutlierDetection{}
+		assert.False(t, a.Equals(b), "a changed outlierDetectionHttpOptions must invalidate the cached IR")
+		assert.False(t, b.Equals(a), "and the comparison must be symmetric")
 	})
 
 	t.Run("a different type is not equal", func(t *testing.T) {

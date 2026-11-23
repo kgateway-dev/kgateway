@@ -131,6 +131,7 @@ func mergeOutlierDetection(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPoli
 		return
 	}
 	p1.outlierDetection = p2.outlierDetection
+	p1.outlierDetectionHttpOptions = p2.outlierDetectionHttpOptions
 	mergeOrigins.SetOne("outlierDetection", p2Ref, p2MergeOrigins)
 }
 
