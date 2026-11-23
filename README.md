@@ -46,6 +46,10 @@ Kgateway is feature-rich, fast, and flexible. It excels in function-level routin
 
 The project was launched in 2018 as **Gloo** by Solo.io and has been [production-ready since 2019](https://www.solo.io/blog/announcing-gloo-1-0-a-production-ready-envoy-based-api-gateway). Since then, it has steadily evolved to become the most trusted and feature-rich API gateway for Kubernetes, processing billions of API requests for many of the world's biggest companies. Please see [the migration plan](https://github.com/kgateway-dev/kgateway/issues/10363) for more information about the transition from Gloo to kgateway.
 
+## Getting Started
+
+New to kgateway? Head over to the [kgateway documentation](https://kgateway.dev/docs) to install kgateway on a Kubernetes cluster and route your first request.
+
 ## Get involved
 
 - [Join us on our Slack channel](https://kgateway.dev/slack/)
@@ -57,7 +61,7 @@ The project was launched in 2018 as **Gloo** by Solo.io and has been [production
 
 ## Contributing to kgateway
 
-Please refer to [devel/contributing/README.md](/devel/contributing/README.md) as a starting point for contributing to the project.
+Please refer to [devel/contributing/README.md](devel/contributing/README.md) as a starting point for contributing to the project, and join `#kgateway-contributors` on [Slack](https://kgateway.dev/slack/) to connect with maintainers and fellow contributors.
 
 ## Releasing kgateway
 
@@ -69,7 +73,7 @@ See our [SECURITY.md](SECURITY.md) file for details.
 
 ## Thanks
 
-Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io) and [agentgateway](https://github.com/agentgateway/agentgateway), the two data planes upon which we build our dual control plane architecture.
+Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io), the data plane powering kgateway, and [agentgateway](https://github.com/agentgateway/agentgateway) for our shared history and collaboration.
 
 ## Contributors
 
