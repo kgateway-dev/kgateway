@@ -27,6 +27,8 @@ Clusters:
           - ecdsa_bogus
           tlsMaximumProtocolVersion: TLSv1_3
           tlsMinimumProtocolVersion: TLSv1_2
+        validationContext: {}
+      sni: backend.example.com
   type: EDS
 Listeners:
 - address:

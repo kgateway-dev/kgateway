@@ -719,10 +719,16 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
 		}
 
+		// On a TLS listener the filter chain must only serve the listener's hostname, as the
+		// Envoy listener is shared with the other listeners of the port. Empty for TCP listeners.
+		var matcher ir.FilterChainMatch
+		matcher.SniDomains = slices.Clone(tc.sniDomains)
+
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
 				StatPrefix:      buildStatPrefix("tcp", tc.parents.listener.Port, tRoute.Namespace, tRoute.Name),
+				Matcher:         matcher,
 				TLS:             tlsConfig,
 			},
 			BackendRefs:      backends,

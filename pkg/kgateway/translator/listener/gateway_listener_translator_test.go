@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/onsi/gomega/types"
 	"go.uber.org/mock/gomock"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
@@ -86,6 +87,9 @@ func tlsToIr(tlsRoute *gwv1a2.TLSRoute) *ir.TlsRouteIR {
 		},
 		SourceObject: tlsRoute,
 		ParentRefs:   tlsRoute.Spec.ParentRefs,
+	}
+	for _, h := range tlsRoute.Spec.Hostnames {
+		routeir.Hostnames = append(routeir.Hostnames, string(h))
 	}
 	if len(tlsRoute.Spec.Rules) == 0 {
 		return routeir
@@ -1131,6 +1135,161 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			tcpListener := translatedListener.TcpFilterChain[0]
 			Expect(tcpListener.FilterChainCommon.TLS).NotTo(BeNil())
 			Expect(tcpListener.FilterChainCommon.TLS.AlpnProtocols).To(Equal([]string{string(annotations.AllowEmptyAlpnProtocols)}))
+			Expect(tcpListener.FilterChainCommon.Matcher.SniDomains).To(Equal([]string{"example.com"}))
+		})
+
+		Context("with several routes on the port", func() {
+			var (
+				parentRefs  []gwv1.ParentReference
+				backendRefs []gwv1.BackendRef
+			)
+
+			BeforeEach(func() {
+				parentRefs = []gwv1.ParentReference{
+					{
+						Name:      gwv1.ObjectName("test-gateway"),
+						Namespace: new(gwv1.Namespace("default")),
+						Kind:      new(gwv1.Kind(wellknown.GatewayKind)),
+					},
+				}
+				backendRefs = []gwv1.BackendRef{
+					{
+						BackendObjectReference: gwv1.BackendObjectReference{
+							Name:      "backend-svc1",
+							Namespace: new(gwv1.Namespace("default")),
+							Port:      new(gwv1.PortNumber(3001)),
+						},
+					},
+				}
+
+				certPEM, keyPEM, err := k8scert.GenerateSelfSignedCertKey("example.com", nil, nil)
+				Expect(err).NotTo(HaveOccurred())
+
+				queries.EXPECT().
+					GetSecretForRef(
+						gomock.Any(),
+						gomock.Any(),
+						wellknown.GatewayGVK.GroupKind(),
+						"default",
+						gomock.Eq(tlsSecretRef),
+					).
+					Return(&ir.Secret{
+						ObjectSource: ir.ObjectSource{
+							Group:     "",
+							Kind:      "Secret",
+							Namespace: "default",
+							Name:      string(tlsSecretRef.Name),
+						},
+						Data: map[string][]byte{
+							corev1.TLSCertKey:       certPEM,
+							corev1.TLSPrivateKeyKey: keyPEM,
+						},
+					}, nil).
+					AnyTimes()
+			})
+
+			It("should match only the hostname of the listener the TCPRoute is attached to", func() {
+				By("Creating a second TLS listener on the same port with another hostname")
+				otherListener := *gwListener.DeepCopy()
+				otherListener.Name = "bar-tls-tcproute"
+				otherListener.Hostname = new(gwv1.Hostname("other.example.com"))
+
+				route := tcpRoute("tcp-route")
+				route.Spec = gwv1a2.TCPRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+					Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
+				}
+				otherRoute := tcpRoute("other-tcp-route")
+				otherRoute.Spec = *route.Spec.DeepCopy()
+
+				ml.AppendTlsListener(lisToIr(gwListener), []*query.RouteInfo{{Object: tcpToIr(route)}}, listenerReporter)
+				ml.AppendTlsListener(lisToIr(otherListener), []*query.RouteInfo{{Object: tcpToIr(otherRoute)}}, statusReporter.Gateway(gateway).Listener(&otherListener))
+				Expect(ml.Listeners).To(HaveLen(1))
+
+				By("Validating that each TCPRoute's filter chain matches its own listener's hostname")
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, queries, statusReporter)
+				haveChain := func(name, sni string) types.GomegaMatcher {
+					return SatisfyAll(
+						WithTransform(func(c ir.TcpIR) string { return c.FilterChainName }, ContainSubstring(name)),
+						WithTransform(func(c ir.TcpIR) []string { return c.Matcher.SniDomains }, Equal([]string{sni})),
+					)
+				}
+				Expect(translatedListener.TcpFilterChain).To(ConsistOf(
+					haveChain("default.tcp-route", "example.com"),
+					haveChain("default.other-tcp-route", "other.example.com"),
+				))
+			})
+
+			It("should accept the oldest route and reject conflicting routes with the same SNI domains", func() {
+				By("Creating routes that all resolve to the listener's hostname, with different CreationTimestamps")
+				olderRoute := tcpRoute("older-tcp-route")
+				olderRoute.CreationTimestamp = metav1.NewTime(time.Now().Add(-time.Hour))
+				olderRoute.Spec = gwv1a2.TCPRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+					Rules:           []gwv1a2.TCPRouteRule{{BackendRefs: backendRefs}},
+				}
+
+				newerRoute := tcpRoute("newer-tcp-route")
+				newerRoute.CreationTimestamp = metav1.Now()
+				newerRoute.Spec = *olderRoute.Spec.DeepCopy()
+
+				newerTLSRoute := tlsRoute("newer-tls-route")
+				newerTLSRoute.CreationTimestamp = metav1.Now()
+				newerTLSRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: parentRefs},
+					Rules:           []gwv1a2.TLSRouteRule{{BackendRefs: backendRefs}},
+				}
+
+				// newer first, to prove ordering is by timestamp not slice order.
+				routes := []*query.RouteInfo{
+					{Object: tlsToIr(newerTLSRoute), ParentRef: parentRefs[0], HostnameOverrides: []string{"example.com"}},
+					{Object: tcpToIr(newerRoute), ParentRef: parentRefs[0]},
+					{Object: tcpToIr(olderRoute), ParentRef: parentRefs[0]},
+				}
+
+				rm := reports.NewReportMap()
+				statusReporter = reports.NewReporter(&rm)
+				ml.AppendTlsListener(lisToIr(gwListener), routes, statusReporter.Gateway(gateway).Listener(&gwListener))
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, queries, statusReporter)
+
+				By("Validating that the routes share one filter chain, which the oldest route wins")
+				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+				Expect(translatedListener.TcpFilterChain[0].FilterChainName).To(ContainSubstring(olderRoute.Name))
+				Expect(translatedListener.TcpFilterChain[0].FilterChainCommon.Matcher.SniDomains).To(Equal([]string{"example.com"}))
+
+				findProgrammed := func(conds []metav1.Condition) *metav1.Condition {
+					for i := range conds {
+						if conds[i].Type == conditions.KgatewayConditionProgrammed {
+							return &conds[i]
+						}
+					}
+					return nil
+				}
+
+				By("Validating that the older TCPRoute is Programmed and the newer routes are rejected")
+				olderStatus := rm.BuildRouteStatus(olderRoute, wellknown.DefaultGatewayControllerName)
+				Expect(olderStatus).NotTo(BeNil())
+				Expect(olderStatus.Parents).To(HaveLen(1))
+				olderProgrammed := findProgrammed(olderStatus.Parents[0].Conditions)
+				Expect(olderProgrammed).NotTo(BeNil(), "Expected Programmed condition on older route")
+				Expect(olderProgrammed.Status).To(Equal(metav1.ConditionTrue))
+
+				newerStatus := rm.BuildRouteStatus(newerRoute, wellknown.DefaultGatewayControllerName)
+				Expect(newerStatus).NotTo(BeNil())
+				Expect(newerStatus.Parents).To(HaveLen(1))
+				newerProgrammed := findProgrammed(newerStatus.Parents[0].Conditions)
+				Expect(newerProgrammed).NotTo(BeNil(), "Expected Programmed condition on newer TCPRoute")
+				Expect(newerProgrammed.Status).To(Equal(metav1.ConditionFalse))
+				Expect(newerProgrammed.Reason).To(Equal("Conflicted"))
+
+				newerTLSStatus := rm.BuildRouteStatus(newerTLSRoute, wellknown.DefaultGatewayControllerName)
+				Expect(newerTLSStatus).NotTo(BeNil())
+				Expect(newerTLSStatus.Parents).To(HaveLen(1))
+				newerTLSProgrammed := findProgrammed(newerTLSStatus.Parents[0].Conditions)
+				Expect(newerTLSProgrammed).NotTo(BeNil(), "Expected Programmed condition on newer TLSRoute")
+				Expect(newerTLSProgrammed.Status).To(Equal(metav1.ConditionFalse))
+				Expect(newerTLSProgrammed.Reason).To(Equal("Conflicted"))
+			})
 		})
 	})
 })
