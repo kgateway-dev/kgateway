@@ -71,13 +71,13 @@ func NewPerClientLocalClusterEndpoints(
 		logger.Debug("building local cluster CLA", "local_cluster_name", localClusterName, "gateway", gatewayName, "namespace", gatewayNamespace)
 		gwPods := krt.Fetch(kctx, localityPods, krt.FilterIndex(podsByGateway, gatewayPodIndexKey(gatewayNamespace, gatewayName)))
 		cla := buildLocalClusterLoadAssignment(localClusterName, gwPods)
-		return &UccWithEndpoints{
+		return &UccWithEndpoints{&uccEndpointsRow{
 			Client:        ucc,
 			Endpoints:     sharedproto.Wrap(cla),
 			EndpointsHash: hashLocalClusterLoadAssignment(cla),
 			endpointsName: localClusterName,
 			resourceName:  uccEndpointsResourceName(ucc, localClusterName),
-		}
+		}}
 	}, krtopts.ToOptions("LocalClusterEndpoints")...)
 
 	idx := krtpkg.UnnamedIndex(endpoints, func(ucc UccWithEndpoints) []string {

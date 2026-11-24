@@ -290,12 +290,12 @@ func (f *erroredClusterFixture) endpointsFor(name string, localities int) UccWit
 		})
 	}
 
-	return UccWithEndpoints{
+	return UccWithEndpoints{&uccEndpointsRow{
 		Client:        f.ucc,
 		Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps}),
 		EndpointsHash: hash,
 		endpointsName: name,
-	}
+	}}
 }
 
 func (f *erroredClusterFixture) awaitSnapshot(g gomega.Gomega, pred func(XdsSnapWrapper) bool) XdsSnapWrapper {
