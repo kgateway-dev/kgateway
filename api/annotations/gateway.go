@@ -57,6 +57,9 @@ const (
 	// VerifySubjectAltNames is the annotation key used to set the verify subject alt names for a
 	// TLS listener or a BackendTLSPolicy.
 	// The value is a comma separated list of subject alt names, e.g "example.com,www.example.com".
+	// Each entry is matched against the SAN type its value implies: a value with a scheme (such as
+	// the SPIFFE ID "spiffe://example.org/ns/default/sa/client") as a URI SAN, a value with an "@"
+	// as an email SAN, an IP address as both an IP SAN and a DNS SAN, and anything else as a DNS SAN.
 	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	// Note: This annotation requires a trusted CA to be configured
 	VerifySubjectAltNames gwv1.AnnotationKey = "kgateway.dev/verify-subject-alt-names"
