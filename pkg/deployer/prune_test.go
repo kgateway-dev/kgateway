@@ -2,13 +2,19 @@ package deployer
 
 import (
 	"context"
+	"slices"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube"
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -420,5 +426,195 @@ func TestPruneRemovedResourcesLongGatewayName(t *testing.T) {
 		if len(list.Items) != 1 {
 			t.Errorf("expected 1 PDB, got %d", len(list.Items))
 		}
+	})
+}
+
+func TestPruneRemovedResources_StaleWorkloadKind(t *testing.T) {
+	const (
+		ns     = "test-ns"
+		gwName = "test-gateway"
+	)
+	ctx := context.Background()
+
+	gw := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: gwName, Namespace: ns, UID: "gw-uid"},
+		Spec:       gwv1.GatewaySpec{GatewayClassName: wellknown.DefaultGatewayClassName},
+	}
+	gw.SetGroupVersionKind(wellknown.GatewayGVK)
+
+	meta := func(name string, controlled bool) metav1.ObjectMeta {
+		m := metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels:    map[string]string{wellknown.GatewayNameLabel: gwName},
+		}
+		if controlled {
+			m.OwnerReferences = []metav1.OwnerReference{{
+				APIVersion: wellknown.GatewayGVK.GroupVersion().String(),
+				Kind:       wellknown.GatewayGVK.Kind,
+				Name:       gwName,
+				UID:        gw.UID,
+				Controller: new(true),
+			}}
+		}
+		return m
+	}
+	deployment := func(name string, controlled bool) *appsv1.Deployment {
+		d := &appsv1.Deployment{ObjectMeta: meta(name, controlled)}
+		d.SetGroupVersionKind(wellknown.DeploymentGVK)
+		return d
+	}
+	daemonSet := func(name string, controlled bool) *appsv1.DaemonSet {
+		d := &appsv1.DaemonSet{ObjectMeta: meta(name, controlled)}
+		d.SetGroupVersionKind(wellknown.DaemonSetGVK)
+		return d
+	}
+	names := func(t *testing.T, fc kube.Client, gvk schema.GroupVersionKind) []string {
+		t.Helper()
+		gvr, err := wellknown.GVKToGVR(gvk)
+		require.NoError(t, err)
+		list, err := fc.Dynamic().Resource(gvr).Namespace(ns).List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		var out []string
+		for _, item := range list.Items {
+			out = append(out, item.GetName())
+		}
+		slices.Sort(out)
+		return out
+	}
+
+	readyDeployment := func(name string) *appsv1.Deployment {
+		d := deployment(name, true)
+		d.Generation = 1
+		d.Spec.Replicas = new(int32(2))
+		d.Status = appsv1.DeploymentStatus{ObservedGeneration: 1, UpdatedReplicas: 2, AvailableReplicas: 2}
+		return d
+	}
+	readyDaemonSet := func(name string) *appsv1.DaemonSet {
+		d := daemonSet(name, true)
+		d.Generation = 1
+		d.Status = appsv1.DaemonSetStatus{ObservedGeneration: 1, DesiredNumberScheduled: 3, UpdatedNumberScheduled: 3, NumberAvailable: 3}
+		return d
+	}
+
+	t.Run("switching to DaemonSet deletes the owned Deployment", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, readyDeployment(gwName), deployment("user-deploy", false), readyDaemonSet(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		assert.Equal(t, []string{"user-deploy"}, names(t, fc, wellknown.DeploymentGVK),
+			"only the Deployment the Gateway controls should be pruned")
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK))
+	})
+
+	t.Run("switching to Deployment deletes the owned DaemonSet", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, readyDeployment(gwName), readyDaemonSet(gwName), daemonSet("user-ds", false))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK))
+		assert.Equal(t, []string{"user-ds"}, names(t, fc, wellknown.DaemonSetGVK),
+			"only the DaemonSet the Gateway controls should be pruned")
+	})
+
+	// The old workload keeps serving until its replacement can take over.
+	notReadyDaemonSets := map[string]func() *appsv1.DaemonSet{
+		"has no available pods": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Status.NumberAvailable = 0
+			return ds
+		},
+		"is scheduled on no nodes": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Status = appsv1.DaemonSetStatus{ObservedGeneration: 1}
+			return ds
+		},
+		"has a spec its controller has not observed": func() *appsv1.DaemonSet {
+			ds := readyDaemonSet(gwName)
+			ds.Generation = 2
+			return ds
+		},
+	}
+	for name, replacement := range notReadyDaemonSets {
+		t.Run("keeps the Deployment while the DaemonSet "+name, func(t *testing.T) {
+			fc := fake.NewClient(t, gw, readyDeployment(gwName), replacement())
+			d := &Deployer{client: fc}
+
+			require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+			assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK), "the serving Deployment must be kept")
+		})
+	}
+
+	t.Run("keeps the Deployment while the DaemonSet does not exist yet", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, readyDeployment(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK), "the serving Deployment must be kept")
+	})
+
+	t.Run("keeps the DaemonSet while the Deployment has no available replicas", func(t *testing.T) {
+		dep := readyDeployment(gwName)
+		dep.Status.AvailableReplicas = 0
+		fc := fake.NewClient(t, gw, dep, readyDaemonSet(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK), "the serving DaemonSet must be kept")
+	})
+
+	// Waiting for every pod could deadlock: the old pods can hold the room the
+	// replacement's pending pods need. One available pod is enough to serve.
+	t.Run("a partly available DaemonSet replaces the Deployment", func(t *testing.T) {
+		ds := readyDaemonSet(gwName)
+		ds.Status.NumberAvailable = 1
+		ds.Status.UpdatedNumberScheduled = 1
+		fc := fake.NewClient(t, gw, readyDeployment(gwName), ds)
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		assert.Empty(t, names(t, fc, wellknown.DeploymentGVK), "the Deployment should be pruned")
+	})
+
+	t.Run("a partly available Deployment replaces the DaemonSet", func(t *testing.T) {
+		dep := readyDeployment(gwName)
+		dep.Status.AvailableReplicas = 1
+		dep.Status.UpdatedReplicas = 1
+		fc := fake.NewClient(t, gw, dep, readyDaemonSet(gwName))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{deployment(gwName, true)}))
+
+		assert.Empty(t, names(t, fc, wellknown.DaemonSetGVK), "the DaemonSet should be pruned")
+	})
+
+	t.Run("reads no workload status when there is no old workload", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, readyDaemonSet(gwName), deployment("user-deploy", false))
+		d := &Deployer{client: fc}
+		dyn := fc.Dynamic().(*dynamicfake.FakeDynamicClient)
+		dyn.ClearActions()
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, []client.Object{daemonSet(gwName, true)}))
+
+		for _, action := range dyn.Actions() {
+			assert.NotEqual(t, "get", action.GetVerb(), "unexpected read of %s", action.GetResource().Resource)
+		}
+		assert.Equal(t, []string{"user-deploy"}, names(t, fc, wellknown.DeploymentGVK))
+	})
+
+	t.Run("no workload in the desired set prunes no workload", func(t *testing.T) {
+		fc := fake.NewClient(t, gw, deployment(gwName, true), daemonSet(gwName, true))
+		d := &Deployer{client: fc}
+
+		require.NoError(t, d.PruneRemovedResources(ctx, gw, nil))
+
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DeploymentGVK))
+		assert.Equal(t, []string{gwName}, names(t, fc, wellknown.DaemonSetGVK))
 	})
 }
