@@ -5,10 +5,17 @@ import (
 	"testing"
 	"time"
 
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	kgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -51,6 +58,465 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 	require.Contains(t, byName, "p2")
 	assert.True(t, errors.Is(byName["p1"], err1))
 	assert.True(t, errors.Is(byName["p2"], err2))
+}
+
+// TestMergePoliciesDoesNotMutateSourceIRs covers the delegated-route shape from
+// test/e2e/features/route_delegation: one child route reached through two parents with
+// different inherited-policy-priority annotations.
+//
+// A policy IR is KRT collection output shared by every translation that references it,
+// and a child's policy is shared by all of its delegating parents. Merging must not write
+// into it: the source would then contribute its already-merged value to the next
+// translation, so config accumulates across routes and across translation cycles, and
+// values leak between delegation trees.
+func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
+	gk := schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy"}
+
+	// translate merges a child policy with a parent policy inherited from a delegating
+	// parent route, the way runRoutePlugins does for a delegated route.
+	//
+	// mergeSettingsJSON is the policyMerge setting, which policy.MergePolicies applies to
+	// the merge within a hierarchy but not to the merge across hierarchies.
+	translate := func(child, parent *TrafficPolicy, prio apiannotations.InheritedPolicyPriorityValue, mergeSettingsJSON string) *TrafficPolicy {
+		t.Helper()
+		merged := policy.MergePolicies([]ir.PolicyAtt{
+			{
+				GroupKind:            gk,
+				PolicyIr:             child,
+				PolicyRef:            &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Name: "child", Namespace: "team1"},
+				HierarchicalPriority: 0,
+			},
+			{
+				GroupKind:               gk,
+				PolicyIr:                parent,
+				PolicyRef:               &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Name: "parent", Namespace: "infra"},
+				HierarchicalPriority:    -1,
+				InheritedPolicyPriority: prio,
+			},
+		}, mergeTrafficPolicies, mergeSettingsJSON)
+		out, ok := merged.PolicyIr.(*TrafficPolicy)
+		require.True(t, ok, "merged PolicyIr should be a *TrafficPolicy")
+		return out
+	}
+
+	t.Run("transformation", func(t *testing.T) {
+		setOrigin := func(t *testing.T, value string) *TrafficPolicy {
+			t.Helper()
+			tp := &TrafficPolicy{ct: time.Now()}
+			in := &kgateway.TrafficPolicy{
+				Spec: kgateway.TrafficPolicySpec{
+					Transformation: &kgateway.TransformationPolicy{
+						Response: &kgateway.Transform{
+							Set: []kgateway.HeaderTransformation{{Name: "origin", Value: kgateway.InjaTemplate(value)}},
+						},
+					},
+				},
+			}
+			require.NoError(t, constructRustformation(in, &tp.spec))
+			return tp
+		}
+		transformJSON := func(t *testing.T, tp *TrafficPolicy) string {
+			t.Helper()
+			require.NotNil(t, tp.spec.rustformation)
+			sv := &wrapperspb.StringValue{}
+			require.NoError(t, tp.spec.rustformation.config.GetFilterConfig().UnmarshalTo(sv))
+			return sv.GetValue()
+		}
+
+		child := setOrigin(t, "svc1")
+		preferChildParent := setOrigin(t, "parent1")
+		preferParentParent := setOrigin(t, "parent2")
+		childJSON := transformJSON(t, child)
+
+		// The child is reached through the DeepMergePreferChild parent, then through the
+		// DeepMergePreferParent parent, then through the first parent again on the next
+		// translation cycle. Every result must be a pure function of its own inputs.
+		wantPreferChild := transformJSON(t, translate(child, preferChildParent, apiannotations.DeepMergePreferChild, ""))
+		assert.Equal(t, childJSON, transformJSON(t, child), "child IR must be unchanged after merging")
+
+		gotPreferParent := transformJSON(t, translate(child, preferParentParent, apiannotations.DeepMergePreferParent, ""))
+		assert.Equal(t, childJSON, transformJSON(t, child), "child IR must be unchanged after merging")
+		assert.NotContains(t, gotPreferParent, "parent1", "the other tree's parent must not leak in")
+
+		gotPreferChild := transformJSON(t, translate(child, preferChildParent, apiannotations.DeepMergePreferChild, ""))
+		assert.Equal(t, childJSON, transformJSON(t, child), "child IR must be unchanged after merging")
+		assert.Equal(t, wantPreferChild, gotPreferChild, "re-merging the same inputs must give the same result")
+		assert.NotContains(t, gotPreferChild, "parent2", "the other tree's parent must not leak in")
+
+		// Envoy applies "set" last-wins, so the surviving value is the last entry.
+		assert.Regexp(t, `"value":"svc1"\}\]`, gotPreferChild, "DeepMergePreferChild: child wins")
+		assert.Regexp(t, `"value":"parent2"\}\]`, gotPreferParent, "DeepMergePreferParent: parent wins")
+	})
+
+	t.Run("httpACL", func(t *testing.T) {
+		acl := func(t *testing.T, cidr shared.IPOrCIDR) *TrafficPolicy {
+			t.Helper()
+			tp := &TrafficPolicy{ct: time.Now()}
+			in := &kgateway.TrafficPolicy{
+				Spec: kgateway.TrafficPolicySpec{
+					ACL: &shared.ACLPolicy{
+						DefaultAction: shared.ACLActionDeny,
+						Rules:         []shared.ACLRule{{Action: shared.ACLActionAllow, CIDRs: []shared.IPOrCIDR{cidr}}},
+					},
+				},
+			}
+			require.NoError(t, constructHttpACL(in, &tp.spec))
+			return tp
+		}
+		aclJSON := func(t *testing.T, tp *TrafficPolicy) string {
+			t.Helper()
+			require.NotNil(t, tp.spec.httpACL)
+			sv := &wrapperspb.StringValue{}
+			require.NoError(t, tp.spec.httpACL.config.GetFilterConfig().UnmarshalTo(sv))
+			return sv.GetValue()
+		}
+
+		child := acl(t, "10.0.0.0/8")
+		parent := acl(t, "192.168.0.0/16")
+		childJSON := aclJSON(t, child)
+
+		// mergeHttpACL deep merges within a hierarchy by default, which materializes a
+		// fresh config and hides the aliasing. Opting the hierarchy merge into a shallow
+		// merge leaves p1 pointing at the child's IR for the cross-hierarchy deep merge,
+		// which is the shape that corrupts it.
+		const shallowACL = `{"trafficPolicy":{"acl":"ShallowMerge"}}`
+
+		first := aclJSON(t, translate(child, parent, apiannotations.DeepMergePreferChild, shallowACL))
+		assert.Equal(t, childJSON, aclJSON(t, child), "child IR must be unchanged after merging")
+
+		second := aclJSON(t, translate(child, parent, apiannotations.DeepMergePreferChild, shallowACL))
+		assert.Equal(t, first, second, "re-merging the same inputs must give the same result")
+	})
+
+	// extProc and extAuth both merge by unioning providers, so a child and a parent that
+	// reference different GatewayExtensions is the shape that appends the parent's provider
+	// onto the child's IR. fetchExtension stands in for the GatewayExtension collection.
+	fetchExtension := func(name string, build func(*TrafficPolicyGatewayExtensionIR)) FetchGatewayExtensionFunc {
+		return func(krt.HandlerContext, shared.NamespacedObjectReference, string) (*TrafficPolicyGatewayExtensionIR, error) {
+			ext := &TrafficPolicyGatewayExtensionIR{Name: name}
+			build(ext)
+			return ext, nil
+		}
+	}
+	extensionRef := &shared.NamespacedObjectReference{Name: "ext"}
+
+	t.Run("extProc", func(t *testing.T) {
+		policyFor := func(t *testing.T, provider string) *TrafficPolicy {
+			t.Helper()
+			tp := &TrafficPolicy{ct: time.Now()}
+			in := &kgateway.TrafficPolicy{
+				Spec: kgateway.TrafficPolicySpec{ExtProc: &kgateway.ExtProcPolicy{ExtensionRef: extensionRef}},
+			}
+			fetch := fetchExtension(provider, func(e *TrafficPolicyGatewayExtensionIR) {
+				e.ExtProc = &envoymatchingv3.ExtensionWithMatcher{}
+			})
+			require.NoError(t, constructExtProc(nil, in, fetch, &tp.spec))
+			require.Equal(t, sets.New(provider), tp.spec.extProc.providerNames)
+			return tp
+		}
+
+		for _, prio := range []apiannotations.InheritedPolicyPriorityValue{
+			apiannotations.DeepMergePreferChild,
+			apiannotations.DeepMergePreferParent,
+		} {
+			child := policyFor(t, "child-provider")
+			parent := policyFor(t, "parent-provider")
+
+			merged := translate(child, parent, prio, "")
+			require.Len(t, merged.spec.extProc.perProviderConfig, 2, "%s: merged policy should hold both providers", prio)
+
+			assert.Equal(t, sets.New("child-provider"), child.spec.extProc.providerNames,
+				"%s: the parent's provider must not be added to the child IR", prio)
+			assert.Len(t, child.spec.extProc.perProviderConfig, 1,
+				"%s: the parent's config must not be appended to the child IR", prio)
+			assert.Len(t, parent.spec.extProc.perProviderConfig, 1,
+				"%s: parent IR must be unchanged after merging", prio)
+		}
+	})
+
+	t.Run("extAuth", func(t *testing.T) {
+		policyFor := func(t *testing.T, provider string) *TrafficPolicy {
+			t.Helper()
+			tp := &TrafficPolicy{ct: time.Now()}
+			in := &kgateway.TrafficPolicy{
+				Spec: kgateway.TrafficPolicySpec{ExtAuth: &kgateway.ExtAuthPolicy{ExtensionRef: extensionRef}},
+			}
+			fetch := fetchExtension(provider, func(e *TrafficPolicyGatewayExtensionIR) {
+				e.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{}
+			})
+			require.NoError(t, constructExtAuth(nil, in, fetch, &tp.spec))
+			require.Equal(t, sets.New(provider), tp.spec.extAuth.providerNames)
+			return tp
+		}
+
+		for _, prio := range []apiannotations.InheritedPolicyPriorityValue{
+			apiannotations.DeepMergePreferChild,
+			apiannotations.DeepMergePreferParent,
+		} {
+			child := policyFor(t, "child-provider")
+			parent := policyFor(t, "parent-provider")
+
+			merged := translate(child, parent, prio, "")
+			require.Len(t, merged.spec.extAuth.perProviderConfig, 2, "%s: merged policy should hold both providers", prio)
+
+			assert.Equal(t, sets.New("child-provider"), child.spec.extAuth.providerNames,
+				"%s: the parent's provider must not be added to the child IR", prio)
+			assert.Len(t, child.spec.extAuth.perProviderConfig, 1,
+				"%s: the parent's config must not be appended to the child IR", prio)
+			assert.Len(t, parent.spec.extAuth.perProviderConfig, 1,
+				"%s: parent IR must be unchanged after merging", prio)
+		}
+	})
+}
+
+// TestMergeDeepMergeConflictUsesPreferredPolicy covers the conflicts a deep merge cannot
+// combine: p1 (the child) must win with AugmentedDeepMerge (DeepMergePreferChild) and p2
+// (the parent) with OverridableDeepMerge (DeepMergePreferParent).
+func TestMergeDeepMergeConflictUsesPreferredPolicy(t *testing.T) {
+	p1Ref := &ir.AttachedPolicyRef{Name: "child", Namespace: "team1"}
+	p2Ref := &ir.AttachedPolicyRef{Name: "parent", Namespace: "infra"}
+
+	merge := func(p1, p2 *TrafficPolicy, strategy policy.MergeStrategy, field string) ir.MergeOrigins {
+		origins := ir.MergeOrigins{field: sets.New(p1Ref.ID())}
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, policy.MergeOptions{Strategy: strategy}, origins, TrafficPolicyMergeOpts{})
+		return origins
+	}
+
+	t.Run("field without a deep merge", func(t *testing.T) {
+		childDisable := &apiKeyAuthIR{disable: true}
+		parentAuth := &apiKeyAuthIR{}
+
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{apiKeyAuth: childDisable}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{apiKeyAuth: parentAuth}}
+		origins := merge(p1, p2, policy.AugmentedDeepMerge, "apiKeyAuth")
+		assert.Same(t, childDisable, p1.spec.apiKeyAuth)
+		assert.Equal(t, []string{p1Ref.ID()}, origins.Get("apiKeyAuth"))
+
+		p1 = &TrafficPolicy{spec: trafficPolicySpecIr{apiKeyAuth: childDisable}}
+		origins = merge(p1, p2, policy.OverridableDeepMerge, "apiKeyAuth")
+		assert.Same(t, parentAuth, p1.spec.apiKeyAuth)
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("apiKeyAuth"))
+
+		// the parent does not set the field, so there is no conflict
+		p1 = &TrafficPolicy{spec: trafficPolicySpecIr{apiKeyAuth: childDisable}}
+		origins = merge(p1, &TrafficPolicy{}, policy.OverridableDeepMerge, "apiKeyAuth")
+		assert.Same(t, childDisable, p1.spec.apiKeyAuth)
+		assert.Equal(t, []string{p1Ref.ID()}, origins.Get("apiKeyAuth"))
+	})
+
+	provider := &TrafficPolicyGatewayExtensionIR{Name: "provider"}
+	otherProvider := &TrafficPolicyGatewayExtensionIR{Name: "other-provider"}
+
+	t.Run("extAuth", func(t *testing.T) {
+		policyFor := func(cfgs ...*perProviderExtAuthConfig) *TrafficPolicy {
+			names := sets.New[string]()
+			for _, cfg := range cfgs {
+				names.Insert(providerName(cfg.provider))
+			}
+			return &TrafficPolicy{spec: trafficPolicySpecIr{extAuth: &extAuthIR{perProviderConfig: cfgs, providerNames: names}}}
+		}
+		disabled := func() *TrafficPolicy {
+			return &TrafficPolicy{spec: trafficPolicySpecIr{extAuth: &extAuthIR{disableAllProviders: true}}}
+		}
+		parentCfg := &perProviderExtAuthConfig{provider: provider}
+
+		p1 := disabled()
+		origins := merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extAuth")
+		assert.False(t, p1.spec.extAuth.disableAllProviders, "child must not disable the parent's provider")
+		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg}, p1.spec.extAuth.perProviderConfig)
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extAuth"))
+
+		p1 = policyFor(&perProviderExtAuthConfig{provider: otherProvider})
+		origins = merge(p1, disabled(), policy.OverridableDeepMerge, "extAuth")
+		assert.True(t, p1.spec.extAuth.disableAllProviders, "parent disables the child's provider")
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extAuth"))
+
+		p1 = disabled()
+		merge(p1, policyFor(parentCfg), policy.AugmentedDeepMerge, "extAuth")
+		assert.True(t, p1.spec.extAuth.disableAllProviders, "child may disable the parent's provider when preferred")
+
+		childCfg := &perProviderExtAuthConfig{provider: provider, perRouteConfig: &envoy_ext_authz_v3.ExtAuthzPerRoute{}}
+		childOnlyCfg := &perProviderExtAuthConfig{provider: otherProvider}
+		child := policyFor(childCfg, childOnlyCfg)
+		p1 = &TrafficPolicy{spec: trafficPolicySpecIr{extAuth: child.spec.extAuth}}
+		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extAuth")
+		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg, childOnlyCfg}, withoutMergeOrigins(p1.spec.extAuth.perProviderConfig),
+			"parent's config replaces the child's for the provider they share")
+		assert.ElementsMatch(t, []string{p1Ref.ID(), p2Ref.ID()}, origins.Get("extAuth"))
+		assert.Equal(t, []*perProviderExtAuthConfig{childCfg, childOnlyCfg}, child.spec.extAuth.perProviderConfig,
+			"child IR must be unchanged after merging")
+
+		p1 = policyFor(childCfg)
+		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extAuth")
+		assert.Equal(t, []*perProviderExtAuthConfig{parentCfg}, withoutMergeOrigins(p1.spec.extAuth.perProviderConfig))
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extAuth"))
+
+		p1 = policyFor(childCfg)
+		merge(p1, policyFor(parentCfg), policy.AugmentedDeepMerge, "extAuth")
+		assert.Equal(t, []*perProviderExtAuthConfig{childCfg}, p1.spec.extAuth.perProviderConfig,
+			"child's config is kept for the provider they share when preferred")
+	})
+
+	t.Run("extProc", func(t *testing.T) {
+		policyFor := func(cfgs ...*perProviderExtProcConfig) *TrafficPolicy {
+			names := sets.New[string]()
+			for _, cfg := range cfgs {
+				names.Insert(providerName(cfg.provider))
+			}
+			return &TrafficPolicy{spec: trafficPolicySpecIr{extProc: &extprocIR{perProviderConfig: cfgs, providerNames: names}}}
+		}
+		disabled := func() *TrafficPolicy {
+			return &TrafficPolicy{spec: trafficPolicySpecIr{extProc: &extprocIR{disableAllProviders: true}}}
+		}
+		parentCfg := &perProviderExtProcConfig{provider: provider}
+
+		p1 := disabled()
+		origins := merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extProc")
+		assert.False(t, p1.spec.extProc.disableAllProviders, "child must not disable the parent's provider")
+		assert.Equal(t, []*perProviderExtProcConfig{parentCfg}, p1.spec.extProc.perProviderConfig)
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extProc"))
+
+		p1 = policyFor(&perProviderExtProcConfig{provider: otherProvider})
+		origins = merge(p1, disabled(), policy.OverridableDeepMerge, "extProc")
+		assert.True(t, p1.spec.extProc.disableAllProviders, "parent disables the child's provider")
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extProc"))
+
+		p1 = disabled()
+		merge(p1, policyFor(parentCfg), policy.AugmentedDeepMerge, "extProc")
+		assert.True(t, p1.spec.extProc.disableAllProviders, "child may disable the parent's provider when preferred")
+
+		childCfg := &perProviderExtProcConfig{provider: provider, perRouteConfig: &envoy_ext_proc_v3.ExtProcPerRoute{}}
+		childOnlyCfg := &perProviderExtProcConfig{provider: otherProvider}
+		child := policyFor(childCfg, childOnlyCfg)
+		p1 = &TrafficPolicy{spec: trafficPolicySpecIr{extProc: child.spec.extProc}}
+		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extProc")
+		assert.Equal(t, []*perProviderExtProcConfig{parentCfg, childOnlyCfg}, withoutMergeOrigins(p1.spec.extProc.perProviderConfig),
+			"parent's config replaces the child's for the provider they share")
+		assert.ElementsMatch(t, []string{p1Ref.ID(), p2Ref.ID()}, origins.Get("extProc"))
+		assert.Equal(t, []*perProviderExtProcConfig{childCfg, childOnlyCfg}, child.spec.extProc.perProviderConfig,
+			"child IR must be unchanged after merging")
+
+		p1 = policyFor(childCfg)
+		origins = merge(p1, policyFor(parentCfg), policy.OverridableDeepMerge, "extProc")
+		assert.Equal(t, []*perProviderExtProcConfig{parentCfg}, withoutMergeOrigins(p1.spec.extProc.perProviderConfig))
+		assert.Equal(t, []string{p2Ref.ID()}, origins.Get("extProc"))
+
+		p1 = policyFor(childCfg)
+		merge(p1, policyFor(parentCfg), policy.AugmentedDeepMerge, "extProc")
+		assert.Equal(t, []*perProviderExtProcConfig{childCfg}, p1.spec.extProc.perProviderConfig,
+			"child's config is kept for the provider they share when preferred")
+	})
+}
+
+// withoutMergeOrigins returns copies of cfgs without their merge bookkeeping, so that
+// they can be compared with the configs the merged policies were built from.
+func withoutMergeOrigins[T providerConfig[T]](cfgs []T) []T {
+	out := make([]T, 0, len(cfgs))
+	for _, cfg := range cfgs {
+		out = append(out, cfg.withMergeOrigins(nil))
+	}
+	return out
+}
+
+// TestMergeDeepMergePreferParentOriginsPerProvider checks that under
+// OverridableDeepMerge (DeepMergePreferParent) a policy whose extAuth/extProc provider
+// config the parent replaced is dropped from the field's merge origins, while a policy
+// whose provider config survives the merge stays in them.
+func TestMergeDeepMergePreferParentOriginsPerProvider(t *testing.T) {
+	providerA := &TrafficPolicyGatewayExtensionIR{Name: "provider-a"}
+	providerB := &TrafficPolicyGatewayExtensionIR{Name: "provider-b"}
+
+	childA := &ir.AttachedPolicyRef{Name: "child-a", Namespace: "team1"}
+	childB := &ir.AttachedPolicyRef{Name: "child-b", Namespace: "team1"}
+	parentA := &ir.AttachedPolicyRef{Name: "parent-a", Namespace: "infra"}
+	parentB := &ir.AttachedPolicyRef{Name: "parent-b", Namespace: "infra"}
+	grandparentA := &ir.AttachedPolicyRef{Name: "grandparent-a", Namespace: "infra"}
+
+	fields := []struct {
+		field     string
+		policy    func(provider *TrafficPolicyGatewayExtensionIR) *TrafficPolicy
+		providers func(p *TrafficPolicy) []string
+	}{
+		{
+			field: "extAuth",
+			policy: func(provider *TrafficPolicyGatewayExtensionIR) *TrafficPolicy {
+				return &TrafficPolicy{spec: trafficPolicySpecIr{extAuth: &extAuthIR{
+					perProviderConfig: []*perProviderExtAuthConfig{{provider: provider}},
+					providerNames:     sets.New(providerName(provider)),
+				}}}
+			},
+			providers: func(p *TrafficPolicy) []string {
+				var names []string
+				for _, cfg := range p.spec.extAuth.perProviderConfig {
+					names = append(names, providerName(cfg.provider))
+				}
+				return names
+			},
+		},
+		{
+			field: "extProc",
+			policy: func(provider *TrafficPolicyGatewayExtensionIR) *TrafficPolicy {
+				return &TrafficPolicy{spec: trafficPolicySpecIr{extProc: &extprocIR{
+					perProviderConfig: []*perProviderExtProcConfig{{provider: provider}},
+					providerNames:     sets.New(providerName(provider)),
+				}}}
+			},
+			providers: func(p *TrafficPolicy) []string {
+				var names []string
+				for _, cfg := range p.spec.extProc.perProviderConfig {
+					names = append(names, providerName(cfg.provider))
+				}
+				return names
+			},
+		},
+	}
+
+	for _, f := range fields {
+		merge := func(p1, p2 *TrafficPolicy, p2Ref *ir.AttachedPolicyRef, p2Origins ir.MergeOrigins, strategy policy.MergeStrategy, origins ir.MergeOrigins) {
+			MergeTrafficPolicies(p1, p2, p2Ref, p2Origins, policy.MergeOptions{Strategy: strategy}, origins, TrafficPolicyMergeOpts{})
+		}
+
+		t.Run(f.field+"/two children deep merged, parent replaces one", func(t *testing.T) {
+			// child-a (provider A) and child-b (provider B) are deep merged at the same level
+			p1 := f.policy(providerA)
+			origins := ir.MergeOrigins{f.field: sets.New(childA.ID())}
+			merge(p1, f.policy(providerB), childB, nil, policy.AugmentedDeepMerge, origins)
+			require.ElementsMatch(t, []string{childA.ID(), childB.ID()}, origins.Get(f.field))
+
+			// the parent also configures provider A, and is preferred
+			merge(p1, f.policy(providerA), parentA, nil, policy.OverridableDeepMerge, origins)
+			assert.Equal(t, []string{providerName(providerA), providerName(providerB)}, f.providers(p1))
+			assert.ElementsMatch(t, []string{parentA.ID(), childB.ID()}, origins.Get(f.field),
+				"child-a's provider config was replaced, so it must not be an origin")
+		})
+
+		t.Run(f.field+"/three levels", func(t *testing.T) {
+			// child (A) <- parent (B) <- grandparent (A)
+			p1 := f.policy(providerA)
+			origins := ir.MergeOrigins{f.field: sets.New(childA.ID())}
+			merge(p1, f.policy(providerB), parentB, nil, policy.OverridableDeepMerge, origins)
+			require.ElementsMatch(t, []string{childA.ID(), parentB.ID()}, origins.Get(f.field))
+
+			merge(p1, f.policy(providerA), grandparentA, nil, policy.OverridableDeepMerge, origins)
+			assert.Equal(t, []string{providerName(providerA), providerName(providerB)}, f.providers(p1))
+			assert.ElementsMatch(t, []string{grandparentA.ID(), parentB.ID()}, origins.Get(f.field),
+				"child-a's provider config was replaced, so it must not be an origin")
+		})
+
+		t.Run(f.field+"/merged parent replaces the child's only provider", func(t *testing.T) {
+			// parent-a (A) and parent-b (B) are deep merged into one parent policy
+			parent := f.policy(providerA)
+			parentOrigins := ir.MergeOrigins{f.field: sets.New(parentA.ID())}
+			merge(parent, f.policy(providerB), parentB, nil, policy.AugmentedDeepMerge, parentOrigins)
+
+			p1 := f.policy(providerA)
+			origins := ir.MergeOrigins{f.field: sets.New(childA.ID())}
+			merge(p1, parent, nil, parentOrigins, policy.OverridableDeepMerge, origins)
+			assert.Equal(t, []string{providerName(providerA), providerName(providerB)}, f.providers(p1))
+			assert.ElementsMatch(t, []string{parentA.ID(), parentB.ID()}, origins.Get(f.field),
+				"child-a's provider config was replaced, so it must not be an origin")
+		})
+	}
 }
 
 func TestMergeHttpACL(t *testing.T) {
