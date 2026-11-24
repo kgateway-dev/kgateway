@@ -2997,6 +2997,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with TLS secret in another namespace allowed by ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/tls-cross-namespace-secret.yaml"},
+			outputFile: "backendconfigpolicy/tls-cross-namespace-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with system ca TLS", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/tls-system-ca.yaml"},
@@ -4544,6 +4555,12 @@ func TestValidation(t *testing.T) {
 			name:      "BackendConfigPolicy Missing Secret",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-missing-secret.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
+		{
+			name:      "BackendConfigPolicy Cross-Namespace Secret Without ReferenceGrant",
+			category:  "backendconfigpolicy",
+			inputFile: "invalid-cross-namespace-secret-no-refgrant.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
