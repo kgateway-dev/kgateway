@@ -13,6 +13,7 @@ import (
 
 func ProcessBackendError(err error, reporter reports.ParentRefReporter) {
 	var unsupportedRouteKind *krtcollections.UnsupportedRouteKindError
+	var unsupportedAppProtocol *krtcollections.UnsupportedAppProtocolError
 	switch {
 	case errors.Is(err, krtcollections.ErrUnknownBackendKind), errors.As(err, &unsupportedRouteKind):
 		reporter.SetCondition(reports.RouteCondition{
@@ -47,6 +48,13 @@ func ProcessBackendError(err error, reporter reports.ParentRefReporter) {
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonBackendNotFound,
+			Message: err.Error(),
+		})
+	case errors.As(err, &unsupportedAppProtocol):
+		reporter.SetCondition(reports.RouteCondition{
+			Type:    gwv1.RouteConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.RouteReasonUnsupportedProtocol,
 			Message: err.Error(),
 		})
 	case apierrors.IsNotFound(err):
