@@ -605,6 +605,23 @@ merged bootstrap adjusted to match what the proxy pod runs: it adds what envoyin
 adds in the pod (see Changes envoyinit makes in the pod) and stands in for what
 exists only in the pod, such as the file-based SDS files and the node id.
 
+A TLS certificate, key or CA that the merged bootstrap gives as a file path is
+validated with an inline placeholder in its place. Envoy opens these files when it
+loads the bootstrap, and they are mounted in the proxy pod, not in the controller
+container. The validator uses the helper that xDS validation uses for translated
+resources (`ReplaceTLSFiles` in `pkg/xds/bootstrap`). The bootstrap written to the
+`ConfigMap` keeps the file paths.
+
+- Validation does not report a wrong path, an unreadable file or invalid content
+  in one of these files. Envoy reports those when a proxy pod starts: the new pods
+  fail to start, the rollout stops, and the earlier pods keep serving.
+- The condition message lists each such file (see Reporting).
+- The placeholder covers `certificate_chain` and `private_key` of a
+  `TlsCertificate`, and `trusted_ca` of a `CertificateValidationContext`. An empty
+  file path is not replaced. Any other file the bootstrap names, such as a CRL, is
+  left as a path, so validation fails when Envoy opens it and the controller
+  container does not have it.
+
 ##### Changes envoyinit makes in the pod
 
 The `ConfigMap` is not exactly what Envoy runs. When the proxy pod starts,
@@ -653,7 +670,9 @@ from its merged bootstrap instead. The ports are at fixed proto paths:
 `admin.address.socket_address.port_value`, and on each static listener
 `address.socket_address.port_value` and
 `additional_addresses[].address.socket_address.port_value`. A listener with a pipe
-or internal address has no port and is skipped. The deployer reads those paths from
+or internal address has no port and is skipped. A UDP address is skipped
+too: Gateway listeners and the `Service`'s ports are TCP, and Envoy binds a TCP
+and a UDP socket on the same port number. The deployer reads those paths from
 the merged proto and writes the set into the `ConfigMap`'s `xds_validation.json`
 and the pod annotation, next to the validation subset (see Deployer); the ports
 are not added to the validation bootstrap. Until `xds_validation.json` exists, the
@@ -726,6 +745,17 @@ Questions for the alternatives.
   metric identify these Gateways, the condition message names the held-back image
   (see Reporting), and the upgrade docs say to check for them.
 
+The fallback also holds back the generated `ConfigMap`'s `ca.crt`. With xDS TLS
+enabled, a proxy trusts the controller through that key, and kubelet's in-place
+update of it is how a new CA reaches a running proxy. If the CA is replaced while
+a Gateway is in the fallback, that Gateway's proxies keep the old CA: they cannot
+verify the controller on their next connection, and serve their last
+configuration until the patch is fixed. A renewed serving certificate under the
+same CA does not change `ca.crt` and is not affected. xDS TLS is off by default.
+Any failure to render a Gateway's objects has this effect today; the fallback can
+last longer, for example after an upgrade makes a stored patch fail. See
+Alternatives for the follow-up.
+
 The reconciler tells an existing Gateway from a new one by whether its generated
 `ConfigMap` exists; it already has a `ConfigMap` client. For an existing Gateway
 it sets `kgateway.dev/BootstrapPatchApplied=False` and leaves `Accepted` alone.
@@ -784,15 +814,31 @@ kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
   generated `ConfigMap`. If an object overlay points the `envoy-config` volume at
   another `ConfigMap` (the full-replacement workaround) or mounts a different
   volume at `/etc/envoy`, the patches never reach the proxy, and the condition
-  reports `BootstrapNotMounted`. The deployer then handles what the proxy runs as
+  reports `BootstrapNotMounted`. The same applies when the container already has
+  an `INPUT_CONF`, from `envoyContainer.env` or an object overlay, that names a
+  file outside `/etc/envoy`: envoyinit reads that file, so the deployer keeps the
+  value and does not set its own. A value that is not a literal path, such as one
+  from a `valueFrom`, counts as outside. A path inside `/etc/envoy` is in the
+  generated `ConfigMap`, so the deployer replaces it with the revision key. The
+  rendered `Deployment` has no `INPUT_CONF`, so one found at this point was set
+  by the user; one built into a custom proxy image is not in the pod spec and is
+  not detected. The deployer then handles what the proxy runs as
   for a Gateway without a `patch`: it writes no validation key or pod annotation
   and leaves `INPUT_CONF` unset (see Versioned bootstrap keys), so strict
   validation uses Envoy defaults and the constant reserved ports, and the
   `Service` leaves off only the constant ports. Otherwise routes would be
   validated against runtime layers the proxy never loads. The merge and
   `envoy --mode validate` still run, so the condition still says whether the
-  patches are valid, and its message lists the ports left off the `Service`. The
-  combination is not rejected, because the invalid-merge fallback would hold back
+  patches are valid. Its message lists no ports, because no port is left off the
+  `Service` for the patch. `envoy.yaml` and the pod-template checksum still come
+  from the merged bootstrap, so a patch edit rolls the pods although they read
+  the bootstrap the user mounted. A patch that fails the merge or the validation
+  takes the invalid-merge fallback here too: the failure is found before the
+  mount check runs, so the condition reports the patch's reason, not
+  `BootstrapNotMounted`, and none of the Gateway's objects are applied although
+  the patch could not have reached the proxy. Reporting the failure without
+  holding back the objects is a possible follow-up (see Alternatives). The
+  combination of a valid patch and a bootstrap that is not mounted is not rejected, because the invalid-merge fallback would hold back
   unrelated `Deployment` changes. For a Gateway without a `patch`, the check only
   decides whether to set `INPUT_CONF` and reports nothing.
 - **Checksum.** Pods roll when the pod-template checksum,
@@ -802,8 +848,9 @@ kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
   which does not include the patch. For a Gateway with a `patch`, the deployer
   replaces it with the hex SHA-256 of the merged `envoy.yaml`, so a patch-only
   change rolls the pods. Either way the checksum is the SHA-256 of the
-  `envoy.yaml` the pod runs and names its revision key (see Versioned bootstrap
-  keys).
+  `envoy.yaml` in the generated `ConfigMap` and names its revision key (see
+  Versioned bootstrap keys). Under `BootstrapNotMounted` the pod reads the
+  bootstrap the user mounted, and the checksum still follows the merged one.
 - **Override `HelmValuesGenerator`.** A project that embeds kgateway can replace
   Helm value generation with `WithHelmValuesGeneratorOverride`. If the override
   also implements `deployer.ObjectPostProcessor`, its `PostProcessObjects`
@@ -858,32 +905,38 @@ key; old pods keep reading theirs.
 - **Missing key.** kubelet serves `ConfigMap` volumes from a watch-based cache, so
   a pod created right after the write can see the previous content. envoyinit
   waits for its file to appear; the pod is not Ready meanwhile, and the startup
-  probe bounds the wait.
+  probe bounds the wait. It waits only when `INPUT_CONF` names a file inside
+  `/etc/envoy`. With `INPUT_CONF` unset, or naming a file elsewhere, a missing
+  file fails at once, as it does today.
 - **Pruning.** On each reconcile the deployer keeps the keys of the current
   revision, of every non-terminal pod, and of every ReplicaSet of the `Deployment`
   with `replicas` above zero (it can still create pods), and removes the rest. The
   Gateway reconciler is triggered by the Gateway's pods and ReplicaSets (both
   selected by the `gateway.networking.k8s.io/gateway-name` label), so a key is
   removed soon after its last user is gone. The reconciler waits for the pod
-  collection to sync before its first reconcile, so a controller restart does not
-  read an empty pod set as no pods and prune a key a terminating pod still
-  mounts. Earlier keys are copied from the `ConfigMap` as read from the API
+  collection and the ReplicaSet informer to sync before its first reconcile, so a
+  controller restart does not read an empty pod set as no pods and prune a key a
+  terminating pod still mounts. The ReplicaSet informer needs `get`, `list` and
+  `watch` on `apps/replicasets`, which the Helm chart's ClusterRole gains. A
+  controller without that rule never finishes the sync and reconciles no
+  Gateway. Earlier keys are copied from the `ConfigMap` as read from the API
   server, not the informer cache, whose copy could be stale and lack a key a pod
-  still uses. NotFound means the
-  `ConfigMap` does not exist yet; any other
-  error fails the reconcile without changing the Gateway's objects or status, and
-  the reconcile retries.
+  still uses. That is one read per Gateway on each reconcile, for a Gateway with
+  or without a `patch`, because every Gateway has revision keys. NotFound means
+  the `ConfigMap` does not exist yet; any other error fails the reconcile without
+  changing the Gateway's objects or status, and the reconcile retries.
 - **Size limit.** The API server rejects a `ConfigMap` whose data is over 1 MiB,
   so the deployer checks the size before writing. A revision is about 10 KB
   (8.7 KB with xDS TLS). Normally one or two are in use, plus `envoy.yaml`. More
   stay in use only when `GatewayParameters` is edited again mid-rollout, and even
   then the `Deployment` controller first scales down a ReplicaSet whose pods never
-  became available. Reaching the limit takes a very large patch or about 50
+  became available. Reaching the limit takes a very large patch or about 100
   revisions still in use. A change that would exceed it takes the invalid-merge
   fallback with `BootstrapConfigMapTooLarge`, whose message gives the size of the
   new revision and of the revisions still in use. A Gateway without a `patch` has
   no `BootstrapPatchApplied` condition, so the deployer reports the same message
-  as a `Warning` event on the Gateway.
+  as a `Warning` event on the Gateway. With no condition to compare against, the
+  event is recorded on each reconcile that hits the limit.
 - **A key in use is never removed to make room.** After pruning, every remaining
   key belongs to a pod or a ReplicaSet with replicas. Removing one would leave
   that pod's next container restart, or the ReplicaSet's next pod, waiting for a
@@ -900,7 +953,9 @@ key; old pods keep reading theirs.
 - **A user-mounted bootstrap.** When an object overlay mounts another `ConfigMap`
   at `/etc/envoy` (`BootstrapNotMounted` for a Gateway with a `patch`), the
   deployer writes no key for the current revision and leaves `INPUT_CONF` unset,
-  so envoyinit reads `envoy.yaml` from the `ConfigMap` the user mounted. Pruning
+  so envoyinit reads `envoy.yaml` from the `ConfigMap` the user mounted. When the
+  user set `INPUT_CONF` to a file outside `/etc/envoy`, the deployer keeps it,
+  and envoyinit reads that file. Pruning
   still runs, so old pods that mount the generated `ConfigMap` keep their keys
   until they are gone.
 
@@ -930,16 +985,40 @@ translator also writes Gateway conditions but preserves types it does not own
 | `False` | `ValidationUnavailable` | The controller could not run Envoy to validate the merged bootstrap. |
 | `False` | `ControllerError` | The controller failed to process the bootstrap it generated or the merged result. This is a kgateway defect; the message says so. |
 | `False` | `BootstrapConfigMapTooLarge` | The generated `ConfigMap` would exceed the API server's 1 MiB limit, because the new bootstrap is very large or because pods or ReplicaSets still use earlier revisions (see Versioned bootstrap keys). The message gives the size of each; in the second case the change applies once the rollout finishes. |
-| `False` | `BootstrapNotMounted` | An object overlay points the `envoy-config` volume at a `ConfigMap` other than the generated one, or mounts a different volume at `/etc/envoy`, so the proxy does not run the patched bootstrap. |
+| `False` | `BootstrapNotMounted` | An object overlay points the `envoy-config` volume at a `ConfigMap` other than the generated one, or mounts a different volume at `/etc/envoy`, or the proxy container's env sets `INPUT_CONF` to a file outside `/etc/envoy`, so the proxy does not run the patched bootstrap. |
 
 `True` with `ManagedPathsOverridden` or `PathsIgnored` is deliberate: the patch did
 apply, and a routine report must not read as a broken Gateway to anyone alerting on
 condition status. `False` means the patches are not in effect on the proxy.
 
+The message of a `True` condition, under any of its reasons, also lists each TLS
+file that validation replaced with a placeholder (see Validate the merged result),
+and says that a missing or invalid file keeps new proxy pods from starting. This
+is a sentence in the message, not a reason or an event: the patch is applied, and
+a file path is an ordinary way to configure TLS.
+
 When the deployer cannot render a Gateway's objects at all (`Accepted=False`,
 `InvalidParameters`), the `BootstrapPatchApplied` condition is removed: nothing
 says whether the patch would apply. An override that implements
-`ObjectPostProcessor` without `BootstrapPatchProvider` removes it too.
+`ObjectPostProcessor` without `BootstrapPatchProvider` removes it too. So does a
+Gateway that switches to a self-managed `GatewayParameters`, for which kgateway
+deploys no proxy; its metric series is removed with it.
+
+**Text length.** The API server rejects an event whose note is over 1024 bytes,
+and a status update whose condition message is over 32768 characters. Envoy's
+error can exceed both: for a proto constraint failure it follows its reason with
+the text of the rejected message. The reconciler therefore:
+
+- puts at most the first 4096 bytes of a patch error in a condition message,
+  which keeps the part where Envoy names the field and leaves room for the text
+  added after it, such as the held-back image;
+- cuts every event note to 1024 bytes and every condition message to 32768
+  bytes;
+- ends a cut text with a note that the controller log has the full text, and
+  logs the full text.
+
+A message is cut before it is compared with the stored condition, so a cut
+message does not record its events again on each reconcile.
 
 **A held-back proxy image.** When the invalid-merge fallback leaves an existing
 Gateway's objects unchanged, the reconciler compares the Envoy container image in
@@ -952,8 +1031,11 @@ Also emit a `Warning` event for each overridden, dropped or denied path, and a
 metric labeled by Gateway, namespace and path, so a platform team can find the
 affected Gateways. The events are recorded when the condition's status, reason or
 message changes, not on every reconcile, so an unrelated Gateway edit does not
-repeat them. The reconciler has no event recorder today; Phase 1 wires a
-`record.EventRecorder` into it. The metric has a series only for a Gateway whose
+repeat them. The reconciler has no event recorder today; Phase 1 wires an
+`events.EventRecorder` (`k8s.io/client-go/tools/events`) into it, which writes
+`events.k8s.io` events, so the Helm chart's ClusterRole gains `create` and
+`patch` on `events.k8s.io` `events`. A controller without that rule runs, and
+its events are dropped. The metric has a series only for a Gateway whose
 patch sets a managed path, so its cardinality is bounded by the number of such
 Gateways. Other kgateway metrics already carry the same Gateway labels, such as
 the route replacement counter in
@@ -1287,9 +1369,9 @@ image; Alternatives covers checking stored patches before an upgrade.
   each row of the field-kind table and each kind of list, layer placement, and
   duplicate layer names; a patch `Any` with only a `@type` replaces a base `Any` of
   the same type with that type's defaults, and one with a different `@type` and no
-  fields keeps none of the base's bytes. Docker tests that run Envoy with a merged
-  bootstrap and check, through the admin API, the runtime layers, their
-  precedence, and that `/runtime_modify` still wins.
+  fields keeps none of the base's bytes. The e2e suite checks, through the admin
+  API of a running proxy, the runtime layer order and that `/runtime_modify`
+  still wins.
 - **Guardrails:** managed-path matching on the parsed proto (both casings, keyed
   list entries); each mode applies, prunes or rejects as specified, with the right
   status reason; the settings decoder accepts only the three values; a patch
@@ -1344,7 +1426,11 @@ image; Alternatives covers checking stored patches before an upgrade.
   the real Envoy validation in bootstrap mode, so an Envoy version that starts
   reading the placeholder files fails this test; a static cluster in a patch that
   trusts `SYSTEM_CA_CERT` passes; a Gateway with `logFormat` set passes, and an
-  invalid `text_format` fails and is not rolled out.
+  invalid `text_format` fails and is not rolled out; a static cluster whose
+  certificate, key and CA are files that only the proxy pod has fails the real
+  Envoy validation without the placeholders and passes with them, the `ConfigMap`
+  keeps the file paths, and the condition message lists the files; an empty file
+  path is not replaced.
 - **Rollout and fallback:**
   - A patch-only change changes the pod-template checksum; identical merged
     content does not. A Gateway without a `patch` keeps today's `envoy.yaml` and
@@ -1357,10 +1443,20 @@ image; Alternatives covers checking stored patches before an upgrade.
     different volume at `/etc/envoy`, gives `BootstrapNotMounted`. The Gateway
     gets no validation key, pod annotation or `INPUT_CONF`, so a route that only
     the patches' runtime layers allow is dropped, and the generated `ConfigMap`
-    keeps the revision keys old pods use.
+    keeps the revision keys old pods use. An `INPUT_CONF` set through
+    `envoyContainer.env` to a file outside `/etc/envoy` gives
+    `BootstrapNotMounted` too and is kept; without a `patch` it is kept and
+    nothing is reported. One that names a file inside `/etc/envoy` is replaced
+    with the revision key. An invalid patch on a Gateway whose bootstrap is not
+    mounted takes the fallback.
   - When the fallback holds back a new proxy image, the condition message and a
     `Warning` event name the running and the held-back image; when the image is
     unchanged they name neither.
+  - A patch error longer than the API server's limits is reported with a cut
+    condition message and a cut event note; the status update and the event are
+    accepted.
+  - A Gateway whose patch applied loses the condition when it switches to a
+    self-managed `GatewayParameters`.
 - **Versioned bootstrap keys:**
   - Every Gateway, with or without a `patch`, gets an `envoy-<checksum>.yaml` key
     matching its pod template's checksum, and `INPUT_CONF`.
@@ -1396,7 +1492,8 @@ image; Alternatives covers checking stored patches before an upgrade.
   bootstrap through `/config_dump`, with a managed-path case per mode; and the
   motivating case end to end: a raw request with a `#` fragment gets a 400, and
   after the patch sets `http_reject_path_with_fragment: false` and the pods roll,
-  it reaches the backend with the fragment stripped.
+  it reaches the backend with the fragment stripped. Setting the flag back to
+  `true` with `/runtime_modify` then gives a 400 again.
 
 ### Notes for user docs
 
@@ -1432,6 +1529,12 @@ sections.
 - envoyinit overwrites `node.locality.region`, `zone` and `sub_zone` with the
   values it derives from the pod's environment or topology labels (see Changes
   envoyinit makes in the pod).
+- The controller does not check a TLS certificate, key or CA given as a file
+  path, because the file is mounted in the proxy pod. The condition message lists
+  these files. If one is missing or invalid in the pod, new proxy pods fail to
+  start and the rollout stops, while the earlier pods keep serving. Any other
+  file a patch names, such as a CRL, must also exist at the same path in the
+  controller container (see Validate the merged result).
 - Envoy ignores a feature flag it does not know, whether removed or misspelled,
   instead of rejecting the bootstrap, and kgateway does not report it. A
   misspelled flag passes validation and has no effect (see Worked example:
@@ -1439,7 +1542,12 @@ sections.
 - A `deploymentOverlay` that mounts another `ConfigMap` as the bootstrap, as the
   full-replacement workaround does, keeps the patches from reaching the proxy, and
   the condition reports `BootstrapNotMounted` (see Deployer). Routes are then
-  validated with Envoy defaults, not with the patches' runtime layers.
+  validated with Envoy defaults, not with the patches' runtime layers. Setting
+  `INPUT_CONF` on the proxy container to a file outside `/etc/envoy`, through
+  `envoyContainer.env` or a `deploymentOverlay`, has the same effect: the proxy
+  reads that file. In both cases a patch that is invalid still holds back every
+  change to the Gateway's `Deployment`, `Service` and `ConfigMap` until it is
+  fixed or removed.
 - The `ConfigMap`'s `envoy.yaml` is the bootstrap new pods get. Each pod reads the
   `envoy-<checksum>.yaml` key named by its `INPUT_CONF` environment variable,
   which can be an earlier revision while a rollout is in progress (see Versioned
@@ -1518,6 +1626,10 @@ sections.
   upgrade carries does not reach it. The condition message names the held-back
   image (see Invalid-merge fallback and Reporting). A kgateway patch release makes
   none of these kgateway changes (see Growing the managed-path list).
+- With xDS TLS enabled, a Gateway whose patch fails does not receive a replaced
+  xDS CA. Fix the patch before replacing the CA; otherwise that Gateway's proxies
+  stop receiving configuration at their next connection to the controller, and
+  keep serving the configuration they have (see Invalid-merge fallback).
 - A kgateway minor release can add managed paths, and its release notes name
   each one. Before upgrading, find the Gateways a new path affects by searching
   `GatewayParameters` patches for it in both snake_case and lowerCamelCase; the
@@ -1535,6 +1647,11 @@ sections.
   and rolls every proxy, because the pod template drops `INPUT_CONF`. Until the
   rollout replaces an old pod, a restart of its Envoy container waits for a key
   that is gone, and the startup probe keeps restarting it.
+- An install that manages the controller's RBAC itself must add two ClusterRole
+  rules before upgrading: `get`, `list` and `watch` on `apps/replicasets`, and
+  `create` and `patch` on `events.k8s.io` `events`. Without the first, the
+  controller reconciles no Gateway (see Versioned bootstrap keys); without the
+  second, its events are dropped (see Reporting).
 
 ## Alternatives
 
@@ -1600,6 +1717,27 @@ sections.
 
   Phase 1 documents that validation uses the controller's Envoy instead (see
   Envoy versions and proto types).
+- **Require TLS files to exist in the controller container.** Validation would
+  open every TLS file the bootstrap names, so the condition would report a wrong
+  path or invalid content. A file that only the proxy pod mounts would then fail
+  with `ValidationFailed` although the proxy accepts the bootstrap, and the user
+  would have to move the certificate into file-based SDS or inline data. Rejected:
+  mounting a `Secret` in the proxy pod and naming its files is the direct way to
+  give a static cluster a client certificate, and xDS validation already
+  validates translated resources with placeholders (see Validate the merged
+  result).
+- **Report an invalid patch without the fallback when the bootstrap is not
+  mounted** (possible follow-up). Under `BootstrapNotMounted` the patch cannot
+  reach the proxy, so the deployer could apply the Gateway's objects and report
+  the patch's failure in the condition message. That matches the reason a valid
+  patch is not rejected in this state: the fallback would hold back unrelated
+  `Deployment` changes. It needs the mount check to run before a failed merge or
+  validation returns. Phase 1 takes the fallback (see Deployer).
+- **Deliver a rotated xDS CA during the fallback** (possible follow-up). The
+  reconciler could write only `ca.crt` to the live `ConfigMap` when the fallback
+  holds back the Gateway's objects, so a proxy on its last-good bootstrap keeps
+  trusting the controller after a CA replacement. Phase 1 documents the gap (see
+  Invalid-merge fallback).
 - **Check stored patches before an upgrade** (possible follow-up). A command in
   the new controller image that renders, merges and validates every Gateway's
   patch against the target release, run by hand before `helm upgrade`, would
