@@ -1,6 +1,7 @@
 package sslutils
 
 import (
+	"net/netip"
 	"testing"
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -122,6 +123,24 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 			},
 		},
 		{
+			name:    "IPv4-compatible IPv6 address is matched in the form Envoy prints it as an IP SAN",
+			sanList: []string{"::c000:201"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "::192.0.2.1"},
+					},
+				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "::c000:201"},
+					},
+				},
+			},
+		},
+		{
 			name:    "email address is matched as an email SAN",
 			sanList: []string{"svc@example.org"},
 			expected: []*envoytlsv3.SubjectAltNameMatcher{
@@ -157,6 +176,27 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 				assert.Equal(t, expected.SanType, result[i].SanType)
 				assert.Equal(t, expected.Matcher.GetExact(), result[i].Matcher.GetExact())
 			}
+		})
+	}
+}
+
+// TestEnvoyIPString pins the IP SAN form to what Envoy prints with glibc's inet_ntop, which it
+// compares an exact IP_ADDRESS matcher against.
+func TestEnvoyIPString(t *testing.T) {
+	tests := map[string]string{
+		"192.0.2.1":          "192.0.2.1",
+		"fd00:0:0:0:0:0:0:1": "fd00::1",
+		"::":                 "::",
+		"::1":                "::1",
+		"::192.0.2.1":        "::192.0.2.1",
+		"::c000:201":         "::192.0.2.1",
+		"::1:0":              "::0.1.0.0",
+		"::ffff:192.0.2.1":   "::ffff:192.0.2.1",
+		"64:ff9b::192.0.2.1": "64:ff9b::c000:201",
+	}
+	for in, want := range tests {
+		t.Run(in, func(t *testing.T) {
+			assert.Equal(t, want, envoyIPString(netip.MustParseAddr(in)))
 		})
 	}
 }
