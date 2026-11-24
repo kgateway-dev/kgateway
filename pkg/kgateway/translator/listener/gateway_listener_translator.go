@@ -1635,9 +1635,9 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
-	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
-		// Unknown TLS extension options are not a certificate reference problem;
-		// the cert refs resolved fine. Per the Gateway API spec, this is an
+	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption), errors.Is(err, sslutils.ErrInvalidTLSParameter):
+		// Unknown TLS extension options and invalid TLS parameters are not a certificate
+		// reference problem; the cert refs resolved fine. Per the Gateway API spec, this is an
 		// Invalid condition on Programmed/Accepted, not a ResolvedRefs issue.
 		resolvedRefsOK = true
 		message = err.Error()

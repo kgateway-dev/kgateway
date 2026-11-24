@@ -1,6 +1,7 @@
 package sslutils
 
 import (
+	"strings"
 	"testing"
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -109,6 +110,67 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			// Empty entries are dropped, so an empty value leaves the default in place.
+			name: "empty_entries",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.CipherSuites:        "",
+				annotations.EcdhCurves:          "X25519,,P-256,",
+				annotations.SignatureAlgorithms: " , ",
+				annotations.AlpnProtocols:       "h2,",
+			},
+			out: &ir.TLSConfig{
+				EcdhCurves:    []string{"X25519", "P-256"},
+				AlpnProtocols: []string{"h2"},
+			},
+		},
+		{
+			name: "cipher_suites_equal_preference_group",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.CipherSuites: "[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305],ECDHE-RSA-AES256-GCM-SHA384",
+			},
+			out: &ir.TLSConfig{
+				CipherSuites: []string{"[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]", "ECDHE-RSA-AES256-GCM-SHA384"},
+			},
+		},
+		{
+			name: "cipher_suites_tls13_alongside_tls12",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.CipherSuites: "TLS_AES_128_GCM_SHA256,ECDHE-RSA-AES128-GCM-SHA256",
+			},
+			out: &ir.TLSConfig{
+				CipherSuites: []string{"TLS_AES_128_GCM_SHA256", "ECDHE-RSA-AES128-GCM-SHA256"},
+			},
+		},
+		{
+			// Envoy rejects the whole listener or cluster for any of these.
+			name: "unknown_tls_parameters",
+			out:  &ir.TLSConfig{},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.CipherSuites:        "ECDHE-RSA-AES128-GCM-SHA256,NO-SUCH-CIPHER",
+				annotations.EcdhCurves:          "P-256,NO-SUCH-CURVE",
+				annotations.SignatureAlgorithms: "ed25519,no_such_algorithm",
+				annotations.AlpnProtocols:       gwv1.AnnotationValue("h2," + strings.Repeat("a", 256)),
+			},
+			errors: []string{
+				"invalid tls parameter: unknown cipher suite: NO-SUCH-CIPHER",
+				"invalid tls parameter: unknown ecdh curve: NO-SUCH-CURVE",
+				"invalid tls parameter: unknown signature algorithm: no_such_algorithm",
+				"invalid tls parameter: an alpn protocol must be 1 to 255 bytes long",
+			},
+		},
+		{
+			name: "duplicate_tls_parameters",
+			out:  &ir.TLSConfig{},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.EcdhCurves:          "P-256,X25519,prime256v1",
+				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha256,rsa_pss_rsae_sha256",
+			},
+			errors: []string{
+				"invalid tls parameter: duplicate ecdh curve: prime256v1",
+				"invalid tls parameter: duplicate signature algorithm: rsa_pss_rsae_sha256",
+			},
+		},
+		{
 			name: "tls_max_version",
 			out: &ir.TLSConfig{
 				MaxTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_2),
@@ -211,6 +273,77 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateCipherSuites(t *testing.T) {
+	testCases := []struct {
+		name         string
+		cipherSuites []string
+		valid        bool
+	}{
+		{name: "none", cipherSuites: nil, valid: true},
+		{name: "openssl_name", cipherSuites: []string{"ECDHE-ECDSA-AES128-GCM-SHA256"}, valid: true},
+		{name: "iana_name", cipherSuites: []string{"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"}, valid: true},
+		{name: "repeated", cipherSuites: []string{"AES128-SHA", "AES128-SHA"}, valid: true},
+		{name: "group", cipherSuites: []string{"[AES128-SHA|AES256-SHA]"}, valid: true},
+		{name: "group_with_tls13", cipherSuites: []string{"[TLS_AES_128_GCM_SHA256|AES256-SHA]"}, valid: true},
+		{name: "only_tls13", cipherSuites: []string{"TLS_AES_128_GCM_SHA256", "[TLS_AES_256_GCM_SHA384]"}, valid: false},
+		{name: "empty_entry", cipherSuites: []string{"AES128-SHA", ""}, valid: false},
+		{name: "wrong_case", cipherSuites: []string{"aes128-sha"}, valid: false},
+		{name: "unknown_in_group", cipherSuites: []string{"[AES128-SHA|NO-SUCH-CIPHER]"}, valid: false},
+		{name: "empty_group", cipherSuites: []string{"AES128-SHA", "[]"}, valid: false},
+		{name: "unterminated_group", cipherSuites: []string{"[AES128-SHA"}, valid: false},
+		{name: "nested_group", cipherSuites: []string{"[[AES128-SHA]]"}, valid: false},
+		{name: "colon_separated", cipherSuites: []string{"AES128-SHA:AES256-SHA"}, valid: false},
+		// Known to BoringSSL, but these leave the list empty, which Envoy rejects.
+		{name: "remove_operator", cipherSuites: []string{"AES128-SHA", "-ALL"}, valid: false},
+		{name: "kill_operator", cipherSuites: []string{"!ALL"}, valid: false},
+		{name: "disjoint_aliases", cipherSuites: []string{"aECDSA+kRSA"}, valid: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateCipherSuites(tc.cipherSuites)
+			if tc.valid {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, ErrInvalidTLSParameter)
+			}
+		})
+	}
+}
+
+func TestValidateAlpnProtocols(t *testing.T) {
+	repeat := func(protocol string, n int) []string {
+		return strings.Split(strings.Repeat(protocol+",", n-1)+protocol, ",")
+	}
+
+	testCases := []struct {
+		name          string
+		alpnProtocols []string
+		valid         bool
+	}{
+		{name: "none", alpnProtocols: nil, valid: true},
+		{name: "common", alpnProtocols: []string{"h2", "http/1.1"}, valid: true},
+		{name: "longest", alpnProtocols: []string{strings.Repeat("a", 255)}, valid: true},
+		{name: "too_long", alpnProtocols: []string{strings.Repeat("a", 256)}, valid: false},
+		// An upstream TLS context asserts on an empty protocol, which takes Envoy down.
+		{name: "empty_entry", alpnProtocols: []string{"h2", ""}, valid: false},
+		{name: "empty_entry_after_envoy_splits_on_commas", alpnProtocols: []string{"h2,"}, valid: false},
+		{name: "longest_list", alpnProtocols: repeat(strings.Repeat("a", 254), 257), valid: true},
+		{name: "list_too_long", alpnProtocols: repeat(strings.Repeat("a", 255), 256), valid: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateAlpnProtocols(tc.alpnProtocols)
+			if tc.valid {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, ErrInvalidTLSParameter)
 			}
 		})
 	}
