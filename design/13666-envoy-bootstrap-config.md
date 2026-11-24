@@ -612,9 +612,11 @@ container, which does not have the files the proxy pod mounts, so an overlay tha
 names one fails with `ValidationFailed`, although the proxy would accept it. TLS
 data given inline (`inline_string` or `inline_bytes`) is validated as it is, and a
 cluster that trusts the `SYSTEM_CA_CERT` secret passes (see Changes envoyinit
-makes in the pod). A CA, a CRL and an OCSP response are public and can be given
-inline; a client certificate's private key in an overlay would be stored in the
-`GatewayParameters`, so mutual TLS to a static cluster waits for file support.
+makes in the pod). Only public material belongs inline: a CA, a CRL and an OCSP
+response. A client certificate's private key given inline would be stored in the
+`GatewayParameters`, in the generated `ConfigMap` and in the proxy's
+`/config_dump`, none of which is protected like a `Secret`, so mutual TLS to a
+static cluster has no supported form until file support.
 
 Supporting TLS files is a follow-up. Validation would stand in for each file with
 a placeholder, as xDS validation does for the certificate, key and CA files that
@@ -1548,8 +1550,11 @@ sections.
 - An overlay cannot name a TLS file (a certificate, key, CA, CRL, PKCS#12 bundle or
   OCSP staple given as `filename`): validation runs Envoy in the controller
   container, which does not have the file, and the overlay fails with
-  `ValidationFailed`. Give TLS data inline, or trust the `SYSTEM_CA_CERT` secret
-  (see Validate the merged result).
+  `ValidationFailed`. A public CA, CRL or OCSP response can be given inline, and
+  an upstream with a publicly trusted certificate can be verified with the
+  `SYSTEM_CA_CERT` secret. Do not put a private key inline: it would be stored in
+  the `GatewayParameters` and the generated `ConfigMap`. Mutual TLS from a static
+  cluster in an overlay is not supported yet (see Validate the merged result).
 - Envoy ignores a feature flag it does not know, whether removed or misspelled,
   instead of rejecting the bootstrap, and kgateway does not report it. A
   misspelled flag passes validation and has no effect (see Worked example:
