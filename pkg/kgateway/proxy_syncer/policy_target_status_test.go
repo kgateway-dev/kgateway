@@ -651,7 +651,7 @@ func runStatusSummaryRemoval(
 
 	statusCollections := statussync.NewStatusCollections()
 	var writer statussync.ResourceStatusSyncer
-	pluginutils.RegisterPolicyStatusWithBuilder(gvk, btps, cl, controller,
+	pluginutils.RegisterPolicyStatusWithBuilder(gvk, btps, cl,
 		func(p *gwv1.BackendTLSPolicy) gwv1.PolicyStatus { return p.Status },
 		func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
 			return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
@@ -662,6 +662,7 @@ func runStatusSummaryRemoval(
 		StatusContributions:   contributions,
 		ContributionsByTarget: byTarget,
 		KrtOpts:               krtopts,
+		ControllerName:        controller,
 		RegisterWriter: func(_ schema.GroupVersionKind, w statussync.ResourceStatusSyncer) {
 			writer = w
 		},

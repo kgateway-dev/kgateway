@@ -24,16 +24,18 @@ type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(report *rep
 // from the latest merged policy report, merging ancestors owned by other controllers at
 // write time.
 //
+// Ancestors are owned as PolicyStatusInputs.ControllerName, the name the status pipeline
+// writes as.
+//
 // Use RegisterPolicyStatusWithBuilder for a policy that builds its own desired status.
 func RegisterPolicyStatus[T controllers.ComparableObject](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[T],
 	cl kclient.Client[T],
-	controllerName string,
 	getStatus func(T) gwv1.PolicyStatus,
 	build func(om metav1.ObjectMeta, st gwv1.PolicyStatus) T,
 ) func(pluginsdk.PolicyStatusInputs) {
-	return RegisterPolicyStatusWithBuilder(gvk, col, cl, controllerName, getStatus, build, nil)
+	return RegisterPolicyStatusWithBuilder(gvk, col, cl, getStatus, build, nil)
 }
 
 // RegisterPolicyStatusWithBuilder is RegisterPolicyStatus for a policy CRD that builds its
@@ -45,12 +47,12 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[T],
 	cl kclient.Client[T],
-	controllerName string,
 	getStatus func(T) gwv1.PolicyStatus,
 	build func(om metav1.ObjectMeta, st gwv1.PolicyStatus) T,
 	buildDesired BuildDesiredPolicyStatusFn[T],
 ) func(pluginsdk.PolicyStatusInputs) {
 	return func(in pluginsdk.PolicyStatusInputs) {
+		controllerName := in.ControllerName
 		desiredFor := buildDesired
 		if desiredFor == nil {
 			desiredFor = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
@@ -63,33 +65,23 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 				return reports.BuildPolicyStatus(report, key, controllerName, getStatus(pol))
 			}
 		}
-		statusReports := statussync.RegisterKind(
-			in.Collections, gvk, col,
-			in.StatusContributions, in.ContributionsByTarget,
-			in.KrtOpts.ToOptions(gvk.Kind+"StatusReports")...,
-		)
+		statusReports := statussync.Register(in, gvk, col)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
 			Name: gvk.Kind,
 			// Read from the collection that enqueues this policy, not from cl: cl is a
 			// delayed client whose Get returns nil until its own informer loads.
 			Current: statussync.CollectionSource(col),
-			Desired: func(res statussync.Resource, pol T) (gwv1.PolicyStatus, bool) {
-				report, ok := statussync.ReportFor(statusReports, res)
-				if !ok {
-					return gwv1.PolicyStatus{}, false
-				}
-				status := desiredFor(report.Policy, pol, controllerName)
-				if status == nil {
+			Desired: statussync.DesiredFromReport(statusReports,
+				func(_ statussync.Resource, report reports.StatusReport, pol T) *gwv1.PolicyStatus {
+					status := desiredFor(report.Policy, pol, controllerName)
 					// Merge will clear only ancestors owned by this controller, which is worth
 					// a write only if we have ancestors to clear. Every policy of this kind
 					// lands here, including ones no Gateway we translate ever attached.
-					if !statussync.OwnsAnyPolicyAncestor(controllerName, getStatus(pol).Ancestors) {
-						return gwv1.PolicyStatus{}, false
+					if status == nil && statussync.OwnsAnyPolicyAncestor(controllerName, getStatus(pol).Ancestors) {
+						return &gwv1.PolicyStatus{}
 					}
-					return gwv1.PolicyStatus{}, true
-				}
-				return *status, true
-			},
+					return status
+				}),
 			UpdateStatus: statussync.ClientWriter(cl, build),
 			GetStatus:    getStatus,
 			Merge: func(current T, desired gwv1.PolicyStatus) gwv1.PolicyStatus {

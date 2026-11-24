@@ -280,12 +280,7 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *report
 	if policy.Policy != nil {
 		generation = policy.Policy.GetGeneration()
 	}
-	key := reporter.PolicyKey{
-		Group:     policy.Group,
-		Kind:      policy.Kind,
-		Namespace: policy.Namespace,
-		Name:      policy.Name,
-	}
+	key := policy.PolicyKey()
 	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(reporter.PolicyStatusSummaryAncestorRef())
 	// The standard policy builder stamps the report's generation onto every condition, and the
 	// reducer keeps the generation of whichever contribution sorts first for the policy, so the
@@ -333,8 +328,7 @@ func GeneratePolicyTargetReports(
 			if len(problems) == 0 {
 				continue
 			}
-			key := reporter.PolicyKey{Group: policy.Group, Kind: policy.Kind, Namespace: policy.Namespace, Name: policy.Name}
-			out.Policies[key] = buildPolicyTargetReport(policy, problems)
+			out.Policies[policy.PolicyKey()] = buildPolicyTargetReport(policy, problems)
 		}
 	}
 	return out
