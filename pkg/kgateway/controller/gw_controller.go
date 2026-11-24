@@ -8,6 +8,7 @@ import (
 	"maps"
 	"math"
 	"slices"
+	"unicode/utf8"
 
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -17,22 +18,26 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/events"
 	utilretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -42,6 +47,19 @@ import (
 
 const (
 	GatewayAutoDeployAnnotationKey = "gateway.kgateway.dev/auto-deploy"
+
+	// maxEventNoteLength is the most bytes the API server accepts in the note of an
+	// events.k8s.io event. It rejects an event with a longer one.
+	maxEventNoteLength = 1024
+	// maxConditionMessageLength is the most characters the API server accepts in a
+	// condition's message. It rejects a status update with a longer one.
+	maxConditionMessageLength = 32768
+	// maxOverlayErrorLength is the most bytes of a bootstrap overlay error that go into a
+	// condition message. Envoy names the field it rejects at the start of its error and
+	// can follow it with the whole rejected message.
+	maxOverlayErrorLength = 4096
+	// truncatedSuffix ends a text that truncateText cut.
+	truncatedSuffix = " ... (truncated; the controller log has the full text)"
 )
 
 var logger = logging.New("gateway-controller")
@@ -66,6 +84,14 @@ type gatewayReconciler struct {
 
 	controllerExtension pluginsdk.GatewayControllerExtension
 
+	// recorder records the events the deployer reports on Gateways.
+	recorder events.EventRecorder
+
+	// runningBootstraps is what each Gateway's proxy pods say about the bootstraps
+	// they run, which the deployer reads to keep their bootstrap revisions; nil when
+	// the controller does not collect it.
+	runningBootstraps krt.Collection[krtcollections.GatewayRunningBootstraps]
+
 	// paramsStatus is where Reconcile reports whether each Gateway's objects could be built
 	// from its parameters. The Gateway status writer turns a failure into
 	// Accepted=False/InvalidParameters; this controller never writes that condition itself.
@@ -87,6 +113,7 @@ func NewGatewayReconciler(
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
 		controllerExtension: controllerExtension,
+		recorder:            cfg.Mgr.GetEventRecorder(cfg.ControllerName),
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
@@ -207,12 +234,36 @@ func NewGatewayReconciler(
 		r.queue.Add(ref)
 	})
 
+	// Reconcile a Gateway when the bootstraps its proxy pods run change: a bootstrap
+	// revision no pod uses can be removed from the generated ConfigMap.
+	if running := cfg.CommonCollections.GatewayIndex.RunningBootstraps; running != nil {
+		r.runningBootstraps = running
+		running.Register(func(o krt.Event[krtcollections.GatewayRunningBootstraps]) {
+			ref := o.Latest().Gateway
+			logger.Debug("reconciling Gateway due to a change in the bootstraps its proxies run", "ref", ref)
+			r.queue.Add(ref)
+		})
+	}
+
 	// Add a handler to reconcile the parent Gateway when child objects (Deployment, Service, etc.)
-	parentHandler := controllers.ObjectHandler(controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway))
+	enqueueParent := controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway)
+	parentHandler := controllers.ObjectHandler(enqueueParent)
 	r.deploymentClient.AddEventHandler(parentHandler)
 	r.svcAccountClient.AddEventHandler(parentHandler)
 	r.svcClient.AddEventHandler(parentHandler)
 	r.configMapClient.AddEventHandler(parentHandler)
+
+	// Reconcile the Gateway that owns a ReplicaSet's Deployment when the ReplicaSet
+	// changes, so a bootstrap revision is removed once no ReplicaSet can create a pod with it.
+	r.gwParams.GetReplicaSetClient().AddEventHandler(controllers.ObjectHandler(func(o controllers.Object) {
+		owner := metav1.GetControllerOf(o)
+		if owner == nil || owner.Kind != wellknown.DeploymentGVK.Kind {
+			return
+		}
+		if dep := r.deploymentClient.Get(owner.Name, o.GetNamespace()); dep != nil {
+			enqueueParent(dep)
+		}
+	}))
 
 	// Register controller extensions
 	if controllerExtension != nil {
@@ -246,6 +297,12 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 	// Add GatewayParameters cache sync handlers
 	hasSynced = append(hasSynced, r.gwParams.GetCacheSyncHandlers()...)
 
+	// Wait for the running bootstraps too: the deployer removes a bootstrap revision
+	// no pod runs, so a reconcile before the pods are known would read them as none.
+	if r.runningBootstraps != nil {
+		hasSynced = append(hasSynced, r.runningBootstraps.HasSynced)
+	}
+
 	// Wait for all caches to sync
 	kube.WaitForCacheSync("GatewayController", ctx.Done(), hasSynced...)
 	if r.controllerExtension != nil {
@@ -258,6 +315,7 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 		r.gwClient,
 		r.gwClassClient,
 		r.gwParamClient,
+		r.gwParams.GetReplicaSetClient(),
 		r.nsClient,
 		r.deploymentClient,
 		r.svcAccountClient,
@@ -280,6 +338,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	if gw == nil || gw.GetDeletionTimestamp() != nil {
 		// ignore the event if the Gateway is not found. A subsequent event should handle this if needed
 		logger.Debug("gateway not found, skipping reconciliation", "ref", req)
+		internaldeployer.ForgetBootstrapOverlayMetrics(req)
 		r.paramsStatus.Remove(req)
 		return nil
 	}
@@ -304,21 +363,108 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 
 	logger.Info("reconciling Gateway", "ref", req)
 	ctx := r.ctx
-	objs, err := r.deployer.GetObjsToDeploy(ctx, gw)
-	// ErrNoValidPorts is only returned once the GatewayParameters resolve, so the parameters
-	// are valid; the listener ports' own status is reported from the translator.
-	noValidPorts := errors.Is(err, internaldeployer.ErrNoValidPorts)
-	if err != nil && !noValidPorts {
+	objs, report, err := r.deployer.GetObjsToDeployWithReport(ctx, gw)
+	if errors.Is(err, internaldeployer.ErrNoValidPorts) {
+		// ErrNoValidPorts is only returned once the GatewayParameters resolve, so the
+		// parameters are valid; the listener ports' own status is reported from the
+		// translator.
+		r.paramsStatus.Set(req, gw.Generation, nil)
+		return err
+	}
+	if err != nil {
+		if ctx.Err() != nil {
+			// The controller is stopping; the error says nothing about the Gateway.
+			return err
+		}
+		if errors.Is(err, internaldeployer.ErrBootstrapConfigMapUnreadable) {
+			// A failed read from the API server says nothing about the Gateway, so its
+			// status and objects are left as they are and the reconcile is retried.
+			logger.Info("not deploying Gateway: could not read its generated bootstrap ConfigMap; retrying", "ref", req, "error", err)
+			return err
+		}
+		if overlayErr, ok := errors.AsType[*internaldeployer.BootstrapOverlayError](err); ok {
+			// Log the whole error, and report its start: the conditions keep room for
+			// what is added after it.
+			logger.Info("not deploying Gateway: its bootstrap overlay was not applied", "ref", req, "reason", overlayErr.Reason, "retry", overlayErr.Retry, "error", overlayErr)
+			overlayMsg := truncateText(overlayErr.Error(), maxOverlayErrorLength)
+			cond := metav1.Condition{
+				Type:               conditions.KgatewayConditionBootstrapOverlayApplied,
+				Status:             metav1.ConditionFalse,
+				ObservedGeneration: gw.Generation,
+				Reason:             overlayErr.Reason,
+				Message:            overlayMsg,
+			}
+
+			// Say when the overlay could not reach the proxy anyway, so removing it
+			// deploys the held-back objects.
+			if note := overlayErr.MountNote(); note != "" {
+				cond.Message += " " + note
+			}
+
+			// A Gateway whose bootstrap ConfigMap does not exist yet has no proxy, so it
+			// is not accepted. An existing proxy keeps running its last applied
+			// bootstrap, so the overlay failure does not count against the Gateway's
+			// parameters: the verdict on them, and with it Accepted, is the result of
+			// post-processing the objects, which replaces a failure stored by an earlier
+			// reconcile of the same generation. Without the ConfigMap's name, which
+			// only a controller defect leaves out, the verdict is left alone.
+			evts := overlayErr.Events()
+			hasProxy := true
+			switch {
+			case overlayErr.ConfigMapName == "":
+			case r.configMapClient.Get(overlayErr.ConfigMapName, gw.Namespace) == nil:
+				hasProxy = false
+				r.paramsStatus.Set(req, gw.Generation, errors.New("No proxy is deployed until the bootstrap overlay applies: "+overlayMsg))
+			default:
+				r.paramsStatus.Set(req, gw.Generation, overlayErr.ObjectsErr)
+			}
+
+			// The existing proxy keeps its image too, which can hold back an Envoy
+			// upgrade; name both images.
+			if heldBack := r.heldBackProxyImage(gw, overlayErr.Proxy); hasProxy && heldBack != "" {
+				cond.Message += " " + heldBack
+				evts = append(evts, internaldeployer.HeldBackProxyImageEvent(heldBack))
+			}
+			if statusErr := r.applyGatewayConditions(ctx, gw, []metav1.Condition{cond}, nil, evts); statusErr != nil {
+				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+
+			// Retry only when applying the overlays again can succeed. Otherwise a change
+			// to the GatewayParameters or GatewayClass starts a new reconcile, and so
+			// does the controller restart that a change to its Deployment or settings causes.
+			if overlayErr.Retry {
+				return overlayErr
+			}
+			return nil
+		}
+		if tooLarge, ok := errors.AsType[*internaldeployer.BootstrapConfigMapTooLargeError](err); ok {
+			// A Gateway without bootstrap overlays has no BootstrapOverlayApplied condition,
+			// so the failure is reported as an event, every time the reconcile hits it.
+			// The objects are left as they are; the pod and ReplicaSet changes that free
+			// earlier revisions start a new reconcile.
+			logger.Info("not deploying Gateway: its generated bootstrap ConfigMap would be too large", "ref", req, "error", tooLarge)
+			if statusErr := r.applyGatewayConditions(ctx, gw, nil, []string{conditions.KgatewayConditionBootstrapOverlayApplied}, nil); statusErr != nil {
+				return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+			}
+			evts := tooLarge.Events()
+			if heldBack := r.heldBackProxyImage(gw, tooLarge.Proxy); heldBack != "" {
+				evts = append(evts, internaldeployer.HeldBackProxyImageEvent(heldBack))
+			}
+			r.recordEvents(gw, evts)
+			return nil
+		}
+
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
-		// objects, we want to set the status to InvalidParameters.
+		// objects, we want to set the status to InvalidParameters. Nothing says
+		// whether a bootstrap overlay would apply, so its condition is removed.
 		r.paramsStatus.Set(req, gw.Generation, err)
+		if statusErr := r.applyGatewayConditions(ctx, gw, nil, []string{conditions.KgatewayConditionBootstrapOverlayApplied}, nil); statusErr != nil {
+			return fmt.Errorf("failed to update status for Gateway %s: %w", req, statusErr)
+		}
 		return err
 	}
 	r.paramsStatus.Set(req, gw.Generation, nil)
-	if noValidPorts {
-		return err
-	}
 	objs = r.deployer.SetNamespaceAndOwnerWithGVK(gw, wellknown.GatewayGVK, objs)
 	err = r.deployer.DeployObjsWithSource(ctx, objs, gw)
 	if err != nil {
@@ -329,6 +475,21 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	err = r.deployer.PruneRemovedResources(ctx, gw, objs)
 	if err != nil {
 		return fmt.Errorf("error pruning removed resources for Gateway %s: %w", req, err)
+	}
+
+	// Report what the post-processor found, now that the objects are deployed. Without
+	// a report, as for a self-managed Gateway, kgateway deploys no proxy for the
+	// Gateway, so a bootstrap overlay condition and metric from before are removed.
+	switch {
+	case report != nil:
+		if err := r.applyGatewayConditions(ctx, gw, report.Conditions, report.OwnedConditionTypes, report.Events); err != nil {
+			return fmt.Errorf("error updating status for Gateway %s: %w", req, err)
+		}
+	case meta.FindStatusCondition(gw.Status.Conditions, conditions.KgatewayConditionBootstrapOverlayApplied) != nil:
+		internaldeployer.ForgetBootstrapOverlayMetrics(req)
+		if err := r.applyGatewayConditions(ctx, gw, nil, []string{conditions.KgatewayConditionBootstrapOverlayApplied}, nil); err != nil {
+			return fmt.Errorf("error updating status for Gateway %s: %w", req, err)
+		}
 	}
 
 	// find the name/ns of the service we own so we can grab addresses
@@ -478,6 +639,108 @@ func updateGatewayAddresses(
 			return *newStatus, true
 		},
 	)
+}
+
+// applyGatewayConditions sets each condition on the Gateway's status, and removes each
+// type in ownedTypes that conds does not set. It writes the status only when it
+// changes, and records evts on the Gateway only when a condition's status, reason or
+// message changes, so that reconciling an unchanged Gateway, or one whose edit only
+// moves the observed generation, does not repeat them.
+func (r *gatewayReconciler) applyGatewayConditions(
+	ctx context.Context,
+	gw *gwv1.Gateway,
+	conds []metav1.Condition,
+	ownedTypes []string,
+	evts []deployer.ReportEvent,
+) error {
+	// Keep each message within the API server's limit, so that a long one does not
+	// fail the status update. The stored message is the cut one, so cutting before the
+	// comparison below keeps an unchanged condition from reading as changed.
+	conds = slices.Clone(conds)
+	for i := range conds {
+		if cut := truncateText(conds[i].Message, maxConditionMessageLength); cut != conds[i].Message {
+			logger.Info("truncated a Gateway condition message to the API server's limit", "ref", client.ObjectKeyFromObject(gw), "type", conds[i].Type, "message", conds[i].Message)
+			conds[i].Message = cut
+		}
+	}
+
+	// Update the status. The last attempt decides whether it changed, and whether a
+	// condition says something new.
+	var changed, eventsDue bool
+	err := updateGatewayStatusWithRetryFunc(
+		ctx,
+		r.gwClient,
+		client.ObjectKeyFromObject(gw),
+		func(latest *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
+			// Set the reported conditions.
+			newStatus := latest.Status.DeepCopy()
+			changed, eventsDue = false, false
+			for _, c := range conds {
+				eventsDue = conditionDiffers(latest.Status.Conditions, c) || eventsDue
+				changed = meta.SetStatusCondition(&newStatus.Conditions, c) || changed
+			}
+
+			// Remove the owned conditions that were not reported.
+			for _, t := range ownedTypes {
+				if !slices.ContainsFunc(conds, func(c metav1.Condition) bool { return c.Type == t }) {
+					changed = meta.RemoveStatusCondition(&newStatus.Conditions, t) || changed
+				}
+			}
+			return *newStatus, changed
+		},
+	)
+	if err != nil || !eventsDue {
+		return err
+	}
+
+	// Record the events that go with the new status.
+	r.recordEvents(gw, evts)
+	return nil
+}
+
+// conditionDiffers reports whether c differs in status, reason or message from the
+// condition of its type in existing, or existing has none of that type.
+func conditionDiffers(existing []metav1.Condition, c metav1.Condition) bool {
+	old := meta.FindStatusCondition(existing, c.Type)
+	return old == nil || old.Status != c.Status || old.Reason != c.Reason || old.Message != c.Message
+}
+
+// heldBackProxyImage returns the sentence that names the image gw's live proxy
+// Deployment keeps running and the image of rendered, which was not deployed, or ""
+// when they are the same or either is unknown.
+func (r *gatewayReconciler) heldBackProxyImage(gw *gwv1.Gateway, rendered internaldeployer.RenderedProxy) string {
+	if rendered.DeploymentName == "" {
+		return ""
+	}
+	return internaldeployer.HeldBackProxyImage(r.deploymentClient.Get(rendered.DeploymentName, gw.Namespace), rendered)
+}
+
+// recordEvents records evts on gw. A note over the API server's limit is cut to it and
+// logged whole, because the API server rejects the event otherwise.
+func (r *gatewayReconciler) recordEvents(gw *gwv1.Gateway, evts []deployer.ReportEvent) {
+	for _, e := range evts {
+		note := truncateText(e.Note, maxEventNoteLength)
+		if note != e.Note {
+			logger.Info("truncated a Gateway event note to the API server's limit", "ref", client.ObjectKeyFromObject(gw), "reason", e.Reason, "note", e.Note)
+		}
+		r.recorder.Eventf(gw, nil, e.Type, e.Reason, e.Action, "%s", note)
+	}
+}
+
+// truncateText returns s when it is at most limit bytes, and otherwise its start, cut
+// on a character boundary, followed by truncatedSuffix, limit bytes at most in all.
+func truncateText(s string, limit int) string {
+	// Return a text within the limit as it is.
+	if len(s) <= limit {
+		return s
+	}
+
+	// Cut before the first byte of a character, leaving room for the suffix.
+	cut := max(limit-len(truncatedSuffix), 0)
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut] + truncatedSuffix
 }
 
 // setupTLSCertificateWatch configures a watch for xDS TLS certificate changes.
