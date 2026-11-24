@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -309,6 +310,46 @@ func mergeRustFormationActionListJson(action string, obj1, obj2 map[string]any) 
 	}
 }
 
+// rustFormationHeaderName returns the lower-cased header name of an action list entry:
+// "remove" lists bare names, "set" and "add" list name/value pairs.
+func rustFormationHeaderName(entry any) string {
+	name, ok := entry.(string)
+	if !ok {
+		header, _ := entry.(map[string]any)
+		name, _ = header["name"].(string)
+	}
+	return strings.ToLower(name)
+}
+
+func rustFormationHeaderNames(obj map[string]any, actions ...string) sets.Set[string] {
+	names := sets.New[string]()
+	for _, action := range actions {
+		list, _ := obj[action].([]any)
+		for _, entry := range list {
+			names.Insert(rustFormationHeaderName(entry))
+		}
+	}
+	return names
+}
+
+func dropRustFormationActions(action string, obj map[string]any, headers sets.Set[string]) {
+	if list, ok := obj[action].([]any); ok {
+		obj[action] = slices.DeleteFunc(list, func(entry any) bool {
+			return headers.Has(rustFormationHeaderName(entry))
+		})
+	}
+}
+
+// dropOverriddenRustFormationActions drops the actions in obj1 that would undo what obj2,
+// the preferred transformation, does to the same header. Placing obj2 last in each list only
+// resolves conflicts within that list: rustformation runs every "set", then every "add", then
+// every "remove", so an "add" or "remove" in obj1 would run after the "set" in obj2.
+// obj1 must be freshly decoded JSON: its lists are modified in place.
+func dropOverriddenRustFormationActions(obj1, obj2 map[string]any) {
+	dropRustFormationActions("add", obj1, rustFormationHeaderNames(obj2, "set"))
+	dropRustFormationActions("remove", obj1, rustFormationHeaderNames(obj2, "set", "add"))
+}
+
 func mergeRustFormationActionBody(obj1, obj2 map[string]any) {
 	body2, ok := obj2["body"]
 	if ok {
@@ -324,9 +365,14 @@ func mergeRustFormationRequestResponseJson(field string, m1, m2 map[string]any) 
 			m1[field] = m2[field]
 		}
 	} else if ok2 {
+		dropOverriddenRustFormationActions(obj1, obj2)
+
 		mergeRustFormationActionListJson("add", obj1, obj2)
 		mergeRustFormationActionListJson("remove", obj1, obj2)
 		mergeRustFormationActionListJson("set", obj1, obj2)
+		// entries are applied in order and the same namespace and key share one template,
+		// so obj2's entries, appended last, win
+		mergeRustFormationActionListJson("dynamicMetadata", obj1, obj2)
 
 		mergeRustFormationActionBody(obj1, obj2)
 	}
