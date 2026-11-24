@@ -50,7 +50,7 @@ func WithStatusRegistration(registration StatusRegistration) StatusSyncerOption 
 }
 
 // WithStatusContributions adds status contributions produced outside translation, such as
-// the Gateway deployer's GatewayParametersStatus, to the ones the status syncer reduces.
+// the Gateway deployer's GatewayParametersStatus, to the ones the status pipeline reduces.
 func WithStatusContributions(contributions krt.Collection[reports.StatusContribution]) StatusSyncerOption {
 	return func(cfg *statusSyncerConfig) {
 		if contributions != nil {
