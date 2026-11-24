@@ -18,9 +18,9 @@ func VerifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAlt
 		if ip, err := netip.ParseAddr(san); err == nil {
 			// A certificate can carry an IP address as an IP SAN or as a DNS SAN. Match both, so
 			// certificates that matched the DNS-only matcher before still match. The IP matcher
-			// uses the canonical form of the address, which is the form Envoy compares IP SANs in.
+			// uses the form Envoy prints a certificate's IP SAN in before comparing it.
 			matchSanList = append(matchSanList,
-				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS, ip.String()),
+				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS, envoyIPString(ip)),
 				exactSanMatcher(envoytlsv3.SubjectAltNameMatcher_DNS, san),
 			)
 			continue
@@ -28,6 +28,22 @@ func VerifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAlt
 		matchSanList = append(matchSanList, exactSanMatcher(sanTypeOf(san), san))
 	}
 	return matchSanList
+}
+
+// envoyIPString formats ip the way Envoy prints a certificate's IP SAN, with inet_ntop, so an
+// exact IP_ADDRESS matcher compares equal. That is the canonical form netip.Addr.String returns,
+// except for an IPv4-compatible IPv6 address (the first 96 bits zero, then an IPv4 address other
+// than 0.0.0.0/16, such as ::192.0.2.1): inet_ntop prints its last 32 bits as dotted IPv4, while
+// netip.Addr.String prints them in hex (::c000:201).
+func envoyIPString(ip netip.Addr) string {
+	if !ip.Is6() || ip.Zone() != "" {
+		return ip.String()
+	}
+	b := ip.As16()
+	if [12]byte(b[:12]) != [12]byte{} || (b[12] == 0 && b[13] == 0) {
+		return ip.String()
+	}
+	return "::" + netip.AddrFrom4([4]byte(b[12:])).String()
 }
 
 func exactSanMatcher(sanType envoytlsv3.SubjectAltNameMatcher_SanType, san string) *envoytlsv3.SubjectAltNameMatcher {
