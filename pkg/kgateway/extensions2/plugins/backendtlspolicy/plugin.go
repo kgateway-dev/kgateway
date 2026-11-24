@@ -33,7 +33,6 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 var logger = logging.New("plugin/backendtlspolicy")
@@ -126,6 +125,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
+		// Refs of an unsupported kind are not attached; see SplitTargetRefs for where they
+		// are reported.
+		targetRefs, _ := SplitTargetRefs(i.Spec.TargetRefs)
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -136,7 +138,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
-			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
+			TargetRefs: targetRefs,
 		}
 		if err != nil {
 			pol.Errors = []error{err}

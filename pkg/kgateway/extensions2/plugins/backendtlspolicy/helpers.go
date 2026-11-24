@@ -5,10 +5,13 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 const resolvedRefsMessage = "Resolved all references"
@@ -41,6 +44,46 @@ func (e *InvalidCACertificateRefError) Error() string {
 		return "invalid CA certificate ref " + e.Ref
 	}
 	return fmt.Sprintf("invalid CA certificate ref %s: %v", e.Ref, e.Cause)
+}
+
+// supportedTargetKinds are the kinds a BackendTLSPolicy takes effect on: the backend kinds
+// kgateway builds clusters for, and the alias kind a ServiceEntry is also addressed by.
+var supportedTargetKinds = map[schema.GroupKind]struct{}{
+	kgwellknown.ServiceGVK.GroupKind():      {},
+	kgwellknown.BackendGVK.GroupKind():      {},
+	kgwellknown.ServiceEntryGVK.GroupKind(): {},
+	kgwellknown.HostnameGVK.GroupKind():     {},
+}
+
+// SplitTargetRefs separates the targetRefs a BackendTLSPolicy can attach to from those of a
+// kind it cannot, such as an HTTPRoute, returning one user-facing error per unsupported ref
+// in targetRefs order.
+//
+// Unsupported refs are kept out of the policy's attachment refs rather than recorded as policy
+// errors. A ref left in place still attaches: to a route it configures nothing yet reports
+// Accepted=True, and with a policy error it replaces that route with a 500. A policy error
+// would also blackhole the cluster of every supported target the policy names. The proxy
+// syncer reports the unsupported refs on the policy's StatusSummary ancestor instead, the
+// same way it reports targetRefs that do not resolve.
+func SplitTargetRefs(targetRefs []gwv1.LocalPolicyTargetReferenceWithSectionName) ([]ir.PolicyRef, []error) {
+	supported := make([]gwv1.LocalPolicyTargetReferenceWithSectionName, 0, len(targetRefs))
+	var unsupported []error
+	for _, ref := range targetRefs {
+		gk := schema.GroupKind{Group: string(ref.Group), Kind: string(ref.Kind)}
+		if _, ok := supportedTargetKinds[gk]; ok {
+			supported = append(supported, ref)
+			continue
+		}
+		kind := gk.Kind
+		if gk.Group != "" {
+			kind = gk.Group + "/" + gk.Kind
+		}
+		unsupported = append(unsupported, fmt.Errorf(
+			"unsupported targetRef kind %s %q: BackendTLSPolicy can only target Service, Backend, ServiceEntry or Hostname",
+			kind, ref.Name,
+		))
+	}
+	return pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(supported), unsupported
 }
 
 func MergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {

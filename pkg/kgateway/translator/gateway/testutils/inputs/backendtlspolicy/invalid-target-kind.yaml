@@ -1,0 +1,54 @@
+# A BackendTLSPolicy that targets an HTTPRoute. A route is not a backend, so the policy
+# configures nothing: it must not be reported as accepted on the Gateway that owns the
+# route, the route must keep working, and the Service's cluster must get no TLS config.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - httpbin.example.com
+  rules:
+  - backendRefs:
+    - name: httpbin
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: httpbin
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: httpbin
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: httpbin
+  validation:
+    hostname: "httpbin.example.com"
+    wellKnownCACertificates: System

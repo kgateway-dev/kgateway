@@ -12,6 +12,7 @@ import (
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -99,6 +100,76 @@ func TestProcessBackend_NilPolicySocket(t *testing.T) {
 
 	processBackend(context.Background(), pol, ir.BackendObjectIR{}, cluster)
 	assert.Same(t, existing, cluster.TransportSocket)
+}
+
+// TestSplitTargetRefs: a BackendTLSPolicy attaches only to backend kinds. A ref of any other
+// kind is kept out of the attachment refs and returned as an error for status, without
+// affecting the supported refs beside it. See kgateway-dev/kgateway#14327.
+func TestSplitTargetRefs(t *testing.T) {
+	targetRef := func(group, kind, name string) gwv1.LocalPolicyTargetReferenceWithSectionName {
+		return gwv1.LocalPolicyTargetReferenceWithSectionName{
+			LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{
+				Group: gwv1.Group(group),
+				Kind:  gwv1.Kind(kind),
+				Name:  gwv1.ObjectName(name),
+			},
+		}
+	}
+	service := targetRef("", "Service", "httpbin")
+	backend := targetRef("gateway.kgateway.dev", "Backend", "httpbin")
+	httpRoute := targetRef("gateway.networking.k8s.io", "HTTPRoute", "httpbin")
+
+	const httpRouteErr = `unsupported targetRef kind gateway.networking.k8s.io/HTTPRoute "httpbin": ` +
+		`BackendTLSPolicy can only target Service, Backend, ServiceEntry or Hostname`
+
+	tests := []struct {
+		name     string
+		refs     []gwv1.LocalPolicyTargetReferenceWithSectionName
+		wantRefs []ir.PolicyRef
+		wantErrs []string
+	}{
+		{
+			name:     "Service target",
+			refs:     []gwv1.LocalPolicyTargetReferenceWithSectionName{service},
+			wantRefs: []ir.PolicyRef{{Kind: "Service", Name: "httpbin"}},
+		},
+		{
+			name:     "Backend target",
+			refs:     []gwv1.LocalPolicyTargetReferenceWithSectionName{backend},
+			wantRefs: []ir.PolicyRef{{Group: "gateway.kgateway.dev", Kind: "Backend", Name: "httpbin"}},
+		},
+		{
+			name:     "HTTPRoute target",
+			refs:     []gwv1.LocalPolicyTargetReferenceWithSectionName{httpRoute},
+			wantRefs: []ir.PolicyRef{},
+			wantErrs: []string{httpRouteErr},
+		},
+		{
+			name:     "supported and unsupported targets together",
+			refs:     []gwv1.LocalPolicyTargetReferenceWithSectionName{httpRoute, service},
+			wantRefs: []ir.PolicyRef{{Kind: "Service", Name: "httpbin"}},
+			wantErrs: []string{httpRouteErr},
+		},
+		{
+			name:     "unsupported kind in the core group",
+			refs:     []gwv1.LocalPolicyTargetReferenceWithSectionName{targetRef("", "ConfigMap", "ca")},
+			wantRefs: []ir.PolicyRef{},
+			wantErrs: []string{`unsupported targetRef kind ConfigMap "ca": ` +
+				`BackendTLSPolicy can only target Service, Backend, ServiceEntry or Hostname`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotRefs, gotErrs := SplitTargetRefs(tt.refs)
+
+			assert.Equal(t, tt.wantRefs, gotRefs, "only supported refs should be attached")
+			require.Len(t, gotErrs, len(tt.wantErrs), "one error per unsupported ref")
+			for i, want := range tt.wantErrs {
+				assert.EqualError(t, gotErrs[i], want)
+			}
+		})
+	}
 }
 
 const testCAPEM = "-----BEGIN CERTIFICATE-----\ntest-ca\n-----END CERTIFICATE-----"
