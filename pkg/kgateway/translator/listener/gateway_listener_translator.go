@@ -891,19 +891,6 @@ type httpFilterChain struct {
 	parents []httpFilterChainParent
 }
 
-func isHostContained(host string, maybeLhost *gwv1.Hostname) bool {
-	if maybeLhost == nil {
-		return true
-	}
-	listenerHostname := string(*maybeLhost)
-	if strings.HasPrefix(listenerHostname, "*.") {
-		if strings.HasSuffix(host, listenerHostname[1:]) {
-			return true
-		}
-	}
-	return host == listenerHostname
-}
-
 type httpFilterChainParent struct {
 	gatewayListenerName string
 	gatewayListener     ir.Listener
@@ -995,27 +982,26 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-		// find the parent this host belongs to, and use its policies
+		// Use the same hostname precedence as route isolation to find the parent.
+		var parent *httpFilterChainParent
+		for i := range httpFilterChain.parents {
+			candidate := &httpFilterChain.parents[i]
+			hostname := candidate.gatewayListener.Hostname
+			if !listenerHostnameCoversRouteHostname(hostname, host) {
+				continue
+			}
+			if parent == nil || listenerHostnamePrecedes(parent.gatewayListener.Hostname, hostname) {
+				parent = candidate
+			}
+		}
+
 		var (
 			attachedPolicies ir.AttachedPolicies
 			listenerRef      ir.Listener
 		)
-		maxHostnameLen := -1
-		for _, p := range httpFilterChain.parents {
-			// does this listener's hostname match our host?
-			if !isHostContained(host, p.gatewayListener.Hostname) {
-				continue
-			}
-			// calculate the length of the hostname; most specific match wins
-			var hostnameLen int
-			if p.gatewayListener.Hostname != nil {
-				hostnameLen = len(string(*p.gatewayListener.Hostname))
-			}
-			if hostnameLen > maxHostnameLen {
-				attachedPolicies = p.attachedPolicies
-				listenerRef = p.gatewayListener
-				maxHostnameLen = hostnameLen
-			}
+		if parent != nil {
+			attachedPolicies = parent.attachedPolicies
+			listenerRef = parent.gatewayListener
 		}
 
 		// ensure we sort the routes before creating the vhost
