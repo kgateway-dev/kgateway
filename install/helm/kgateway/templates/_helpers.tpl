@@ -31,9 +31,14 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Resource metadata labels
 */}}
 {{- define "kgateway.labels" -}}
+{{- $labels := include "kgateway.metadataLabels" . -}}
+{{- include "kgateway.labelsWithCommon" (dict "labels" $labels "commonLabels" .Values.commonLabels) -}}
+{{- end }}
+
+{{- define "kgateway.metadataLabels" -}}
 helm.sh/chart: {{ include "kgateway.chart" . }}
 {{ include "kgateway.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
@@ -41,8 +46,29 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/component: controller
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- with .Values.commonLabels | default dict }}
+{{- end }}
+
+{{/*
+Pod template labels
+*/}}
+{{- define "kgateway.podLabels" -}}
+{{- $labels := printf "%s\napp.kubernetes.io/component: controller" (include "kgateway.selectorLabels" .) -}}
+{{- include "kgateway.labelsWithCommon" (dict "labels" $labels "commonLabels" .Values.commonLabels) -}}
+{{- end }}
+
+{{/*
+Append common labels whose keys are not supplied by the chart.
+*/}}
+{{- define "kgateway.labelsWithCommon" -}}
+{{ .labels }}
+{{- with .commonLabels }}
+{{- $commonLabels := deepCopy . }}
+{{- range $key, $_ := fromYaml $.labels }}
+{{- $_ := unset $commonLabels $key }}
+{{- end }}
+{{- with $commonLabels }}
 {{ toYaml . }}
+{{- end }}
 {{- end }}
 {{- end }}
 

@@ -199,6 +199,43 @@ func TestImageTagVPrefix(t *testing.T) {
 	}
 }
 
+func TestHelmChartCommonLabelCollisions(t *testing.T) {
+	const baseValues = "nameOverride: custom-controller\n"
+	baseline := findDeployment(t, renderHelmTemplate(t, "kgateway", baseValues, nil))
+	output := renderHelmTemplate(t, "kgateway", baseValues+`commonLabels:
+  kgateway: custom-value
+  app.kubernetes.io/name: custom-name
+  app.kubernetes.io/instance: custom-instance
+  app.kubernetes.io/component: custom-component
+  app.kubernetes.io/managed-by: custom-manager
+  app.kubernetes.io/version: custom-version
+  helm.sh/chart: custom-chart
+  team: storefront
+`, nil)
+
+	for manifest := range strings.SplitSeq(string(output), "\n---") {
+		var object map[string]any
+		require.NoError(t, yaml.UnmarshalStrict([]byte(manifest), &object))
+	}
+
+	deployment := findDeployment(t, output)
+	require.Equal(t, "test-release-custom-controller", deployment.Name)
+	selectors := map[string]string{
+		"kgateway":                   "kgateway",
+		"app.kubernetes.io/name":     "custom-controller",
+		"app.kubernetes.io/instance": "test-release",
+	}
+	require.Equal(t, selectors, deployment.Spec.Selector.MatchLabels)
+	for key, value := range selectors {
+		require.Equal(t, value, deployment.Spec.Template.Labels[key], key)
+	}
+	require.Equal(t, "controller", deployment.Spec.Template.Labels["app.kubernetes.io/component"])
+	require.Equal(t, "custom-version", deployment.Spec.Template.Labels["app.kubernetes.io/version"])
+	require.Equal(t, "storefront", deployment.Spec.Template.Labels["team"])
+	baseline.Labels["team"] = "storefront"
+	require.Equal(t, baseline.Labels, deployment.Labels)
+}
+
 func TestHelmChartProbeHandlerOverrides(t *testing.T) {
 	valuesYAML := `controller:
   readinessProbe:
