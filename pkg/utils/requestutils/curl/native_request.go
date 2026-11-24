@@ -87,6 +87,15 @@ func (c *requestConfig) executeNative() (*http.Response, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Send the request target as written. The client writes an opaque URL to the request
+	// line without escaping it, followed by the URL's query, so the query is cleared: the
+	// target stands in for the path and the query, as with curl's --request-target.
+	if c.requestTarget != "" {
+		req.URL.Opaque = c.requestTarget
+		req.URL.RawQuery = ""
+		req.URL.ForceQuery = false
+	}
+
 	// Add headers
 	for key, values := range c.headers {
 		for _, value := range values {

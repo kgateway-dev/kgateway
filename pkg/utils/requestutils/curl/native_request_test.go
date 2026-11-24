@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -82,4 +83,60 @@ func TestExecuteRequestWithFormBody(t *testing.T) {
 
 	assert.Equal(t, "application/x-www-form-urlencoded", gotContentType)
 	assert.Equal(t, "hello", gotBody)
+}
+
+// WithRequestTarget sends the request target as written, including a fragment, which a
+// client normally strips.
+func TestExecuteRequestWithRequestTarget(t *testing.T) {
+	// Record the request target the server receives.
+	var gotTarget string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotTarget = r.RequestURI
+	}))
+	defer server.Close()
+	host, port, err := net.SplitHostPort(server.Listener.Addr().String())
+	require.NoError(t, err)
+	portNum, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	// Send a target with a fragment.
+	resp, err := ExecuteRequest(WithHost(host), WithPort(portNum), WithPath("ignored"), WithRequestTarget("/anything#fragment"))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	// The server received it unchanged, in place of the path.
+	assert.Equal(t, "/anything#fragment", gotTarget)
+}
+
+// WithRequestTarget stands in for the query too: parameters set with WithQueryParameters
+// are not sent, as with curl's --request-target.
+func TestExecuteRequestWithRequestTargetAndQueryParameters(t *testing.T) {
+	// Record the request target the server receives.
+	var gotTarget string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotTarget = r.RequestURI
+	}))
+	defer server.Close()
+	host, port, err := net.SplitHostPort(server.Listener.Addr().String())
+	require.NoError(t, err)
+	portNum, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	// Send a target with its own query, along with query parameters.
+	resp, err := ExecuteRequest(WithHost(host), WithPort(portNum),
+		WithQueryParameters(map[string]string{"from": "url"}), WithRequestTarget("/anything?from=target"))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	// The server received the target alone.
+	assert.Equal(t, "/anything?from=target", gotTarget)
+}
+
+// WithRequestTarget passes the target to curl's --request-target.
+func TestBuildArgsWithRequestTarget(t *testing.T) {
+	args := BuildArgs(WithRequestTarget("/anything#fragment"))
+	i := slices.Index(args, "--request-target")
+	require.NotEqual(t, -1, i, "args should include --request-target: %v", args)
+	require.Less(t, i+1, len(args))
+	assert.Equal(t, "/anything#fragment", args[i+1])
 }

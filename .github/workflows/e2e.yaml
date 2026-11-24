@@ -56,8 +56,14 @@ jobs:
         # If tests are exceeding the 30-minute limit, please see:
         # /test/e2e/load_balancing_tests.md
         #
-        # Above each test below, we document the latest date/time for the GitHub action step `Run /./.github/actions/kubernetes-e2e-tests` to run
-        # NOTE: We use the GitHub action step time (as opposed to the `go test` time or the GitHub action job time), because it is easier to capture and fairly consistent
+        # Above each entry below is the date of its latest measured run and how long the
+        # GitHub action step `Run ./.github/actions/kubernetes-e2e-tests` took in it.
+        # This is the time of that one step, not of the whole job. The job also prepares
+        # the runner, creates the cluster and loads the images before the step starts
+        # (about 5 minutes as of November 2026), so the job time GitHub shows is longer
+        # than the figure here by that much.
+        # NOTE: We use the step time (as opposed to the `go test` time or the job time),
+        # because it is easy to read from the job's step list and fairly consistent
         test:
           # Oct 28, 2026: ~6 minutes
           - cluster-name: 'cluster-one'
@@ -84,10 +90,10 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
             localstack: 'false'
-          # Oct 28, 2026: ~4 minutes
+          # Nov 24, 2026: ~5 minutes
           - cluster-name: 'cluster-six'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
+            go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$|^TestBootstrapOverlays$$'
             localstack: 'false'
             ordered-ads: 'true'
           # Oct 28, 2026: ~4 minutes

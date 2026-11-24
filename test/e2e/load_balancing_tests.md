@@ -26,12 +26,12 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 ### Steps to take
 1. Review the recent results from CI, and identify which tests can be migrated
 2. Adjust the run functions that are invoked in our [GitHub action matrix](/.github/workflows/e2e.yaml)
-4. Document the **new** results, on the matrix that runs the tests
+3. Document the **new** results, on the matrix that runs the tests. The figure to record is the time of the `Run ./.github/actions/kubernetes-e2e-tests` step, not of the whole job: open the job in the GitHub UI and read the time next to that step. The job time is longer because it includes runner, cluster and image setup.
 4. Open a PR clearly documenting in the PR body the results before and after the change
 
 
 ## Adding a new test
 When adding a new test suite:
 1. Check the most recently merged PR's action for Kubernetes tests
-2. Determine the cluster with the lowest runtime
+2. Determine the cluster with the lowest runtime, comparing the time of the `Run ./.github/actions/kubernetes-e2e-tests` step in each job
 3. Add your test suite to that cluster's definition in our [GitHub action matrix](/.github/workflows/e2e.yaml)

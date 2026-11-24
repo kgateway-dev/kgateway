@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
@@ -226,6 +227,27 @@ func (c *Client) GetDynamicClusters(ctx context.Context) (map[string]*envoyclust
 	}
 
 	return GetDynamicClustersByName(configDump)
+}
+
+// GetBootstrap returns the bootstrap the proxy loaded at startup, from the config_dump endpoint.
+func (c *Client) GetBootstrap(ctx context.Context) (*envoybootstrapv3.Bootstrap, error) {
+	// Request the whole config dump; the bootstrap is not a filterable resource.
+	configDump, err := c.GetConfigDump(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the bootstrap from its section of the dump.
+	for _, cfg := range configDump.GetConfigs() {
+		var dump adminv3.BootstrapConfigDump
+		if cfg.MessageIs(&dump) {
+			if err := cfg.UnmarshalTo(&dump); err != nil {
+				return nil, err
+			}
+			return dump.GetBootstrap(), nil
+		}
+	}
+	return nil, errors.New("the config dump has no bootstrap")
 }
 
 // ModifyRuntimeConfiguration passes the queryParameters to the runtime_modify endpoint

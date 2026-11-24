@@ -1,0 +1,11 @@
+# GatewayParameters without bootstrap overlays, for a test to add them to.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: bootstrap-overlays
+  namespace: default
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: info
