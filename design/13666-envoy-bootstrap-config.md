@@ -605,22 +605,24 @@ merged bootstrap adjusted to match what the proxy pod runs: it adds what envoyin
 adds in the pod (see Changes envoyinit makes in the pod) and stands in for what
 exists only in the pod, such as the file-based SDS files and the node id.
 
-A TLS certificate, key or CA that the merged bootstrap gives as a file path is
-validated with an inline placeholder in its place. Envoy opens these files when it
-loads the bootstrap, and they are mounted in the proxy pod, not in the controller
-container. The validator uses the helper that xDS validation uses for translated
-resources (`ReplaceTLSFiles` in `pkg/xds/bootstrap`). The bootstrap written to the
-`ConfigMap` keeps the file paths.
+**TLS files are not supported in this phase.** Envoy opens each TLS file the
+bootstrap names when it loads it: a certificate, key, CA, CRL, PKCS#12 bundle or
+OCSP staple given as `filename`. Validation runs Envoy in the controller
+container, which does not have the files the proxy pod mounts, so an overlay that
+names one fails with `ValidationFailed`, although the proxy would accept it. TLS
+data given inline (`inline_string` or `inline_bytes`) is validated as it is, and a
+cluster that trusts the `SYSTEM_CA_CERT` secret passes (see Changes envoyinit
+makes in the pod). A CA, a CRL and an OCSP response are public and can be given
+inline; a client certificate's private key in an overlay would be stored in the
+`GatewayParameters`, so mutual TLS to a static cluster waits for file support.
 
-- Validation does not report a wrong path, an unreadable file or invalid content
-  in one of these files. Envoy reports those when a proxy pod starts: the new pods
-  fail to start, the rollout stops, and the earlier pods keep serving.
-- The condition message lists each such file (see Reporting).
-- The placeholder covers `certificate_chain` and `private_key` of a
-  `TlsCertificate`, and `trusted_ca` of a `CertificateValidationContext`. An empty
-  file path is not replaced. Any other file the bootstrap names, such as a CRL, is
-  left as a path, so validation fails when Envoy opens it and the controller
-  container does not have it.
+Supporting TLS files is a follow-up. Validation would stand in for each file with
+a placeholder, as xDS validation does for the certificate, key and CA files that
+translated resources name. Each field needs its own placeholder: a CRL signed by
+the placeholder CA, an OCSP response for the placeholder certificate, and the
+placeholder pair in place of a PKCS#12 bundle. A placeholder also means
+validation no longer reports a wrong path or invalid content in that file, so the
+condition would list the files it did not check.
 
 ##### Changes envoyinit makes in the pod
 
@@ -836,8 +838,15 @@ kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
   takes the invalid-merge fallback here too: the failure is found before the
   mount check runs, so the condition reports the overlay's reason, not
   `BootstrapNotMounted`, and none of the Gateway's objects are applied although
-  the overlay could not have reached the proxy. Reporting the failure without
-  holding back the objects is a possible follow-up (see Alternatives). The
+  the overlay could not have reached the proxy. The overlay's failure is what
+  holds the objects back, so it stays the reason; the deployer still runs the
+  mount check on the objects it did not apply, and when the proxy would not read
+  the generated bootstrap, the condition message adds that the overlay has no
+  effect on the proxy and that removing it, or fixing it before removing the
+  mount, deploys the Gateway's other changes. The reconciler appends this
+  sentence after it cuts a long overlay error, so it is always shown. Reporting
+  the failure without holding back the objects is a possible follow-up (see
+  Alternatives). The
   combination of a valid overlay and a bootstrap that is not mounted is not rejected, because the invalid-merge fallback would hold back
   unrelated `Deployment` changes. For a Gateway without an `overlay`, the check only
   decides whether to set `INPUT_CONF` and reports nothing.
@@ -1000,12 +1009,6 @@ translator also writes Gateway conditions but preserves types it does not own
 `True` with `ManagedPathsOverridden` or `PathsIgnored` is deliberate: the overlay did
 apply, and a routine report must not read as a broken Gateway to anyone alerting on
 condition status. `False` means the overlays are not in effect on the proxy.
-
-The message of a `True` condition, under any of its reasons, also lists each TLS
-file that validation replaced with a placeholder (see Validate the merged result),
-and says that a missing or invalid file keeps new proxy pods from starting. This
-is a sentence in the message, not a reason or an event: the overlay is applied, and
-a file path is an ordinary way to configure TLS.
 
 When the deployer cannot render a Gateway's objects at all (`Accepted=False`,
 `InvalidParameters`), the `BootstrapOverlayApplied` condition is removed: nothing
@@ -1436,11 +1439,9 @@ image; Alternatives covers checking stored overlays before an upgrade.
   the real Envoy validation in bootstrap mode, so an Envoy version that starts
   reading the placeholder files fails this test; a static cluster in an overlay that
   trusts `SYSTEM_CA_CERT` passes; a Gateway with `logFormat` set passes, and an
-  invalid `text_format` fails and is not rolled out; a static cluster whose
-  certificate, key and CA are files that only the proxy pod has fails the real
-  Envoy validation without the placeholders and passes with them, the `ConfigMap`
-  keeps the file paths, and the condition message lists the files; an empty file
-  path is not replaced.
+  invalid `text_format` fails and is not rolled out; a static cluster whose CA is a
+  file that only the proxy pod has fails the real Envoy validation, and the
+  validator leaves the file path in place.
 - **Rollout and fallback:**
   - An overlay-only change changes the pod-template checksum; identical merged
     content does not. A Gateway without an `overlay` keeps today's `envoy.yaml` and
@@ -1458,7 +1459,10 @@ image; Alternatives covers checking stored overlays before an upgrade.
     `BootstrapNotMounted` too and is kept; without an `overlay` it is kept and
     nothing is reported. One that names a file inside `/etc/envoy` is replaced
     with the revision key. An invalid overlay on a Gateway whose bootstrap is not
-    mounted takes the fallback.
+    mounted takes the fallback, keeps the overlay's reason, and the condition
+    message ends with the sentence that the overlay has no effect on the proxy,
+    also after an error long enough to be cut; with the bootstrap mounted there
+    is no such sentence.
   - When the fallback holds back a new proxy image, the condition message and a
     `Warning` event name the running and the held-back image; when the image is
     unchanged they name neither.
@@ -1541,12 +1545,11 @@ sections.
 - envoyinit overwrites `node.locality.region`, `zone` and `sub_zone` with the
   values it derives from the pod's environment or topology labels (see Changes
   envoyinit makes in the pod).
-- The controller does not check a TLS certificate, key or CA given as a file
-  path, because the file is mounted in the proxy pod. The condition message lists
-  these files. If one is missing or invalid in the pod, new proxy pods fail to
-  start and the rollout stops, while the earlier pods keep serving. Any other
-  file an overlay names, such as a CRL, must also exist at the same path in the
-  controller container (see Validate the merged result).
+- An overlay cannot name a TLS file (a certificate, key, CA, CRL, PKCS#12 bundle or
+  OCSP staple given as `filename`): validation runs Envoy in the controller
+  container, which does not have the file, and the overlay fails with
+  `ValidationFailed`. Give TLS data inline, or trust the `SYSTEM_CA_CERT` secret
+  (see Validate the merged result).
 - Envoy ignores a feature flag it does not know, whether removed or misspelled,
   instead of rejecting the bootstrap, and kgateway does not report it. A
   misspelled flag passes validation and has no effect (see Worked example:
@@ -1559,7 +1562,8 @@ sections.
   `envoyContainer.env` or a `deploymentOverlay`, has the same effect: the proxy
   reads that file. In both cases an overlay that is invalid still holds back every
   change to the Gateway's `Deployment`, `Service` and `ConfigMap` until it is
-  fixed or removed.
+  fixed or removed; the condition message says the overlay has no effect on the
+  proxy, so removing it loses nothing.
 - The `ConfigMap`'s `envoy.yaml` is the bootstrap new pods get. Each pod reads the
   `envoy-<checksum>.yaml` key named by its `INPUT_CONF` environment variable,
   which can be an earlier revision while a rollout is in progress (see Versioned
@@ -1729,14 +1733,12 @@ sections.
 
   Phase 1 documents that validation uses the controller's Envoy instead (see
   Envoy versions and proto types).
-- **Require TLS files to exist in the controller container.** Validation would
-  open every TLS file the bootstrap names, so the condition would report a wrong
-  path or invalid content. A file that only the proxy pod mounts would then fail
-  with `ValidationFailed` although the proxy accepts the bootstrap, and the user
-  would have to move the certificate into file-based SDS or inline data. Rejected:
-  mounting a `Secret` in the proxy pod and naming its files is the direct way to
-  give a static cluster a client certificate, and xDS validation already
-  validates translated resources with placeholders (see Validate the merged
+- **Validate TLS files with placeholders in this phase.** Validation would replace
+  each TLS file path with inline placeholder data, as xDS validation does for
+  translated resources, so an overlay could name files that only the proxy pod
+  mounts. Deferred to a follow-up: the xDS helper covers only the certificate,
+  key and CA, and a CRL, a PKCS#12 bundle and an OCSP staple each need their own
+  placeholder that Envoy accepts in place of the file (see Validate the merged
   result).
 - **Report an invalid overlay without the fallback when the bootstrap is not
   mounted** (possible follow-up). Under `BootstrapNotMounted` the overlay cannot
@@ -1744,7 +1746,9 @@ sections.
   the overlay's failure in the condition message. That matches the reason a valid
   overlay is not rejected in this state: the fallback would hold back unrelated
   `Deployment` changes. It needs the mount check to run before a failed merge or
-  validation returns. Phase 1 takes the fallback (see Deployer).
+  validation returns. Phase 1 takes the fallback and keeps the overlay's reason,
+  since the failure is what holds the objects back, and its message says the
+  overlay has no effect on the proxy and how to deploy the objects (see Deployer).
 - **Deliver a rotated xDS CA during the fallback** (possible follow-up). The
   reconciler could write only `ca.crt` to the live `ConfigMap` when the fallback
   holds back the Gateway's objects, so a proxy on its last-good bootstrap keeps
