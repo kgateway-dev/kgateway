@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -126,7 +127,7 @@ func TestBuildLambdaARNFallsBackToDeprecatedBackendAccountID(t *testing.T) {
 }
 
 func TestBuildTranslateFuncFailsClosedForLambdaEndpointWithoutPort(t *testing.T) {
-	translate := buildTranslateFunc(nil, nil, true)
+	translate := buildTranslateFunc(nil, nil, &apisettings.Settings{EnableAwsEc2Discovery: true})
 
 	backendIR := translate(krt.TestingDummyContext{}, newLambdaBackend("us-east-1", "https://lambda.us-east-1.amazonaws.com"))
 
@@ -148,7 +149,8 @@ func TestBackendIrEqualsDetectsLambdaErrorOnlyChanges(t *testing.T) {
 		},
 	}
 
-	missingSecretIR := buildTranslateFunc(nil, newSecretIndexForTest(t), true)(krt.TestingDummyContext{}, backend)
+	settings := &apisettings.Settings{EnableAwsEc2Discovery: true}
+	missingSecretIR := buildTranslateFunc(nil, newSecretIndexForTest(t), settings)(krt.TestingDummyContext{}, backend)
 	invalidSecretIR := buildTranslateFunc(nil, newSecretIndexForTest(t, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "lambda-secret",
@@ -158,7 +160,7 @@ func TestBackendIrEqualsDetectsLambdaErrorOnlyChanges(t *testing.T) {
 		Data: map[string][]byte{
 			"token": []byte("sk-test-secret"),
 		},
-	}), true)(krt.TestingDummyContext{}, backend)
+	}), settings)(krt.TestingDummyContext{}, backend)
 
 	require.NotEmpty(t, missingSecretIR.errors)
 	require.NotEmpty(t, invalidSecretIR.errors)
@@ -209,7 +211,7 @@ func TestLambdaFiltersRewriteHostToTheLambdaEndpoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			backend := newLambdaBackend("us-east-2", tt.endpoint)
-			backendIR := buildTranslateFunc(nil, nil, true)(krt.TestingDummyContext{}, backend)
+			backendIR := buildTranslateFunc(nil, nil, &apisettings.Settings{EnableAwsEc2Discovery: true})(krt.TestingDummyContext{}, backend)
 			require.Empty(t, backendIR.errors)
 			require.NotNil(t, backendIR.awsIr)
 

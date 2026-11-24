@@ -3,6 +3,8 @@ package backend
 import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoy_dfp_cluster "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dynamic_forward_proxy/v3"
 	envoydfp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -39,13 +42,23 @@ func (u *DfpIr) Equals(other *DfpIr) bool {
 	})
 }
 
-func buildDfpIr(in *kgateway.DynamicForwardProxyBackend) (*DfpIr, error) {
+func buildDfpIr(in *kgateway.DynamicForwardProxyBackend, defaultFamily envoycommondnsv3.DnsLookupFamily) (*DfpIr, error) {
 	ir := &DfpIr{}
+
+	family := defaultFamily
+	if in.DNSLookupFamily != nil {
+		var err error
+		family, err = pluginutils.ToEnvoyDNSLookupFamily(*in.DNSLookupFamily)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	c := &envoy_dfp_cluster.ClusterConfig{
 		ClusterImplementationSpecifier: &envoy_dfp_cluster.ClusterConfig_SubClustersConfig{
 			SubClustersConfig: &envoy_dfp_cluster.SubClustersConfig{
-				LbPolicy: envoyclusterv3.Cluster_LEAST_REQUEST,
+				LbPolicy:         envoyclusterv3.Cluster_LEAST_REQUEST,
+				DnsClusterConfig: &envoydnsv3.DnsCluster{DnsLookupFamily: family},
 			},
 		},
 	}

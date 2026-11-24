@@ -4,6 +4,8 @@ Clusters:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
       subClustersConfig:
+        dnsClusterConfig:
+          dnsLookupFamily: V4_ONLY
         lbPolicy: LEAST_REQUEST
   connectTimeout: 5s
   lbPolicy: CLUSTER_PROVIDED
