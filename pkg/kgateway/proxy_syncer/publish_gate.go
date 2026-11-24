@@ -147,6 +147,11 @@ type publishGate struct {
 	// published marks clients the gate has published to on their current
 	// connection. clientDeparted clears the mark; snapshotWithdrawn keeps it.
 	published map[string]struct{}
+	// bootstrapHeld marks clients whose first build is held because it was not
+	// validated under their bootstrap (holdUnvalidatedBootstrapLocked), so the
+	// hold and its release are logged once. A publish or the connection's end
+	// clears the mark. Created on first use.
+	bootstrapHeld map[string]struct{}
 	// connGen holds each key's fence generation, adopted in connectionStarted.
 	// setSnapshot installs only while it still matches the fence. Without start
 	// hooks it stays zero.
@@ -250,6 +255,19 @@ func (g *publishGate) warm(proxyKey string) bool {
 	return g.clientState != nil && g.clientState.HasPriorXDSVersion(proxyKey)
 }
 
+// readyPodReader optionally reports a client key with a stream whose pod was Ready
+// when the stream was admitted.
+type readyPodReader interface {
+	HasReadyPodStream(resourceName string) bool
+}
+
+// readyPod reports whether a stream of the client was admitted while its pod was
+// Ready: its Envoy serves configuration from an earlier stream.
+func (g *publishGate) readyPod(proxyKey string) bool {
+	r, ok := g.clientState.(readyPodReader)
+	return ok && r.HasReadyPodStream(proxyKey)
+}
+
 // coldStreamReader optionally reports a cold proxy sharing the client key.
 type coldStreamReader interface {
 	HasColdStreamSince(resourceName string, d time.Duration) bool
@@ -321,9 +339,14 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 	}
 	g.publishedEDS[proxyKey] = edsHashes
 	g.published[proxyKey] = struct{}{}
-	// A publish ends the first-publish and warm withhold episodes.
+	// A publish ends the first-publish, warm withhold and bootstrap hold episodes.
 	delete(g.coldEpisodes, proxyKey)
 	delete(g.warmEpisodes, proxyKey)
+	if _, held := g.bootstrapHeld[proxyKey]; held {
+		delete(g.bootstrapHeld, proxyKey)
+		logger.Info("sending configuration to a new proxy: the Gateway's configuration is validated under the proxy pod's bootstrap",
+			"proxy_key", proxyKey)
+	}
 	if g.afterPublish != nil {
 		g.afterPublish(proxyKey)
 	}
@@ -404,13 +427,24 @@ func (g *publishGate) resolveDeferred(
 // disappearance gets a fresh warm withhold bound. boundCarryLocked does this
 // only for deferred builds, and recoveries are usually coherent. Without this,
 // the next brief disappearance would be dropped at once instead of carried.
+//
+// A new client's first build is held while the Gateway's configuration in it
+// was not validated under the client's bootstrap (holdUnvalidatedBootstrapLocked).
 func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) bool {
+	// Publish only the client's current row.
 	if g.currentBuild != nil {
 		if current := g.currentBuild(snapWrap.proxyKey); current == nil || !current.Equals(snapWrap) {
 			logger.Debug("not publishing a build the client's snapshot row has moved past", "proxy_key", snapWrap.proxyKey)
 			return false
 		}
 	}
+
+	// Hold a new client's first build until it is validated under its bootstrap.
+	if g.holdUnvalidatedBootstrapLocked(snapWrap) {
+		return false
+	}
+
+	// End the carry episodes of clusters this build has again.
 	since := g.carriedSince[snapWrap.proxyKey]
 	if len(since) == 0 {
 		return true
@@ -423,6 +457,64 @@ func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) bool {
 	}
 	if len(since) == 0 {
 		delete(g.carriedSince, snapWrap.proxyKey)
+	}
+	return true
+}
+
+// holdUnvalidatedBootstrapLocked reports whether to hold snapWrap because it is
+// the client's first build on its connection and the Gateway's configuration in
+// it was not validated under the client's bootstrap (bootstrapUnvalidated). A
+// bootstrap overlay can make Envoy reject configuration that earlier bootstraps
+// accept, such as a lowered runtime limit or a static listener on a Gateway
+// listener's port, and a new proxy that rejects its first configuration serves no routes.
+//
+// The hold has no time bound. For a pod running the Gateway's current bootstrap
+// its release is guaranteed: the deployer writes the bootstrap's validation data
+// to the ConfigMap before the Deployment that starts the pod, and the translation
+// that follows covers the client. A pod from an older ReplicaSet whose Envoy
+// starts fresh during a rollout stays held until the rollout removes it, since no
+// translation is validated under its bootstrap. A held client has no listeners
+// and does not go Ready.
+//
+// A client that already has configuration is never held: one already published
+// on its connection, one that reported a prior xDS version (warm), and one with a
+// stream admitted while its pod was Ready. Holding it would freeze every kind of
+// configuration it serves. A reconnecting proxy sends its listener request only
+// after CDS, so before then only its pod's readiness tells it from a new proxy.
+//
+// Holding drops a stored first-publish build and stops its timer, keeping the
+// budget's start, so a later validated build that is still deferred gets only
+// the budget that remains. Callers must hold g.mu.
+func (g *publishGate) holdUnvalidatedBootstrapLocked(snapWrap XdsSnapWrapper) bool {
+	// Only an unvalidated first build of a cold client is held.
+	proxyKey := snapWrap.proxyKey
+	if !snapWrap.bootstrapUnvalidated {
+		return false
+	}
+	if _, published := g.published[proxyKey]; published || g.warm(proxyKey) || g.readyPod(proxyKey) {
+		return false
+	}
+
+	// Drop a stored first-publish build, which was validated under the
+	// client's bootstrap but is older than this one. firePending does nothing
+	// for an entry without a build.
+	if st := g.pending[proxyKey]; st != nil {
+		if st.timer != nil {
+			st.timer.Stop()
+			st.timer = nil
+		}
+		st.wrap = XdsSnapWrapper{}
+	}
+
+	// Log the hold once per episode; setSnapshot logs its release.
+	if g.bootstrapHeld == nil {
+		g.bootstrapHeld = make(map[string]struct{})
+	}
+	if _, logged := g.bootstrapHeld[proxyKey]; !logged {
+		g.bootstrapHeld[proxyKey] = struct{}{}
+		logger.Info("not sending configuration to a new proxy until the Gateway's configuration is validated under the proxy pod's bootstrap; "+
+			"it is sent once the controller has processed the Gateway's current bootstrap, or, for a pod of an earlier rollout, never: the rollout replaces it",
+			"proxy_key", proxyKey)
 	}
 	return true
 }
@@ -868,6 +960,7 @@ func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	g.withdrawLocked(proxyKey)
 	g.cancelFlipReleaseLocked(proxyKey)
 	delete(g.published, proxyKey)
+	delete(g.bootstrapHeld, proxyKey)
 	delete(g.carriedSince, proxyKey)
 	delete(g.publishedEDS, proxyKey)
 	delete(g.aheadSent, proxyKey)

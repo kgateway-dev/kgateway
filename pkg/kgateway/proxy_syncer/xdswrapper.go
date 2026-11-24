@@ -64,6 +64,10 @@ type XdsSnapWrapper struct {
 	// emitted) changes nothing published; at worst a graced cluster whose backend
 	// is then deleted stays until its grace ends.
 	translatedClusters map[string]envoycachetypes.ResourceWithTTL
+	// bootstrapUnvalidated is set when the Gateway's configuration in this build
+	// was not validated under the bootstrap the client's pod started with, so the
+	// gate holds it as a first publish (holdUnvalidatedBootstrapLocked).
+	bootstrapUnvalidated bool
 }
 
 // deferred reports whether some referenced cluster was unready at build
@@ -97,10 +101,15 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 	// filtered out by scoping, moves no version when it errors, yet a held flip
 	// or grace may still carry it; only a new event lets the carry drop it.
 	// Error text alone is ignored.
+	//
+	// Compare bootstrapUnvalidated: a translation that validates under the
+	// client's bootstrap can leave every version unchanged, and a held client
+	// needs that build to be released.
 	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
 		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
 		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints) &&
-		slices.Equal(p.erroredClusters, in.erroredClusters)
+		slices.Equal(p.erroredClusters, in.erroredClusters) &&
+		p.bootstrapUnvalidated == in.bootstrapUnvalidated
 }
 
 func (p XdsSnapWrapper) ResourceName() string {
