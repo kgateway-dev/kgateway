@@ -530,6 +530,7 @@ func (ml *MergedListener) TranslateListener(
 
 	// Translate HTTPS filter chains. Index the slice so each chain's Listener points
 	// into it rather than at a per-iteration copy.
+	sniParents := ml.sniListenerParents()
 	for i := range ml.httpsFilterChains {
 		httpsFilterChain, err := ml.httpsFilterChains[i].translateHttpsFilterChain(
 			kctx,
@@ -537,6 +538,7 @@ func (ml *MergedListener) TranslateListener(
 			queries,
 			reporter,
 			&ml.gateway,
+			sniParents,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -586,6 +588,32 @@ func (ml *MergedListener) TranslateListener(
 		TcpFilterChain:    matchedTcpListeners,
 		PolicyAncestorRef: ml.listener.PolicyAncestorRef,
 	}
+}
+
+// sniListenerParents returns the HTTPS and TLS Gateway listeners merged into this port, i.e. the listeners
+// a connection is assigned to by SNI.
+//
+// These are the configured listeners, not the chains that translate successfully: a listener whose chain is
+// skipped (for example, because none of its certificates is usable) still owns its hostname, so the other
+// chains keep refusing it rather than serving it without that listener's TLS settings.
+func (ml *MergedListener) sniListenerParents() []httpFilterChainParent {
+	parents := make([]httpFilterChainParent, 0, len(ml.httpsFilterChains)+len(ml.TcpFilterChains))
+	for _, hfc := range ml.httpsFilterChains {
+		parents = append(parents, httpFilterChainParent{
+			gatewayListenerName: hfc.gatewayListenerName,
+			gatewayListener:     hfc.listener,
+		})
+	}
+	for _, tfc := range ml.TcpFilterChains {
+		if tfc.tls == nil {
+			continue
+		}
+		parents = append(parents, httpFilterChainParent{
+			gatewayListenerName: tfc.parents.gatewayListenerName,
+			gatewayListener:     tfc.parents.listener,
+		})
+	}
+	return parents
 }
 
 // tcpFilterChain each one represents a Gateway listener that has been merged into a single kgateway Listener
@@ -938,6 +966,23 @@ func hostnameOwnedByMoreSpecificHTTPListener(parent httpFilterChainParent, paren
 	return false
 }
 
+// moreSpecificListenerHostnames returns the hostnames within the parent's hostname that belong to a more specific listener.
+func moreSpecificListenerHostnames(parent httpFilterChainParent, parents []httpFilterChainParent) []string {
+	var hostnames []string
+	for _, candidate := range parents {
+		if candidate.gatewayListenerName == parent.gatewayListenerName ||
+			!listenerHostnamePrecedes(parent.gatewayListener.Hostname, candidate.gatewayListener.Hostname) {
+			continue
+		}
+		// a listener that precedes another one always has a hostname
+		hostname := string(*candidate.gatewayListener.Hostname)
+		if listenerHostnameCoversRouteHostname(parent.gatewayListener.Hostname, hostname) {
+			hostnames = append(hostnames, hostname)
+		}
+	}
+	return hostnames
+}
+
 func listenerHostnameCoversRouteHostname(listenerHostname *gwv1.Hostname, routeHostname string) bool {
 	if listenerHostname == nil || *listenerHostname == "" {
 		return true
@@ -1078,15 +1123,32 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	gateway *ir.Gateway,
+	sniParents []httpFilterChainParent,
 ) (*ir.HttpFilterChainIR, error) {
+	// SNI only selects the filter chain; the vhost is selected by the authority of each request, and a client
+	// may reuse the connection for any authority the certificate covers. Listener isolation therefore has to
+	// hold within the chain as well.
+	parent := httpFilterChainParent{
+		gatewayListenerName: hfc.gatewayListenerName,
+		gatewayListener:     hfc.listener,
+	}
+
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
-	buildRoutesPerHost(
+	buildRoutesPerHostWithHostnamesFilter(
 		ctx,
 		routesByHost,
 		hfc.routesWithHosts,
 		reporter,
+		func(hostnames []string) []string {
+			return filterHTTPListenerIsolationHostnames(parent, sniParents, hostnames)
+		},
 	)
+	// A wildcard vhost of this chain still matches the hostnames of more specific listeners, whose vhosts live
+	// in other chains. Shadow them with a vhost that has no routes.
+	for _, hostname := range moreSpecificListenerHostnames(parent, sniParents) {
+		routesByHost[hostname] = nil
+	}
 
 	var (
 		virtualHostNames = map[string]bool{}
