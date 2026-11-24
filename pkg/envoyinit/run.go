@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"syscall"
+	"time"
 
 	"sigs.k8s.io/yaml"
 
@@ -31,6 +35,7 @@ const (
 // RunEnvoy run Envoy with bootstrap configuration injected from a file
 func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 1. Transform the configuration using the Kubernetes Downward API
+	waitForInputConfig(inputPath, filepath.Dir(defaultInputConfigPath))
 	bootstrapConfig, err := getAndTransformConfig(inputPath)
 	if err != nil {
 		// The "initializer failed" prefix is asserted by the envoy-wrapper
@@ -190,4 +195,44 @@ func addSystemCASecret(bootstrapYAML []byte, caPath string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode the bootstrap: %w", err)
 	}
 	return out, nil
+}
+
+// inputConfigPollInterval is how often envoyinit checks for a missing bootstrap file
+// that INPUT_CONF names.
+const inputConfigPollInterval = time.Second
+
+// waitForInputConfig blocks until path exists, but only when INPUT_CONF is set and path
+// is inside configDir, where the generated bootstrap ConfigMap is mounted. Otherwise it
+// returns at once, and a missing file fails the read that follows.
+//
+// The controller sets INPUT_CONF to the ConfigMap key that holds the pod's bootstrap
+// revision. kubelet serves ConfigMap volumes from a watch-based cache, so a pod created
+// right after the ConfigMap is updated can briefly see the previous content, which lacks
+// that key. The wait has no time limit; the pod's startup probe bounds it.
+func waitForInputConfig(path, configDir string) {
+	// Only a key of the generated ConfigMap can be waited for.
+	if os.Getenv(inputConfigPathEnv) == "" || !strings.HasPrefix(filepath.Clean(path), filepath.Clean(configDir)+string(filepath.Separator)) {
+		return
+	}
+
+	waitForFile(path, inputConfigPollInterval, os.Stat, log.Printf)
+}
+
+// waitForFile returns once stat finds path, checking every interval while stat says it
+// does not exist. Any other stat error returns at once, so reading the file reports it.
+func waitForFile(path string, interval time.Duration, stat func(string) (fs.FileInfo, error), logf func(string, ...any)) {
+	// Return at once when the file is there, or when stat fails for another reason.
+	_, err := stat(path)
+	if !errors.Is(err, fs.ErrNotExist) {
+		return
+	}
+
+	// Poll until the file appears.
+	logf("Waiting for the bootstrap file %s to appear in the mounted ConfigMap", path)
+	start := time.Now()
+	for errors.Is(err, fs.ErrNotExist) {
+		time.Sleep(interval)
+		_, err = stat(path)
+	}
+	logf("The bootstrap file %s appeared after %s", path, time.Since(start).Round(time.Millisecond))
 }
