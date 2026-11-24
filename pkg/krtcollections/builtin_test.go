@@ -2,6 +2,7 @@ package krtcollections
 
 import (
 	"testing"
+	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -13,9 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -28,6 +31,80 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
+
+func TestHTTPRouteRuleTimeouts(t *testing.T) {
+	noTimeout := ptr.To(gwv1.Duration("0s"))
+	requestTimeout := ptr.To(gwv1.Duration("2s"))
+	backendTimeout := ptr.To(gwv1.Duration("1s"))
+	retry := &gwv1.HTTPRouteRetry{Attempts: ptr.To(2)}
+
+	tests := []struct {
+		name       string
+		request    *gwv1.Duration
+		backend    *gwv1.Duration
+		retry      *gwv1.HTTPRouteRetry
+		wantRoute  *durationpb.Duration
+		wantPerTry *durationpb.Duration
+	}{
+		{name: "timeouts unset"},
+		{name: "request only", request: requestTimeout, wantRoute: durationpb.New(2 * time.Second)},
+		{name: "backend only disabled", backend: noTimeout, wantRoute: durationpb.New(0)},
+		{name: "both disabled", request: noTimeout, backend: noTimeout, wantRoute: durationpb.New(0)},
+		{name: "backend deadline only", request: noTimeout, backend: backendTimeout, wantRoute: durationpb.New(time.Second)},
+		{name: "shorter backend deadline", request: requestTimeout, backend: backendTimeout, wantRoute: durationpb.New(time.Second)},
+		{
+			name:      "request deadline with backend timeout disabled",
+			request:   requestTimeout,
+			backend:   noTimeout,
+			wantRoute: durationpb.New(2 * time.Second),
+		},
+		{
+			name:       "request deadline with retries and backend timeout disabled",
+			request:    requestTimeout,
+			backend:    noTimeout,
+			retry:      retry,
+			wantRoute:  durationpb.New(2 * time.Second),
+			wantPerTry: durationpb.New(0),
+		},
+		{
+			name:       "independent deadlines with retries",
+			request:    requestTimeout,
+			backend:    backendTimeout,
+			retry:      retry,
+			wantRoute:  durationpb.New(2 * time.Second),
+			wantPerTry: durationpb.New(time.Second),
+		},
+		{
+			name:       "backend deadline with retries and request timeout disabled",
+			request:    noTimeout,
+			backend:    backendTimeout,
+			retry:      retry,
+			wantRoute:  durationpb.New(0),
+			wantPerTry: durationpb.New(time.Second),
+		},
+		{
+			name:       "backend deadline with retries and request timeout unset",
+			backend:    backendTimeout,
+			retry:      retry,
+			wantPerTry: durationpb.New(time.Second),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			index := &RoutesIndex{}
+			rule := index.buildHTTPRouteRulePolicy(gwv1.HTTPRouteRule{
+				Timeouts: &gwv1.HTTPRouteTimeouts{Request: tt.request, BackendRequest: tt.backend},
+				Retry:    tt.retry,
+			})
+			action := &envoyroutev3.RouteAction{}
+			route := &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: action}}
+			pass := &builtinPluginGwPass{}
+			pass.applyRulePolicy(nil, rule, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}, route)
+			assert.True(t, proto.Equal(tt.wantRoute, action.GetTimeout()), "route timeout: want %v, got %v", tt.wantRoute, action.GetTimeout())
+			assert.True(t, proto.Equal(tt.wantPerTry, action.GetRetryPolicy().GetPerTryTimeout()), "per-try timeout: want %v, got %v", tt.wantPerTry, action.GetRetryPolicy().GetPerTryTimeout())
+		})
+	}
+}
 
 func TestURLRewriteApply(t *testing.T) {
 	tests := []struct {

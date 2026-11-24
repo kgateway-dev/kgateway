@@ -351,11 +351,10 @@ func (r ruleIR) applyTimeouts(
 	// Apply the required timeout selection logic
 	switch {
 	case timeouts.backendRequestTimeout != nil && timeouts.requestTimeout != nil:
-		// When both timeouts are set:
-		// - Without retry: Use BackendRequest, since it's more specific (shorter)
-		// - With retry: Use Request as the overall route timeout since
-		//   BackendRequest will be applied to each retry attempt
-		if hasRetry {
+		// With retries, BackendRequest is applied per attempt. Without retries, use
+		// the shorter backend deadline when it is enabled. A zero BackendRequest
+		// disables only the backend deadline.
+		if hasRetry || timeouts.backendRequestTimeout.AsDuration() == 0 {
 			timeout = timeouts.requestTimeout
 		} else {
 			timeout = timeouts.backendRequestTimeout
