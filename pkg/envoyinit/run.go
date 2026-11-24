@@ -3,17 +3,15 @@ package envoyinit
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"syscall"
 
-	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 )
 
 const (
@@ -47,30 +45,11 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	}
 	if caPath != "" {
 		log.Printf("Using OS CA certificate for proxy: %s", caPath)
-		// If the CA cert path is set, we need to set the CA cert path in the bootstrap config
-		var bootstrap envoybootstrapv3.Bootstrap
-		err := protoutils.UnmarshalYaml([]byte(bootstrapConfig), &bootstrap)
+		withCA, err := addSystemCASecret([]byte(bootstrapConfig), caPath)
 		if err != nil {
-			log.Fatalf("failed to unmarshal bootstrap config: %v", err)
+			log.Fatalf("failed to add the system CA secret to the bootstrap: %v", err)
 		}
-		bootstrap.GetStaticResources().Secrets = append(bootstrap.GetStaticResources().GetSecrets(), &envoytlsv3.Secret{
-			Name: utils.SystemCaSecretName,
-			Type: &envoytlsv3.Secret_ValidationContext{
-				ValidationContext: &envoytlsv3.CertificateValidationContext{
-					TrustedCa: &envoycorev3.DataSource{
-						Specifier: &envoycorev3.DataSource_Filename{
-							Filename: caPath,
-						},
-					},
-				},
-			},
-		})
-
-		newBootstrapConfig, err := protoutils.MarshalBytes(&bootstrap)
-		if err != nil {
-			log.Fatalf("failed to marshal bootstrap config: %v", err)
-		}
-		bootstrapConfig = string(newBootstrapConfig)
+		bootstrapConfig = string(withCA)
 	}
 
 	// 2. Write to a file for debug purposes
@@ -156,4 +135,59 @@ func getOSRootFilePath() (string, error) {
 		}
 	}
 	return "", errors.New("OS CA Cert could not be found for agent")
+}
+
+// addSystemCASecret appends a static secret named SYSTEM_CA_CERT, which trusts the CA
+// bundle at caPath, to the bootstrap's static_resources.secrets, and returns the
+// bootstrap as YAML.
+//
+// It edits the bootstrap as a generic document rather than an Envoy Bootstrap proto, so
+// a field or extension type this binary does not know reaches Envoy with its values, and
+// Envoy alone decides whether the bootstrap is valid. Re-encoding can change key order
+// and number formatting, but not values: integers are not rounded through float64. A
+// bootstrap may spell the field static_resources or staticResources; the secret goes
+// into whichever is present, and into a new static_resources when neither is.
+func addSystemCASecret(bootstrapYAML []byte, caPath string) ([]byte, error) {
+	// Decode the bootstrap into a generic map without rounding integers.
+	bootstrap, err := downward.DecodeYAMLMap(bootstrapYAML)
+	if err != nil {
+		return nil, fmt.Errorf("the bootstrap %w", err)
+	}
+
+	// Find static_resources under either spelling, creating it when neither is set.
+	key := "static_resources"
+	if _, ok := bootstrap[key]; !ok {
+		if _, ok := bootstrap["staticResources"]; ok {
+			key = "staticResources"
+		}
+	}
+	staticResources, ok := bootstrap[key].(map[string]any)
+	if !ok {
+		if bootstrap[key] != nil {
+			return nil, fmt.Errorf("the bootstrap's %s is not a mapping", key)
+		}
+		staticResources = map[string]any{}
+		bootstrap[key] = staticResources
+	}
+
+	// Append the secret to the existing secrets.
+	secrets, ok := staticResources["secrets"].([]any)
+	if !ok && staticResources["secrets"] != nil {
+		return nil, fmt.Errorf("the bootstrap's %s.secrets is not a list", key)
+	}
+	staticResources["secrets"] = append(secrets, map[string]any{
+		"name": utils.SystemCaSecretName,
+		"validation_context": map[string]any{
+			"trusted_ca": map[string]any{
+				"filename": caPath,
+			},
+		},
+	})
+
+	// Encode the result as YAML.
+	out, err := yaml.Marshal(bootstrap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode the bootstrap: %w", err)
+	}
+	return out, nil
 }

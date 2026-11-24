@@ -162,6 +162,21 @@ unknown_top_level:
 			Expect(locality).To(HaveKeyWithValue("zone", "us-east1-b"))
 		})
 
+		It("should keep integers exact when adding node locality", func() {
+			api.nodeZone = "us-east1-b"
+
+			// 2^53 + 1 is the smallest integer a float64 cannot hold.
+			output, err := AddNodeLocalityToBootstrapYaml([]byte(`
+node:
+  id: static
+large_integer: 9007199254740993
+`), api)
+			Expect(err).NotTo(HaveOccurred())
+
+			// The integer keeps its value: it is not rounded through float64.
+			Expect(string(output)).To(ContainSubstring("large_integer: 9007199254740993\n"))
+		})
+
 		It("should derive node locality from pod topology labels when env vars are unset", func() {
 			api.podLabels = topologyPodLabels()
 
