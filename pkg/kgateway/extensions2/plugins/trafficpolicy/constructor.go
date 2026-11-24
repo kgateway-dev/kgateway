@@ -126,6 +126,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
+	// Construct gRPC-Web specific IR
+	constructGRPCWeb(policyCR.Spec, &outSpec)
 	// Construct HTTP upgrade specific IR
 	if err := constructHTTPUpgrade(policyCR.Spec, &outSpec); err != nil {
 		errors = append(errors, err)

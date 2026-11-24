@@ -37,6 +37,7 @@ var subIRSetters = map[string]func(*trafficPolicySpecIr){
 	"httpACL":          func(s *trafficPolicySpecIr) { s.httpACL = &httpACLIR{} },
 	"statPrefix":       func(s *trafficPolicySpecIr) { s.statPrefix = &statPrefixIR{} },
 	"httpUpgrade":      func(s *trafficPolicySpecIr) { s.httpUpgrade = &httpUpgradeIR{} },
+	"grpcWeb":          func(s *trafficPolicySpecIr) { s.grpcWeb = &grpcWebIR{} },
 }
 
 // TestTrafficPolicyEqualsWithOneSubIRUnset compares a policy that sets one

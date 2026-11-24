@@ -114,6 +114,7 @@ type trafficPolicySpecIr struct {
 	httpACL          *httpACLIR
 	statPrefix       *statPrefixIR
 	httpUpgrade      *httpUpgradeIR
+	grpcWeb          *grpcWebIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -210,6 +211,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.httpUpgrade.Equals(d2.spec.httpUpgrade) {
 		return false
 	}
+	if !d.spec.grpcWeb.Equals(d2.spec.grpcWeb) {
+		return false
+	}
 	return true
 }
 
@@ -245,6 +249,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.internalRedirect.Validate)
 	validators = append(validators, p.spec.statPrefix.Validate)
 	validators = append(validators, p.spec.httpUpgrade.Validate)
+	validators = append(validators, p.spec.grpcWeb.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -283,6 +288,7 @@ type trafficPolicyPluginGwPass struct {
 	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
 	faultInChain            map[string]*faulthttpv3.HTTPFault
 	httpACLInChain          map[string]bool
+	grpcWebInChain          map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -692,6 +698,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	// Add compression and decompression filters after CORS
 	stagedFilters = addCompressionFiltersIfNeeded(stagedFilters, p, fcc.FilterChainName)
+	// Add the gRPC-Web filter after CORS and the compression filters
+	stagedFilters = addGRPCWebFilterIfNeeded(stagedFilters, p, fcc.FilterChainName)
 	// Add Basic Auth filter
 	if f := p.basicAuthInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(basicAuthFilterName, f, filters.DuringStage(filters.AuthNStage))
@@ -790,6 +798,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
 	p.handleFaultInjection(fcn, typedFilterConfig, spec.faultInjection)
 	p.handleHttpACL(fcn, typedFilterConfig, spec.httpACL)
+	p.handleGRPCWeb(fcn, typedFilterConfig, spec.grpcWeb)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

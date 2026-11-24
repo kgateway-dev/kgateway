@@ -115,6 +115,19 @@ type TrafficPolicySpec struct {
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
 
+	// GRPCWeb enables gRPC-Web on the targeted routes: browser gRPC-Web requests are converted
+	// to gRPC before they reach the backend, and gRPC responses are converted back to gRPC-Web.
+	// Requests that are not gRPC-Web (by `content-type`) pass through unchanged.
+	// The backend must speak gRPC. A backend that already speaks gRPC-Web does not need this.
+	// gRPC-Web is disabled unless a policy enables it. Set `grpcWeb: {}` to enable it, or
+	// `grpcWeb: {disable: {}}` to disable it for routes covered by a broader policy that
+	// enables it.
+	// Browsers making cross-origin gRPC-Web calls also need a CORS policy that allows the
+	// `x-grpc-web` and `x-user-agent` request headers and exposes the `grpc-status` and
+	// `grpc-message` response headers.
+	// +optional
+	GRPCWeb *GRPCWebPolicy `json:"grpcWeb,omitempty"`
+
 	// HTTPUpgrade configures HTTP protocol upgrades on the targeted routes.
 	// Route-level upgrade settings override the matching upgrade type configured
 	// on the listener. CONNECT termination is applied per route and cannot be
@@ -901,6 +914,15 @@ type RequestDecompression struct {
 	Libraries []CompressionLibrary `json:"libraries,omitempty"`
 
 	// Disables decompression.
+	// +optional
+	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+}
+
+// GRPCWebPolicy configures gRPC-Web to gRPC conversion.
+type GRPCWebPolicy struct {
+	// Disable gRPC-Web.
+	// Can be used to disable gRPC-Web enabled by a policy applied at a higher level in the
+	// config hierarchy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
