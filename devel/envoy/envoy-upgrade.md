@@ -31,4 +31,10 @@ make verify
 
 For the go-control-plane core module, usually it's safe to use the latest released version independent of the envoy api version. 
 
+#### Envoy patch releases on a release branch
+
+A release branch that takes an Envoy patch release, such as a security release, often does not need a go-control-plane bump. Check the Envoy release notes anyway: if the release adds an API field or an extension, bump the go-control-plane envoy api module to the matching tag as above.
+
+The controller parses `GatewayParameters` bootstrap overlays with the go-control-plane types it links, then validates the result with the Envoy in `ENVOY_IMAGE`. When go-control-plane is behind that Envoy, an overlay that sets a field or `@type` only the newer Envoy knows fails with `InvalidOverlay`, even though the proxy would accept it. The Gateway keeps its last-good bootstrap, so the failure is safe, but the user cannot set the field through an overlay until a release updates go-control-plane. See [Bootstrap overlays](../architecture/bootstrap-overlays.md).
+
 Create a PR with all the changes. This [PR](https://github.com/kgateway-dev/kgateway/pull/12209) can be used as a reference.
