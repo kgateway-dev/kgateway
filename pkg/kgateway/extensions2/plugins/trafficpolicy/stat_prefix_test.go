@@ -1,12 +1,16 @@
 package trafficpolicy
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -38,9 +42,32 @@ func TestStatPrefixIREquals(t *testing.T) {
 // statPrefixCRDPattern mirrors the regex in the TrafficPolicy StatPrefix field's
 // `+kubebuilder:validation:Pattern` marker. The Envoy stat prefix syntax is
 // validated at admission by that pattern rather than in Go, so this test guards
-// the pattern against regressions. Keep it in sync with the marker in
-// api/v1alpha1/kgateway/traffic_policy_types.go.
+// the pattern against regressions. TestStatPrefixCRDPatternsMatch fails if it drifts
+// from the markers on TrafficPolicySpec.StatPrefix or LocalRateLimitPolicy.StatPrefix
+// in api/v1alpha1/kgateway/traffic_policy_types.go.
 const statPrefixCRDPattern = `^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$`
+
+// TestStatPrefixCRDPatternsMatch reads the generated TrafficPolicy CRD and checks that
+// both statPrefix fields still carry statPrefixCRDPattern, so the two markers can't
+// drift apart from each other or from the pattern tested below.
+func TestStatPrefixCRDPatternsMatch(t *testing.T) {
+	// Tests run in the package directory; the CRD is generated from the markers.
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "..",
+		"install", "helm", "kgateway-crds", "templates", "gateway.kgateway.dev_trafficpolicies.yaml"))
+	require.NoError(t, err)
+
+	var crd apiextensionsv1.CustomResourceDefinition
+	require.NoError(t, yaml.Unmarshal(data, &crd))
+	require.NotEmpty(t, crd.Spec.Versions)
+
+	spec := crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["spec"]
+	local := spec.Properties["rateLimit"].Properties["local"]
+
+	assert.Equal(t, statPrefixCRDPattern, spec.Properties["statPrefix"].Pattern,
+		"TrafficPolicySpec.StatPrefix pattern")
+	assert.Equal(t, statPrefixCRDPattern, local.Properties["statPrefix"].Pattern,
+		"LocalRateLimitPolicy.StatPrefix pattern")
+}
 
 func TestStatPrefixCRDPattern(t *testing.T) {
 	re := regexp.MustCompile(statPrefixCRDPattern)
