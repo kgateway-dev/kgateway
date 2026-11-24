@@ -26,9 +26,16 @@ const (
 // SecretManifest generates a dynamically generated self-signed certificate for testing
 // and returns the secret manifest in YAML format.
 func SecretManifest(ns string, expiration time.Duration) (string, error) {
+	secretYAML, _, err := secretManifestWithCert(ns, expiration)
+	return secretYAML, err
+}
+
+// secretManifestWithCert is SecretManifest that also returns the generated
+// certificate in PEM format.
+func secretManifestWithCert(ns string, expiration time.Duration) (string, []byte, error) {
 	certPEM, keyPEM, err := generateSelfSignedCert("test-ca", expiration)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate self-signed certificate: %w", err)
+		return "", nil, fmt.Errorf("failed to generate self-signed certificate: %w", err)
 	}
 	secretYAML := fmt.Sprintf(`apiVersion: v1
 kind: Secret
@@ -47,7 +54,7 @@ data:
 		base64.StdEncoding.EncodeToString(certPEM),
 		base64.StdEncoding.EncodeToString(keyPEM),
 	)
-	return secretYAML, nil
+	return secretYAML, certPEM, nil
 }
 
 // generateSelfSignedCert generates a self-signed certificate for testing.

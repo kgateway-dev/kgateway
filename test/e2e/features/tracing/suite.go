@@ -115,7 +115,7 @@ func (s *testingSuite) testOTelTracing(collectorPod string) {
 			}
 		}
 		g.Expect(allMatched).To(gomega.BeTrue(), "lines not found in logs")
-	}, time.Second*60, time.Second*15, "should find traces in collector pod logs").Should(gomega.Succeed())
+	}, time.Second*60, time.Millisecond*500, "should find traces in collector pod logs").Should(gomega.Succeed())
 }
 
 // TestRouteTracingCustomAttributes verifies that a TrafficPolicy with route-level tracing
@@ -163,14 +163,15 @@ func (s *testingSuite) TestRouteTracingCustomAttributes() {
 			}
 		}
 		g.Expect(allMatched).To(gomega.BeTrue(), "expected trace attributes not found in collector logs")
-	}, time.Second*60, time.Second*15, "should find route-level trace tags in collector pod logs").Should(gomega.Succeed())
+	}, time.Second*60, time.Millisecond*500, "should find route-level trace tags in collector pod logs").Should(gomega.Succeed())
 }
 
 // TestRouteTracingDisable verifies that a TrafficPolicy with tracing disabled
 // prevents traces from being emitted for the targeted route.
 func (s *testingSuite) TestRouteTracingDisable() {
-	// Wait for listener-level tracing policy to be accepted
+	// Wait for listener-level tracing policy and the route-level disable to be accepted
 	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyTrafficPolicyCondition(s.Ctx, "route-tracing-disable-policy", "httpbin", gwv1.PolicyConditionAccepted, metav1.ConditionTrue)
 
 	// Use a unique marker to identify requests from this test
 	marker := fmt.Sprintf("disable-test-%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
@@ -192,11 +193,11 @@ func (s *testingSuite) TestRouteTracingDisable() {
 		)
 	}
 
-	// Wait briefly for any traces to be flushed to the collector
-	time.Sleep(5 * time.Second)
-
-	// Verify that no traces with our unique marker appear in the collector logs
-	logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", otelCollectorPod)
-	s.Require().NoError(err, "Failed to get pod logs")
-	s.Require().NotContains(logs, marker, "traces should not be emitted when route tracing is disabled")
+	// Verify that no traces with our unique marker reach the collector. Envoy flushes
+	// spans every 5s, so watch the collector logs for a little longer than that.
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Consistently(func(g gomega.Gomega) {
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", otelCollectorPod)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
+		g.Expect(logs).NotTo(gomega.ContainSubstring(marker), "traces should not be emitted when route tracing is disabled")
+	}, time.Second*6, time.Millisecond*500).Should(gomega.Succeed())
 }

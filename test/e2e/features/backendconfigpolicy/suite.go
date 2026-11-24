@@ -276,16 +276,11 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			curl.WithPort(80),
 			curl.WithPath(path),
 		)
-
-		time.Sleep(10 * time.Millisecond) // see also OutlierDetection.Interval
 	}
 
-	// envoy must have time to eject, so let's be a little slower just to
-	// decrease the probability of a flaky test:
-	time.Sleep(250 * time.Millisecond)
-
 	// Check envoy stats to verify that outlier detection has ejected
-	// floor(0.51 * |replicas|) = floor(1.02) = 1 backends.
+	// floor(0.51 * |replicas|) = floor(1.02) = 1 backends. Envoy ejects
+	// asynchronously on its main thread, so poll until the ejection shows up.
 	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(s.Ctx, proxyObjectMeta, func(ctx context.Context, adminClient *admincli.Client) {
 		s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 			metricPrefix := "cluster.kube_kgateway-base_httpbin_8080"
@@ -305,7 +300,7 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			g.Expect(stats[0].GetName()).To(gomega.HavePrefix(metricPrefix))
 			g.Expect(stats[0].GetValue()).To(gomega.Equal(uint64(1)))
 			// If this fails, be aware of `lb_healthy_panic`.
-		}).WithTimeout(20 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
+		}).WithTimeout(20 * time.Second).WithPolling(100 * time.Millisecond).Should(gomega.Succeed())
 	})
 }
 
