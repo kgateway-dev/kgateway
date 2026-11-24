@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -158,6 +159,7 @@ func buildOAuth2ProviderConfig(
 	ext *ir.GatewayExtension,
 	backends *krtcollections.BackendIndex,
 	secrets *krtcollections.SecretIndex,
+	hmacSecrets krt.Collection[*corev1.Secret],
 	discoverer *oidcProviderConfigDiscoverer,
 ) (*oauthPerProviderConfig, error) {
 	in := ext.OAuth2
@@ -250,14 +252,21 @@ func buildOAuth2ProviderConfig(
 			clientSecretKey, credSecret.ResourceName(), ext.ResourceName())
 	}
 	// TODO(shashank): customize cookie names for collisions
-	hmacSecret, err := secrets.GetSecretWithoutRefGrant(krtctx, wellknown.OAuth2HMACSecret.Name, wellknown.OAuth2HMACSecret.Namespace)
-	if err != nil {
-		return nil, err
+	// The HMAC Secret is kgateway's own, read through a watch scoped to it, so it needs no
+	// ReferenceGrant and SecretLabelSelector need not match it.
+	fetched := krt.FetchOne(krtctx, hmacSecrets, krt.FilterObjectName(wellknown.OAuth2HMACSecret))
+	if fetched == nil {
+		return nil, &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{
+			Kind:      "Secret",
+			Namespace: wellknown.OAuth2HMACSecret.Namespace,
+			Name:      wellknown.OAuth2HMACSecret.Name,
+		}}
 	}
+	hmacSecret := *fetched
 	hmacSecretData, ok := hmacSecret.Data[wellknown.OAuth2HMACSecretKey]
 	if !ok || len(hmacSecretData) == 0 {
 		return nil, fmt.Errorf("%s not found or empty in secret %s for OAuth2",
-			wellknown.OAuth2HMACSecretKey, hmacSecret.ResourceName())
+			wellknown.OAuth2HMACSecretKey, wellknown.OAuth2HMACSecret)
 	}
 
 	redirectURI := ptr.Deref(in.RedirectURI, defaultRedictURI)

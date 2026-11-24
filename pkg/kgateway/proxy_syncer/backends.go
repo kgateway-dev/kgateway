@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"log/slog"
 	"maps"
 	"slices"
 	"strconv"
@@ -620,11 +621,9 @@ func newPerClientEnvoyClusters(
 	perClient := krt.NewCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
 		rows := clustersForClient(kctx, ctx, translator, base, ucc)
 		if len(rows) == 0 {
-			// No backends translated yet. Unreachable in a real cluster, where
-			// kubernetes.default alone is a backend; common in tests. The
-			// snapshot stage treats the missing row as "not ready" and keeps
-			// the client's last snapshot.
-			logger.Debug("no base clusters; deferring per-client clusters", "client", ucc.ResourceName())
+			// No backends translated. The snapshot stage treats the missing
+			// row as "not ready" and keeps the client's last snapshot.
+			reportNoBackends(logger, ucc.ResourceName(), base.HasSynced())
 			return nil
 		}
 		return assemblePerClientClusters(ucc, rows)
@@ -635,4 +634,20 @@ func newPerClientEnvoyClusters(
 		perClient: perClient,
 		status:    newStatusClusters(krtopts, base, perClient),
 	}
+}
+
+// reportNoBackends logs that a client has no backends to publish. Before the
+// base collection syncs that is ordinary startup. After it, the controller
+// translated no backend at all, which kubernetes.default normally rules out but
+// a serviceLabelSelector or discoveryNamespaceSelectors can produce. The client
+// then gets no xDS update of any kind, so it is a warning.
+func reportNoBackends(log *slog.Logger, client string, baseSynced bool) {
+	if !baseSynced {
+		log.Debug("no base clusters; deferring per-client clusters", "client", client)
+		return
+	}
+	log.Warn("no backends translated; publishing nothing to this proxy until one exists. "+
+		"A new proxy stays unready, and a connected one keeps its last configuration "+
+		"(routes, listeners, and certificates included). Check serviceLabelSelector and "+
+		"discoveryNamespaceSelectors", "client", client)
 }

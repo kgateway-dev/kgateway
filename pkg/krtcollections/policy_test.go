@@ -553,7 +553,12 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		apisettings.Settings{},
 	)
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
+	upstreams := NewBackendIndex(
+		krtutil.KrtOptions{},
+		policies,
+		refgrants,
+		WithServiceLabelSelector(string(settings.ServiceLabelSelector)),
+	)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	backends := krttest.GetMockCollection[*kgateway.Backend](mock)
 	upstreams.AddBackends(backendGk, backendUpstreams(backends))
@@ -590,7 +595,11 @@ func getBackends(r ir.Route) []ir.BackendRefIR {
 }
 
 func translateRoute(t *testing.T, inputs []any) ir.Route {
-	rtidx := preRouteIndex(t, inputs)
+	return translateRouteWithSettings(t, inputs, apisettings.Settings{})
+}
+
+func translateRouteWithSettings(t *testing.T, inputs []any, settings apisettings.Settings) ir.Route {
+	rtidx := preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{}, settings)
 	tcpGk := schema.GroupKind{
 		Group: gwv1a2.GroupName,
 		Kind:  "TCPRoute",
@@ -757,6 +766,76 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestMissingServiceBackendReportsActiveDiscoverySelector(t *testing.T) {
+	const selector = "app.kubernetes.io/expose=true,tier in (api,web)"
+	expectedMessage := `Service default/foo not found; kgateway only watches Services matching label selector "app.kubernetes.io/expose=true,tier in (api,web)" (Helm value serviceLabelSelector, KGW_SERVICE_LABEL_SELECTOR); verify the Service labels match the selector`
+
+	for _, route := range backends("") {
+		t.Run(fmt.Sprintf("route %T", route), func(t *testing.T) {
+			routeIR := translateRouteWithSettings(t, []any{route}, apisettings.Settings{ServiceLabelSelector: selector})
+			require.NotNil(t, routeIR)
+
+			backend := getBackends(routeIR)[0]
+			require.EqualError(t, backend.Err, expectedMessage)
+
+			var selectorErr *SelectorNotFoundError
+			require.ErrorAs(t, backend.Err, &selectorErr)
+			require.Equal(t, selector, selectorErr.Selector)
+
+			var notFoundErr *NotFoundError
+			require.ErrorAs(t, backend.Err, &notFoundErr)
+			require.Equal(t, "foo", notFoundErr.NotFoundObj.Name)
+		})
+	}
+}
+
+func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
+	t.Run("empty selector keeps the standard Service not-found error", func(t *testing.T) {
+		routeIR := translateRouteWithSettings(t, []any{httpRouteWithSvcBackendRef("")}, apisettings.Settings{})
+		backend := getBackends(routeIR)[0]
+
+		require.EqualError(t, backend.Err, "Service default/foo not found")
+		var selectorErr *SelectorNotFoundError
+		require.NotErrorAs(t, backend.Err, &selectorErr)
+	})
+
+	t.Run("selector does not decorate missing non-Service backends", func(t *testing.T) {
+		route := httpRouteWithBackendRef("missing-backend", "", nil)
+		routeIR := translateRouteWithSettings(t, []any{route}, apisettings.Settings{ServiceLabelSelector: "app=public"})
+		backend := getBackends(routeIR)[0]
+
+		require.EqualError(t, backend.Err, "Backend default/missing-backend not found")
+		var selectorErr *SelectorNotFoundError
+		require.NotErrorAs(t, backend.Err, &selectorErr)
+	})
+
+	t.Run("all BackendIndex Service resolution paths include the selector", func(t *testing.T) {
+		const selector = "app=public"
+		index := preRouteIndexWithSettings(t, nil, krtutil.KrtOptions{}, apisettings.Settings{ServiceLabelSelector: selector}).backends
+		source := ir.ObjectSource{Group: gwv1.GroupName, Kind: "HTTPRoute", Namespace: "default", Name: "route"}
+		ref := gwv1.BackendObjectReference{Name: "foo", Port: new(gwv1.PortNumber(8080))}
+
+		resolvers := map[string]func() (*ir.BackendObjectIR, error){
+			"with ReferenceGrant validation": func() (*ir.BackendObjectIR, error) {
+				return index.GetBackendFromRef(krt.TestingDummyContext{}, source, ref)
+			},
+			"without ReferenceGrant validation": func() (*ir.BackendObjectIR, error) {
+				return index.getBackendFromRef(krt.TestingDummyContext{}, source.Namespace, ref)
+			},
+		}
+
+		for name, resolve := range resolvers {
+			t.Run(name, func(t *testing.T) {
+				backend, err := resolve()
+				require.Nil(t, backend)
+				var selectorErr *SelectorNotFoundError
+				require.ErrorAs(t, err, &selectorErr)
+				require.Equal(t, selector, selectorErr.Selector)
+			})
+		}
+	})
 }
 
 func TestToAttachedPoliciesEmpty(t *testing.T) {
