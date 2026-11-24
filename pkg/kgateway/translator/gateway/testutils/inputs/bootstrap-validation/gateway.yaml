@@ -1,0 +1,76 @@
+# A Gateway whose GatewayParameters bootstrap overlays raise RE2's program size limit
+# and add a static listener on 9000. The deployer writes both to the generated
+# bootstrap ConfigMap's xds_validation.json, which this file holds as the deployer writes it.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+  uid: example-gateway-uid
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+  # The merged bootstrap listens on 9000, so this listener is rejected.
+  - name: bootstrap-port
+    port: 9000
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-gateway
+  namespace: gwtest
+  labels:
+    gateway.networking.k8s.io/gateway-name: example-gateway
+  ownerReferences:
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: Gateway
+    name: example-gateway
+    uid: example-gateway-uid
+    controller: true
+data:
+  envoy.yaml: "{}"
+  xds_validation.json: '{"bootstrap":{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}},"reservedPorts":[8082,9000,9091,19000]}'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: gwtest
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: example
+---
+# The path regex compiles to an RE2 program of 205 instructions: over Envoy's
+# default limit of 100, and under the raised limit of 1000.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: long-regex
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: "/(abcdefgh){20}"
+    backendRefs:
+    - name: example-svc
+      port: 80

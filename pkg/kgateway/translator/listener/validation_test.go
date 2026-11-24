@@ -147,6 +147,76 @@ func TestSimpleGWNoHostname(t *testing.T) {
 	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), expectedStatuses)
 }
 
+// A Gateway listener on a port the merged bootstrap listens on is rejected. The
+// static reserved ports stay reserved, so a static port the merged bootstrap no
+// longer listens on is rejected too: proxy pods started before the overlay still listen on it.
+func TestBootstrapReservedPort(t *testing.T) {
+	// Build a Gateway with listeners on 8080, 9000 and 8082, whose bootstrap listens on
+	// 9000 and has moved the readiness listener from 8082 to 8083.
+	gateway := simpleGwNoHostname()
+	gateway.Spec.Listeners = append(gateway.Spec.Listeners,
+		gwv1.Listener{Name: "bootstrap-port", Port: 9000, Protocol: gwv1.HTTPProtocolType},
+		gwv1.Listener{Name: "moved-port", Port: 8082, Protocol: gwv1.HTTPProtocolType},
+	)
+	gwIR := gwToIr(gateway, nil, nil)
+	gwIR.ValidationBootstraps = &ir.GatewayValidationBootstraps{ReservedPorts: []uint32{8083, 9000, 9091, 19000}}
+
+	// Validate it.
+	report := reports.NewReportMap()
+	validListeners := validateGateway(gwIR, reports.NewReporter(&report))
+
+	// Only the listener on 8080 is valid; the ones on 9000 and 8082 say why they are not.
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+	g.Expect(validListeners[0].Port).To(Equal(gwv1.PortNumber(8080)))
+	kinds := []gwv1.RouteGroupKind{{Group: GroupNameHelper(), Kind: "HTTPRoute"}, {Group: GroupNameHelper(), Kind: "GRPCRoute"}}
+	rejected := func(name, msg string) gwv1.ListenerStatus {
+		return gwv1.ListenerStatus{Name: gwv1.SectionName(name), SupportedKinds: kinds, Conditions: []metav1.Condition{
+			{Type: string(gwv1.ListenerConditionConflicted), Status: metav1.ConditionTrue, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionProgrammed), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+		}}
+	}
+	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, map[string]gwv1.ListenerStatus{
+		"http":           {Name: "http", SupportedKinds: kinds},
+		"bootstrap-port": rejected("bootstrap-port", "invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters bootstrap overlay applied, listens on it: port is reserved"),
+		"moved-port":     rejected("moved-port", "invalid port 8082 in listener: port is reserved"),
+	})
+}
+
+// A ListenerSet listener on a port the merged bootstrap listens on is rejected like a
+// Gateway listener, and the ListenerSet's other listeners stay valid.
+func TestBootstrapReservedPortListenerSet(t *testing.T) {
+	// Build a Gateway with a listener on 8080 and a ListenerSet with listeners on 8081
+	// and 9000, whose bootstrap listens on 9000.
+	gateway := simpleGwNoHostname()
+	listenerSet := simpleLsNoHostname()
+	listenerSet.Spec.Listeners = append(listenerSet.Spec.Listeners,
+		gwv1.ListenerEntry{Name: "bootstrap-port", Port: 9000, Protocol: gwv1.HTTPProtocolType},
+	)
+	gwIR := gwToIr(gateway, listenerSet, nil)
+	gwIR.ValidationBootstraps = &ir.GatewayValidationBootstraps{ReservedPorts: []uint32{8082, 9000, 9091, 19000}}
+
+	// Validate it.
+	report := reports.NewReportMap()
+	validListeners := validateGateway(gwIR, reports.NewReporter(&report))
+
+	// The listeners on 8080 and 8081 are valid; the ListenerSet's on 9000 says why it is not.
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(2))
+	g.Expect([]gwv1.PortNumber{validListeners[0].Port, validListeners[1].Port}).To(ConsistOf(gwv1.PortNumber(8080), gwv1.PortNumber(8081)))
+	kinds := []gwv1.RouteGroupKind{{Group: GroupNameHelper(), Kind: "HTTPRoute"}, {Group: GroupNameHelper(), Kind: "GRPCRoute"}}
+	msg := "invalid port 9000 in listener: the proxy bootstrap, with the GatewayParameters bootstrap overlay applied, listens on it: port is reserved"
+	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), map[string]gwv1.ListenerStatus{
+		"http": {Name: "http", SupportedKinds: kinds},
+		"bootstrap-port": {Name: "bootstrap-port", SupportedKinds: kinds, Conditions: []metav1.Condition{
+			{Type: string(gwv1.ListenerConditionConflicted), Status: metav1.ConditionTrue, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+			{Type: string(gwv1.ListenerConditionProgrammed), Status: metav1.ConditionFalse, Reason: string(gwv1.ListenerReasonInvalid), Message: msg},
+		}},
+	})
+}
+
 func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 	gateway := simpleGwDuplicateNoHostname()
 	listenerSet := simpleLsDuplicateNoHostname()
