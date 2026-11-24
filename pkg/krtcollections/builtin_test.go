@@ -57,6 +57,23 @@ func TestURLRewriteApply(t *testing.T) {
 			expectRegexSub:     "/",
 		},
 		{
+			name: "root rewrite escapes literal path metacharacters",
+			route: &envoyroutev3.Route{
+				Match: &envoyroutev3.RouteMatch{
+					PathSpecifier: &envoyroutev3.RouteMatch_PathSeparatedPrefix{
+						PathSeparatedPrefix: "/v1+beta.2",
+					},
+				},
+				Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}},
+			},
+			mergeOpts: policy.MergeOptions{Strategy: policy.AugmentedShallowMerge},
+			ir: urlRewriteIr{
+				PrefixReplace: "/",
+			},
+			expectRegexPattern: `^/v1\+beta\.2\/*`,
+			expectRegexSub:     "/",
+		},
+		{
 			name: "prefix rewrite set initially is not overridden",
 			route: &envoyroutev3.Route{
 				Match: &envoyroutev3.RouteMatch{
