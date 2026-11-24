@@ -282,7 +282,10 @@ func TestDiscoveryStatusForBackendReportsCredentialErrorForUnresolvedSecret(t *t
 	}
 	backend := backendObjectIR(be, nil)
 
-	c := &ec2EndpointsCollection{enabled: true}
+	c := &ec2EndpointsCollection{
+		enabled:  true,
+		backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{backend}),
+	}
 	got := c.discoveryStatusForBackend(krt.TestingDummyContext{}, backend)
 	if got == nil {
 		t.Fatal("discoveryStatusForBackend() = nil, want a CredentialError status")

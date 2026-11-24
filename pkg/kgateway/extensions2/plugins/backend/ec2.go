@@ -415,6 +415,10 @@ type ec2EndpointsCollection struct {
 	stateMu sync.RWMutex
 	state   map[string]ec2ResolvedBackend
 
+	// metricsMu orders writes of per-Backend metric series against the cleanup that
+	// runs when the Backend is deleted; see recordBackendMetrics.
+	metricsMu sync.Mutex
+
 	Endpoints krt.Collection[ir.EndpointsForBackend]
 	// DiscoveryStatus contributes the EndpointsDiscovered condition for every EC2
 	// backend, derived from the latest discovery poll (or, for backends with
@@ -477,6 +481,8 @@ func newEc2EndpointsCollection(
 		// uniquely keyed by namespace/name, so this only ever clears the series of
 		// the backend being removed.
 		src := o.Latest().GetObjectSource()
+		c.metricsMu.Lock()
+		defer c.metricsMu.Unlock()
 		deleteEc2DiscoveryMetrics(src.Namespace, src.Name)
 	})
 
@@ -692,8 +698,10 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 					// Record the poll outcome with the underlying classification
 					// reason (not the Degraded override) so the counter always
 					// attributes a concrete failure cause.
-					recordEc2PollError(cfg.namespace, cfg.name, reason)
-					recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultError, pollSeconds)
+					c.recordBackendMetrics(cfg.resourceName, func() {
+						recordEc2PollError(cfg.namespace, cfg.name, reason)
+						recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultError, pollSeconds)
+					})
 				}
 				nextStateMu.Unlock()
 				return
@@ -710,8 +718,10 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 			for _, cfg := range groupedBackends {
 				backendState := selectResolvedEc2Backend(cfg, instances)
 				resolved[cfg.resourceName] = backendState
-				recordEc2PollSuccess(cfg.namespace, cfg.name, len(backendState.endpoints))
-				recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultSuccess, pollSeconds)
+				c.recordBackendMetrics(cfg.resourceName, func() {
+					recordEc2PollSuccess(cfg.namespace, cfg.name, len(backendState.endpoints))
+					recordEc2PollDuration(cfg.namespace, cfg.name, ec2PollResultSuccess, pollSeconds)
+				})
 				logger.Debug(
 					"resolved EC2 backend endpoints",
 					"backend", cfg.resourceName,
@@ -729,6 +739,23 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 	wg.Wait()
 
 	return nextState, errors.Join(errs...)
+}
+
+// recordBackendMetrics runs record, which writes a Backend's discovery metric series,
+// unless the Backend has been deleted since the caller observed it (e.g. while the AWS
+// call of the poll that listed it was in flight). The delete handler is the only
+// cleanup of those series and runs once per Backend, so a write landing after it would
+// stay exported until the process exits. A Backend leaves the collection before its
+// delete handler is called, and the handler takes metricsMu: either the Backend is
+// already gone here and nothing is recorded, or the handler runs after record and
+// removes what it wrote.
+func (c *ec2EndpointsCollection) recordBackendMetrics(resourceName string, record func()) {
+	c.metricsMu.Lock()
+	defer c.metricsMu.Unlock()
+	if c.backends.GetKey(resourceName) == nil {
+		return
+	}
+	record()
 }
 
 func (c *ec2EndpointsCollection) endpointsForBackend(backend ir.BackendObjectIR, cfg *ec2BackendConfig) *ir.EndpointsForBackend {
@@ -798,7 +825,9 @@ func (c *ec2EndpointsCollection) discoveryStatusForBackend(kctx krt.HandlerConte
 		// metrics here; otherwise an unresolvable secret (the most common
 		// misconfiguration) would be invisible to error_state alerting.
 		src := backend.GetObjectSource()
-		recordEc2CredentialErrorState(src.Namespace, src.Name)
+		c.recordBackendMetrics(backend.ResourceName(), func() {
+			recordEc2CredentialErrorState(src.Namespace, src.Name)
+		})
 		return ec2DiscoveryStatusUpdate(backend, ec2DiscoveryStatus{
 			status:  metav1.ConditionFalse,
 			reason:  string(kgateway.BackendReasonCredentialError),
