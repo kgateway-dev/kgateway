@@ -184,6 +184,7 @@ func MergeTrafficPolicies(
 		mergeHttpACL,
 		mergeStatPrefix,
 		mergeHTTPUpgrade,
+		mergeGRPCWeb,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -635,6 +636,21 @@ func mergeCSRF(
 		Set: func(spec *trafficPolicySpecIr, val *csrfIR) { spec.csrf = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "csrf")
+}
+
+func mergeGRPCWeb(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[grpcWebIR]{
+		Get: func(spec *trafficPolicySpecIr) *grpcWebIR { return spec.grpcWeb },
+		Set: func(spec *trafficPolicySpecIr, val *grpcWebIR) { spec.grpcWeb = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "grpcWeb")
 }
 
 func mergeHeaderModifiers(

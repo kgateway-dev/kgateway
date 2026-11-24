@@ -1,0 +1,96 @@
+# A Gateway-level policy enables gRPC-Web and CORS; one route inherits it and the other disables
+# gRPC-Web with a route-level policy. The chain gets one disabled-by-default gRPC-Web filter after
+# CORS, the Gateway enables it on the virtual host, and the disabling route turns it off.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    hostname: "www.example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grpc-web-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /grpc
+      backendRefs:
+        - name: example-svc
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: plain-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /plain
+      backendRefs:
+        - name: example-svc
+          port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: example-gateway
+  grpcWeb: {}
+  cors:
+    allowOrigins:
+      - "https://app.example.com"
+    allowHeaders:
+      - x-grpc-web
+      - x-user-agent
+      - content-type
+    exposeHeaders:
+      - grpc-status
+      - grpc-message
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: disable-grpc-web
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: plain-route
+  grpcWeb:
+    disable: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: grpc
+    appProtocol: grpc

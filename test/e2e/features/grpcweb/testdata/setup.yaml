@@ -1,0 +1,66 @@
+# A plain gRPC echo server (it does not speak gRPC-Web) behind the shared base Gateway.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-echo
+  namespace: kgateway-base
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grpc-echo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grpc-echo
+    spec:
+      containers:
+        - name: grpc-echo
+          image: ghcr.io/projectcontour/yages:v0.1.0
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-echo
+  namespace: kgateway-base
+spec:
+  ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: 9000
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app.kubernetes.io/name: grpc-echo
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grpc-web
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - grpc-web
+  parentRefs:
+    - name: gateway
+  rules:
+    - backendRefs:
+        - name: grpc-echo
+          port: 3000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grpc-web-disabled
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - grpc-web-disabled
+  parentRefs:
+    - name: gateway
+  rules:
+    - backendRefs:
+        - name: grpc-echo
+          port: 3000

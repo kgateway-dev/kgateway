@@ -25,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/faultinjection"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/frontendtls"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/grpcweb"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/header_modifiers"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/http_acl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/internalredirect"
@@ -96,6 +97,7 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("FaultInjection", faultinjection.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("GRPCWeb", grpcweb.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
 	// StrictChurn mutates the controller deployment (strict validation, a
