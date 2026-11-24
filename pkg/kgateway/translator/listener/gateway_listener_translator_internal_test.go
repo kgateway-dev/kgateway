@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -141,6 +143,64 @@ func TestFilterHTTPListenerIsolationHostnames(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHTTPVirtualHostListenerPolicyPrecedence(t *testing.T) {
+	policyGroupKind := schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy"}
+	parentWithPolicies := func(name string, hostname *gwv1.Hostname, routeHostnames []string) httpFilterChainParent {
+		parent := listenerIsolationParent(name, hostname)
+		parent.routesWithHosts = []*query.RouteInfo{listenerIsolationRouteInfo(routeHostnames)}
+		parent.attachedPolicies = ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				policyGroupKind: {{PolicyRef: &ir.AttachedPolicyRef{Name: name}}},
+			},
+		}
+		return parent
+	}
+
+	exactWithoutPolicy := listenerIsolationParent("exact-without-policy", listenerIsolationHostname("d.example.com"))
+	exactWithoutPolicy.routesWithHosts = []*query.RouteInfo{listenerIsolationRouteInfo([]string{"d.example.com"})}
+
+	parents := []httpFilterChainParent{
+		parentWithPolicies("fallback", nil, nil),
+		parentWithPolicies("wildcard", listenerIsolationHostname("*.example.com"), []string{"*.example.com", "a.example.com", "b.example.com", "c.sub.example.com", "d.example.com"}),
+		parentWithPolicies("specific-wildcard", listenerIsolationHostname("*.sub.example.com"), []string{"*.sub.example.com", "c.sub.example.com"}),
+		parentWithPolicies("exact", listenerIsolationHostname("a.example.com"), []string{"a.example.com"}),
+		exactWithoutPolicy,
+	}
+	wantParents := map[string]string{
+		"*":                 "fallback",
+		"*.example.com":     "wildcard",
+		"*.sub.example.com": "specific-wildcard",
+		"a.example.com":     "exact",
+		"b.example.com":     "wildcard",
+		"c.sub.example.com": "specific-wildcard",
+		"d.example.com":     "exact-without-policy",
+	}
+
+	check := func(t *testing.T) {
+		reportMap := reports.NewReportMap()
+		filterChain := &httpFilterChain{parents: parents}
+		vhosts := filterChain.translateHttpFilterChain(context.Background(), "http", reports.NewReporter(&reportMap)).Vhosts
+		require.Len(t, vhosts, len(wantParents))
+		for _, vhost := range vhosts {
+			wantParent, ok := wantParents[vhost.Hostname]
+			require.True(t, ok, "unexpected virtual host %q", vhost.Hostname)
+			assert.Equal(t, gwv1.SectionName(wantParent), vhost.ParentRef.Name, "listener for %q", vhost.Hostname)
+			assert.Len(t, vhost.Rules, 1, "routes for %q", vhost.Hostname)
+			if wantParent == exactWithoutPolicy.gatewayListenerName {
+				assert.Empty(t, vhost.AttachedPolicies.Policies, "policies for %q", vhost.Hostname)
+				continue
+			}
+			policies := vhost.AttachedPolicies.Policies[policyGroupKind]
+			require.Len(t, policies, 1, "policies for %q", vhost.Hostname)
+			assert.Equal(t, wantParent, policies[0].PolicyRef.Name, "policy for %q", vhost.Hostname)
+		}
+	}
+
+	t.Run("wildcard before exact", check)
+	slices.Reverse(parents)
+	t.Run("exact before wildcard", check)
 }
 
 func TestBuildRoutesPerHostWithHostnamesFilter(t *testing.T) {
