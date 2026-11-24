@@ -4629,6 +4629,10 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "multiple_children.yaml")
 	})
 
+	t.Run("Parent rule delegates to multiple backendRefs", func(t *testing.T) {
+		test(t, "multiple_delegates_per_rule.yaml")
+	})
+
 	t.Run("Child is invalid as it is delegatee and specifies hostnames", func(t *testing.T) {
 		test(t, "basic_invalid_hostname.yaml")
 	})
