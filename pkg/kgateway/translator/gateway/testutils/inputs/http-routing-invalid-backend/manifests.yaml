@@ -22,5 +22,5 @@ spec:
   - backendRefs:
     - name: example-svc
       port: 80
-      group: unknown
-      kind: unknown
+      group: example.com
+      kind: Service
