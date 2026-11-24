@@ -649,21 +649,43 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatch(
 		}
 	}
 
-	isolatedRoutes := make([]*envoyroutev3.Route, 0, len(out.GetRoutes()))
-	for _, route := range out.GetRoutes() {
-		routeValidationErr := scope.validateRoute(ctx, route, h.validator, h.validationLevel)
-		if routeValidationErr != nil {
-			name := route.GetName()
-			validatedRoute := h.finalizeValidatedRoute(validationCtx, route, routeValidationErr, name != "" && routeNameCounts[name] == 1)
-			if validatedRoute != nil {
-				isolatedRoutes = append(isolatedRoutes, validatedRoute)
+	out.Routes = h.isolateInvalidRoutes(ctx, validationCtx, scope.forIsolation(), out.GetRoutes(), routeNameCounts)
+	return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, scope, out)
+}
+
+// isolateInvalidRoutes repairs routes that Envoy rejected as a group. It bisects
+// the group and keeps any half that passes as a whole, so the number of Envoy
+// invocations grows with the number of invalid routes rather than with the number
+// of healthy siblings, which may belong to other HTTPRoutes.
+func (h *httpRouteConfigurationTranslator) isolateInvalidRoutes(
+	ctx context.Context,
+	validationCtx vhostRouteValidationContext,
+	scope routeValidationScope,
+	routes []*envoyroutev3.Route,
+	routeNameCounts map[string]int,
+) []*envoyroutev3.Route {
+	isolatedRoutes := make([]*envoyroutev3.Route, 0, len(routes))
+	if len(routes) <= 1 {
+		for _, route := range routes {
+			if routeValidationErr := scope.validateRoute(ctx, route, h.validator, h.validationLevel); routeValidationErr != nil {
+				name := route.GetName()
+				route = h.finalizeValidatedRoute(validationCtx, route, routeValidationErr, name != "" && routeNameCounts[name] == 1)
 			}
+			if route != nil {
+				isolatedRoutes = append(isolatedRoutes, route)
+			}
+		}
+		return isolatedRoutes
+	}
+	mid := len(routes) / 2
+	for _, half := range [][]*envoyroutev3.Route{routes[:mid], routes[mid:]} {
+		if len(half) > 1 && scope.validate(ctx, half, h.validator) == nil {
+			isolatedRoutes = append(isolatedRoutes, half...)
 			continue
 		}
-		isolatedRoutes = append(isolatedRoutes, route)
+		isolatedRoutes = append(isolatedRoutes, h.isolateInvalidRoutes(ctx, validationCtx, scope, half, routeNameCounts)...)
 	}
-	out.Routes = isolatedRoutes
-	return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, scope, out)
+	return isolatedRoutes
 }
 
 func (h *httpRouteConfigurationTranslator) finalizeValidatedRoute(
