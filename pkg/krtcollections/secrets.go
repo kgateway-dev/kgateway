@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -105,6 +106,7 @@ func (s *SecretIndex) GetSecretsBySelector(
 	}
 
 	// First, fetch all secrets matching the label selector
+	selector := labels.SelectorFromSet(matchLabels)
 	labelMatchedSecrets := krt.Fetch(kctx, col,
 		krt.FilterGeneric(func(obj any) bool {
 			secret := obj.(ir.Secret)
@@ -117,13 +119,10 @@ func (s *SecretIndex) GetSecretsBySelector(
 			if objLabels == nil {
 				return false
 			}
-			// Check if all matchLabels are present and match
-			for key, value := range matchLabels {
-				if objLabels[key] != value {
-					return false
-				}
-			}
-			return true
+			// Check if all matchLabels are present and match, the way the API server does:
+			// an empty value is a valid label value, so a label the secret does not carry
+			// must not pass for one that is set to "".
+			return selector.Matches(labels.Set(objLabels))
 		}),
 	)
 
