@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -1209,7 +1210,7 @@ func (u *urlRewriteIr) apply(
 			}
 			outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 				Pattern: &envoy_type_matcher_v3.RegexMatcher{
-					Regex: "^" + path + "\\/*",
+					Regex: "^" + regexp.QuoteMeta(path) + "\\/*",
 				},
 				Substitution: "/",
 			}
