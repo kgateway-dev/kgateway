@@ -1342,6 +1342,11 @@ func translateTLSConfig(
 	if !ok {
 		return nil, errors.Join(certErr, validationErr)
 	}
+	// SAN matching needs the trusted CA of the validation that applies, from a ListenerPolicy or
+	// spec.tls.frontend. Without one, Envoy would reject the listener's SAN matchers.
+	if len(tlsConfig.VerifySubjectAltNames) > 0 && validation == nil {
+		return nil, errors.Join(sslutils.ErrVerifySubjectAltNamesRequiresCA, certErr, validationErr)
+	}
 	tlsConfig.ClientCertificateValidation = validation
 
 	if !subjectAltNamesHaveCA(tlsConfig) {
@@ -1611,6 +1616,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	message := "Invalid certificate ref(s)."
 	acceptedReason := gwv1.ListenerReasonInvalid
 	resolvedRefsOK := false
+	keepMessage := false
 
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
@@ -1622,11 +1628,6 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
 		message = err.Error()
-	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
-		// verify-subject-alt-names requires CA is a TLS configuration issue,
-		// not a certificate reference problem — the secret refs resolved fine.
-		resolvedRefsOK = true
-		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidCACertificateRef):
 		reason = sslutils.ListenerReasonInvalidCACertificateRef
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
@@ -1635,6 +1636,14 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
+	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
+		// verify-subject-alt-names without a trusted CA is a TLS configuration issue, not a reference
+		// problem, unless it comes with the errors of certificates that could not be resolved, such as CA
+		// certificates that are missing or hold no valid certificate. Keep the full message either way, so
+		// it says why the listener needs those CA certificates.
+		resolvedRefsOK = !joinedWithOtherErrors(err, sslutils.ErrVerifySubjectAltNamesRequiresCA)
+		message = err.Error()
+		keepMessage = true
 	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
 		// Unknown TLS extension options are not a certificate reference problem;
 		// the cert refs resolved fine. Per the Gateway API spec, this is an
@@ -1643,7 +1652,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	}
 
-	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {
+	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok && !keepMessage {
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
 			resourceType = "Resource"
@@ -1683,6 +1692,20 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		Reason:  acceptedReason,
 		Message: message,
 	})
+}
+
+// joinedWithOtherErrors reports whether err joins target with other errors.
+func joinedWithOtherErrors(err, target error) bool {
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return false
+	}
+	for _, e := range joined.Unwrap() {
+		if !errors.Is(e, target) {
+			return true
+		}
+	}
+	return false
 }
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
