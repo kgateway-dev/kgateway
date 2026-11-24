@@ -151,8 +151,12 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 			return ret
 		}
 
-		// Handle deduplication of endpoint addresses
-		seenAddresses := make(map[string]struct{})
+		// EndpointSlices can report different ports for the same address.
+		type endpointSocket struct {
+			address string
+			port    uint32
+		}
+		seenSockets := make(map[endpointSocket]struct{})
 
 		// Add an endpoint to the returned EndpointsForBackend for each EndpointSlice
 		for _, endpointSlice := range endpointSlices {
@@ -171,11 +175,11 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 				}
 				// Get the addresses
 				for _, addr := range endpoint.Addresses {
-					// Deduplicate addresses
-					if _, exists := seenAddresses[addr]; exists {
+					socket := endpointSocket{address: addr, port: port}
+					if _, exists := seenSockets[socket]; exists {
 						continue
 					}
-					seenAddresses[addr] = struct{}{}
+					seenSockets[socket] = struct{}{}
 
 					var podName string
 					podNamespace := endpointSlice.Namespace

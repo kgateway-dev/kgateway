@@ -1047,7 +1047,7 @@ func TestEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name: "deduplication of endpoints across endpointslices",
+			name: "deduplication of endpoint sockets across EndpointSlices",
 			inputs: []any{
 				&corev1.Pod{
 					TypeMeta: metav1.TypeMeta{},
@@ -1135,6 +1135,30 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
+				&discoveryv1.EndpointSlice{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-slice3",
+						Namespace: "ns",
+						Labels:    map[string]string{discoveryv1.LabelServiceName: "svc"},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"1.2.3.4"},
+							Conditions: discoveryv1.EndpointConditions{
+								Ready: new(true),
+							},
+							TargetRef: &corev1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod1",
+								Namespace: "ns",
+							},
+						},
+					},
+					Ports: []discoveryv1.EndpointPort{
+						{Name: new("http"), Port: new(int32(8081)), Protocol: new(corev1.ProtocolTCP)},
+					},
+				},
 			},
 			upstream: newBackendObjectIR(backendObjectIRInput{
 				ObjectSource: ir.ObjectSource{
@@ -1160,38 +1184,20 @@ func TestEndpoints(t *testing.T) {
 				},
 			}),
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
-				// Only one endpoint should be present after deduplication
-				emd := ir.EndpointWithMd{
-					LbEndpoint: &envoyendpointv3.LbEndpoint{
-						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
-							Endpoint: &envoyendpointv3.Endpoint{
-								Address: &envoycorev3.Address{
-									Address: &envoycorev3.Address_SocketAddress{
-										SocketAddress: &envoycorev3.SocketAddress{
-											Address: "1.2.3.4",
-											PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-												PortValue: 8080,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					EndpointMd: ir.EndpointMetadata{
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region1",
-							corev1.LabelTopologyZone:   "zone1",
-							corev1.LabelHostname:       "node1",
-							"app":                      "test",
-						},
-					},
-				}
 				result := ir.NewEndpointsForBackend(us)
-				result.Add(ir.PodLocality{
-					Region: "region1",
-					Zone:   "zone1",
-				}, emd)
+				locality := ir.PodLocality{Region: "region1", Zone: "zone1"}
+				labels := map[string]string{
+					corev1.LabelTopologyRegion: "region1",
+					corev1.LabelTopologyZone:   "zone1",
+					corev1.LabelHostname:       "node1",
+					"app":                      "test",
+				}
+				for _, port := range []uint32{8080, 8081} {
+					result.Add(locality, ir.EndpointWithMd{
+						LbEndpoint: CreateLBEndpoint("1.2.3.4", port, labels, false),
+						EndpointMd: ir.EndpointMetadata{Labels: labels},
+					})
+				}
 				return result
 			},
 		},
