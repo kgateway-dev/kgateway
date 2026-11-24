@@ -340,6 +340,15 @@ func (i *TestInstallation) preFailHandler(ctx context.Context, t *testing.T, dir
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
 
+	if testutils.ShouldSkipDump() {
+		return
+	}
+	if limit := helpers.MaxFailureDumps(); !helpers.ClaimFailureDump(i.GeneratedFiles.FailureDir, limit) {
+		fmt.Printf("Skipping failure dump for %s: already wrote %d dumps (set %s to raise the cap)\n",
+			t.Name(), limit, testutils.MaxFailureDumps)
+		return
+	}
+
 	err := os.Mkdir(dir, os.ModePerm)
 	// We don't want to fail on the output directory already existing. This could occur
 	// if multiple tests running in the same cluster from the same installation namespace
@@ -354,6 +363,7 @@ func (i *TestInstallation) preFailHandler(ctx context.Context, t *testing.T, dir
 
 	// Dump the logs and state of the cluster
 	helpers.StandardKgatewayDumpOnFail(os.Stdout, i.Actions.Kubectl(), dir, namespaces)
+	fmt.Printf("Failure dump for %s: %s\n", t.Name(), helpers.FailureDumpLocation(i.GeneratedFiles.FailureDir, dir))
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
