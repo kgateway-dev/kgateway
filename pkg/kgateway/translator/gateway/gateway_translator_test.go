@@ -188,6 +188,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with verify subject alt names and ListenerPolicy ca certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/verify-subject-alt-names-listenerpolicy-ca.yaml"},
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-listenerpolicy-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with invalid conditions", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/invalid-conditions.yaml"},
@@ -3782,6 +3793,75 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/per-listener-mtls-merge.yaml"},
 			outputFile: "listener-policy/per-listener-mtls-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS for the whole Gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls.yaml"},
+			outputFile: "listener-policy/gateway-mtls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS selecting the Gateway by label, including from the global policy namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-selectors.yaml"},
+			outputFile: "listener-policy/gateway-mtls-selectors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		},
+			func(s *apisettings.Settings) {
+				s.GlobalPolicyNamespace = "kgateway-system"
+			})
+	})
+
+	t.Run("ListenerPolicy with mTLS for the whole Gateway overrides frontend TLS validation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS needs a ReferenceGrant from ListenerPolicy for CA refs to other namespaces", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-refgrant.yaml"},
+			outputFile: "listener-policy/gateway-mtls-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation whose CA is missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-missing-ca.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-missing-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation with unsupported CA kinds", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-invalid-kind.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-invalid-kind.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
