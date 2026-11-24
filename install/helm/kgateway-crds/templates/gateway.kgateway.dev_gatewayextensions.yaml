@@ -1550,8 +1550,27 @@ spec:
                         description: |-
                           ClientID specifies the client ID issued to the client during the registration process.
                           Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
+                          Exactly one of ClientID or ClientIDRef must be set.
                         minLength: 1
                         type: string
+                      clientIDRef:
+                        description: |-
+                          ClientIDRef specifies a Secret that contains the client ID stored in the key 'client-id'.
+                          Use this when the client ID is only known after the client is registered, for example
+                          when the registration is created by a controller that writes its credentials to a Secret.
+                          Exactly one of ClientID or ClientIDRef must be set.
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
                       clientSecretRef:
                         description: |-
                           ClientSecretRef specifies a Secret that contains the client secret stored in the key 'client-secret'
@@ -1570,9 +1589,13 @@ spec:
                         type: object
                         x-kubernetes-map-type: atomic
                     required:
-                    - clientID
                     - clientSecretRef
                     type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [clientID clientIDRef]
+                        must be set
+                      rule: '[has(self.clientID),has(self.clientIDRef)].filter(x,x==true).size()
+                        == 1'
                   denyRedirect:
                     description: |-
                       DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.

@@ -226,3 +226,55 @@ spec:
         name: ext-proc
         port: 80
     messageTimeout: 2h
+---
+# GatewayExtension: oauth2 accepts the client ID from a Secret
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: gwext-oauth2-client-id-ref
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    issuerURI: https://example.com
+    credentials:
+      clientIDRef:
+        name: oauth-client
+      clientSecretRef:
+        name: oauth-client
+---
+# GatewayExtension: oauth2 rejects both clientID and clientIDRef
+_err: exactly one of the fields in [clientID clientIDRef] must be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: gwext-oauth2-client-id-and-ref
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    issuerURI: https://example.com
+    credentials:
+      clientID: client-id
+      clientIDRef:
+        name: oauth-client
+      clientSecretRef:
+        name: oauth-client
+---
+# GatewayExtension: oauth2 requires clientID or clientIDRef
+_err: exactly one of the fields in [clientID clientIDRef] must be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: gwext-oauth2-client-id-missing
+spec:
+  oauth2:
+    backendRef:
+      name: oauth-provider
+      port: 443
+    issuerURI: https://example.com
+    credentials:
+      clientSecretRef:
+        name: oauth-client
