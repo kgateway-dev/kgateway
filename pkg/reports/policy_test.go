@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -222,6 +223,69 @@ func TestPolicyStatusReport(t *testing.T) {
 								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionFalse,
 								Reason:             string(shared.PolicyReasonPending),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "policy partially applied to ancestor (attached on one listener, overridden on another) reports Attached=True with reason Merged",
+			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
+				policyReport := statusReporter.Policy(reporter.PolicyKey{
+					Group:     "gateway.kgateway.dev",
+					Kind:      "ListenerPolicy",
+					Namespace: "default",
+					Name:      "gateway-wide",
+				}, 1)
+				a.NotNil(policyReport)
+				gwRef := gwv1.ParentReference{
+					Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+					Kind:      new(gwv1.Kind("Gateway")),
+					Namespace: new(gwv1.Namespace("default")),
+					Name:      gwv1.ObjectName("gw-1"),
+				}
+				ancestor := policyReport.AncestorRef(gwRef)
+				ancestor.SetCondition(reporter.PolicyCondition{
+					Type:   string(shared.PolicyConditionAccepted),
+					Status: metav1.ConditionTrue,
+					Reason: string(shared.PolicyReasonValid),
+				})
+				// listener-1 overrides the policy
+				ancestor.SetAttachmentState(reporter.PolicyAttachmentStateOverridden)
+				// listener-2 applies the policy
+				ancestor.SetAttachmentState(reporter.PolicyAttachmentStateAttached)
+			},
+			key: reporter.PolicyKey{
+				Group:     "gateway.kgateway.dev",
+				Kind:      "ListenerPolicy",
+				Namespace: "default",
+				Name:      "gateway-wide",
+			},
+			controller: "kgateway.dev/kgateway",
+			wantStatus: &gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
+					{
+						AncestorRef: gwv1.ParentReference{
+							Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      new(gwv1.Kind("Gateway")),
+							Namespace: new(gwv1.Namespace("default")),
+							Name:      gwv1.ObjectName("gw-1"),
+						},
+						ControllerName: "kgateway.dev/kgateway",
+						Conditions: []metav1.Condition{
+							{
+								ObservedGeneration: 1,
+								Type:               string(shared.PolicyConditionAccepted),
+								Status:             metav1.ConditionTrue,
+								Reason:             string(shared.PolicyReasonValid),
+							},
+							{
+								ObservedGeneration: 1,
+								Type:               string(shared.PolicyConditionAttached),
+								Status:             metav1.ConditionTrue,
+								Reason:             string(shared.PolicyReasonMerged),
+								Message:            reporter.PolicyMergedMsg,
 							},
 						},
 					},
@@ -505,4 +569,99 @@ func TestBuildPolicyStatusExcludesForeignAncestors(t *testing.T) {
 	require.NotNil(t, gotStatus)
 	require.Len(t, gotStatus.Ancestors, 1)
 	require.Equal(t, gwv1.GatewayController("example-controller"), gotStatus.Ancestors[0].ControllerName)
+}
+
+func TestAddAttachmentCondition(t *testing.T) {
+	tests := []struct {
+		name            string
+		attachmentState reporter.PolicyAttachmentState
+		wantStatus      metav1.ConditionStatus
+		wantReason      string
+		wantMessage     string
+		expectModified  bool
+	}{
+		{
+			name:            "pending does not modify conditions",
+			attachmentState: reporter.PolicyAttachmentStatePending,
+			expectModified:  false,
+		},
+		{
+			name:            "attached only reports Attached",
+			attachmentState: reporter.PolicyAttachmentStateAttached,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      string(shared.PolicyReasonAttached),
+			wantMessage:     reporter.PolicyAttachedMsg,
+			expectModified:  true,
+		},
+		{
+			name:            "merged only reports Merged",
+			attachmentState: reporter.PolicyAttachmentStateMerged,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      string(shared.PolicyReasonMerged),
+			wantMessage:     reporter.PolicyMergedMsg,
+			expectModified:  true,
+		},
+		{
+			name:            "overridden only reports Overridden",
+			attachmentState: reporter.PolicyAttachmentStateOverridden,
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      string(shared.PolicyReasonOverridden),
+			wantMessage:     reporter.PolicyOverriddenMsg,
+			expectModified:  true,
+		},
+		{
+			name:            "attached and overridden (partially applied) reports Merged",
+			attachmentState: reporter.PolicyAttachmentStateAttached | reporter.PolicyAttachmentStateOverridden,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      string(shared.PolicyReasonMerged),
+			wantMessage:     reporter.PolicyMergedMsg,
+			expectModified:  true,
+		},
+		{
+			name:            "merged and overridden reports Merged",
+			attachmentState: reporter.PolicyAttachmentStateMerged | reporter.PolicyAttachmentStateOverridden,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      string(shared.PolicyReasonMerged),
+			wantMessage:     reporter.PolicyMergedMsg,
+			expectModified:  true,
+		},
+		{
+			name:            "attached, merged, and overridden reports Merged",
+			attachmentState: reporter.PolicyAttachmentStateAttached | reporter.PolicyAttachmentStateMerged | reporter.PolicyAttachmentStateOverridden,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      string(shared.PolicyReasonMerged),
+			wantMessage:     reporter.PolicyMergedMsg,
+			expectModified:  true,
+		},
+		{
+			name:            "attached and merged reports Merged",
+			attachmentState: reporter.PolicyAttachmentStateAttached | reporter.PolicyAttachmentStateMerged,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      string(shared.PolicyReasonMerged),
+			wantMessage:     reporter.PolicyMergedMsg,
+			expectModified:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			initialConditions := []metav1.Condition{
+				{
+					Type:   string(shared.PolicyConditionAccepted),
+					Status: metav1.ConditionTrue,
+					Reason: string(shared.PolicyReasonValid),
+				},
+			}
+			gotConditions := addAttachmentCondition(initialConditions, tc.attachmentState)
+			if !tc.expectModified {
+				require.Equal(t, initialConditions, gotConditions)
+				return
+			}
+			cond := meta.FindStatusCondition(gotConditions, string(shared.PolicyConditionAttached))
+			require.NotNil(t, cond)
+			require.Equal(t, tc.wantStatus, cond.Status)
+			require.Equal(t, tc.wantReason, cond.Reason)
+			require.Equal(t, tc.wantMessage, cond.Message)
+		})
+	}
 }
