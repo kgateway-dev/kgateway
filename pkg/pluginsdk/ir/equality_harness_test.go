@@ -287,6 +287,13 @@ func TestHarnessGatewayEquals(t *testing.T) {
 				}
 			},
 		},
+		{
+			// Per-field mutations are covered by TestHarnessGatewayValidationBootstrapsEquals.
+			Field: "ValidationBootstraps",
+			Mutate: func(g *Gateway) {
+				g.ValidationBootstraps = &GatewayValidationBootstraps{ReservedPorts: []uint32{8080}}
+			},
+		},
 	}
 
 	// ObjectSource is an embedded struct; the harness flattens its exported
@@ -300,6 +307,99 @@ func TestHarnessGatewayEquals(t *testing.T) {
 		cases,
 		[]string{"Group", "Kind", "Namespace", "Name"}, // embedded ObjectSource fields covered by "ObjectSource" case
 	)
+}
+
+func TestHarnessGatewayValidationBootstrapsEquals(t *testing.T) {
+	// Start from a Gateway whose bootstrap sets a subset and listens on its own ports.
+	base := func() GatewayValidationBootstraps {
+		return GatewayValidationBootstraps{
+			Subset:        ValidationBootstrap{Subset: `{"current":true}`},
+			ReservedPorts: []uint32{8082, 9091, 19000},
+		}
+	}
+	eq := func(a, b GatewayValidationBootstraps) bool { return a.Equals(&b) }
+
+	// Each field change must be detected.
+	equalstest.Run(t, base, eq, []equalstest.Case[GatewayValidationBootstraps]{
+		{
+			Field:  "Subset",
+			Mutate: func(g *GatewayValidationBootstraps) { g.Subset = ValidationBootstrap{Subset: `{"later":true}`} },
+		},
+		{
+			Field:  "ReservedPorts",
+			Mutate: func(g *GatewayValidationBootstraps) { g.ReservedPorts = append(g.ReservedPorts, 8443) },
+		},
+	}, nil)
+}
+
+func TestHarnessValidationBootstrapEquals(t *testing.T) {
+	// ValidationBootstrap is compared inside GatewayValidationBootstraps.Equals.
+	eq := func(a, b ValidationBootstrap) bool {
+		return (&GatewayValidationBootstraps{Subset: a}).Equals(&GatewayValidationBootstraps{Subset: b})
+	}
+	base := func() ValidationBootstrap {
+		return ValidationBootstrap{Subset: `{"current":true}`}
+	}
+
+	// Bootstrap is parsed from Subset, so only Subset is compared.
+	equalstest.Run(t, base, eq, []equalstest.Case[ValidationBootstrap]{
+		{
+			Field:  "Subset",
+			Mutate: func(v *ValidationBootstrap) { v.Subset = `{"later":true}` },
+		},
+	}, []string{"Bootstrap"})
+}
+
+func TestHarnessPodBootstrapEquals(t *testing.T) {
+	// Start from a pod running a merged subset on its own ports.
+	base := func() PodBootstrap {
+		return PodBootstrap{Subset: `{"earlier":true}`, Ports: []uint32{8082, 9091, 19000}}
+	}
+	eq := func(a, b PodBootstrap) bool { return a.Equals(&b) }
+
+	// Each field change must be detected.
+	equalstest.Run(t, base, eq, []equalstest.Case[PodBootstrap]{
+		{
+			Field:  "Subset",
+			Mutate: func(b *PodBootstrap) { b.Subset = `{"later":true}` },
+		},
+		{
+			Field:  "Ports",
+			Mutate: func(b *PodBootstrap) { b.Ports = append(b.Ports, 8443) },
+		},
+	}, nil)
+
+	// A pod without a bootstrap differs from one with it.
+	var none *PodBootstrap
+	b := base()
+	if none.Equals(&b) || b.Equals(none) {
+		t.Error("a nil PodBootstrap must not equal a non-nil one")
+	}
+	if !none.Equals(nil) {
+		t.Error("two nil PodBootstraps must be equal")
+	}
+}
+
+func TestHarnessUniquelyConnectedClientEquals(t *testing.T) {
+	// Start from a client of a pod with a merged bootstrap.
+	base := func() UniquelyConnectedClient {
+		c := NewUniquelyConnectedClient("kgateway-kube-gateway-api~ns~gw", "ns", map[string]string{"pod-template-hash": "a"}, PodLocality{Zone: "z"})
+		c.Bootstrap = &PodBootstrap{Subset: `{"earlier":true}`, Ports: []uint32{8082}}
+		return c
+	}
+	eq := func(a, b UniquelyConnectedClient) bool { return a.Equals(b) }
+
+	// Each field change must be detected.
+	equalstest.Run(t, base, eq, []equalstest.Case[UniquelyConnectedClient]{
+		{Field: "Role", Mutate: func(c *UniquelyConnectedClient) { c.Role = "other" }},
+		{Field: "Labels", Mutate: func(c *UniquelyConnectedClient) { c.Labels = map[string]string{"pod-template-hash": "b"} }},
+		{Field: "Locality", Mutate: func(c *UniquelyConnectedClient) { c.Locality = PodLocality{Zone: "y"} }},
+		{Field: "Namespace", Mutate: func(c *UniquelyConnectedClient) { c.Namespace = "other" }},
+		{Field: "KnowsLocalCluster", Mutate: func(c *UniquelyConnectedClient) { c.KnowsLocalCluster = true }},
+		{Field: "Bootstrap", Mutate: func(c *UniquelyConnectedClient) {
+			c.Bootstrap = &PodBootstrap{Subset: `{"later":true}`, Ports: []uint32{8082}}
+		}},
+	}, nil)
 }
 
 func TestHarnessListenerSetEquals(t *testing.T) {

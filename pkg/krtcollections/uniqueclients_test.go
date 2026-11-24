@@ -909,6 +909,49 @@ func TestUniqueClientsHasColdStreamSince(t *testing.T) {
 	g.Expect(cold.HasColdStreamSince(role, 0)).To(BeFalse(), "a closed stream no longer counts")
 }
 
+// HasReadyPodStream counts the streams whose pod was Ready when they were admitted,
+// per key, until they close.
+func TestUniqueClientsHasReadyPodStream(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	// Build the clients over a Ready pod and a pod that is not Ready, both of the
+	// same ReplicaSet, so their streams share a key.
+	labels := map[string]string{"pod-template-hash": "abc"}
+	pods := krt.NewStaticCollection(nil, []LocalityPod{
+		{Named: krt.Named{Name: "ready", Namespace: "ns"}, AugmentedLabels: labels, Ready: true},
+		{Named: krt.Named{Name: "starting", Namespace: "ns"}, AugmentedLabels: labels},
+	})
+	cb, uccBuilder, state := NewUniquelyConnectedClients(false)
+	clients := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
+	clients.WaitUntilSynced(ctx.Done())
+	ready, ok := state.(interface{ HasReadyPodStream(string) bool })
+	g.Expect(ok).To(BeTrue())
+	request := func(pod string) *envoy_service_discovery_v3.DiscoveryRequest {
+		r := priorVersionRequest(role, "", "")
+		r.Node.Id = pod + ".ns"
+		return r
+	}
+
+	// A stream from the pod that is not Ready does not count.
+	g.Expect(cb.OnStreamRequest(1, request("starting"))).To(Succeed())
+	g.Eventually(func() int { return len(clients.List()) }).Should(Equal(1))
+	key := clients.List()[0].ResourceName()
+	g.Expect(ready.HasReadyPodStream(key)).To(BeFalse(), "a pod that is not Ready has no configuration to keep serving")
+
+	// A stream from the Ready pod does, under the shared key only.
+	g.Expect(cb.OnStreamRequest(2, request("ready"))).To(Succeed())
+	g.Expect(ready.HasReadyPodStream(key)).To(BeTrue())
+	g.Expect(ready.HasReadyPodStream(key+"-other")).To(BeFalse(), "other keys are not affected")
+
+	// The count ends when the Ready pod's stream closes, even with the other stream
+	// still open.
+	cb.OnStreamClosed(2, nil)
+	g.Expect(ready.HasReadyPodStream(key)).To(BeFalse(), "a closed stream no longer counts")
+}
+
 func TestUniqueClientsRunIfDisconnected(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
 	g := NewWithT(t)

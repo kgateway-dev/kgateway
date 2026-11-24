@@ -142,6 +142,10 @@ type LocalityPod struct {
 	// this to false, since pod termination does not apply to them (their health is
 	// managed by the remote cluster).
 	Terminating bool
+	// Bootstrap is the subset and ports of the bootstrap a proxy pod started with,
+	// from its bootstrapoverlay.ValidationAnnotation; nil without the annotation, when
+	// the pod runs Envoy's defaults on the default reserved ports.
+	Bootstrap *ir.PodBootstrap
 }
 
 // Addresses returns the first address if there are any.
@@ -158,7 +162,8 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 		c.Ready == in.Ready &&
 		c.Terminating == in.Terminating &&
 		maps.Equal(c.AugmentedLabels, in.AugmentedLabels) &&
-		slices.Equal(c.Addresses, in.Addresses)
+		slices.Equal(c.Addresses, in.Addresses) &&
+		c.Bootstrap.Equals(in.Bootstrap)
 }
 
 func newNodeCollection(client apiclient.Client, krtOptions krtutil.KrtOptions) krt.Collection[NodeMetadata] {
@@ -336,6 +341,7 @@ func augmentPodLabels(
 			Addresses:       extractPodIPs(pod),
 			Ready:           isPodReadyConditionTrue(pod.Status),
 			Terminating:     pod.GetDeletionTimestamp() != nil,
+			Bootstrap:       podBootstrapFromAnnotations(pod.Annotations),
 		}
 	}
 }
