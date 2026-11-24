@@ -15,7 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -177,7 +176,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 		GetStatus: func(o *kgateway.Backend) kgateway.BackendStatus { return o.Status },
 	})
 
-	policyStatusInputs := plug.PolicyStatusInputs{
+	statusInputs := statussync.RegistrationInputs{
 		Collections:           s.statusCollections,
 		StatusContributions:   s.statusContributions,
 		ContributionsByTarget: contributionsByTarget,
@@ -188,8 +187,11 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	}
 	for _, plugin := range s.plugins.ContributesPolicies {
 		if plugin.RegisterPolicyStatus != nil {
-			plugin.RegisterPolicyStatus(policyStatusInputs)
+			plugin.RegisterPolicyStatus(statusInputs)
 		}
+	}
+	if s.plugins.RegisterStatus != nil {
+		s.plugins.RegisterStatus(statusInputs)
 	}
 
 	// The single entry covering every report reducer, here and in any plugin or downstream

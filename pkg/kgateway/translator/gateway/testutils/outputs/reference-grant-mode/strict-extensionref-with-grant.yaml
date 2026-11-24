@@ -118,6 +118,14 @@ Routes:
           filterName: rustformation
           perRouteConfigName: rustformation
 Statuses:
+  gatewayExtensions:
+    other-ns/extauth-ext:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:

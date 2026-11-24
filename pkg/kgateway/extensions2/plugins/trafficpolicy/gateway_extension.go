@@ -48,7 +48,10 @@ type TrafficPolicyGatewayExtensionIR struct {
 	OAuth2           *oauthPerProviderConfig
 	PrecedenceWeight int32
 	FilterStage      *kgateway.FilterStageSpec
-	Err              error
+	// Generation is the GatewayExtension's metadata.generation this IR was translated from,
+	// reported as the observedGeneration of its Accepted condition.
+	Generation int64
+	Err        error
 }
 
 // ResourceName returns the unique name for this extension.
@@ -75,7 +78,7 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	if !e.OAuth2.Equals(other.OAuth2) {
 		return false
 	}
-	if e.PrecedenceWeight != other.PrecedenceWeight {
+	if e.PrecedenceWeight != other.PrecedenceWeight || e.Generation != other.Generation {
 		return false
 	}
 	if !reflect.DeepEqual(e.FilterStage, other.FilterStage) {
@@ -148,6 +151,7 @@ func gatewayExtensionBuilder(
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
 			PrecedenceWeight: gExt.PrecedenceWeight,
+			Generation:       gExt.Generation,
 		}
 
 		switch {

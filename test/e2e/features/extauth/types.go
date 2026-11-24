@@ -21,6 +21,8 @@ var (
 	// the buffer filter's default placement
 	bufferedRouteManifest             = getTestFile("buffered-route.yaml")
 	bufferedRouteDefaultStageManifest = getTestFile("buffered-route-default-stage.yaml")
+	// an extension whose backend does not exist
+	invalidExtensionManifest = getTestFile("invalid-extension.yaml")
 )
 
 func getTestFile(filename string) string {

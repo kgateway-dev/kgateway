@@ -128,6 +128,14 @@ Routes:
         cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 Statuses:
+  gatewayExtensions:
+    gwtest/basic-extauth:
+      conditions:
+      - lastTransitionTime: null
+        message: GatewayExtension accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     gwtest/http-gw-for-test:
       conditions:
