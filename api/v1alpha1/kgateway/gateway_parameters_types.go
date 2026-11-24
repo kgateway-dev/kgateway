@@ -3,6 +3,7 @@ package kgateway
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -434,6 +435,81 @@ type EnvoyBootstrap struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=9007199254740991
 	MaxDownstreamConnections *int64 `json:"maxDownstreamConnections,omitempty"`
+
+	// Overlay is a partial Envoy bootstrap merged into the bootstrap kgateway generates
+	// for the proxy. Where the overlay and the other fields of this struct set the same
+	// value, the overlay wins. kgateway validates the merged bootstrap with Envoy before
+	// using it, and changing the overlay restarts the proxy. The Gateway's
+	// kgateway.dev/BootstrapOverlayApplied condition reports the result; while it is
+	// False, other changes to the GatewayParameters are not rolled out either.
+	//
+	// If both the GatewayClass and the Gateway have an overlay, the Gateway's is applied
+	// on top of the GatewayClass's.
+	//
+	// +optional
+	Overlay *BootstrapOverlay `json:"overlay,omitempty"`
+}
+
+// BootstrapMergeStrategy selects how a bootstrap overlay is merged.
+// +kubebuilder:validation:Enum=StructuredMerge
+type BootstrapMergeStrategy string
+
+const (
+	// BootstrapMergeStrategyStructuredMerge merges the overlay as a protobuf merge,
+	// with the exceptions described on BootstrapOverlay.MergeStrategy.
+	BootstrapMergeStrategyStructuredMerge BootstrapMergeStrategy = "StructuredMerge"
+)
+
+// BootstrapOverlay is a partial Envoy bootstrap merged into the generated one.
+type BootstrapOverlay struct {
+	// MergeStrategy selects how Value is merged into the generated bootstrap. The only
+	// strategy is StructuredMerge, a protobuf merge: a scalar replaces the generated
+	// value, a message merges field by field, an Any or a map entry replaces the
+	// generated value whole, and a list puts the overlay's entries before the generated
+	// ones. Two kinds of list are exceptions. Static clusters, listeners and secrets,
+	// and overload manager resource monitors merge by name: an overlay entry replaces
+	// the generated entry with the same name whole. Runtime layers are inserted before
+	// the admin layer, so values set through the admin endpoint /runtime_modify still
+	// take precedence.
+	//
+	// +required
+	MergeStrategy BootstrapMergeStrategy `json:"mergeStrategy"`
+
+	// Value is a partial envoy.config.bootstrap.v3.Bootstrap, written in the proto
+	// JSON mapping: field names in snake_case or lowerCamelCase, and each Any with an
+	// `@type`. See
+	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto.
+	//
+	// The value must not:
+	//   - contain two consecutive opening braces, which the proxy reads as the start of
+	//     a Go template at startup
+	//   - define the static secret SYSTEM_CA_CERT, which the proxy adds itself
+	//   - add a runtime layer other than a static_layer
+	//   - add a static cluster or listener whose name does not start with "user_"
+	//
+	// kgateway, not the API server, checks these rules.
+	//
+	// Paths kgateway manages, such as the node, the xDS cluster, the readiness listener
+	// or any other named entry of the generated bootstrap, are listed on the Gateway's
+	// status when the overlay sets them. The controller's
+	// KGW_BOOTSTRAP_OVERLAY_MANAGED_PATHS setting decides the rest: WARN (the default)
+	// applies them, PRUNE ignores them and applies the rest of the overlay, and REJECT
+	// rejects the whole overlay.
+	//
+	// For example, to set an Envoy runtime feature flag:
+	//
+	//	value:
+	//	  layered_runtime:
+	//	    layers:
+	//	    - name: user_runtime
+	//	      static_layer:
+	//	        envoy.reloadable_features.http_reject_path_with_fragment: false
+	//
+	// +required
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:validation:MinProperties=1
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Value apiextensionsv1.JSON `json:"value"`
 }
 
 // LogFormat configures Envoy's application log format. Either JSON or Text must be specified.
@@ -504,6 +580,13 @@ func (in *EnvoyBootstrap) GetMaxDownstreamConnections() *int64 {
 		return nil
 	}
 	return in.MaxDownstreamConnections
+}
+
+func (in *EnvoyBootstrap) GetOverlay() *BootstrapOverlay {
+	if in == nil {
+		return nil
+	}
+	return in.Overlay
 }
 
 func (in *DnsResolver) GetUdpMaxQueries() *int32 {

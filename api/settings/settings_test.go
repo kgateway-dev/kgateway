@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -40,6 +41,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_VALIDATION_MODE":                           string(ValidationStrict),
 		"KGW_VALIDATOR_MODE":                            string(ValidatorBinary),
 		"KGW_VALIDATOR_CACHE_SIZE":                      "8192",
+		"KGW_BOOTSTRAP_OVERLAY_MANAGED_PATHS":           string(BootstrapOverlayManagedPathsReject),
 		"KGW_ENABLE_BUILTIN_DEFAULT_METRICS":            "true",
 		"KGW_GLOBAL_POLICY_NAMESPACE":                   "foo",
 		"KGW_DISABLE_LEADER_ELECTION":                   "true",
@@ -108,6 +110,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
 				ValidatorCacheSize:                    0,
+				BootstrapOverlayManagedPaths:          BootstrapOverlayManagedPathsWarn,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				XdsScopingMode:                        XdsScopingAll,
 				XdsScopingDereferenceGrace:            5 * time.Second,
@@ -158,6 +161,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStrict,
 				ValidatorMode:                         ValidatorBinary,
 				ValidatorCacheSize:                    8192,
+				BootstrapOverlayManagedPaths:          BootstrapOverlayManagedPathsReject,
 				EnableBuiltinDefaultMetrics:           true,
 				GlobalPolicyNamespace:                 "foo",
 				DisableLeaderElection:                 true,
@@ -223,6 +227,13 @@ func TestSettings(t *testing.T) {
 				"KGW_VALIDATOR_MODE": "invalid",
 			},
 			expectedErrorStr: `invalid validator mode: "invalid"`,
+		},
+		{
+			name: "errors on invalid bootstrap overlay managed paths mode",
+			envVars: map[string]string{
+				"KGW_BOOTSTRAP_OVERLAY_MANAGED_PATHS": "invalid",
+			},
+			expectedErrorStr: `invalid bootstrap overlay managed paths mode: "invalid"`,
 		},
 		{
 			name: "errors on invalid xDS scoping mode",
@@ -337,6 +348,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
 				ValidatorCacheSize:                    0,
+				BootstrapOverlayManagedPaths:          BootstrapOverlayManagedPathsWarn,
 				LeaderElectionLeaseDuration:           15 * time.Second,
 				LeaderElectionRenewDeadline:           10 * time.Second,
 				LeaderElectionRetryPeriod:             2 * time.Second,
@@ -381,6 +393,39 @@ func TestSettings(t *testing.T) {
 
 			diff := cmp.Diff(tc.expectedSettings, s)
 			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
+		})
+	}
+}
+
+// TestBootstrapOverlayManagedPathsModeDecode tests that the managed paths mode accepts
+// exactly WARN, PRUNE and REJECT, in any case.
+func TestBootstrapOverlayManagedPathsModeDecode(t *testing.T) {
+	tests := []struct {
+		value   string
+		want    BootstrapOverlayManagedPathsMode
+		wantErr bool
+	}{
+		{value: "WARN", want: BootstrapOverlayManagedPathsWarn},
+		{value: "PRUNE", want: BootstrapOverlayManagedPathsPrune},
+		{value: "REJECT", want: BootstrapOverlayManagedPathsReject},
+		{value: "prune", want: BootstrapOverlayManagedPathsPrune},
+		{value: "", wantErr: true},
+		{value: "IGNORE", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			// Decode the value.
+			var mode BootstrapOverlayManagedPathsMode
+			err := mode.Decode(tt.value)
+
+			// Check the mode, or the error for a value that is not a mode.
+			if tt.wantErr {
+				require.EqualError(t, err, fmt.Sprintf("invalid bootstrap overlay managed paths mode: %q", tt.value))
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, mode)
 		})
 	}
 }

@@ -316,6 +316,63 @@ spec:
                             maximum: 9007199254740991
                             minimum: 1
                             type: integer
+                          overlay:
+                            description: |-
+                              Overlay is a partial Envoy bootstrap merged into the bootstrap kgateway generates
+                              for the proxy. Where the overlay and the other fields of this struct set the same
+                              value, the overlay wins. kgateway validates the merged bootstrap with Envoy before
+                              using it, and changing the overlay restarts the proxy. The Gateway's
+                              kgateway.dev/BootstrapOverlayApplied condition reports the result; while it is
+                              False, other changes to the GatewayParameters are not rolled out either.
+
+                              If both the GatewayClass and the Gateway have an overlay, the Gateway's is applied
+                              on top of the GatewayClass's.
+                            properties:
+                              mergeStrategy:
+                                description: |-
+                                  MergeStrategy selects how Value is merged into the generated bootstrap. The only
+                                  strategy is StructuredMerge, a protobuf merge: a scalar replaces the generated
+                                  value, a message merges field by field, an Any or a map entry replaces the
+                                  generated value whole, and a list puts the overlay's entries before the generated
+                                  ones. Two kinds of list are exceptions. Static clusters, listeners and secrets,
+                                  and overload manager resource monitors merge by name: an overlay entry replaces
+                                  the generated entry with the same name whole. Runtime layers are inserted before
+                                  the admin layer, so values set through the admin endpoint /runtime_modify still
+                                  take precedence.
+                                enum:
+                                - StructuredMerge
+                                type: string
+                              value:
+                                description: "Value is a partial envoy.config.bootstrap.v3.Bootstrap,
+                                  written in the proto\nJSON mapping: field names
+                                  in snake_case or lowerCamelCase, and each Any with
+                                  an\n`@type`. See\nhttps://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto.\n\nThe
+                                  value must not:\n  - contain two consecutive opening
+                                  braces, which the proxy reads as the start of\n
+                                  \   a Go template at startup\n  - define the static
+                                  secret SYSTEM_CA_CERT, which the proxy adds itself\n
+                                  \ - add a runtime layer other than a static_layer\n
+                                  \ - add a static cluster or listener whose name
+                                  does not start with \"user_\"\n\nkgateway, not the
+                                  API server, checks these rules.\n\nPaths kgateway
+                                  manages, such as the node, the xDS cluster, the
+                                  readiness listener\nor any other named entry of
+                                  the generated bootstrap, are listed on the Gateway's\nstatus
+                                  when the overlay sets them. The controller's\nKGW_BOOTSTRAP_OVERLAY_MANAGED_PATHS
+                                  setting decides the rest: WARN (the default)\napplies
+                                  them, PRUNE ignores them and applies the rest of
+                                  the overlay, and REJECT\nrejects the whole overlay.\n\nFor
+                                  example, to set an Envoy runtime feature flag:\n\n\tvalue:\n\t
+                                  \ layered_runtime:\n\t    layers:\n\t    - name:
+                                  user_runtime\n\t      static_layer:\n\t        envoy.reloadable_features.http_reject_path_with_fragment:
+                                  false"
+                                minProperties: 1
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                            required:
+                            - mergeStrategy
+                            - value
+                            type: object
                         type: object
                       env:
                         description: The container environment variables.
