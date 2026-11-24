@@ -6,7 +6,6 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -15,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -142,7 +142,7 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 }
 
 func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
-	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
+	sanMatchers := sslutils.VerifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 
 	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
 	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
@@ -271,18 +271,4 @@ func parseTLSVersion(tlsVersion *kgateway.TLSVersion) (envoytlsv3.TlsParameters_
 	default:
 		return 0, fmt.Errorf("invalid TLS version: %s", *tlsVersion)
 	}
-}
-
-func verifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAltNameMatcher {
-	var matchSanList []*envoytlsv3.SubjectAltNameMatcher
-	for _, san := range sanList {
-		matchSan := &envoytlsv3.SubjectAltNameMatcher{
-			SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-			Matcher: &envoymatcher.StringMatcher{
-				MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
-			},
-		}
-		matchSanList = append(matchSanList, matchSan)
-	}
-	return matchSanList
 }
