@@ -1,0 +1,95 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: earlier-revisions
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# The live generated ConfigMap, holding two earlier bootstrap revisions.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gw
+  namespace: earlier-revisions
+  labels:
+    gateway.networking.k8s.io/gateway-name: gw
+data:
+  envoy.yaml: earlier-bootstrap-in-use
+  envoy-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.yaml: earlier-bootstrap-in-use
+  envoy-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.yaml: earlier-bootstrap-no-longer-in-use
+---
+# A ReplicaSet of the proxy Deployment that can still create pods, so its revision is kept.
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: gw-in-use
+  namespace: earlier-revisions
+  labels:
+    gateway.networking.k8s.io/gateway-name: gw
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: gw
+      uid: 00000000-0000-0000-0000-000000000001
+      controller: true
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gw-in-use
+  template:
+    metadata:
+      labels:
+        app: gw-in-use
+      annotations:
+        kgateway.dev/checksum-config: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    spec:
+      containers:
+        - name: kgateway-proxy
+          image: envoy
+---
+# A ReplicaSet of the proxy Deployment scaled to zero, so its revision is dropped.
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: gw-scaled-down
+  namespace: earlier-revisions
+  labels:
+    gateway.networking.k8s.io/gateway-name: gw
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: gw
+      uid: 00000000-0000-0000-0000-000000000001
+      controller: true
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: gw-scaled-down
+  template:
+    metadata:
+      labels:
+        app: gw-scaled-down
+      annotations:
+        kgateway.dev/checksum-config: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    spec:
+      containers:
+        - name: kgateway-proxy
+          image: envoy

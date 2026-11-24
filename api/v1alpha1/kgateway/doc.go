@@ -25,6 +25,7 @@ package kgateway
 
 // Proxy deployer resources that require extra permissions
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;patch;update;delete
+// +kubebuilder:rbac:groups=apps,resources=replicasets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;patch;update;delete
 // +kubebuilder:rbac:groups="",resources=secrets;serviceaccounts,verbs=get;list;watch;create;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;patch;delete
@@ -51,3 +52,6 @@ package kgateway
 // Leases for leader election
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
+// Events the Gateway controller records on Gateways
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch

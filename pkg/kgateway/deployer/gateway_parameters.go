@@ -4,22 +4,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var (
@@ -30,6 +39,11 @@ var (
 
 	// ErrNotFound is returned when a requested resource is not found
 	ErrNotFound = errors.New("resource not found")
+
+	// ErrBootstrapConfigMapUnreadable is returned when the controller cannot read a
+	// Gateway's generated bootstrap ConfigMap from the API server. The Gateway's
+	// objects are left unchanged and the reconcile is retried.
+	ErrBootstrapConfigMapUnreadable = errors.New("could not read the generated bootstrap ConfigMap")
 )
 
 func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *GatewayParameters {
@@ -51,7 +65,16 @@ type GatewayParameters struct {
 type kgatewayParameters struct {
 	gwParamClient kclient.Client[*kgateway.GatewayParameters]
 	gwClassClient kclient.Client[*gwv1.GatewayClass]
-	inputs        *deployer.Inputs
+	// replicaSetClient lists the ReplicaSets of proxy Deployments, to keep the
+	// bootstrap revisions they can still create pods with.
+	replicaSetClient kclient.Client[*appsv1.ReplicaSet]
+	// configMapClient is the informer copy of the generated bootstrap ConfigMaps, read
+	// first for the bootstrap revisions in use.
+	configMapClient kclient.Client[*corev1.ConfigMap]
+	// getConfigMap reads a ConfigMap from the API server, for when the informer copy
+	// lacks a bootstrap revision in use.
+	getConfigMap func(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error)
+	inputs       *deployer.Inputs
 }
 
 func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.HelmValuesGenerator) *GatewayParameters {
@@ -63,6 +86,13 @@ func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.
 // This allows the reconciler to reuse the same client for watching changes.
 func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
 	return gp.kgwParameters.gwParamClient
+}
+
+// GetReplicaSetClient returns the client for the ReplicaSets of proxy Deployments.
+// The reconciler watches it to remove a bootstrap revision once no ReplicaSet can
+// create a pod with it.
+func (gp *GatewayParameters) GetReplicaSetClient() kclient.Client[*appsv1.ReplicaSet] {
+	return gp.kgwParameters.replicaSetClient
 }
 
 func LoadEnvoyChart() (*chart.Chart, error) {
@@ -79,55 +109,342 @@ func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 }
 
 func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
+	// The bootstrap revisions read ReplicaSets and ConfigMaps with or without an override.
+	// The handlers go into a new slice, so the override's slice is not written to.
 	if gp.helmValuesGeneratorOverride != nil {
-		return gp.helmValuesGeneratorOverride.GetCacheSyncHandlers()
+		return slices.Concat(gp.helmValuesGeneratorOverride.GetCacheSyncHandlers(),
+			[]cache.InformerSynced{gp.kgwParameters.replicaSetClient.HasSynced, gp.kgwParameters.configMapClient.HasSynced})
 	}
 
 	return gp.kgwParameters.GetCacheSyncHandlers()
 }
 
-// PostProcessObjects implements deployer.ObjectPostProcessor.
-// It applies GatewayParameters overlays to the rendered objects.
-// When both GatewayClass and Gateway have parameters, the overlays
-// are applied in order: GatewayClass first, then Gateway on top.
+// PostProcessObjects implements deployer.ObjectPostProcessor. It is
+// PostProcessObjectsWithReport without the report.
 func (gp *GatewayParameters) PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, error) {
-	// Check if override implements ObjectPostProcessor and delegate to it
-	if gp.helmValuesGeneratorOverride != nil {
-		if postProcessor, ok := gp.helmValuesGeneratorOverride.(deployer.ObjectPostProcessor); ok {
-			return postProcessor.PostProcessObjects(ctx, obj, rendered)
+	objs, _, err := gp.PostProcessObjectsWithReport(ctx, obj, rendered)
+	return objs, err
+}
+
+// PostProcessObjectsWithReport implements deployer.ReportingObjectPostProcessor.
+// It merges the GatewayParameters bootstrap overlays into the rendered bootstrap, then
+// applies the GatewayParameters object overlays to the rendered objects. Each is
+// applied in order, GatewayClass first and Gateway on top. The report carries the
+// kgateway.dev/BootstrapOverlayApplied condition when there are bootstrap overlays.
+//
+// An override HelmValuesGenerator that implements deployer.ObjectPostProcessor
+// replaces the object overlays. When it also implements BootstrapOverlayProvider, it
+// chooses the bootstrap overlays and its post-processor runs after the merge;
+// otherwise its post-processor replaces the bootstrap overlays and the object overlays, and
+// there is no report. Either way, every Gateway's bootstrap is then written as its
+// own revision (see WriteGeneratedBootstrapRevision).
+func (gp *GatewayParameters) PostProcessObjectsWithReport(ctx context.Context, obj client.Object, rendered []client.Object) ([]client.Object, *deployer.PostProcessReport, error) {
+	// Find which steps the override takes over.
+	overridePostProcessor, hasOverridePostProcessor := gp.helmValuesGeneratorOverride.(deployer.ObjectPostProcessor)
+	overlayProvider, hasOverlayProvider := gp.helmValuesGeneratorOverride.(BootstrapOverlayProvider)
+
+	// An override that post-processes without choosing bootstrap overlays handles the
+	// objects itself, as it does for any object that is not a Gateway. Its Gateways
+	// still get bootstrap revisions, written after it so the mount check sees the
+	// volumes it sets. It applies no bootstrap overlays, so the report removes a
+	// kgateway.dev/BootstrapOverlayApplied condition an earlier controller left.
+	gw, isGateway := obj.(*gwv1.Gateway)
+	if hasOverridePostProcessor && (!hasOverlayProvider || !isGateway) {
+		objs, err := overridePostProcessor.PostProcessObjects(ctx, obj, rendered)
+		if err != nil || !isGateway {
+			return objs, nil, err
+		}
+		gwNN := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
+		if _, err := gp.writeBootstrapRevisions(ctx, gwNN, objs, nil, gp.runningBootstraps(gwNN)); err != nil {
+			return nil, nil, withRenderedProxy(err, objs)
+		}
+		return objs, &deployer.PostProcessReport{OwnedConditionTypes: []string{conditions.KgatewayConditionBootstrapOverlayApplied}}, nil
+	}
+	if !isGateway {
+		return rendered, nil, nil
+	}
+
+	// Resolve the GatewayParameters of the GatewayClass and the Gateway.
+	resolved := &resolvedKgatewayParameters{}
+	if gp.kgwParameters != nil {
+		resolved = gp.kgwParameters.resolveParametersForOverlays(gw)
+	}
+	report := &deployer.PostProcessReport{
+		OwnedConditionTypes: []string{conditions.KgatewayConditionBootstrapOverlayApplied},
+	}
+
+	// Collect the bootstrap overlays, letting an override that provides them choose.
+	gwNN := types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name}
+	overlays := resolved.bootstrapOverlays()
+	if hasOverlayProvider {
+		var err error
+		overlays, err = overlayProvider.BootstrapOverlays(ctx, gw, overlays)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get the bootstrap overlay for Gateway %s: %w", gwNN, err)
 		}
 	}
 
-	gw, ok := obj.(*gwv1.Gateway)
-	if !ok {
-		return rendered, nil
+	// Post-process the objects with the override's post-processor when it has one,
+	// otherwise the object overlays.
+	postProcess := func(objs []client.Object) ([]client.Object, error) {
+		if hasOverridePostProcessor {
+			return overridePostProcessor.PostProcessObjects(ctx, gw, objs)
+		}
+		return resolved.applyObjectOverlays(objs)
 	}
 
+	// Merge the bootstrap overlays first, so the object post-processing can still change any object.
+	var outcome *BootstrapOverlayOutcome
+	running := gp.runningBootstraps(gwNN)
+	if len(overlays) > 0 {
+		var err error
+		outcome, err = ApplyBootstrapOverlays(ctx, rendered, overlays, BootstrapOverlayConfig{
+			ManagedPaths: gp.inputs.BootstrapOverlayManagedPaths,
+			Validator:    gp.inputs.BootstrapValidator,
+		})
+
+		// When the managed paths are unknown, the series stay as they were.
+		if overlayErr, ok := errors.AsType[*BootstrapOverlayError](err); ok && overlayErr.pathsKnown() {
+			recordBootstrapOverlayManagedPaths(gwNN, overlayErr.ManagedPaths)
+		}
+
+		// Name the proxy the failure holds back, after the post-processing when it
+		// applies to the objects the overlays were not merged into, and say when that
+		// proxy does not read the generated bootstrap, so the overlays could not reach it.
+		// A post-processing failure is recorded on the overlay error, which is the one
+		// returned.
+		if err != nil {
+			overlayErr, isOverlayErr := errors.AsType[*BootstrapOverlayError](err)
+			final, ppErr := postProcess(rendered)
+			if ppErr != nil {
+				if isOverlayErr {
+					overlayErr.ObjectsErr = ppErr
+				}
+				return nil, nil, withRenderedProxy(err, rendered)
+			}
+			if isOverlayErr && overlayErr.ConfigMapName != "" {
+				overlayErr.MountProblem = BootstrapMountProblem(final, overlayErr.ConfigMapName)
+			}
+			return nil, nil, withRenderedProxy(err, final)
+		}
+		recordBootstrapOverlayManagedPaths(gwNN, outcome.ManagedPaths)
+	} else {
+		ForgetBootstrapOverlayMetrics(gwNN)
+	}
+
+	// Post-process the objects.
+	rendered, err := postProcess(rendered)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Write the bootstrap's revision, and the overlays' validation data.
+	mountProblem, err := gp.writeBootstrapRevisions(ctx, gwNN, rendered, outcome, running)
+	if err != nil {
+		return nil, nil, withRenderedProxy(err, rendered)
+	}
+	if outcome == nil {
+		return rendered, report, nil
+	}
+
+	// Leave the ports the merged bootstrap listens on off the Service. A proxy that
+	// does not run it listens on the default ports, which the Service never has.
+	if mountProblem == "" {
+		listenerPorts := deployer.GetGatewayIR(gw, gp.inputs.CommonCollections).Ports.List()
+		if err := ReserveServicePorts(rendered, outcome, listenerPorts); err != nil {
+			return nil, nil, withRenderedProxy(err, rendered)
+		}
+	}
+
+	// Report the bootstrap overlays against the final objects.
+	cond := bootstrapOverlayAppliedCondition(gw, outcome, mountProblem)
+	report.Conditions = append(report.Conditions, cond)
+	report.Events = append(report.Events, bootstrapOverlayEvents(cond, outcome)...)
+	return rendered, report, nil
+}
+
+// withRenderedProxy records on a *BootstrapOverlayError or *BootstrapConfigMapTooLargeError
+// the proxy in objs, which the failure keeps from being deployed, and returns err.
+func withRenderedProxy(err error, objs []client.Object) error {
+	if overlayErr, ok := errors.AsType[*BootstrapOverlayError](err); ok {
+		overlayErr.Proxy = renderedProxy(objs)
+	}
+	if tooLarge, ok := errors.AsType[*BootstrapConfigMapTooLargeError](err); ok {
+		tooLarge.Proxy = renderedProxy(objs)
+	}
+	return err
+}
+
+// writeBootstrapRevisions writes the Gateway's current bootstrap revision into the
+// final objects, keeps the earlier revisions its pods and ReplicaSets still use, and
+// returns BootstrapMountProblem of the objects. outcome is nil for a Gateway without
+// bootstrap overlays.
+//
+// When the proxy reads the generated ConfigMap, the current revision is written, with
+// the overlays' validation data when there are overlays. Otherwise the proxy does not
+// read the generated bootstrap, so no current revision or validation data is written,
+// and routes are validated against Envoy's defaults and the default ports; the earlier
+// revisions are still kept for the pods that mount the generated ConfigMap.
+func (gp *GatewayParameters) writeBootstrapRevisions(
+	ctx context.Context,
+	gw types.NamespacedName,
+	objs []client.Object,
+	outcome *BootstrapOverlayOutcome,
+	running krtcollections.GatewayRunningBootstraps,
+) (string, error) {
+	// Find the generated ConfigMap. Without overlays, a Gateway that renders none has no revisions.
+	var cmName string
+	switch cm := findBootstrapConfigMap(objs); {
+	case outcome != nil:
+		cmName = outcome.ConfigMapName
+	case cm != nil:
+		cmName = cm.Name
+	default:
+		return "", nil
+	}
+
+	// Find the revision this reconcile writes: none when the proxy does not read the
+	// generated ConfigMap.
+	mountProblem := BootstrapMountProblem(objs, cmName)
+	var current string
+	switch {
+	case mountProblem != "":
+	case outcome != nil:
+		current = outcome.checksum
+	default:
+		current = podTemplateAnnotation(objs, bootstrapChecksumAnnotation)
+	}
+
+	// Read the revisions in use.
+	revs, err := gp.bootstrapRevisions(ctx, gw, objs, cmName, running.Revisions, current)
+	if err != nil {
+		return mountProblem, err
+	}
+
+	// Write the current revision when the proxy reads it, and keep the earlier ones.
+	switch {
+	case mountProblem != "":
+		err = KeepBootstrapRevisions(objs, outcome, revs)
+	case outcome != nil:
+		err = WriteBootstrapRevision(objs, outcome, revs)
+	default:
+		err = WriteGeneratedBootstrapRevision(objs, revs)
+	}
+	return mountProblem, err
+}
+
+// runningBootstraps returns what the Gateway's running proxy pods say about the
+// bootstraps they run, or nothing when the controller does not collect it.
+func (gp *GatewayParameters) runningBootstraps(gw types.NamespacedName) krtcollections.GatewayRunningBootstraps {
+	cols := gp.inputs.CommonCollections
+	if cols == nil || cols.GatewayIndex == nil || cols.GatewayIndex.RunningBootstraps == nil {
+		return krtcollections.GatewayRunningBootstraps{Gateway: gw}
+	}
+	if rb := cols.GatewayIndex.RunningBootstraps.GetKey(gw.String()); rb != nil {
+		return *rb
+	}
+	return krtcollections.GatewayRunningBootstraps{Gateway: gw}
+}
+
+// bootstrapRevisions returns the Gateway's live generated ConfigMap cmName and the
+// bootstrap revisions in use: podRevisions, from the Gateway's running pods, and those
+// of the ReplicaSets of the rendered proxy Deployment with replicas above zero. current
+// is the revision this reconcile writes, or "" when it writes none.
+//
+// It also returns, as Previous, the revision the live ConfigMap is current on. The
+// proxy Deployment's template names that revision until this reconcile's objects are
+// applied, and a ReplicaSet or pod just created from the template may not be in the
+// controller's informers yet, so WriteBootstrapRevision keeps it once more.
+//
+// WriteBootstrapRevision keeps only the earlier revisions the returned ConfigMap holds,
+// so a stale copy that lacks one would drop the key a pod reads when its container
+// restarts. A revision's key names the SHA-256 of its content, so a stale copy that
+// holds the key holds the right content. A copy that lacks the current revision may be
+// from before the last write, and would then name an older revision as Previous. The
+// ConfigMap is therefore read from the informer, and from the API server only when the
+// informer copy lacks the current revision or an earlier revision in use: once for
+// each change of a Gateway's bootstrap, and again until the informer has the write.
+// A proxy with a mount problem reads it on every reconcile: its pods' revision is
+// never written, so the informer copy always lacks it. Any error from the API server
+// other than NotFound fails with ErrBootstrapConfigMapUnreadable rather than reading
+// as no ConfigMap, which would drop every earlier revision.
+func (gp *GatewayParameters) bootstrapRevisions(ctx context.Context, gw types.NamespacedName, rendered []client.Object, cmName string, podRevisions []string, current string) (BootstrapRevisions, error) {
+	// Collect the revisions in use: the pods', and those of each ReplicaSet of the proxy
+	// Deployment that can still create a pod.
+	out := BootstrapRevisions{InUse: slices.Clone(podRevisions)}
 	if gp.kgwParameters == nil {
-		// Envoy not enabled; skip overlays (not an error since overlays are optional).
-		return rendered, nil
+		return out, fmt.Errorf("%w %s/%s: the deployer has no API client", ErrBootstrapConfigMapUnreadable, gw.Namespace, cmName)
 	}
-	resolved := gp.kgwParameters.resolveParametersForOverlays(gw)
+	if dep := findDeployment(rendered); dep != nil {
+		selector := labels.SelectorFromSet(labels.Set{wellknown.GatewayNameLabel: kubeutils.SafeGatewayLabelValue(gw.Name)})
+		for _, rs := range gp.kgwParameters.replicaSetClient.List(gw.Namespace, selector) {
+			owner := metav1.GetControllerOf(rs)
+			if owner == nil || owner.Kind != wellknown.DeploymentGVK.Kind || owner.Name != dep.Name {
+				continue
+			}
+			if ptr.Deref(rs.Spec.Replicas, 1) > 0 {
+				out.InUse = append(out.InUse, rs.Spec.Template.Annotations[bootstrapChecksumAnnotation])
+			}
+		}
+	}
 
-	// Apply overlays in order: GatewayClass first, then Gateway.
-	if resolved.gatewayClassGWP != nil {
-		applier := strategicpatch.NewOverlayApplierFromGatewayParameters(resolved.gatewayClassGWP)
+	// Use the informer copy when it holds the current revision and every earlier
+	// revision in use.
+	cached := gp.kgwParameters.configMapClient.Get(cmName, gw.Namespace)
+	missing := missingRevisions(cached, append(slices.Clone(out.InUse), current))
+	if len(missing) == 0 {
+		out.Live = cached
+		out.Previous = currentBootstrapRevision(cached)
+		return out, nil
+	}
+
+	// Otherwise read the ConfigMap from the API server.
+	logger.Debug("reading the generated bootstrap ConfigMap from the API server, because the informer copy lacks the current revision or revisions in use",
+		"configmap", gw.Namespace+"/"+cmName, "revisions", missing)
+	live, err := gp.kgwParameters.getConfigMap(ctx, gw.Namespace, cmName)
+	switch {
+	case apierrors.IsNotFound(err):
+	case err != nil:
+		return out, fmt.Errorf("%w %s/%s: %w", ErrBootstrapConfigMapUnreadable, gw.Namespace, cmName, err)
+	default:
+		out.Live = live
+		out.Previous = currentBootstrapRevision(live)
+	}
+	return out, nil
+}
+
+// missingRevisions returns each revision in sums that cm has no key for. cm may be nil.
+func missingRevisions(cm *corev1.ConfigMap, sums []string) []string {
+	var missing []string
+	for _, sum := range slices.Compact(slices.Sorted(slices.Values(sums))) {
+		if sum == "" {
+			continue
+		}
+		if cm == nil {
+			missing = append(missing, sum)
+			continue
+		}
+		if _, ok := cm.Data[bootstrapRevisionKey(sum)]; !ok {
+			missing = append(missing, sum)
+		}
+	}
+	return missing
+}
+
+// applyObjectOverlays applies the resolved GatewayParameters object overlays to objs,
+// GatewayClass first, then Gateway.
+func (r *resolvedKgatewayParameters) applyObjectOverlays(objs []client.Object) ([]client.Object, error) {
+	for _, gwp := range []*kgateway.GatewayParameters{r.gatewayClassGWP, r.gatewayGWP} {
+		if gwp == nil {
+			continue
+		}
 		var err error
-		rendered, err = applier.ApplyOverlays(rendered)
+		objs, err = strategicpatch.NewOverlayApplierFromGatewayParameters(gwp).ApplyOverlays(objs)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if resolved.gatewayGWP != nil {
-		applier := strategicpatch.NewOverlayApplierFromGatewayParameters(resolved.gatewayGWP)
-		var err error
-		rendered, err = applier.ApplyOverlays(rendered)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return rendered, nil
+	return objs, nil
 }
 
 func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
@@ -164,7 +481,15 @@ func newkgatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *kgate
 	return &kgatewayParameters{
 		gwParamClient: kclient.NewFilteredDelayed[*kgateway.GatewayParameters](cli, wellknown.GatewayParametersGVR, kclient.Filter{ObjectFilter: cli.ObjectFilter()}),
 		gwClassClient: kclient.NewFilteredDelayed[*gwv1.GatewayClass](cli, wellknown.GatewayClassGVR, kclient.Filter{ObjectFilter: cli.ObjectFilter()}),
-		inputs:        inputs,
+		replicaSetClient: kclient.NewFiltered[*appsv1.ReplicaSet](cli, kclient.Filter{
+			ObjectFilter:  cli.ObjectFilter(),
+			LabelSelector: wellknown.GatewayNameLabel,
+		}),
+		configMapClient: kclient.NewFiltered[*corev1.ConfigMap](cli, kclient.Filter{ObjectFilter: cli.ObjectFilter()}),
+		getConfigMap: func(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error) {
+			return cli.Kube().CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+		},
+		inputs: inputs,
 	}
 }
 
@@ -193,7 +518,7 @@ func (h *kgatewayParameters) GetValues(ctx context.Context, obj client.Object) (
 }
 
 func (k *kgatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
-	return []cache.InformerSynced{k.gwClassClient.HasSynced, k.gwParamClient.HasSynced}
+	return []cache.InformerSynced{k.gwClassClient.HasSynced, k.gwParamClient.HasSynced, k.replicaSetClient.HasSynced, k.configMapClient.HasSynced}
 }
 
 // getGatewayParametersForGateway returns the merged GatewayParameters object resulting from the default GwParams object and
