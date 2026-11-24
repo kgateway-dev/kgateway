@@ -471,6 +471,11 @@ func TestExtractEnvoyError(t *testing.T) {
 			expected: "error initializing configuration '': invalid named capture group: (?<=foo)bar",
 		},
 		{
+			name:     "Envoy's default log prefix",
+			input:    "[2026-11-24 05:01:30.246][1][critical][main] [source/server/config_validation/server.cc:76] error initializing configuration '': setJsonLogFormat error",
+			expected: "error initializing configuration '': setJsonLogFormat error",
+		},
+		{
 			name: "error message with context",
 			input: `error initializing configuration '/dev/fd/0': missing ]:
   in regex filter at line 42
