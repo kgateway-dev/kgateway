@@ -312,9 +312,10 @@ type PolicyPlugin struct {
 	// ResolveBackendPolicies clears them from the other kind's merged policy, so neither
 	// plugin needs to know about the other.
 	Supersedes map[schema.GroupKind][]string
-	// SetFields returns the MergeOrigins keys of the fields a policy of this kind sets,
-	// so the backend resolution can report each field that does not take effect. Optional;
-	// without it, fields lost in a merge or superseded by another kind are not reported.
+	// SetFields returns the MergeOrigins keys of the fields a policy of this kind sets, in a
+	// fixed order, so the backend resolution can report each field that does not take effect.
+	// The resolver may keep the returned slice and does not modify it. Optional; without it,
+	// fields lost in a merge or superseded by another kind are not reported.
 	SetFields func(ir.PolicyIR) []string
 	// ClearFields returns a copy of a policy of this kind without the named fields.
 	// Required for another kind to supersede fields of this one; it must not modify pol.

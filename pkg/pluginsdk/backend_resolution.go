@@ -21,77 +21,89 @@ import (
 //
 // A kind whose merged policy has errors applies nothing: translation blackholes the
 // cluster. Merge losses are then not reported, since no policy's field is in effect.
+//
+// It runs for every backend, and most have no policies: those share one empty resolution
+// and allocate nothing.
 func ResolveBackendPolicies(attached ir.AttachedPolicies, plugins ContributesPolicies) *ir.BackendPolicyResolution {
-	res := ir.NewBackendPolicyResolution()
-	gks := slices.SortedFunc(maps.Keys(attached.Policies), compareGroupKind)
-
-	// Merge each kind once. The winner of a kind that supersedes others comes from here too.
-	merged := make(map[schema.GroupKind]ir.PolicyAtt, len(gks))
-	for _, gk := range gks {
-		pols := attached.Policies[gk]
-		if len(pols) == 0 {
-			continue
-		}
-		if plugin, ok := plugins[gk]; ok && plugin.MergePolicies != nil {
-			merged[gk] = plugin.MergePolicies(pols)
+	kinds := 0
+	for _, pols := range attached.Policies {
+		if len(pols) > 0 {
+			kinds++
 		}
 	}
+	if kinds == 0 {
+		return ir.EmptyBackendPolicyResolution()
+	}
+
+	gks := make([]schema.GroupKind, 0, kinds)
+	for gk, pols := range attached.Policies {
+		if len(pols) > 0 {
+			gks = append(gks, gk)
+		}
+	}
+	slices.SortFunc(gks, compareGroupKind)
+
+	// Merge each kind once. The winner of a kind that supersedes others comes from here too.
+	merged := make([]mergedKind, len(gks))
+	for i, gk := range gks {
+		merged[i].gk = gk
+		if plugin, ok := plugins[gk]; ok && plugin.MergePolicies != nil {
+			merged[i].att = plugin.MergePolicies(attached.Policies[gk])
+			merged[i].ok = true
+		}
+	}
+
+	res := ir.NewBackendPolicyResolution(len(gks))
 
 	// Claim superseded fields before reporting merge losses: a field another kind owns is
 	// dropped for every policy that sets it, whichever of them won the merge.
-	for _, owner := range gks {
-		plugin, ok := plugins[owner]
-		if !ok || len(plugin.Supersedes) == 0 || len(attached.Policies[owner]) == 0 {
+	for i, owner := range gks {
+		plugin := plugins[owner]
+		if len(plugin.Supersedes) == 0 {
 			continue
 		}
-		winner := kindWinner(attached.Policies[owner], merged, owner)
+		winner := kindWinner(attached.Policies[owner], merged[i])
 		by := ir.SupersedingPolicy{Kind: owner, By: winner.PolicyRef, ByValid: len(winner.Errors) == 0}
 		for _, target := range slices.SortedFunc(maps.Keys(plugin.Supersedes), compareGroupKind) {
-			if len(attached.Policies[target]) == 0 {
-				continue
-			}
-			if targetPlugin, ok := plugins[target]; !ok || targetPlugin.ClearFields == nil {
-				// The target kind cannot drop the field, so translation would still apply it.
-				// Reporting it as superseded would contradict the cluster.
+			if len(attached.Policies[target]) == 0 || plugins[target].ClearFields == nil {
+				// Nothing to supersede, or the target kind cannot drop the field, so translation
+				// would still apply it; reporting it as superseded would contradict the cluster.
 				continue
 			}
 			for _, field := range plugin.Supersedes[target] {
-				if !res.IsSuperseded(target, field) {
-					res.SetSuperseded(target, field, by)
-				}
+				res.SetSuperseded(target, field, by)
 			}
 		}
 	}
 
-	for _, gk := range gks {
+	for i, gk := range gks {
 		pols := attached.Policies[gk]
-		if len(pols) == 0 {
-			continue
-		}
 		plugin := plugins[gk]
-		m, merges := merged[gk]
-		if !merges {
-			res.SetApplied(gk, slices.Clone(pols))
+		if !merged[i].ok {
+			res.SetAll(gk, pols)
 			continue
 		}
-		superseded := supersededFields(res, gk, plugin, pols)
+		m := merged[i].att
+		hasSuperseded := res.HasSuperseded(gk)
 		applied := m
-		if len(superseded) > 0 && len(m.Errors) == 0 {
-			applied.PolicyIr = plugin.ClearFields(m.PolicyIr, superseded)
-			applied.MergeOrigins = withoutFields(m.MergeOrigins, superseded)
+		if hasSuperseded && len(m.Errors) == 0 {
+			if fields := supersededFields(res, gk, plugin, pols); len(fields) > 0 {
+				applied.PolicyIr = plugin.ClearFields(m.PolicyIr, fields)
+				applied.MergeOrigins = withoutFields(m.MergeOrigins, fields)
+			}
 		}
-		res.SetApplied(gk, []ir.PolicyAtt{applied})
+		res.SetMerged(gk, applied)
 
-		if plugin.SetFields == nil {
+		// A single policy cannot lose a merge, so without a superseded field there is nothing
+		// to report and its fields need not be listed.
+		if plugin.SetFields == nil || (!hasSuperseded && len(pols) < 2) {
 			continue
 		}
 		for _, att := range pols {
 			if att.PolicyRef == nil || len(att.Errors) > 0 {
 				continue
 			}
-			fields := slices.Clone(plugin.SetFields(att.PolicyIr))
-			slices.Sort(fields)
-			for _, field := range fields {
+			for _, field := range plugin.SetFields(att.PolicyIr) {
 				if owner, ok := res.SupersededBy(gk, field); ok {
 					res.AddDropped(att.PolicyRef, ir.DroppedField{
 						Field: field, Kind: owner.Kind, By: owner.By, ByValid: owner.ByValid, Reason: ir.DroppedBySupersede,
@@ -114,34 +126,36 @@ func ResolveBackendPolicies(attached ir.AttachedPolicies, plugins ContributesPol
 	return res
 }
 
-// supersededFields returns the fields of kind gk that another kind owns, in order.
+// mergedKind is one attached kind's merged policy; ok is false for a kind that does not merge.
+type mergedKind struct {
+	gk  schema.GroupKind
+	att ir.PolicyAtt
+	ok  bool
+}
+
+// supersededFields returns the fields of kind gk that another kind owns and some attached
+// policy sets, in the order SetFields lists them.
 func supersededFields(res *ir.BackendPolicyResolution, gk schema.GroupKind, plugin PolicyPlugin, pols []ir.PolicyAtt) []string {
+	if plugin.SetFields == nil {
+		return nil
+	}
 	var fields []string
-	seen := map[string]bool{}
 	for _, att := range pols {
-		if plugin.SetFields == nil {
-			break
-		}
 		for _, f := range plugin.SetFields(att.PolicyIr) {
-			if !seen[f] && res.IsSuperseded(gk, f) {
-				seen[f] = true
+			if !slices.Contains(fields, f) && res.IsSuperseded(gk, f) {
 				fields = append(fields, f)
 			}
 		}
 	}
-	slices.Sort(fields)
 	return fields
 }
 
 // kindWinner returns the policy that represents a kind on the backend: its merged policy
 // (which names a single policy for kinds whose merge picks one winner, such as
 // BackendTLSPolicy) or, for a kind that does not merge, its oldest attachment.
-func kindWinner(pols []ir.PolicyAtt, merged map[schema.GroupKind]ir.PolicyAtt, gk schema.GroupKind) ir.PolicyAtt {
-	if m, ok := merged[gk]; ok {
-		return m
-	}
-	if len(pols) == 0 {
-		return ir.PolicyAtt{}
+func kindWinner(pols []ir.PolicyAtt, merged mergedKind) ir.PolicyAtt {
+	if merged.ok {
+		return merged.att
 	}
 	return pols[ir.WinnerPolicyIndexByCreationTimeAndRef(pols)]
 }

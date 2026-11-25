@@ -201,3 +201,46 @@ func TestResolveBackendPoliciesKindWithoutMerge(t *testing.T) {
 	_, ok := res.Effective(kindA)
 	g.Expect(ok).To(BeFalse(), "and has no single effective policy")
 }
+
+func TestResolveBackendPoliciesNoneAttached(t *testing.T) {
+	g := NewWithT(t)
+	plugins := ContributesPolicies{kindA: pluginA(true), kindB: pluginB}
+	for _, a := range []ir.AttachedPolicies{{}, attached(map[schema.GroupKind][]ir.PolicyAtt{kindA: nil})} {
+		res := ResolveBackendPolicies(a, plugins)
+		g.Expect(res).NotTo(BeNil(), "a resolved backend must be told apart from an unresolved one")
+		g.Expect(res.Applied(kindA)).To(BeEmpty())
+		g.Expect(res.IsSuperseded(kindA, "x")).To(BeFalse())
+		g.Expect(res.Dropped(&ir.AttachedPolicyRef{Name: "any"})).To(BeEmpty())
+	}
+	g.Expect(testing.AllocsPerRun(100, func() { ResolveBackendPolicies(ir.AttachedPolicies{}, plugins) })).
+		To(BeZero(), "most backends have no policies; resolving them must not allocate")
+}
+
+// BenchmarkResolveBackendPolicies measures the resolver's own cost. The merge hooks here do
+// not allocate, so allocations are the resolver's.
+func BenchmarkResolveBackendPolicies(b *testing.B) {
+	pickOldest := func(pols []ir.PolicyAtt) ir.PolicyAtt { return pols[ir.WinnerPolicyIndexByCreationTimeAndRef(pols)] }
+	setX := func(ir.PolicyIR) []string { return []string{"x"} }
+	keep := func(pol ir.PolicyIR, _ []string) ir.PolicyIR { return pol }
+	plugins := ContributesPolicies{
+		kindA: {MergePolicies: pickOldest, SetFields: setX, ClearFields: keep},
+		kindB: {MergePolicies: pickOldest, Supersedes: map[schema.GroupKind][]string{kindA: {"x"}}},
+	}
+	a := att(kindA, "a", t2020, nil)
+	bp := att(kindB, "b", t2021, nil)
+	for _, bc := range []struct {
+		name     string
+		attached ir.AttachedPolicies
+	}{
+		{"none", ir.AttachedPolicies{}},
+		{"one-policy", attached(map[schema.GroupKind][]ir.PolicyAtt{kindA: {a}})},
+		{"superseded", attached(map[schema.GroupKind][]ir.PolicyAtt{kindA: {a}, kindB: {bp}})},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				ResolveBackendPolicies(bc.attached, plugins)
+			}
+		})
+	}
+}
