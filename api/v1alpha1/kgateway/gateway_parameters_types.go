@@ -439,9 +439,15 @@ type EnvoyBootstrap struct {
 	// Overlay is a partial Envoy bootstrap merged into the bootstrap kgateway generates
 	// for the proxy. Where the overlay and the other fields of this struct set the same
 	// value, the overlay wins. kgateway validates the merged bootstrap with Envoy before
-	// using it, and changing the overlay restarts the proxy. The Gateway's
-	// kgateway.dev/BootstrapOverlayApplied condition reports the result; while it is
-	// False, other changes to the GatewayParameters are not rolled out either.
+	// using it, and changing the overlay restarts the proxy.
+	//
+	// The Gateway's kgateway.dev/BootstrapOverlayApplied condition reports the result:
+	//   - True: the merged bootstrap is deployed.
+	//   - False with reason BootstrapNotMounted: kgateway applied the overlay, but the
+	//     proxy is set up to read a different bootstrap file. Other changes to the
+	//     GatewayParameters still roll out.
+	//   - False with any other reason: kgateway could not apply the overlay, and other
+	//     changes to the GatewayParameters are not rolled out either.
 	//
 	// If both the GatewayClass and the Gateway have an overlay, the Gateway's is applied
 	// on top of the GatewayClass's.
