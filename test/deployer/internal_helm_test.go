@@ -179,6 +179,26 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
+			// The live generated ConfigMap holds two earlier bootstrap revisions. The
+			// proxy Deployment's ReplicaSet that can still create pods uses one; the one
+			// scaled to zero uses the other.
+			Name:      "earlier bootstrap revisions in use are kept",
+			InputFile: "envoy-earlier-revisions-kept",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				// The revision of the ReplicaSet that can still create pods is kept.
+				assert.Contains(t, outputYaml,
+					"envoy-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.yaml: earlier-bootstrap-in-use",
+					"the revision a ReplicaSet with replicas can still create pods from should be kept")
+
+				// The revision of the ReplicaSet scaled to zero is dropped.
+				assert.NotContains(t, outputYaml,
+					"envoy-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.yaml",
+					"the revision only a ReplicaSet scaled to zero uses should be dropped")
+			},
+		},
+		{
 			// Same gateway, but with KGW_LISTENER_BIND_IPV6=false: the bootstrap
 			// listeners follow the setting back to IPv4 rather than pinning a family.
 			Name:                        "gateway with ipv6 listener bind disabled",

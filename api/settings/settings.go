@@ -102,6 +102,35 @@ func (v *ValidatorMode) Decode(value string) error {
 	}
 }
 
+// BootstrapOverlayManagedPathsMode determines what the controller does with a
+// GatewayParameters bootstrap overlay that sets a path the control plane manages,
+// such as the node, the xDS cluster or the readiness listener.
+type BootstrapOverlayManagedPathsMode string
+
+const (
+	// BootstrapOverlayManagedPathsWarn applies the overlay as written and reports each
+	// managed path it sets.
+	BootstrapOverlayManagedPathsWarn BootstrapOverlayManagedPathsMode = "WARN"
+	// BootstrapOverlayManagedPathsPrune drops each managed path from the overlay before
+	// merging, applies the rest, and reports each dropped path.
+	BootstrapOverlayManagedPathsPrune BootstrapOverlayManagedPathsMode = "PRUNE"
+	// BootstrapOverlayManagedPathsReject applies none of the overlay and reports the
+	// managed paths it sets.
+	BootstrapOverlayManagedPathsReject BootstrapOverlayManagedPathsMode = "REJECT"
+)
+
+// Decode implements envconfig.Decoder.
+func (m *BootstrapOverlayManagedPathsMode) Decode(value string) error {
+	mode := BootstrapOverlayManagedPathsMode(strings.ToUpper(value))
+	switch mode {
+	case BootstrapOverlayManagedPathsWarn, BootstrapOverlayManagedPathsPrune, BootstrapOverlayManagedPathsReject:
+		*m = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid bootstrap overlay managed paths mode: %q", value)
+	}
+}
+
 // ReferenceGrantMode controls how strictly cross-namespace references are validated
 // via ReferenceGrant across the control plane.
 type ReferenceGrantMode string
@@ -346,6 +375,16 @@ type Settings struct {
 	// and the translator's cluster verdict cache in every ValidatorMode.
 	// A value <= 0 selects validator.DefaultCacheSize.
 	ValidatorCacheSize int `split_words:"true"`
+
+	// BootstrapOverlayManagedPaths determines what the controller does with a
+	// GatewayParameters bootstrap overlay that sets a path the control plane manages.
+	// Supported values:
+	// - "WARN" (default): apply the overlay as written and report each managed path
+	//   it sets on status, in an event and in a metric.
+	// - "PRUNE": drop each managed path from the overlay before merging, apply the
+	//   rest, and report each dropped path.
+	// - "REJECT": apply none of the overlay and report the managed paths.
+	BootstrapOverlayManagedPaths BootstrapOverlayManagedPathsMode `split_words:"true" default:"WARN"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.

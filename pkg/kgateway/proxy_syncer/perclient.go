@@ -202,6 +202,7 @@ func snapshotPerClient(
 		slices.Sort(snap.synthesizedEndpoints)
 		snap.erroredClusters = slices.Sorted(slices.Values(clustersForUcc.erroredClusters))
 		snap.proxyKey = ucc.ResourceName()
+		snap.bootstrapUnvalidated = !listenerRouteSnapshot.validatedBootstraps.covers(ucc.Bootstrap)
 		snap.scopesClusters = scoping.ScopesClusters()
 		snap.endpointHashes = endpointHashes
 		snapshot := &envoycache.Snapshot{}

@@ -5,9 +5,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 // DefaultIstioProxyImageTag is the default Istio proxyv2 image tag used for auto mTLS cert-agent sidecars.
@@ -21,6 +23,12 @@ type Inputs struct {
 	ImageInfo            *ImageInfo
 	CommonCollections    *collections.CommonCollections
 	GatewayClassName     string
+	// BootstrapValidator validates a proxy bootstrap that GatewayParameters bootstrap
+	// overlays change. When nil, the merged bootstrap is not validated.
+	BootstrapValidator validator.BootstrapValidator
+	// BootstrapOverlayManagedPaths decides what happens to GatewayParameters bootstrap
+	// overlays that set paths the control plane manages. Empty means WARN.
+	BootstrapOverlayManagedPaths apisettings.BootstrapOverlayManagedPathsMode
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -104,7 +112,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/ready",
-								Port: intstr.FromInt(8082),
+								Port: intstr.FromInt(int(wellknown.EnvoyReadinessPort)),
 							},
 						},
 						InitialDelaySeconds: 0,
@@ -114,7 +122,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/ready",
-								Port: intstr.FromInt(8082),
+								Port: intstr.FromInt(int(wellknown.EnvoyReadinessPort)),
 							},
 						},
 						InitialDelaySeconds: 0,

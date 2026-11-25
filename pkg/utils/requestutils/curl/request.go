@@ -87,6 +87,7 @@ type requestConfig struct {
 	caFile            string
 	path              string
 	queryParameters   map[string]string
+	requestTarget     string
 
 	cookie    string
 	cookieJar string
@@ -177,6 +178,9 @@ func (c *requestConfig) generateArgs() []string {
 
 	if c.proxyProto {
 		args = append(args, "--haproxy-protocol")
+	}
+	if c.requestTarget != "" {
+		args = append(args, "--request-target", c.requestTarget)
 	}
 	// HTTP protocol options
 	if c.http11 {

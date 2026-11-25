@@ -1,0 +1,33 @@
+# A rollout of the merged bootstrap is in progress: one proxy pod started with it,
+# and one still runs the bootstrap from before the overlays, with Envoy's defaults.
+# The translator validates against the merged bootstrap only.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-gateway-new-a
+  namespace: gwtest
+  labels:
+    gateway.networking.k8s.io/gateway-name: example-gateway
+  annotations:
+    kgateway.dev/xds-validation-bootstrap: '{"bootstrap":{"layered_runtime":{"layers":[{"name":"limits","static_layer":{"re2.max_program_size.error_level":1000}}]}},"reservedPorts":[8082,9091,19000]}'
+spec:
+  containers:
+  - name: kgateway-proxy
+    image: envoy
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-gateway-old-a
+  namespace: gwtest
+  labels:
+    gateway.networking.k8s.io/gateway-name: example-gateway
+spec:
+  containers:
+  - name: kgateway-proxy
+    image: envoy
+status:
+  phase: Running

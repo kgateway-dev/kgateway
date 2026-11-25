@@ -6,6 +6,7 @@ import (
 
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kubetypes"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -169,6 +170,21 @@ func registerTypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.GatewayExtension] {
 			return c.(Client).Kgateway().GatewayKgateway().GatewayExtensions(namespace)
+		},
+	)
+
+	// Kubernetes types Istio does not register
+	kubeclient.Register(
+		wellknown.ReplicaSetGVR,
+		wellknown.ReplicaSetGVK,
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.Kube().AppsV1().ReplicaSets(namespace).List(ctx, o)
+		},
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.Kube().AppsV1().ReplicaSets(namespace).Watch(ctx, o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*appsv1.ReplicaSet] {
+			return c.Kube().AppsV1().ReplicaSets(namespace)
 		},
 	)
 }

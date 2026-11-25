@@ -3,6 +3,8 @@ package downward
 import (
 	"bytes"
 	"cmp"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -40,16 +42,18 @@ func Transform(in io.Reader, out io.Writer) error {
 // into the bootstrap's node.locality. When no locality is configured the input bytes are
 // returned unchanged. When locality is present the bootstrap is decoded into a generic map,
 // merged (preserving unknown fields and any existing locality keys), and re-encoded as YAML;
-// this re-encoding may reorder keys and normalize scalar formatting.
+// this re-encoding may reorder keys and normalize scalar formatting, but keeps every value.
 func AddNodeLocalityToBootstrapYaml(bootstrapBytes []byte, api DownwardAPI) ([]byte, error) {
 	locality := nodeLocalityFromApi(api)
 	if locality == nil {
 		return bootstrapBytes, nil
 	}
 
-	bootstrap := map[string]any{}
-	if err := yaml.Unmarshal(bootstrapBytes, &bootstrap); err != nil {
-		return nil, err
+	// Decode without rounding integers, so every value the locality change does not set
+	// is encoded again with the same value.
+	bootstrap, err := DecodeYAMLMap(bootstrapBytes)
+	if err != nil {
+		return nil, fmt.Errorf("the bootstrap %w", err)
 	}
 
 	node, ok := bootstrap["node"].(map[string]any)
@@ -74,6 +78,30 @@ func AddNodeLocalityToBootstrapYaml(bootstrapBytes []byte, api DownwardAPI) ([]b
 	node["locality"] = localityMap
 
 	return yaml.Marshal(bootstrap)
+}
+
+// DecodeYAMLMap decodes a YAML mapping into a generic map. Numbers are decoded as
+// json.Number rather than float64, so encoding the map again with yaml.Marshal keeps
+// every value, including integers above 2^53. Key order and number formatting may
+// change. An empty document decodes to an empty map.
+func DecodeYAMLMap(data []byte) (map[string]any, error) {
+	// Convert to JSON, which keeps integers exact, then decode without float64.
+	jsn, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return nil, fmt.Errorf("does not parse as YAML: %w", err)
+	}
+	var m map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(jsn))
+	decoder.UseNumber()
+	if err := decoder.Decode(&m); err != nil {
+		return nil, fmt.Errorf("is not a YAML mapping: %w", err)
+	}
+
+	// Treat an empty document as an empty mapping.
+	if m == nil {
+		m = map[string]any{}
+	}
+	return m, nil
 }
 
 // nodeLocalityFromApi derives the proxy's locality from env vars, then pod's well-known topology labels.

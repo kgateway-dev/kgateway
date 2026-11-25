@@ -154,7 +154,8 @@ type BackendObjectIR struct {
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// kept private and immutable after construction. each (group, kind) pair
-	// should have a unique prefix because it shows up in stats.
+	// should have a unique prefix because it shows up in stats. It must not be
+	// "user" (see NewBackendObjectIR).
 	// +noKrtEquals gvPrefix is compared in ClusterName()
 	gvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
@@ -238,6 +239,11 @@ func (c BackendObjectIR) SupportsRouteKind(gk schema.GroupKind) bool {
 // NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
 // cluster names. Callers should pass the final cluster prefix up front; if
 // empty, the lower-cased backend kind is used and stored on the IR.
+//
+// The cluster name starts with the prefix and an underscore, so the prefix must not
+// be "user", and a backend whose Kind is User must pass a prefix: a
+// GatewayParameters bootstrap overlay names its static clusters with the prefix
+// user_, and Envoy ignores a translated cluster with the name of a static one.
 func NewBackendObjectIR(objSource ObjectSource, port int32, extraKey, gvPrefix string) BackendObjectIR {
 	if gvPrefix == "" {
 		gvPrefix = strings.ToLower(objSource.Kind)
@@ -578,6 +584,10 @@ type Gateway struct {
 	PerConnectionBufferLimitBytes *uint32
 	FrontendTLSConfig             *FrontendTLSConfigIR
 	BackendTLSConfig              *GatewayBackendTLSConfigIR
+
+	// ValidationBootstraps holds what translation validates the Gateway's xDS
+	// configuration against, from the Gateway's current bootstrap. Nil means Envoy's defaults.
+	ValidationBootstraps *GatewayValidationBootstraps
 }
 
 // FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
@@ -648,7 +658,8 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
 		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
 		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig) &&
-		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig)
+		equalsGatewayBackendTLSConfig(c.BackendTLSConfig, in.BackendTLSConfig) &&
+		c.ValidationBootstraps.Equals(in.ValidationBootstraps)
 }
 
 func equalsFrontendTLSConfig(a, b *FrontendTLSConfigIR) bool {

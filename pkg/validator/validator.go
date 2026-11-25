@@ -251,17 +251,22 @@ func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 }
 
 // extractEnvoyError extracts the actual Envoy validation error from stderr output,
-// ignoring Docker pull progress and other noise that comes before the error.
+// ignoring Docker pull progress and other noise that comes before the error, and the
+// log prefix, such as the time, that Envoy writes before it without --log-format.
 func extractEnvoyError(stderr string) string {
+	const envoyErrorStart = "error initializing configuration"
 	lines := strings.Split(stderr, "\n")
 	// find the first line containing the Envoy error message. see:
 	// https://github.com/envoyproxy/envoy/blob/d552b66f5d70ddd9e13c68c40f70729a45fb24e0/source/server/config_validation/server.cc#L75
 	errorIndex := slices.IndexFunc(lines, func(line string) bool {
-		return strings.Contains(strings.TrimSpace(line), "error initializing configuration")
+		return strings.Contains(line, envoyErrorStart)
 	})
 	if errorIndex == -1 {
 		return ""
 	}
+	_, reason, _ := strings.Cut(lines[errorIndex], envoyErrorStart)
+	lines[errorIndex] = envoyErrorStart + reason
+
 	// extract all remaining lines that are relevant error context
 	remainingLines := make([]string, 0, len(lines)-errorIndex)
 	for i := errorIndex; i < len(lines); i++ {

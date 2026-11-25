@@ -48,6 +48,12 @@ type UniquelyConnectedClient struct {
 	// just the local cluster (https://github.com/kgateway-dev/kgateway/issues/14471).
 	KnowsLocalCluster bool
 
+	// Bootstrap is the bootstrap the client's pod started with, read when the client
+	// connected. The client's first snapshot is published only once the Gateway's
+	// configuration was validated under it. Nil when the client has no pod (pod
+	// locality off), and such a client is not held for it.
+	Bootstrap *PodBootstrap
+
 	// modified role that includes the namespace and the hash of the labels.
 	// we set the client's role to this value in the node metadata. so the snapshot key in the cache
 	// should also be set to this value.
@@ -62,7 +68,8 @@ var _ krt.Equaler[UniquelyConnectedClient] = new(UniquelyConnectedClient)
 
 func (c UniquelyConnectedClient) Equals(k UniquelyConnectedClient) bool {
 	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality &&
-		c.KnowsLocalCluster == k.KnowsLocalCluster && maps.Equal(c.Labels, k.Labels) && c.resourceName == k.resourceName
+		c.KnowsLocalCluster == k.KnowsLocalCluster && maps.Equal(c.Labels, k.Labels) && c.resourceName == k.resourceName &&
+		c.Bootstrap.Equals(k.Bootstrap)
 }
 
 // GatewayNameFromLabels returns the Gateway name recorded on a pod or client,

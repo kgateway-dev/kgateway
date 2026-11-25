@@ -20,3 +20,18 @@ func New(s apisettings.Settings) (Validator, error) {
 		return nil, fmt.Errorf("invalid validator mode: %q", s.ValidatorMode)
 	}
 }
+
+// BootstrapValidatorFor returns v when it can validate proxy bootstraps, and
+// otherwise the Envoy binary behind a result cache. A caching validator can validate
+// them only when the validator it wraps can.
+func BootstrapValidatorFor(v Validator) BootstrapValidator {
+	switch bv := v.(type) {
+	case *cachingValidator:
+		if _, ok := bv.inner.(BootstrapValidator); ok {
+			return bv
+		}
+	case BootstrapValidator:
+		return bv
+	}
+	return NewCaching(NewBinary(), 0).(BootstrapValidator)
+}

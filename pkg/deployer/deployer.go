@@ -200,12 +200,20 @@ func (d *Deployer) objectGVK(obj client.Object) schema.GroupVersionKind {
 // obj can currently be a pointer to a Gateway
 // (https://github.com/kubernetes-sigs/gateway-api/blob/main/apis/v1/gateway_types.go#L35).
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
+	objs, _, err := d.GetObjsToDeployWithReport(ctx, obj)
+	return objs, err
+}
+
+// GetObjsToDeployWithReport is GetObjsToDeploy, and also returns the status the
+// HelmValuesGenerator reported for obj when it implements ReportingObjectPostProcessor.
+// The report is nil otherwise, and when no objects are rendered.
+func (d *Deployer) GetObjsToDeployWithReport(ctx context.Context, obj client.Object) ([]client.Object, *PostProcessReport, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", d.objectGVK(obj).String(), obj.GetNamespace(), obj.GetName(), err)
+		return nil, nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", d.objectGVK(obj).String(), obj.GetNamespace(), obj.GetName(), err)
 	}
 	if vals == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	// Don't log the values themselves: a HelmValuesGenerator can put secrets in them, such
 	// as keys rendered into a Secret.
@@ -218,19 +226,23 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	rname, rns := d.helmReleaseNameAndNamespaceGenerator(obj)
 	objs, err := d.RenderToObjects(rns, rname, vals)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
+		return nil, nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
 
-	// Apply post-processing if the HelmValuesGenerator implements ObjectPostProcessor
-	if postProcessor, ok := d.helmValues.(ObjectPostProcessor); ok {
-		var err error
+	// Apply post-processing if the HelmValuesGenerator implements a post-processor,
+	// preferring the one that reports status.
+	var report *PostProcessReport
+	switch postProcessor := d.helmValues.(type) {
+	case ReportingObjectPostProcessor:
+		objs, report, err = postProcessor.PostProcessObjectsWithReport(ctx, obj, objs)
+	case ObjectPostProcessor:
 		objs, err = postProcessor.PostProcessObjects(ctx, obj, objs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to post-process objects for %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
-		}
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to post-process objects for %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
 
-	return objs, nil
+	return objs, report, nil
 }
 
 // Deprecated: use SetNamespaceAndOwnerWithGVK

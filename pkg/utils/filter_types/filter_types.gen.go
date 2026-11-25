@@ -450,4 +450,8 @@ import (
 	// github.com/envoyproxy/go-control-plane/ratelimit/...
 	_ "github.com/envoyproxy/go-control-plane/ratelimit/config/ratelimit/v3"
 	_ "github.com/envoyproxy/go-control-plane/ratelimit/service/ratelimit/v3"
+
+	// github.com/cncf/xds/go TypedStruct wrappers
+	_ "github.com/cncf/xds/go/udpa/type/v1"
+	_ "github.com/cncf/xds/go/xds/type/v3"
 )

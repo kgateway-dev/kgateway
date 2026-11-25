@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
@@ -17,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 // rateLimiter uses token bucket for overall rate limiting and exponential backoff for per-item rate limiting
@@ -51,6 +53,10 @@ type GatewayConfig struct {
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
 	CertWatcher *certwatcher.CertWatcher
+	// BootstrapValidator and BootstrapOverlayManagedPaths are passed to the deployer's
+	// Inputs of the same names.
+	BootstrapValidator           validator.BootstrapValidator
+	BootstrapOverlayManagedPaths apisettings.BootstrapOverlayManagedPathsMode
 	// GatewayParametersStatus receives the deployer's verdict on each Gateway's parameters,
 	// which the status syncer reports as the Gateway's Accepted=False/InvalidParameters.
 	// Without it, invalid parameters are not reported.
@@ -93,12 +99,14 @@ func watchGw(
 	)
 
 	inputs := &deployer.Inputs{
-		Dev:                  cfg.Dev,
-		IstioAutoMtlsEnabled: cfg.IstioAutoMtlsEnabled,
-		ControlPlane:         cfg.ControlPlane,
-		ImageInfo:            cfg.ImageInfo,
-		CommonCollections:    cfg.CommonCollections,
-		GatewayClassName:     cfg.GatewayClassName,
+		Dev:                          cfg.Dev,
+		IstioAutoMtlsEnabled:         cfg.IstioAutoMtlsEnabled,
+		ControlPlane:                 cfg.ControlPlane,
+		ImageInfo:                    cfg.ImageInfo,
+		CommonCollections:            cfg.CommonCollections,
+		GatewayClassName:             cfg.GatewayClassName,
+		BootstrapValidator:           cfg.BootstrapValidator,
+		BootstrapOverlayManagedPaths: cfg.BootstrapOverlayManagedPaths,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)

@@ -1,0 +1,44 @@
+# Routes with long regexes on two hostnames of example-gateway's http listener, so its
+# route configuration has a virtual host for each hostname besides the one for
+# long-regex. Each regex compiles to an RE2 program over Envoy's default limit of 100
+# and under the raised limit of 1000.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: long-regex-a
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http
+  hostnames:
+  - a.example.com
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: "/a/(abcdefgh){20}"
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: long-regex-b
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http
+  hostnames:
+  - b.example.com
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: "/b/(abcdefgh){20}"
+    backendRefs:
+    - name: example-svc
+      port: 80

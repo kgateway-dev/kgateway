@@ -105,6 +105,10 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
+
+	// validatedBootstraps is the bootstrap the translation was validated under. A
+	// new client's first snapshot is held until it covers its pod's bootstrap.
+	validatedBootstraps bootstrapCoverage
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -117,7 +121,8 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
 		r.Secrets.Version == in.Secrets.Version &&
-		r.EmittedClusters.Equals(in.EmittedClusters)
+		r.EmittedClusters.Equals(in.EmittedClusters) &&
+		r.validatedBootstraps.Equals(in.validatedBootstraps)
 }
 
 // GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
@@ -181,14 +186,15 @@ func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, 
 	}
 	return &gatewayTranslationOutput{
 		Xds: GatewayXdsResources{
-			NamespacedName:     nn,
-			ClustersHash:       ch,
-			Clusters:           c,
-			Routes:             routes,
-			Listeners:          listeners,
-			Secrets:            sliceToResources(xdsSnap.Secrets),
-			ReferencedClusters: collectReferencedClusters(routes, listeners),
-			EmittedClusters:    emittedClustersFor(scoping, routes, listeners),
+			NamespacedName:      nn,
+			ClustersHash:        ch,
+			Clusters:            c,
+			Routes:              routes,
+			Listeners:           listeners,
+			Secrets:             sliceToResources(xdsSnap.Secrets),
+			ReferencedClusters:  collectReferencedClusters(routes, listeners),
+			EmittedClusters:     emittedClustersFor(scoping, routes, listeners),
+			validatedBootstraps: newBootstrapCoverage(gw.ValidationBootstraps),
 		},
 		Status: GatewayStatusSnapshot{
 			NamespacedName: nn,

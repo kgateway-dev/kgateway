@@ -81,6 +81,10 @@ type ConnectedClient struct {
 	// priorXDSVersion marks a stream that reported config held from an earlier
 	// stream (a reconnect, or a proxy that outlived a controller restart).
 	priorXDSVersion bool
+	// podReady marks a stream whose pod was Ready when the stream was admitted. Its
+	// Envoy already serves configuration from an earlier stream: a restarted Envoy
+	// container starts unready and becomes Ready only once it has configuration.
+	podReady bool
 }
 
 func newConnectedClient(uniqueClientName, originalRole string) ConnectedClient {
@@ -123,7 +127,10 @@ type callbacksCollection struct {
 	// flag, so a shared name (pod locality off) stops being warm when its last
 	// warm stream closes, even with cold streams left.
 	priorXDSVersions map[string]int
-	stateLock        sync.RWMutex
+	// readyPodStreams counts, per resource name, the streams whose pod was Ready when
+	// they were admitted.
+	readyPodStreams map[string]int
+	stateLock       sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
 	// hooks are start hooks registered on the owning callbacks; nil without an owner.
@@ -244,6 +251,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 			uniqClients:            make(map[string]ir.UniquelyConnectedClient),
 			knownLocalClusterBySid: make(map[int64]bool),
 			priorXDSVersions:       make(map[string]int),
+			readyPodStreams:        make(map[string]int),
 			trigger:                trigger,
 			hooks:                  &callbacks.hooks,
 		}
@@ -309,6 +317,13 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 				delete(x.priorXDSVersions, resourceName)
 			}
 		}
+		if c.podReady {
+			if n := x.readyPodStreams[resourceName] - 1; n > 0 {
+				x.readyPodStreams[resourceName] = n
+			} else {
+				delete(x.readyPodStreams, resourceName)
+			}
+		}
 		current := x.uniqClientsCount[resourceName]
 		x.uniqClientsCount[resourceName] = current - 1
 		if current == 1 {
@@ -316,6 +331,7 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 			delete(x.uniqClientsCount, resourceName)
 			delete(x.uniqClients, resourceName)
 			delete(x.priorXDSVersions, resourceName)
+			delete(x.readyPodStreams, resourceName)
 			return &ucc
 		}
 	}
@@ -348,6 +364,7 @@ func (x *callbacksCollection) deriveClientIdentity(r *envoy_service_discovery_v3
 	var locality ir.PodLocality
 	var ns string
 	var labels map[string]string
+	var bootstrap *ir.PodBootstrap
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
 	if peer.podRef != nil {
 		k := krt.Named{Name: peer.podRef.Name, Namespace: peer.podRef.Namespace}.ResourceName()
@@ -363,8 +380,18 @@ func (x *callbacksCollection) deriveClientIdentity(r *envoy_service_discovery_v3
 		ns = pod.Namespace
 		labels = pod.AugmentedLabels
 		peer.role = NormalizeGatewayRole(peer.role, ns, labels)
+
+		// Record the pod's bootstrap. pod-template-hash is in labels, so every pod of
+		// the client runs this bootstrap.
+		bootstrap = pod.Bootstrap
+		if bootstrap == nil {
+			bootstrap = defaultPodBootstrap()
+		}
 	}
+
+	// Build the client from the pod's state.
 	ucc := ir.NewUniquelyConnectedClient(peer.role, ns, labels, locality)
+	ucc.Bootstrap = bootstrap
 	return &ucc, nil
 }
 
@@ -463,6 +490,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	// peer.role is the raw, pre-augmentation role from this first request
 	// (deriveClientIdentity normalizes its own copy); pin it for follow-ups.
 	c = newConnectedClient(ucc.ResourceName(), peer.role)
+	c.podReady = x.podReady(peer.podRef)
 
 	// Re-lock only to publish the new stream into the shared maps. uniqClients
 	// and uniqClientsCount are keyed by resource name and shared across all
@@ -471,6 +499,9 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 	x.clients[sid] = c
+	if c.podReady {
+		x.readyPodStreams[ucc.ResourceName()]++
+	}
 	currentUnique := x.uniqClientsCount[ucc.ResourceName()]
 	x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 	if currentUnique == 0 {
@@ -590,6 +621,29 @@ func (x *callbacksCollection) hasPriorXDSVersion(resourceName string) bool {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
 	return x.priorXDSVersions[resourceName] > 0
+}
+
+// podReady reports whether the pod ref names is in the pod collection and Ready.
+func (x *callbacksCollection) podReady(ref *types.NamespacedName) bool {
+	if ref == nil || x.augmentedPods == nil {
+		return false
+	}
+	pod := x.augmentedPods.GetKey(krt.Named{Name: ref.Name, Namespace: ref.Namespace}.ResourceName())
+	return pod != nil && pod.Ready
+}
+
+// HasReadyPodStream reports whether a stream is connected under resourceName whose
+// pod was Ready when the stream was admitted. That proxy's Envoy kept serving
+// configuration from an earlier stream, such as across a controller restart, even
+// before it sends a listener request that carries a prior version.
+func (x *callbacks) HasReadyPodStream(resourceName string) bool {
+	c := x.collection.Load()
+	if c == nil {
+		return false
+	}
+	c.stateLock.RLock()
+	defer c.stateLock.RUnlock()
+	return c.readyPodStreams[resourceName] > 0
 }
 
 // HasColdStreamSince reports whether a cold stream has been connected under
