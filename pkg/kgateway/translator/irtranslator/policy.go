@@ -174,7 +174,6 @@ func addRouteSourceMetadata(in ir.HttpRouteRuleMatchIR, metadata *envoycorev3.Me
 func reportBackendObjectPolicyStatus(
 	rp reporter.Reporter,
 	ancestorRef gwv1.ParentReference,
-	pluginPass TranslationPassPlugins,
 	backend *ir.BackendObjectIR,
 ) {
 	if backend == nil {
@@ -187,15 +186,11 @@ func reportBackendObjectPolicyStatus(
 		return
 	}
 
+	// The policy the backend's resolution chose, which backend translation applies and the
+	// target-ancestor status reports.
 	var effectivePolicy *ir.PolicyAtt
-	if pass := pluginPass[gk]; pass != nil {
-		effectivePolicies, _ := mergePolicies(pass, policies)
-		if len(effectivePolicies) > 0 {
-			effectivePolicy = &effectivePolicies[0]
-		}
-	}
-	if effectivePolicy == nil {
-		effectivePolicy = &policies[0]
+	if eff, ok := backend.PolicyResolution.Effective(gk); ok {
+		effectivePolicy = &eff
 	}
 
 	for _, policy := range policies {

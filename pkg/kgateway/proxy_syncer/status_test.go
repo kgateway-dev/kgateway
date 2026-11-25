@@ -16,7 +16,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -299,6 +301,14 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 // in the Gateway API's vocabulary, whether or not any route uses that Backend. When two
 // policies target the same Backend the older one wins and the newer one is Conflicted,
 // matching the winner the plugin's MergePolicies picks.
+// resolveBackendTLSPolicies resolves attached BackendTLSPolicies with the plugin's own hooks,
+// as the backend index does when they attach.
+func resolveBackendTLSPolicies(attached ir.AttachedPolicies) *ir.BackendPolicyResolution {
+	return sdk.ResolveBackendPolicies(attached, sdk.ContributesPolicies{
+		wellknown.BackendTLSPolicyGVK.GroupKind(): {MergePolicies: backendtlspolicyplugin.MergePolicies},
+	})
+}
+
 func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	newPolicyAtt := func(name string, created time.Time, generation int64) ir.PolicyAtt {
@@ -329,6 +339,7 @@ func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
 			btpGK: {newer, older},
 		},
 	}
+	backend.PolicyResolution = resolveBackendTLSPolicies(backend.AttachedPolicies)
 
 	a := assert.New(t)
 	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
@@ -417,6 +428,7 @@ func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t 
 	}
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "default", Name: "svc"}, 443, "https", "")
 	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{btpGK: {newerValid, olderInvalid}}}
+	backend.PolicyResolution = resolveBackendTLSPolicies(backend.AttachedPolicies)
 
 	a := assert.New(t)
 	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)

@@ -185,6 +185,12 @@ type BackendObjectIR struct {
 
 	AttachedPolicies AttachedPolicies
 
+	// PolicyResolution is what each attached policy contributes to this backend, decided
+	// once when policies attach. Nil for a backend that never went through attachment.
+	// It is a pure function of AttachedPolicies, which is already compared in Equals.
+	// +noKrtEquals
+	PolicyResolution *BackendPolicyResolution
+
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
 	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
 	// +noKrtEquals

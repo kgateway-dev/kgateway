@@ -156,6 +156,11 @@ Statuses:
           reason: Attached
           status: "True"
           type: Attached
+        - lastTransitionTime: null
+          message: spec.connectTimeout overridden by BackendConfigPolicy default/bcp-older
+          reason: ConflictedWithBackendConfigPolicy
+          status: "True"
+          type: Overridden
         controllerName: kgateway.dev/kgateway
     BackendConfigPolicy/default/bcp-older:
       ancestors:

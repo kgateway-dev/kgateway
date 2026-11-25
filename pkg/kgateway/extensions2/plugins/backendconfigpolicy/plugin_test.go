@@ -482,11 +482,20 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			if cluster == nil {
 				cluster = &envoyclusterv3.Cluster{}
 			}
-			backend := tt.backend
-			if backend == nil {
-				backend = &ir.BackendObjectIR{}
+			backend := ir.BackendObjectIR{}
+			if tt.backend != nil {
+				backend = *tt.backend
 			}
-			processBackend(context.Background(), policyIR, *backend, cluster)
+			// Attach and resolve the policy so the post-policy hook sees it, as translation does:
+			// every ProcessBackend hook first, then the ProcessBaseCluster hooks.
+			gk := wellknown.BackendConfigPolicyGVK.GroupKind()
+			backend = resolvedBackend(backend, ir.PolicyAtt{
+				GroupKind: gk,
+				PolicyRef: &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Name: "policy"},
+				PolicyIr:  policyIR,
+			})
+			processBackend(context.Background(), policyIR, backend, cluster)
+			processBaseCluster(nil, context.Background(), backend, cluster)
 			assert.Equal(t, tt.want, cluster)
 		})
 	}

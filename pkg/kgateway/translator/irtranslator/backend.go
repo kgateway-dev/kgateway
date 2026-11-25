@@ -1,7 +1,6 @@
 package irtranslator
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"hash/fnv"
@@ -68,6 +67,7 @@ type BackendTranslator struct {
 
 	// Base hooks are cached in (Group, Kind) order.
 	baseHooksOnce     sync.Once
+	processBackends   []processBackendPlugin
 	baseClusterHooks  []sdk.ProcessBaseCluster
 	baseResourceHooks []sdk.ProcessBaseClusterResources
 }
@@ -102,31 +102,32 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 			}
 			t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil})
 		}
-		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
-			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
-				return c
-			}
-			return cmp.Compare(a.gk.Kind, b.gk.Kind)
-		})
+		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int { return sdk.CompareGroupKind(a.gk, b.gk) })
 	})
 	return t.overlayPlugins
 }
 
-// orderBaseHooks caches cluster and resource hooks in (Group, Kind) order.
+// processBackendPlugin is one policy plugin's UCC-invariant ProcessBackend hook.
+type processBackendPlugin struct {
+	gk             schema.GroupKind
+	processBackend sdk.ProcessBackend
+}
+
+// orderBaseHooks caches ProcessBackend, cluster and resource hooks in (Group, Kind) order.
+// ProcessBackend hooks of different kinds edit the same cluster, so their order must not
+// depend on map iteration.
 func (t *BackendTranslator) orderBaseHooks() {
 	t.baseHooksOnce.Do(func() {
 		gks := make([]schema.GroupKind, 0, len(t.ContributedPolicies))
 		for gk := range t.ContributedPolicies {
 			gks = append(gks, gk)
 		}
-		slices.SortFunc(gks, func(a, b schema.GroupKind) int {
-			if c := cmp.Compare(a.Group, b.Group); c != 0 {
-				return c
-			}
-			return cmp.Compare(a.Kind, b.Kind)
-		})
+		slices.SortFunc(gks, sdk.CompareGroupKind)
 		for _, gk := range gks {
 			policyPlugin := t.ContributedPolicies[gk]
+			if policyPlugin.ProcessBackend != nil {
+				t.processBackends = append(t.processBackends, processBackendPlugin{gk: gk, processBackend: policyPlugin.ProcessBackend})
+			}
 			if policyPlugin.ProcessBaseCluster != nil {
 				t.baseClusterHooks = append(t.baseClusterHooks, policyPlugin.ProcessBaseCluster)
 			}
@@ -323,6 +324,15 @@ func (t *BackendTranslator) TranslateBackendBase(
 			Cluster: buildBlackholeCluster(backend),
 			Error:   errors.Join(backend.Errors...),
 		}
+	}
+
+	if backend.PolicyResolution == nil {
+		// Backends normally resolve their policies when they attach. One that did not, such
+		// as a backend built outside the backend index, is resolved here on a copy, so every
+		// hook below sees the same decision.
+		resolved := *backend
+		resolved.PolicyResolution = sdk.ResolveBackendPolicies(resolved.AttachedPolicies, t.ContributedPolicies)
+		backend = &resolved
 	}
 
 	out := initializeCluster(backend)
@@ -610,22 +620,19 @@ func (t *BackendTranslator) applyBasePolicies(
 	out *envoyclusterv3.Cluster,
 ) error {
 	var errs []error
-	for gk, policyPlugin := range t.ContributedPolicies {
-		if policyPlugin.ProcessBackend == nil {
-			continue
-		}
-		policies := backend.AttachedPolicies.Policies[gk]
-		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
-			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
-		}
-		for _, polAttachment := range policies {
+	t.orderBaseHooks()
+	for _, p := range t.processBackends {
+		gk := p.gk
+		// The backend's resolution: one merged policy per merging kind, with fields another
+		// kind supersedes already cleared.
+		for _, polAttachment := range backend.PolicyResolution.Applied(gk) {
 			if len(polAttachment.Errors) > 0 {
 				//nolint:sloglint // keep the existing log key; renaming it would break log queries
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)
 				continue
 			}
-			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
+			p.processBackend(ctx, polAttachment.PolicyIr, *backend, out)
 		}
 	}
 	return errors.Join(errs...)

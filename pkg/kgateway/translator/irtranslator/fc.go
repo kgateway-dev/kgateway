@@ -441,7 +441,7 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 	}
 	if h.reporter != nil {
 		for _, backend := range l.BackendRefs {
-			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.BackendObject)
+			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, backend.BackendObject)
 		}
 	}
 	if len(l.BackendRefs) == 1 {

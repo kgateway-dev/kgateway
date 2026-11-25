@@ -8,7 +8,6 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -114,6 +114,12 @@ func (d *backendTlsPolicy) PolicyHash() uint64 {
 	return utils.HashProto(d.transportSocket)
 }
 
+// Supersedes is the plugin's PolicyPlugin.Supersedes: the standard Gateway API policy owns
+// upstream TLS over BackendConfigPolicy.spec.tls.
+var Supersedes = map[schema.GroupKind][]string{
+	kgwellknown.BackendConfigPolicyGVK.GroupKind(): {backendconfigpolicy.TLSField},
+}
+
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*gwv1.BackendTLSPolicy](
 		commoncol.Client,
@@ -152,6 +158,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				ProcessBackend:     processBackend,
 				ProcessBaseCluster: processBaseCluster,
 				MergePolicies:      MergePolicies,
+				Supersedes:         Supersedes,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,
@@ -176,46 +183,10 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 	if tlsPol.transportSocket == nil {
 		return
 	}
-
-	// If BackendConfigPolicy already wrapped the cluster's transport socket in
-	// upstream proxy protocol, preserve that wrapper and replace the inner
-	// socket with our TLS one. Otherwise BTP "wins" for TLS and we configure the
-	// TLS socket directly.
-	if existing := out.TransportSocket; existing != nil && existing.GetName() == kgwellknown.TransportSocketUpstreamProxyProtocol {
-		if wrapped, ok := replaceInnerInProxyProtocol(existing, tlsPol.transportSocket); ok {
-			out.TransportSocket = wrapped
-			return
-		}
-	}
+	// The backend's resolution gives this kind TLS over any BackendConfigPolicy, and wrappers
+	// such as upstream proxy protocol are applied after every ProcessBackend hook, so the TLS
+	// socket is set directly.
 	out.TransportSocket = tlsPol.transportSocket
-}
-
-// replaceInnerInProxyProtocol returns a new transport socket carrying the same
-// ProxyProtocolUpstreamTransport wrapper as wrapper but with its inner
-// TransportSocket replaced by inner. Returns false if wrapper isn't a
-// ProxyProtocolUpstreamTransport.
-func replaceInnerInProxyProtocol(wrapper, inner *envoycorev3.TransportSocket) (*envoycorev3.TransportSocket, bool) {
-	typed := wrapper.GetTypedConfig()
-	if typed == nil {
-		return nil, false
-	}
-	pp := &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{}
-	if err := typed.UnmarshalTo(pp); err != nil {
-		logger.Error("failed to unpack upstream proxy protocol transport for BackendTLSPolicy", "error", err)
-		return nil, false
-	}
-	pp.TransportSocket = inner
-	repacked, err := utils.MessageToAny(pp)
-	if err != nil {
-		logger.Error("failed to repack upstream proxy protocol transport for BackendTLSPolicy", "error", err)
-		return nil, false
-	}
-	return &envoycorev3.TransportSocket{
-		Name: wrapper.GetName(),
-		ConfigType: &envoycorev3.TransportSocket_TypedConfig{
-			TypedConfig: repacked,
-		},
-	}, true
 }
 
 func buildTranslateFunc(

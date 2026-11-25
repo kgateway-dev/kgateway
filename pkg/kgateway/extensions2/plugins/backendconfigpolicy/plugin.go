@@ -197,6 +197,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Policies:                    backendConfigPolicyCol,
 				NewGatewayTranslationPass:   newGatewayTranslationPass,
 				ProcessBackend:              processBackend,
+				ProcessBaseCluster:          processBaseCluster,
 				ProcessBaseClusterResources: newTunnelHook(commoncol),
 				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
 				// processEndpoints reads only the BackendConfigPolicies attached
@@ -204,6 +205,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				// inline CLA built once on the shared base.
 				PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
 				MergePolicies:              mergePolicies,
+				SetFields:                  setFields,
+				ClearFields:                clearFields,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					wellknown.BackendConfigPolicyGVK,
 					col,
@@ -236,13 +239,6 @@ func sortForMerge(pols []ir.PolicyAtt) []ir.PolicyAtt {
 	return out
 }
 
-// hasBackendTLSPolicy reports whether the backend has a BackendTLSPolicy
-// attached. This is used to determine whether BCP's TLS config should be applied,
-// as BTP wins for TLS when both are attached to the same backend.
-func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
-	return len(backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]) > 0
-}
-
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.sessionPersistence != nil {
@@ -271,10 +267,9 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	applyHttp1ProtocolOptions(pol.http1ProtocolOptions, backend, out)
 	applyHttp2ProtocolOptions(pol.http2ProtocolOptions, backend, out)
 
-	// BackendTLSPolicy (standard Gateway API) wins for TLS when both are attached
-	// to the same backend. BCP's TLS config is only applied if there is no attached BackendTLSPolicy.
-	tlsAllowed := pol.tlsConfig != nil && !hasBackendTLSPolicy(backend)
-	if tlsAllowed {
+	// pol is the backend's resolved policy: when another kind supersedes spec.tls (a
+	// BackendTLSPolicy does), the resolution has already cleared it here.
+	if pol.tlsConfig != nil {
 		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
 		if err != nil {
 			logger.Error("failed to convert tls config to any", "error", err)
@@ -288,13 +283,8 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 		}
 	}
 
-	// Apply upstream proxy protocol after TLS so it can wrap the existing
-	// transport socket. ProxyProtocolUpstreamTransport requires a non-nil
-	// inner transport socket. If TLS is configured it wraps that, otherwise
-	// an explicit raw_buffer is provided.
-	if pol.upstreamProxyProtocol != nil {
-		applyUpstreamProxyProtocol(pol.upstreamProxyProtocol, out)
-	}
+	// Upstream proxy protocol wraps the final transport socket, whichever policy set it, so it
+	// is applied in processBaseCluster, after every ProcessBackend hook.
 
 	applyLoadBalancerConfig(pol.loadBalancerConfig, out)
 
@@ -532,6 +522,19 @@ func translateUpstreamProxyProtocol(cfg *kgateway.UpstreamProxyProtocol) *envoyc
 	return ppConfig
 }
 
+// processBaseCluster wraps the cluster's final transport socket in upstream proxy protocol.
+// It runs as a ProcessBaseCluster hook, after every ProcessBackend hook, so it wraps whatever
+// TLS any policy kind or backend kind set, and no plugin needs to know about the wrapper.
+func processBaseCluster(_ krt.HandlerContext, _ context.Context, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+	pol := effectivePolicy(&backend)
+	if pol == nil || pol.upstreamProxyProtocol == nil {
+		return
+	}
+	applyUpstreamProxyProtocol(pol.upstreamProxyProtocol, out)
+}
+
+// applyUpstreamProxyProtocol wraps out's transport socket. ProxyProtocolUpstreamTransport
+// requires a non-nil inner socket, so a cluster without TLS gets an explicit raw_buffer.
 func applyUpstreamProxyProtocol(ppConfig *envoycorev3.ProxyProtocolConfig, out *envoyclusterv3.Cluster) {
 	// Get the existing transport socket (could be TLS or nil for raw buffer)
 	innerTransportSocket := out.TransportSocket

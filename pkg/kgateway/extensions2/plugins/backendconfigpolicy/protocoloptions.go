@@ -144,9 +144,11 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *envoycorev3.Http2ProtocolOp
 	}
 
 	if backend.AppProtocol != ir.HTTP2AppProtocol {
-		// A BackendTLSPolicy lets a backend without an app protocol negotiate HTTP/2 via ALPN;
-		// the BackendTLSPolicy plugin then applies these options through Http2ProtocolOptions.
-		if backend.AppProtocol == ir.DefaultAppProtocol && hasBackendTLSPolicy(backend) {
+		// When another policy kind owns TLS (a BackendTLSPolicy does), a backend without an app
+		// protocol can negotiate HTTP/2 via ALPN; that kind then applies these options through
+		// Http2ProtocolOptions.
+		if backend.AppProtocol == ir.DefaultAppProtocol &&
+			backend.PolicyResolution.IsSuperseded(wellknown.BackendConfigPolicyGVK.GroupKind(), TLSField) {
 			return
 		}
 		logger.Warn("can't apply http2 protocol options to non-http2 backend", "backend", backend.GetName())
@@ -171,16 +173,8 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *envoycorev3.Http2ProtocolOp
 // negotiate HTTP/2 via ALPN, since processBackend only applies them to HTTP/2 backends.
 // The returned value is shared and must not be modified.
 func Http2ProtocolOptions(backend ir.BackendObjectIR) *envoycorev3.Http2ProtocolOptions {
-	pols := backend.AttachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
-	if len(pols) == 0 {
-		return nil
-	}
-	merged := mergePolicies(pols)
-	if len(merged.Errors) > 0 {
-		return nil
-	}
-	pol, ok := merged.PolicyIr.(*BackendConfigPolicyIR)
-	if !ok || pol == nil {
+	pol := effectivePolicy(&backend)
+	if pol == nil {
 		return nil
 	}
 	return pol.http2ProtocolOptions

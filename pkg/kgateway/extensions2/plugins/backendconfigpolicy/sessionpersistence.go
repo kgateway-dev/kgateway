@@ -14,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -110,21 +111,22 @@ const (
 // actually applied to the backend, and reported on the policy whose sessionPersistence is applied: an ignored
 // absoluteTimeout and backends where session persistence has no effect. Load balancer hash policies are not
 // reported: they still pick the host for requests without a session. It returns nil when there is nothing to report.
-func PartiallyValidMessages(policies []ir.PolicyAtt, backend ir.BackendObjectIR) map[string]string {
-	if !slices.ContainsFunc(policies, hasSessionPersistence) {
+func PartiallyValidMessages(backend ir.BackendObjectIR) map[string]string {
+	// Status runs this for every backend; most set no session persistence at all.
+	if !slices.ContainsFunc(backend.AttachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()], hasSessionPersistence) {
 		return nil
 	}
-	merged := mergePolicies(policies)
 	// Like translation, nothing is applied when a policy has errors.
-	if len(merged.Errors) > 0 {
+	merged, ok := effectiveAttachment(&backend)
+	if !ok {
 		return nil
 	}
 	pol, ok := merged.PolicyIr.(*BackendConfigPolicyIR)
 	if !ok || pol.sessionPersistence == nil {
 		return nil
 	}
-	owners := merged.MergeOrigins.Get("sessionPersistence")
-	if len(owners) != 1 {
+	owner := mergeOwner(merged, "sessionPersistence")
+	if owner == "" {
 		return nil
 	}
 
@@ -140,7 +142,7 @@ func PartiallyValidMessages(policies []ir.PolicyAtt, backend ir.BackendObjectIR)
 		return nil
 	}
 	slices.Sort(msgs)
-	return map[string]string{owners[0]: strings.Join(msgs, "; ")}
+	return map[string]string{owner: strings.Join(msgs, "; ")}
 }
 
 // sessionPersistenceBackendNote returns a note about how session persistence behaves for backend, and whether
@@ -185,23 +187,16 @@ func newGatewayTranslationPass(_ ir.GwTranslationCtx, _ reporter.Reporter) ir.Pr
 
 // ApplyForBackendObjectPolicies sets the per route session persistence config for a backend
 // that has a BackendConfigPolicy with session persistence attached. It runs for every route
-// backend on every translation, so it only merges the policies when one of them sets
-// session persistence.
+// backend on every translation, so it reads the backend's resolution only when one of the
+// policies sets session persistence.
 func (p *backendConfigPolicyGwPass) ApplyForBackendObjectPolicies(policies []ir.PolicyAtt, pCtx *ir.RouteBackendContext) error {
-	if !slices.ContainsFunc(policies, hasSessionPersistence) {
+	if !slices.ContainsFunc(policies, hasSessionPersistence) || pCtx.Backend == nil {
 		return nil
 	}
-	// Usually a single policy is attached; merging it would only copy it, so use it directly.
-	att := policies[0]
-	if len(policies) > 1 {
-		att = mergePolicies(policies)
-	}
-	// Like cluster translation, skip the merged policy if any of the policies has errors.
-	if len(att.Errors) > 0 {
-		return nil
-	}
-	pol, ok := att.PolicyIr.(*BackendConfigPolicyIR)
-	if !ok || pol.sessionPersistence == nil {
+	// The backend's resolved policy, as cluster translation applies it: nil when any of the
+	// policies has errors.
+	pol := effectivePolicy(pCtx.Backend)
+	if pol == nil || pol.sessionPersistence == nil {
 		return nil
 	}
 	perRoute, err := pol.sessionPersistence.perRouteFor(pCtx.Backend)

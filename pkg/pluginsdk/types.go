@@ -305,6 +305,22 @@ type PolicyPlugin struct {
 	PoliciesFetch func(n, ns string) ir.PolicyIR
 	MergePolicies func(pols []ir.PolicyAtt) ir.PolicyAtt
 
+	// Supersedes declares fields of other policy kinds that this kind owns on a backend
+	// both attach to, keyed by the other kind, with fields named by their MergeOrigins
+	// keys. Any attached policy of this kind takes those fields, valid or not: an invalid
+	// one blackholes the cluster rather than letting the other kind's field through.
+	// ResolveBackendPolicies clears them from the other kind's merged policy, so neither
+	// plugin needs to know about the other.
+	Supersedes map[schema.GroupKind][]string
+	// SetFields returns the MergeOrigins keys of the fields a policy of this kind sets, in a
+	// fixed order, so the backend resolution can report each field that does not take effect.
+	// The resolver may keep the returned slice and does not modify it. Optional; without it,
+	// fields lost in a merge or superseded by another kind are not reported.
+	SetFields func(ir.PolicyIR) []string
+	// ClearFields returns a copy of a policy of this kind without the named fields.
+	// Required for another kind to supersede fields of this one; it must not modify pol.
+	ClearFields func(pol ir.PolicyIR, fields []string) ir.PolicyIR
+
 	// RegisterPolicyStatus, when set, is called once by the proxy syncer after the report
 	// collections are built. The plugin derives its per-object desired-status collection
 	// from the provided report collection and registers it, along with a status writer
