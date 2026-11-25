@@ -8,6 +8,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
+// PolicyConditionOverridden is set on a policy ancestor when one or more of the
+// policy's fields were dropped in favor of a higher priority policy. It is only
+// emitted while an override exists, so the status builder must drop it when it
+// is not reported, rather than carry it forward.
+const PolicyConditionOverridden = "Overridden"
+
 const (
 	PolicyAcceptedMsg = "Policy accepted"
 

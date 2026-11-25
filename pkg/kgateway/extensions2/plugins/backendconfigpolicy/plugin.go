@@ -236,13 +236,6 @@ func sortForMerge(pols []ir.PolicyAtt) []ir.PolicyAtt {
 	return out
 }
 
-// hasBackendTLSPolicy reports whether the backend has a BackendTLSPolicy
-// attached. This is used to determine whether BCP's TLS config should be applied,
-// as BTP wins for TLS when both are attached to the same backend.
-func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
-	return len(backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]) > 0
-}
-
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.sessionPersistence != nil {
@@ -271,9 +264,9 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	applyHttp1ProtocolOptions(pol.http1ProtocolOptions, backend, out)
 	applyHttp2ProtocolOptions(pol.http2ProtocolOptions, backend, out)
 
-	// BackendTLSPolicy (standard Gateway API) wins for TLS when both are attached
-	// to the same backend. BCP's TLS config is only applied if there is no attached BackendTLSPolicy.
-	tlsAllowed := pol.tlsConfig != nil && !hasBackendTLSPolicy(backend)
+	// A BackendTLSPolicy (standard Gateway API) owns TLS whenever one is attached; see ResolveTLS,
+	// which status uses to report the dropped spec.tls as Overridden.
+	tlsAllowed := pol.tlsConfig != nil && !backendTLSPolicyOwnsTLS(backend)
 	if tlsAllowed {
 		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
 		if err != nil {

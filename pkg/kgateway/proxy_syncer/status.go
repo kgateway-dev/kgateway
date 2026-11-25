@@ -49,7 +49,7 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 	for _, obj := range in {
 		var policyErr *ir.PolicyError
 		errors.As(baseErrs[obj.ClusterName()], &policyErr)
-		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
+		tlsResolution := backendconfigpolicyplugin.ResolveTLS(obj.GetAttachedPolicies())
 		targetRef := backendAncestorRef(obj.GetObjectSource())
 
 		// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
@@ -124,7 +124,7 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithClu
 				})
 
 				if gk == bcpGK {
-					if cond, ok := backendconfigpolicyplugin.BuildOverrideCondition(polAtt, conflictingBTP); ok {
+					if cond, ok := tlsResolution.OverrideCondition(polAtt); ok {
 						r.SetCondition(cond)
 					}
 				}
@@ -176,29 +176,6 @@ func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.Paren
 			r.SetCondition(cond)
 		}
 	}
-}
-
-// winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS
-// config will apply to a backend, or nil if no BTP is attached or none of the policies
-// has a valid translation. Uses the same winner-by-creation-time-and-ref ordering used
-// inside the BTP plugin MergePolicies.
-func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicyRef {
-	btps := attached.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
-	if len(btps) == 0 {
-		return nil
-	}
-	valid := make([]ir.PolicyAtt, 0, len(btps))
-	for _, p := range btps {
-		if len(p.Errors) > 0 {
-			continue
-		}
-		valid = append(valid, p)
-	}
-	if len(valid) == 0 {
-		return nil
-	}
-	winner := valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
-	return winner.PolicyRef
 }
 
 // GenerateBackendStatusReport builds the Accepted condition for every kgateway Backend from

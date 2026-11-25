@@ -179,13 +179,7 @@ func BuildPolicyStatus(
 			}
 			meta.SetStatusCondition(&finalConditions, pCondition)
 		}
-		// If there are conditions on the route that are not owned by our reporter, include
-		// them in the final list of conditions to preserve conditions we do not own
-		for _, condition := range currentParentRefConditions {
-			if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
-				finalConditions = append(finalConditions, condition)
-			}
-		}
+		finalConditions = appendForeignPolicyConditions(finalConditions, currentParentRefConditions)
 
 		ancestorStatus := gwv1.PolicyAncestorStatus{
 			AncestorRef:    ancestorRef,
@@ -277,4 +271,32 @@ func addAttachmentCondition(conditions []metav1.Condition, attachmentState repor
 	}
 
 	return existing
+}
+
+// isReporterOwnedPolicyConditionType reports whether the policy reporter emits conditions of
+// type t. A condition of an owned type that was not reported this round no longer holds,
+// so it must be removed rather than preserved.
+func isReporterOwnedPolicyConditionType(t string) bool {
+	switch t {
+	case string(shared.PolicyConditionAccepted),
+		string(shared.PolicyConditionAttached),
+		string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+		reporter.PolicyConditionOverridden:
+		return true
+	default:
+		return false
+	}
+}
+
+// appendForeignPolicyConditions appends the conditions from the existing ancestor status
+// whose type is not owned by our reporter, so conditions set by others are preserved.
+func appendForeignPolicyConditions(finalConditions, oldConditions []metav1.Condition) []metav1.Condition {
+	for _, condition := range oldConditions {
+		if meta.FindStatusCondition(finalConditions, condition.Type) != nil ||
+			isReporterOwnedPolicyConditionType(condition.Type) {
+			continue
+		}
+		finalConditions = append(finalConditions, condition)
+	}
+	return finalConditions
 }
