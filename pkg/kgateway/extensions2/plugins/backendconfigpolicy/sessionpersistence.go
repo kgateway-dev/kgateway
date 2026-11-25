@@ -9,7 +9,6 @@ import (
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -118,7 +117,7 @@ func PartiallyValidMessages(backend ir.BackendObjectIR) map[string]string {
 		return nil
 	}
 	// Like translation, nothing is applied when a policy has errors.
-	merged, ok := effectiveAttachment(backend)
+	merged, ok := effectiveAttachment(&backend)
 	if !ok {
 		return nil
 	}
@@ -126,8 +125,8 @@ func PartiallyValidMessages(backend ir.BackendObjectIR) map[string]string {
 	if !ok || pol.sessionPersistence == nil {
 		return nil
 	}
-	owners := merged.MergeOrigins.Get("sessionPersistence")
-	if len(owners) != 1 {
+	owner := mergeOwner(merged, "sessionPersistence")
+	if owner == "" {
 		return nil
 	}
 
@@ -143,7 +142,7 @@ func PartiallyValidMessages(backend ir.BackendObjectIR) map[string]string {
 		return nil
 	}
 	slices.Sort(msgs)
-	return map[string]string{owners[0]: strings.Join(msgs, "; ")}
+	return map[string]string{owner: strings.Join(msgs, "; ")}
 }
 
 // sessionPersistenceBackendNote returns a note about how session persistence behaves for backend, and whether
@@ -188,24 +187,15 @@ func newGatewayTranslationPass(_ ir.GwTranslationCtx, _ reporter.Reporter) ir.Pr
 
 // ApplyForBackendObjectPolicies sets the per route session persistence config for a backend
 // that has a BackendConfigPolicy with session persistence attached. It runs for every route
-// backend on every translation, so it only merges the policies when one of them sets
-// session persistence.
+// backend on every translation, so it reads the backend's resolution only when one of the
+// policies sets session persistence.
 func (p *backendConfigPolicyGwPass) ApplyForBackendObjectPolicies(policies []ir.PolicyAtt, pCtx *ir.RouteBackendContext) error {
-	if !slices.ContainsFunc(policies, hasSessionPersistence) {
+	if !slices.ContainsFunc(policies, hasSessionPersistence) || pCtx.Backend == nil {
 		return nil
 	}
 	// The backend's resolved policy, as cluster translation applies it: nil when any of the
-	// policies has errors. A backend without a resolution merges the policies it was handed.
-	backend := ir.BackendObjectIR{}
-	if pCtx.Backend != nil {
-		backend = *pCtx.Backend
-	}
-	if backend.PolicyResolution == nil {
-		backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
-			wellknown.BackendConfigPolicyGVK.GroupKind(): policies,
-		}}
-	}
-	pol := effectivePolicy(backend)
+	// policies has errors.
+	pol := effectivePolicy(pCtx.Backend)
 	if pol == nil || pol.sessionPersistence == nil {
 		return nil
 	}

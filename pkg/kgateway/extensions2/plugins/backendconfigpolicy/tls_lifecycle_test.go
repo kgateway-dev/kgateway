@@ -118,7 +118,7 @@ func TestTLSOwnershipAppearsAndDisappears(t *testing.T) {
 			want: map[string]wantStatus{
 				"older-insecure": {},
 				"newer-verify": {
-					reason:  backendconfigpolicy.ReasonConflictedWithBackendConfigPolicy,
+					reason:  "ConflictedWithBackendConfigPolicy",
 					message: "spec.tls overridden by BackendConfigPolicy default/older-insecure",
 				},
 			},
@@ -129,11 +129,11 @@ func TestTLSOwnershipAppearsAndDisappears(t *testing.T) {
 			btps: []ir.PolicyAtt{validBTP},
 			want: map[string]wantStatus{
 				"older-insecure": {
-					reason:  backendconfigpolicy.ReasonConflictedWithBackendTLSPolicy,
+					reason:  "ConflictedWithBackendTLSPolicy",
 					message: "spec.tls overridden by BackendTLSPolicy default/verify",
 				},
 				"newer-verify": {
-					reason:  backendconfigpolicy.ReasonConflictedWithBackendTLSPolicy,
+					reason:  "ConflictedWithBackendTLSPolicy",
 					message: "spec.tls overridden by BackendTLSPolicy default/verify",
 				},
 			},
@@ -144,11 +144,11 @@ func TestTLSOwnershipAppearsAndDisappears(t *testing.T) {
 			btps: []ir.PolicyAtt{invalidBTP},
 			want: map[string]wantStatus{
 				"older-insecure": {
-					reason:  backendconfigpolicy.ReasonConflictedWithBackendTLSPolicy,
+					reason:  "ConflictedWithBackendTLSPolicy",
 					message: "spec.tls overridden by BackendTLSPolicy default/verify, which is invalid; requests to this backend fail until it is fixed or removed",
 				},
 				"newer-verify": {
-					reason:  backendconfigpolicy.ReasonConflictedWithBackendTLSPolicy,
+					reason:  "ConflictedWithBackendTLSPolicy",
 					message: "spec.tls overridden by BackendTLSPolicy default/verify, which is invalid; requests to this backend fail until it is fixed or removed",
 				},
 			},
@@ -160,7 +160,7 @@ func TestTLSOwnershipAppearsAndDisappears(t *testing.T) {
 			want: map[string]wantStatus{
 				"older-insecure": {},
 				"newer-verify": {
-					reason:  backendconfigpolicy.ReasonConflictedWithBackendConfigPolicy,
+					reason:  "ConflictedWithBackendConfigPolicy",
 					message: "spec.tls overridden by BackendConfigPolicy default/older-insecure",
 				},
 			},
@@ -201,7 +201,7 @@ func TestTLSOwnershipAppearsAndDisappears(t *testing.T) {
 				conds := status.Ancestors[0].Conditions
 
 				g.Expect(meta.IsStatusConditionTrue(conds, "Accepted")).To(BeTrue(), "%s should stay Accepted", name)
-				overridden := meta.FindStatusCondition(conds, backendconfigpolicy.ConditionOverridden)
+				overridden := meta.FindStatusCondition(conds, reporter.PolicyConditionOverridden)
 				if want.reason == "" {
 					g.Expect(overridden).To(BeNil(), "%s should not report Overridden", name)
 				} else {

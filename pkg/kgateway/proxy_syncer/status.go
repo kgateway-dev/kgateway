@@ -154,10 +154,9 @@ func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.Paren
 	if len(policies) == 0 {
 		return
 	}
-	effective, ok := backend.PolicyResolution.Effective(gk)
-	if !ok {
-		// A backend that never went through attachment has no resolution.
-		effective = backendtlspolicyplugin.MergePolicies(policies)
+	var effective *ir.PolicyAtt
+	if eff, ok := backend.PolicyResolution.Effective(gk); ok {
+		effective = &eff
 	}
 	for _, polAtt := range policies {
 		if polAtt.PolicyRef == nil {
@@ -174,7 +173,7 @@ func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.Paren
 			ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 		}
 		r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
-		for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, &effective) {
+		for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, effective) {
 			r.SetCondition(cond)
 		}
 	}

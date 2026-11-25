@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -29,9 +28,9 @@ func TestTunnelHookAttributesErrorsToItsPolicy(t *testing.T) {
 			},
 		},
 	}
-	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
-		gk: {{GroupKind: gk, PolicyRef: &ir.AttachedPolicyRef{Name: "tunnel"}, PolicyIr: &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}}},
-	}}
+	backend = resolvedBackend(backend,
+		ir.PolicyAtt{GroupKind: gk, PolicyRef: &ir.AttachedPolicyRef{Name: "tunnel"}, PolicyIr: &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}},
+	)
 
 	resources, err := newTunnelHook(&collections.CommonCollections{})(krt.TestingDummyContext{}, t.Context(), backend, &envoyclusterv3.Cluster{Name: backend.ClusterName()})
 

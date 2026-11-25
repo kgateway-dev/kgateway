@@ -19,6 +19,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -48,17 +49,35 @@ func fullIR() *BackendConfigPolicyIR {
 	}
 }
 
+// resolvedBackend returns b with pols attached as BackendConfigPolicies and resolved, as the
+// backend index resolves them when they attach.
+func resolvedBackend(b ir.BackendObjectIR, pols ...ir.PolicyAtt) ir.BackendObjectIR {
+	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
+	b.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{gk: pols}}
+	b.PolicyResolution = sdk.ResolveBackendPolicies(b.AttachedPolicies, sdk.ContributesPolicies{gk: PolicyPluginForTest})
+	return b
+}
+
 // TestFieldTableMatchesMerge pins the field table SetFields and ClearFields use to the field
 // names merge.go records. A field merged but missing from the table would be lost silently:
 // never reported when dropped, and never cleared when another kind supersedes it.
 func TestFieldTableMatchesMerge(t *testing.T) {
 	g := NewWithT(t)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
-	merged := mergePolicies([]ir.PolicyAtt{{
-		GroupKind: gk,
-		PolicyRef: &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "ns", Name: "full"},
-		PolicyIr:  fullIR(),
-	}})
+	// Two policies, so the merge runs: a lone policy is returned unmerged. The full one is
+	// older and wins every field.
+	merged := mergePolicies([]ir.PolicyAtt{
+		{
+			GroupKind: gk,
+			PolicyRef: &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "ns", Name: "full"},
+			PolicyIr:  fullIR(),
+		},
+		{
+			GroupKind: gk,
+			PolicyRef: &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "ns", Name: "empty"},
+			PolicyIr:  &BackendConfigPolicyIR{ct: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
+		},
+	})
 	mergedFields := make([]string, 0, len(merged.MergeOrigins))
 	for f := range merged.MergeOrigins {
 		mergedFields = append(mergedFields, f)
@@ -82,9 +101,11 @@ func TestProxyProtocolWrapsAnotherKindsTLS(t *testing.T) {
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{TypedConfig: tlsAny},
 	}}
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
-	backend := ir.BackendObjectIR{AttachedPolicies: ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
-		gk: {{GroupKind: gk, PolicyIr: &BackendConfigPolicyIR{upstreamProxyProtocol: &envoycorev3.ProxyProtocolConfig{}}}},
-	}}}
+	backend := resolvedBackend(ir.BackendObjectIR{}, ir.PolicyAtt{
+		GroupKind: gk,
+		PolicyRef: &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "ns", Name: "pp"},
+		PolicyIr:  &BackendConfigPolicyIR{upstreamProxyProtocol: &envoycorev3.ProxyProtocolConfig{}},
+	})
 
 	processBaseCluster(nil, context.Background(), backend, cluster)
 

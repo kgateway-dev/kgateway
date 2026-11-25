@@ -6,8 +6,29 @@ import (
 )
 
 // mergePolicies merges BackendConfigPolicies in policy precedence order.
+//
+// A lone valid policy is its own merge, so it is returned as is. Each backend's policy
+// resolution keeps its merged policy for the backend's lifetime, and most backends have at
+// most one policy: building a copy would hold a second IR and a MergeOrigins map per
+// backend. Callers that need the policy supplying a field use mergeOwner.
 func mergePolicies(pols []ir.PolicyAtt) ir.PolicyAtt {
+	if len(pols) == 1 && len(pols[0].Errors) == 0 {
+		return pols[0]
+	}
 	return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
+}
+
+// mergeOwner returns the ID of the policy that supplies field in merged, or "" when no
+// single policy does. A lone policy returned unmerged supplies every field it sets.
+func mergeOwner(merged ir.PolicyAtt, field string) string {
+	if merged.PolicyRef != nil {
+		return merged.PolicyRef.ID()
+	}
+	owners := merged.MergeOrigins.Get(field)
+	if len(owners) != 1 {
+		return ""
+	}
+	return owners[0]
 }
 
 // mergeBackendConfigPolicies merges p2 into p1 field by field. BackendConfigPolicy
@@ -107,7 +128,7 @@ func mergeTLSConfig(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, 
 		return
 	}
 	p1.tlsConfig = p2.tlsConfig
-	mergeOrigins.SetOne("tls", p2Ref, p2MergeOrigins)
+	mergeOrigins.SetOne(TLSField, p2Ref, p2MergeOrigins)
 }
 
 func mergeLoadBalancerConfig(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {

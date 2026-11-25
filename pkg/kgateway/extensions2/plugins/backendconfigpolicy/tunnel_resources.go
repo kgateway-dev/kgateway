@@ -86,7 +86,7 @@ func translateTunnelResources(
 // effectiveTunnel returns the tunnel selected by policy precedence.
 // Errored policies fail base translation before resource hooks run.
 func effectiveTunnel(in ir.BackendObjectIR) *tunnelIR {
-	pol := effectivePolicy(in)
+	pol := effectivePolicy(&in)
 	if pol == nil {
 		return nil
 	}

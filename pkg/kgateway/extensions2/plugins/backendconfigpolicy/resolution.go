@@ -74,9 +74,8 @@ func clearFields(polir ir.PolicyIR, fields []string) ir.PolicyIR {
 // effectivePolicy returns the BackendConfigPolicy that translation applies to backend, nil
 // when none is attached or the merged policy has errors (translation then blackholes the
 // cluster). It reads the backend's policy resolution, so it agrees with translation and
-// status. A backend that never went through attachment, such as one built by a test, has
-// no resolution and is merged here instead.
-func effectivePolicy(backend ir.BackendObjectIR) *BackendConfigPolicyIR {
+// status.
+func effectivePolicy(backend *ir.BackendObjectIR) *BackendConfigPolicyIR {
 	att, ok := effectiveAttachment(backend)
 	if !ok {
 		return nil
@@ -85,22 +84,11 @@ func effectivePolicy(backend ir.BackendObjectIR) *BackendConfigPolicyIR {
 	return pol
 }
 
-// effectiveAttachment is effectivePolicy with the merged attachment, whose MergeOrigins
-// name the policy that supplies each field.
-func effectiveAttachment(backend ir.BackendObjectIR) (ir.PolicyAtt, bool) {
-	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
-	att, ok := backend.PolicyResolution.Effective(gk)
-	if !ok {
-		if backend.PolicyResolution != nil {
-			return ir.PolicyAtt{}, false
-		}
-		pols := backend.AttachedPolicies.Policies[gk]
-		if len(pols) == 0 {
-			return ir.PolicyAtt{}, false
-		}
-		att = mergePolicies(pols)
-	}
-	if len(att.Errors) > 0 {
+// effectiveAttachment is effectivePolicy with the merged attachment; mergeOwner names the
+// policy that supplies each of its fields.
+func effectiveAttachment(backend *ir.BackendObjectIR) (ir.PolicyAtt, bool) {
+	att, ok := backend.PolicyResolution.Effective(wellknown.BackendConfigPolicyGVK.GroupKind())
+	if !ok || len(att.Errors) > 0 {
 		return ir.PolicyAtt{}, false
 	}
 	return att, true

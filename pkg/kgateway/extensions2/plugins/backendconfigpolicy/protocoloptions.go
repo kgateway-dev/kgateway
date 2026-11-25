@@ -173,7 +173,7 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *envoycorev3.Http2ProtocolOp
 // negotiate HTTP/2 via ALPN, since processBackend only applies them to HTTP/2 backends.
 // The returned value is shared and must not be modified.
 func Http2ProtocolOptions(backend ir.BackendObjectIR) *envoycorev3.Http2ProtocolOptions {
-	pol := effectivePolicy(backend)
+	pol := effectivePolicy(&backend)
 	if pol == nil {
 		return nil
 	}

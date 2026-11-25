@@ -1,7 +1,6 @@
 package irtranslator
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"hash/fnv"
@@ -103,20 +102,15 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 			}
 			t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil})
 		}
-		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
-			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
-				return c
-			}
-			return cmp.Compare(a.gk.Kind, b.gk.Kind)
-		})
+		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int { return sdk.CompareGroupKind(a.gk, b.gk) })
 	})
 	return t.overlayPlugins
 }
 
 // processBackendPlugin is one policy plugin's UCC-invariant ProcessBackend hook.
 type processBackendPlugin struct {
-	gk     schema.GroupKind
-	plugin sdk.PolicyPlugin
+	gk             schema.GroupKind
+	processBackend sdk.ProcessBackend
 }
 
 // orderBaseHooks caches ProcessBackend, cluster and resource hooks in (Group, Kind) order.
@@ -128,16 +122,11 @@ func (t *BackendTranslator) orderBaseHooks() {
 		for gk := range t.ContributedPolicies {
 			gks = append(gks, gk)
 		}
-		slices.SortFunc(gks, func(a, b schema.GroupKind) int {
-			if c := cmp.Compare(a.Group, b.Group); c != 0 {
-				return c
-			}
-			return cmp.Compare(a.Kind, b.Kind)
-		})
+		slices.SortFunc(gks, sdk.CompareGroupKind)
 		for _, gk := range gks {
 			policyPlugin := t.ContributedPolicies[gk]
 			if policyPlugin.ProcessBackend != nil {
-				t.processBackends = append(t.processBackends, processBackendPlugin{gk: gk, plugin: policyPlugin})
+				t.processBackends = append(t.processBackends, processBackendPlugin{gk: gk, processBackend: policyPlugin.ProcessBackend})
 			}
 			if policyPlugin.ProcessBaseCluster != nil {
 				t.baseClusterHooks = append(t.baseClusterHooks, policyPlugin.ProcessBaseCluster)
@@ -633,7 +622,7 @@ func (t *BackendTranslator) applyBasePolicies(
 	var errs []error
 	t.orderBaseHooks()
 	for _, p := range t.processBackends {
-		gk, policyPlugin := p.gk, p.plugin
+		gk := p.gk
 		// The backend's resolution: one merged policy per merging kind, with fields another
 		// kind supersedes already cleared.
 		for _, polAttachment := range backend.PolicyResolution.Applied(gk) {
@@ -643,7 +632,7 @@ func (t *BackendTranslator) applyBasePolicies(
 				errs = append(errs, polAttachment.Errors...)
 				continue
 			}
-			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
+			p.processBackend(ctx, polAttachment.PolicyIr, *backend, out)
 		}
 	}
 	return errors.Join(errs...)

@@ -41,12 +41,11 @@ func ResolveBackendPolicies(attached ir.AttachedPolicies, plugins ContributesPol
 			gks = append(gks, gk)
 		}
 	}
-	slices.SortFunc(gks, compareGroupKind)
+	slices.SortFunc(gks, CompareGroupKind)
 
 	// Merge each kind once. The winner of a kind that supersedes others comes from here too.
 	merged := make([]mergedKind, len(gks))
 	for i, gk := range gks {
-		merged[i].gk = gk
 		if plugin, ok := plugins[gk]; ok && plugin.MergePolicies != nil {
 			merged[i].att = plugin.MergePolicies(attached.Policies[gk])
 			merged[i].ok = true
@@ -63,8 +62,8 @@ func ResolveBackendPolicies(attached ir.AttachedPolicies, plugins ContributesPol
 			continue
 		}
 		winner := kindWinner(attached.Policies[owner], merged[i])
-		by := ir.SupersedingPolicy{Kind: owner, By: winner.PolicyRef, ByValid: len(winner.Errors) == 0}
-		for _, target := range slices.SortedFunc(maps.Keys(plugin.Supersedes), compareGroupKind) {
+		by := ir.PolicyWinner{Kind: owner, By: winner.PolicyRef, ByValid: len(winner.Errors) == 0}
+		for _, target := range slices.SortedFunc(maps.Keys(plugin.Supersedes), CompareGroupKind) {
 			if len(attached.Policies[target]) == 0 || plugins[target].ClearFields == nil {
 				// Nothing to supersede, or the target kind cannot drop the field, so translation
 				// would still apply it; reporting it as superseded would contradict the cluster.
@@ -103,22 +102,23 @@ func ResolveBackendPolicies(attached ir.AttachedPolicies, plugins ContributesPol
 			if att.PolicyRef == nil || len(att.Errors) > 0 {
 				continue
 			}
+			id := att.PolicyRef.ID()
 			for _, field := range plugin.SetFields(att.PolicyIr) {
 				if owner, ok := res.SupersededBy(gk, field); ok {
-					res.AddDropped(att.PolicyRef, ir.DroppedField{
-						Field: field, Kind: owner.Kind, By: owner.By, ByValid: owner.ByValid, Reason: ir.DroppedBySupersede,
-					})
+					res.AddDropped(att.PolicyRef, ir.DroppedField{Field: field, PolicyWinner: owner, Reason: ir.DroppedBySupersede})
 					continue
 				}
 				if len(m.Errors) > 0 {
 					continue
 				}
-				owners := m.MergeOrigins.Get(field)
-				if len(owners) == 0 || slices.Contains(owners, att.PolicyRef.ID()) {
+				owners := m.MergeOrigins[field]
+				if owners.Len() == 0 || owners.Has(id) {
 					continue
 				}
 				res.AddDropped(att.PolicyRef, ir.DroppedField{
-					Field: field, Kind: gk, By: refByID(pols, owners), ByValid: true, Reason: ir.DroppedByMerge,
+					Field:        field,
+					PolicyWinner: ir.PolicyWinner{Kind: gk, By: refByID(pols, owners.UnsortedList()), ByValid: true},
+					Reason:       ir.DroppedByMerge,
 				})
 			}
 		}
@@ -128,7 +128,6 @@ func ResolveBackendPolicies(attached ir.AttachedPolicies, plugins ContributesPol
 
 // mergedKind is one attached kind's merged policy; ok is false for a kind that does not merge.
 type mergedKind struct {
-	gk  schema.GroupKind
 	att ir.PolicyAtt
 	ok  bool
 }
@@ -185,9 +184,8 @@ func withoutFields(origins ir.MergeOrigins, fields []string) ir.MergeOrigins {
 	return out
 }
 
-func compareGroupKind(a, b schema.GroupKind) int {
-	if c := cmp.Compare(a.Group, b.Group); c != 0 {
-		return c
-	}
-	return cmp.Compare(a.Kind, b.Kind)
+// CompareGroupKind orders GroupKinds by Group, then Kind: the order backend policy plugins
+// run in and are resolved in.
+func CompareGroupKind(a, b schema.GroupKind) int {
+	return cmp.Or(cmp.Compare(a.Group, b.Group), cmp.Compare(a.Kind, b.Kind))
 }

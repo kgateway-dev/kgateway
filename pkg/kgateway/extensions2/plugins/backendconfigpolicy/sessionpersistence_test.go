@@ -18,7 +18,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -188,31 +187,34 @@ func TestApplyForBackendObjectPolicies(t *testing.T) {
 	}
 
 	pass := newGatewayTranslationPass(ir.GwTranslationCtx{}, nil).(*backendConfigPolicyGwPass)
+	// apply runs the hook for a route to backend name with pols attached, as route translation
+	// does: on a backend whose policies were resolved when they attached.
+	apply := func(filterChain, name string, pols ...ir.PolicyAtt) *ir.RouteBackendContext {
+		b := resolvedBackend(*backend(name), pols...)
+		pCtx := &ir.RouteBackendContext{FilterChainName: filterChain, Backend: &b}
+		require.NoError(t, pass.ApplyForBackendObjectPolicies(pols, pCtx))
+		return pCtx
+	}
 
-	ctxA := &ir.RouteBackendContext{FilterChainName: "fc", Backend: backend("a")}
-	require.NoError(t, pass.ApplyForBackendObjectPolicies([]ir.PolicyAtt{att("p", older, &BackendConfigPolicyIR{sessionPersistence: unnamed})}, ctxA))
+	ctxA := apply("fc", "a", att("p", older, &BackendConfigPolicyIR{sessionPersistence: unnamed}))
 	assert.Equal(t, sessionpersistence.GeneratedCookieName(backend("a").ResourceName()), cookieName(ctxA))
 	assert.Equal(t, placeholderName, unnamed.cookieState.GetCookie().GetName(), "generating a name must not mutate the IR")
 
-	ctxB := &ir.RouteBackendContext{FilterChainName: "fc", Backend: backend("b")}
-	require.NoError(t, pass.ApplyForBackendObjectPolicies([]ir.PolicyAtt{att("p", older, &BackendConfigPolicyIR{sessionPersistence: unnamed})}, ctxB))
+	ctxB := apply("fc", "b", att("p", older, &BackendConfigPolicyIR{sessionPersistence: unnamed}))
 	assert.NotEqual(t, cookieName(ctxA), cookieName(ctxB), "each backend gets its own cookie name")
 
-	merged := &ir.RouteBackendContext{FilterChainName: "fc", Backend: backend("c")}
-	require.NoError(t, pass.ApplyForBackendObjectPolicies([]ir.PolicyAtt{
+	merged := apply("fc", "c",
 		att("newer", newer, &BackendConfigPolicyIR{sessionPersistence: namedSP("newer")}),
 		att("older", older, &BackendConfigPolicyIR{sessionPersistence: namedSP("older")}),
-	}, merged))
+	)
 	assert.Equal(t, "older", cookieName(merged), "policies should be merged with the older policy winning")
 
-	noSP := &ir.RouteBackendContext{FilterChainName: "other", Backend: backend("d")}
-	require.NoError(t, pass.ApplyForBackendObjectPolicies([]ir.PolicyAtt{att("p", older, &BackendConfigPolicyIR{})}, noSP))
+	noSP := apply("other", "d", att("p", older, &BackendConfigPolicyIR{}))
 	assert.Nil(t, noSP.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName), "no config without session persistence")
 
-	withErrors := &ir.RouteBackendContext{FilterChainName: "other", Backend: backend("e")}
-	require.NoError(t, pass.ApplyForBackendObjectPolicies([]ir.PolicyAtt{
+	withErrors := apply("other", "e",
 		att("bad", older, &BackendConfigPolicyIR{sessionPersistence: namedSP("bad")}, errors.New("invalid policy")),
-	}, withErrors))
+	)
 	assert.Nil(t, withErrors.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName), "policies with errors are skipped, as in cluster translation")
 
 	fs, err := pass.HttpFilters(ir.HttpFiltersContext{}, ir.FilterChainCommon{FilterChainName: "fc"})
@@ -336,11 +338,7 @@ func TestPartiallyValidMessages(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			backend := tt.backend
-			backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				wellknown.BackendConfigPolicyGVK.GroupKind(): tt.policies,
-			}}
-			assert.Equal(t, tt.want, PartiallyValidMessages(backend))
+			assert.Equal(t, tt.want, PartiallyValidMessages(resolvedBackend(tt.backend, tt.policies...)))
 		})
 	}
 

@@ -526,7 +526,7 @@ func translateUpstreamProxyProtocol(cfg *kgateway.UpstreamProxyProtocol) *envoyc
 // It runs as a ProcessBaseCluster hook, after every ProcessBackend hook, so it wraps whatever
 // TLS any policy kind or backend kind set, and no plugin needs to know about the wrapper.
 func processBaseCluster(_ krt.HandlerContext, _ context.Context, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-	pol := effectivePolicy(backend)
+	pol := effectivePolicy(&backend)
 	if pol == nil || pol.upstreamProxyProtocol == nil {
 		return
 	}

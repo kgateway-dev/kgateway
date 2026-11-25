@@ -1059,7 +1059,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		}
 
 		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
-		reportBackendObjectPolicyStatus(h.reporter, ancestorRef, h.pluginPass, backend.Backend.BackendObject)
+		reportBackendObjectPolicyStatus(h.reporter, ancestorRef, backend.Backend.BackendObject)
 
 		// Policies only change the backend's own context, so they run before the backend plugin,
 		// which changes the route shared with the rule's other backends. A backend whose

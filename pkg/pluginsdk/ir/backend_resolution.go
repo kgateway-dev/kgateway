@@ -16,28 +16,24 @@ const (
 	DroppedBySupersede DroppedReason = "Supersede"
 )
 
-// DroppedField is one field a policy sets that does not take effect on a backend.
+// PolicyWinner is the policy that supplies a field on a backend.
+type PolicyWinner struct {
+	// Kind is the winning policy's kind.
+	Kind schema.GroupKind
+	// By is the winning policy. Nil when the winner is a merged policy with no single source.
+	By *AttachedPolicyRef
+	// ByValid is false when By has errors. A backend whose winning policy is invalid gets a
+	// blackhole cluster rather than any policy's field.
+	ByValid bool
+}
+
+// DroppedField is one field a policy sets that does not take effect on a backend, and the
+// policy that supplies it instead.
 type DroppedField struct {
 	// Field is the field's MergeOrigins key, e.g. "tls".
 	Field string
-	// Kind is the policy kind that supplies the field instead.
-	Kind schema.GroupKind
-	// By is the policy that supplies the field instead. Nil when the winner is a merged
-	// policy with no single source.
-	By *AttachedPolicyRef
-	// ByValid is false when By has errors. A backend whose winning policy is invalid
-	// gets a blackhole cluster rather than the dropped field.
-	ByValid bool
-	Reason  DroppedReason
-}
-
-// SupersedingPolicy is the policy kind that owns another kind's field on a backend.
-type SupersedingPolicy struct {
-	Kind schema.GroupKind
-	// By is the policy of Kind that applies; nil when it is a merged policy.
-	By *AttachedPolicyRef
-	// ByValid is false when By has errors, so the cluster is blackholed.
-	ByValid bool
+	PolicyWinner
+	Reason DroppedReason
 }
 
 // BackendPolicyResolution is the single decision of what each attached policy contributes
@@ -70,7 +66,7 @@ type appliedKind struct {
 type supersededField struct {
 	gk    schema.GroupKind
 	field string
-	owner SupersedingPolicy
+	owner PolicyWinner
 }
 
 type droppedFields struct {
@@ -143,16 +139,16 @@ func (r *BackendPolicyResolution) HasSuperseded(gk schema.GroupKind) bool {
 }
 
 // SupersededBy returns the policy kind that owns field of kind gk, if any.
-func (r *BackendPolicyResolution) SupersededBy(gk schema.GroupKind, field string) (SupersedingPolicy, bool) {
+func (r *BackendPolicyResolution) SupersededBy(gk schema.GroupKind, field string) (PolicyWinner, bool) {
 	if r == nil {
-		return SupersedingPolicy{}, false
+		return PolicyWinner{}, false
 	}
 	for _, s := range r.superseded {
 		if s.gk == gk && s.field == field {
 			return s.owner, true
 		}
 	}
-	return SupersedingPolicy{}, false
+	return PolicyWinner{}, false
 }
 
 // Dropped returns the fields the attachment ref sets that do not take effect, in the order
@@ -186,7 +182,7 @@ func (r *BackendPolicyResolution) SetAll(gk schema.GroupKind, all []PolicyAtt) {
 
 // SetSuperseded records that owner owns field of kind gk, unless another kind already does.
 // For the resolver only.
-func (r *BackendPolicyResolution) SetSuperseded(gk schema.GroupKind, field string, owner SupersedingPolicy) {
+func (r *BackendPolicyResolution) SetSuperseded(gk schema.GroupKind, field string, owner PolicyWinner) {
 	r.mustBeMutable()
 	if r.IsSuperseded(gk, field) {
 		return
