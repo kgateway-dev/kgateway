@@ -38,8 +38,7 @@ func WrapPolicyErrors(ref *AttachedPolicyRef, errs []error) []error {
 	out := make([]error, 0, len(errs))
 	for _, e := range errs {
 		for _, err := range FlattenJoinedErr(e) {
-			var pe *PolicyError
-			if errors.As(err, &pe) {
+			if _, ok := errors.AsType[*PolicyError](err); ok {
 				out = append(out, err)
 				continue
 			}

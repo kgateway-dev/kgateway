@@ -27,7 +27,7 @@ func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 	recordClusterScopingDropped(publishGateTestClient, 17)
 
 	// Other tests' series persist in this package; read only this gateway's.
-	assert.Equal(t, float64(17), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", []metrics.Label{
+	assert.Equal(t, float64(17), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_dropped_clusters", []metrics.Label{
 		{Name: gatewayLabel, Value: "unknown"},
 		{Name: namespaceLabel, Value: "unknown"},
 	}))
@@ -45,7 +45,7 @@ func TestClusterScopingDroppedIsTheMostAnyConnectedGroupDrops(t *testing.T) {
 	t.Cleanup(func() { forgetClusterScopingClient(zoneA, false) })
 	dropped := func() float64 {
 		t.Helper()
-		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", []metrics.Label{
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_dropped_clusters", []metrics.Label{
 			{Name: gatewayLabel, Value: "gw-dropped"},
 			{Name: namespaceLabel, Value: "ns-dropped"},
 		})
@@ -71,7 +71,7 @@ func TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot(t *testing.T) {
 	t.Cleanup(func() { forgetClusterScopingClient(client, false) })
 	disabled := func() float64 {
 		t.Helper()
-		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_disabled_gateways", []metrics.Label{
 			{Name: gatewayLabel, Value: "gw-zero"},
 			{Name: namespaceLabel, Value: "ns-zero"},
 		})
@@ -100,7 +100,7 @@ func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 	pt.syncXds(ctx, clusterWrapperV("v3", "kept"))
 	pt.syncXds(ctx, clusterWrapperV("v4", "kept"))
 
-	assert.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+	assert.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_transitions_total", []metrics.Label{
 		{Name: gatewayLabel, Value: "unknown"},
 		{Name: namespaceLabel, Value: "unknown"},
 		{Name: transitionLabel, Value: transitionDereferenceGraced},
@@ -117,7 +117,7 @@ func TestDereferencePruneIsCountedOnceWhenAHoldOutlastsTheGrace(t *testing.T) {
 	clusterScopingTransitionsTotal.Reset() // series persist across tests in this package
 	count := func(transition string) float64 {
 		t.Helper()
-		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_transitions_total", []metrics.Label{
 			{Name: gatewayLabel, Value: "unknown"},
 			{Name: namespaceLabel, Value: "unknown"},
 			{Name: transitionLabel, Value: transition},
@@ -157,7 +157,7 @@ func TestReferenceAheadTransitionsAreCountedOncePerCluster(t *testing.T) {
 	pt.syncXds(ctx, routedClusterWrapperV("v1", "old"))
 	pt.syncXds(ctx, routedClusterWrapperV("v2", "old", "new-a", "new-b"))
 
-	held := metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+	held := metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_transitions_total", []metrics.Label{
 		{Name: gatewayLabel, Value: "unknown"},
 		{Name: namespaceLabel, Value: "unknown"},
 		{Name: transitionLabel, Value: transitionReferenceAheadHeld},
@@ -173,7 +173,7 @@ func TestReferenceAheadTransitionsCountWindowsNotBuilds(t *testing.T) {
 	clusterScopingTransitionsTotal.Reset() // series persist across tests in this package
 	held := func() float64 {
 		t.Helper()
-		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_transitions_total", []metrics.Label{
 			{Name: gatewayLabel, Value: "unknown"},
 			{Name: namespaceLabel, Value: "unknown"},
 			{Name: transitionLabel, Value: transitionReferenceAheadHeld},
@@ -203,7 +203,7 @@ func TestClusterScopingDisabledWarnsOnTransitions(t *testing.T) {
 	log, logged := bufferLogger()
 	reason := []string{`backend "tunneled" listener "tunnel_tunneled": sni_cluster`}
 	warnings := func() int {
-		return strings.Count(logged.String(), "cluster scoping disabled for this gateway")
+		return strings.Count(logged.String(), "xDS scoping disabled for this gateway")
 	}
 
 	reportClusterScopingDisabled(log, client, nil)
@@ -236,13 +236,13 @@ func TestClusterScopingDisabledIsAnyOfTheGatewaysClientGroups(t *testing.T) {
 	reason := []string{"sni_cluster"}
 	disabled := func() float64 {
 		t.Helper()
-		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_scoping_disabled_gateways", []metrics.Label{
 			{Name: gatewayLabel, Value: "gw-groups"},
 			{Name: namespaceLabel, Value: "ns-groups"},
 		})
 	}
 	warnings := func() int {
-		return strings.Count(logged.String(), "cluster scoping disabled for this gateway")
+		return strings.Count(logged.String(), "xDS scoping disabled for this gateway")
 	}
 
 	reportClusterScopingDisabled(log, zoneA, reason)
@@ -292,8 +292,8 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 
 	gathered := metricstest.MustGatherMetrics(t)
 	for _, name := range []string{
-		"kgateway_xds_cluster_scoping_dropped_clusters",
-		"kgateway_xds_cluster_scoping_disabled_gateways",
+		"kgateway_xds_scoping_dropped_clusters",
+		"kgateway_xds_scoping_disabled_gateways",
 	} {
 		gathered.AssertMetricLabels(name, []metrics.Label{
 			{Name: gatewayLabel, Value: "gw-other"},
@@ -301,7 +301,7 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 		})
 	}
 	reportClusterScopingDisabled(log, leaving, []string{"sni_cluster"})
-	assert.Equal(t, 3, strings.Count(logged.String(), "cluster scoping disabled for this gateway"),
+	assert.Equal(t, 3, strings.Count(logged.String(), "xDS scoping disabled for this gateway"),
 		"a returning gateway that is unscoped warns again")
 }
 

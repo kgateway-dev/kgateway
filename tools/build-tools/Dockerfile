@@ -79,9 +79,9 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 # Tool install steps below extract their version from it at build time.
 COPY go.mod /tmp/go.mod
 
-# Go toolchain (version from go.mod)
+# Go toolchain (version from the go.mod toolchain directive, falling back to the go directive)
 RUN set -eux; \
-    GO_VERSION=$(grep '^go ' /tmp/go.mod | awk '{print $2}'); \
+    GO_VERSION=$(awk '$1 == "toolchain" { t = substr($2, 3) } $1 == "go" { g = $2 } END { print (t != "" ? t : g) }' /tmp/go.mod); \
     test -n "$GO_VERSION" || { echo "Failed to extract Go version from go.mod"; exit 1; }; \
     curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" | tar -C /usr/local -xz
 

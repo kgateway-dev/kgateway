@@ -249,13 +249,13 @@ func (r *gatewayQueries) getDelegatedChildren(
 
 	children := NewBackendMap[[]*RouteInfo]()
 	for _, parentRule := range parent.Rules {
-		var refChildren []*RouteInfo
 		for _, backendRef := range parentRule.Backends {
 			// Check if the backend reference is an HTTPRoute
 			if backendRef.Delegate == nil {
 				continue
 			}
 			ref := *backendRef.Delegate
+			var refChildren []*RouteInfo
 			// Fetch child routes based on the backend reference
 			referencedRoutes, err := r.fetchRoutesByRef(kctx, backendRef)
 			if err != nil {
@@ -419,28 +419,6 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 		return listenerName
 	}
 	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
-}
-
-// RouteKeyMatches reports whether key equals GenerateRouteKey(parent, listenerName)
-// without building the key, so callers can scan every listener without allocating.
-func RouteKeyMatches(key string, parent client.Object, listenerName string) bool {
-	if parent == nil {
-		return key == listenerName
-	}
-	if _, ok := parent.(*gwv1.Gateway); ok {
-		return key == listenerName
-	}
-	rest, ok := strings.CutPrefix(key, parent.GetNamespace())
-	if ok {
-		rest, ok = strings.CutPrefix(rest, "/")
-	}
-	if ok {
-		rest, ok = strings.CutPrefix(rest, parent.GetName())
-	}
-	if ok {
-		rest, ok = strings.CutPrefix(rest, "/")
-	}
-	return ok && rest == listenerName
 }
 
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {

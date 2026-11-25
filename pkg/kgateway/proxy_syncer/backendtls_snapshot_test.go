@@ -85,7 +85,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 					Matches: []gwv1.HTTPRouteMatch{
 						{
 							Path: &gwv1.HTTPPathMatch{
-								Type:  snapshotPtr(gwv1.PathMatchExact),
+								Type:  new(gwv1.PathMatchExact),
 								Value: new("/backendtlspolicy-conflicted-without-section-name"),
 							},
 						},
@@ -94,10 +94,10 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 						{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group: snapshotPtr(gwv1.Group("")),
-									Kind:  snapshotPtr(gwv1.Kind("Service")),
+									Group: new(gwv1.Group("")),
+									Kind:  new(gwv1.Kind("Service")),
 									Name:  "backend-service",
-									Port:  snapshotPtr(gwv1.PortNumber(443)),
+									Port:  new(gwv1.PortNumber(443)),
 								},
 							},
 						},
@@ -278,17 +278,17 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 				{
 					Matches: []gwv1.HTTPRouteMatch{{
 						Path: &gwv1.HTTPPathMatch{
-							Type:  snapshotPtr(gwv1.PathMatchExact),
+							Type:  new(gwv1.PathMatchExact),
 							Value: new("/with-section-name"),
 						},
 					}},
 					BackendRefs: []gwv1.HTTPBackendRef{{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: gwv1.BackendObjectReference{
-								Group: snapshotPtr(gwv1.Group("")),
-								Kind:  snapshotPtr(gwv1.Kind("Service")),
+								Group: new(gwv1.Group("")),
+								Kind:  new(gwv1.Kind("Service")),
 								Name:  "backend-service",
-								Port:  snapshotPtr(gwv1.PortNumber(443)),
+								Port:  new(gwv1.PortNumber(443)),
 							},
 						},
 					}},
@@ -296,17 +296,17 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 				{
 					Matches: []gwv1.HTTPRouteMatch{{
 						Path: &gwv1.HTTPPathMatch{
-							Type:  snapshotPtr(gwv1.PathMatchExact),
+							Type:  new(gwv1.PathMatchExact),
 							Value: new("/without-section-name"),
 						},
 					}},
 					BackendRefs: []gwv1.HTTPBackendRef{{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: gwv1.BackendObjectReference{
-								Group: snapshotPtr(gwv1.Group("")),
-								Kind:  snapshotPtr(gwv1.Kind("Service")),
+								Group: new(gwv1.Group("")),
+								Kind:  new(gwv1.Kind("Service")),
 								Name:  "backend-service",
-								Port:  snapshotPtr(gwv1.PortNumber(8443)),
+								Port:  new(gwv1.PortNumber(8443)),
 							},
 						},
 					}},
@@ -343,7 +343,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 	serviceWidePolicy := newActualBackendTLSPolicy("service-wide", "abc.example.com", time.Now())
 	serviceWidePolicy.Spec.TargetRefs[0].SectionName = nil
 	sectionSpecificPolicy := newActualBackendTLSPolicy("section-specific", "other.example.com", time.Now().Add(time.Second))
-	sectionSpecificPolicy.Spec.TargetRefs[0].SectionName = snapshotPtr(gwv1.SectionName("https-1"))
+	sectionSpecificPolicy.Spec.TargetRefs[0].SectionName = new(gwv1.SectionName("https-1"))
 
 	fakeClient := apifake.NewClient(
 		t,
@@ -492,9 +492,4 @@ func snapshotEndpointVersion(snapshots krt.Collection[XdsSnapWrapper], snapshotK
 		return ""
 	}
 	return snap.snap.Resources[envoycachetypes.Endpoint].Version
-}
-
-//go:fix inline
-func snapshotPtr[T any](in T) *T {
-	return new(in)
 }

@@ -79,11 +79,11 @@ func TestPerClientEnvoyEndpointsUsesResolvedReplacementHash(t *testing.T) {
 	sourceHash := source.LbEpsEqualityHash
 	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("ReplacementHashClients")...)
-	sources := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{*source}, krtopts.ToOptions("ReplacementHashEndpoints")...)
+	sources := krt.NewMutableCollection(nil, []ir.EndpointsForBackend{*source}, krtopts.ToOptions("ReplacementHashEndpoints")...)
 	perClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		uccs,
-		sources,
+		sources.AsCollection(),
 		translator.ResolveEndpoints,
 		translator.BuildClusterLoadAssignment,
 	)
@@ -348,7 +348,7 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}})
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{
 		{
 			Client:         ucc,
 			Name:           "cluster-a",
@@ -368,7 +368,7 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -438,15 +438,15 @@ func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testi
 			ClusterVersion: 1,
 		},
 	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, nil)
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
@@ -509,7 +509,7 @@ func TestSnapshotPerClientFiltersStaleEndpointResourcesWhenClusterRemoved(t *tes
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterA := uccWithCluster{
 		Client: ucc,
@@ -533,7 +533,7 @@ func TestSnapshotPerClientFiltersStaleEndpointResourcesWhenClusterRemoved(t *tes
 		}),
 		ClusterVersion: 2,
 	}
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterA, clusterB})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterA, clusterB})
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		endpointsForClient(ucc, "cluster-a", 3),
 		endpointsForClient(ucc, "cluster-b", 4),
@@ -542,14 +542,14 @@ func TestSnapshotPerClientFiltersStaleEndpointResourcesWhenClusterRemoved(t *tes
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
 			endpoints: endpointCol,
 			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -603,11 +603,11 @@ func TestSnapshotPerClientFilteredEdsSnapshotRespondsToNamedADSRequestAfterClust
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterA := edsClusterForClient(ucc, "cluster-a", 1)
 	clusterB := edsClusterForClient(ucc, "cluster-b", 2)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterA, clusterB})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterA, clusterB})
 	endpointA := endpointsForClient(ucc, "cluster-a", 3)
 	endpointB := endpointsForClient(ucc, "cluster-b", 4)
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointA, endpointB})
@@ -615,14 +615,14 @@ func TestSnapshotPerClientFilteredEdsSnapshotRespondsToNamedADSRequestAfterClust
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
 			endpoints: endpointCol,
 			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -699,26 +699,26 @@ func TestSnapshotPerClientDefersMakeBeforeBreakRouteUntilNewEndpointReady(t *tes
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterOld := edsClusterForClient(ucc, "cluster-old", 1)
 	clusterNew := edsClusterForClient(ucc, "cluster-new", 2)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
 	endpointOld := endpointsForClient(ucc, "cluster-old", 3)
 	endpointNew := endpointsForClient(ucc, "cluster-new", 4)
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOld})
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOld})
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -798,27 +798,27 @@ func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterOld := edsClusterForClient(ucc, "cluster-old", 1)
 	clusterNew := edsClusterForClient(ucc, "cluster-new", 2)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
 	endpointOld := endpointsForClient(ucc, "cluster-old", 3)
 	endpointNewEmpty := emptyEndpointsForClient(ucc, "cluster-new", 4)
 	endpointNewReady := endpointsForClient(ucc, "cluster-new", 5)
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOld})
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOld})
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -896,26 +896,26 @@ func TestSnapshotPerClientDefersWeightedRouteUntilAllEndpointsReady(t *testing.T
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterOld := edsClusterForClient(ucc, "cluster-old", 1)
 	clusterNew := edsClusterForClient(ucc, "cluster-new", 2)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterOld})
 	endpointOld := endpointsForClient(ucc, "cluster-old", 3)
 	endpointNew := endpointsForClient(ucc, "cluster-new", 4)
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOld})
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOld})
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -978,15 +978,15 @@ func TestSnapshotPerClientDefersUntilReferencedEDSServiceNameHasEndpoints(t *tes
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		edsClusterForClientWithServiceName(ucc, "cluster-a", "backend-service", 1),
 	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, nil)
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
@@ -1024,11 +1024,11 @@ func TestSnapshotPerClientServiceNameEdsSnapshotRespondsToNamedADSRequestAfterCl
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterA := edsClusterForClientWithServiceName(ucc, "cluster-a", "service-a", 1)
 	clusterB := edsClusterForClientWithServiceName(ucc, "cluster-b", "service-b", 2)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterA, clusterB})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterA, clusterB})
 	endpointA := endpointsForClient(ucc, "service-a", 3)
 	endpointB := endpointsForClient(ucc, "service-b", 4)
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointA, endpointB})
@@ -1036,14 +1036,14 @@ func TestSnapshotPerClientServiceNameEdsSnapshotRespondsToNamedADSRequestAfterCl
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
 			endpoints: endpointCol,
 			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -1123,7 +1123,7 @@ func TestSnapshotPerClientEndpointOnlyUpdateOnlyChangesEDSVersion(t *testing.T) 
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		edsClusterForClient(ucc, "cluster-a", 1),
 	})
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		endpointsForClient(ucc, "cluster-a", 3),
 	})
 
@@ -1132,8 +1132,8 @@ func TestSnapshotPerClientEndpointOnlyUpdateOnlyChangesEDSVersion(t *testing.T) 
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
@@ -1179,29 +1179,29 @@ func TestSnapshotPerClientPartialUpdateForOneClientDoesNotPoisonAnotherClient(t 
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(initialRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	clusterOldA := edsClusterForClient(clientA, "cluster-old", 1)
 	clusterOldB := edsClusterForClient(clientB, "cluster-old", 2)
 	clusterNewA := edsClusterForClient(clientA, "cluster-new", 3)
 	clusterNewB := edsClusterForClient(clientB, "cluster-new", 4)
-	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{clusterOldA, clusterOldB})
+	clusterCol := krt.NewMutableCollection[uccWithCluster](nil, []uccWithCluster{clusterOldA, clusterOldB})
 	endpointOldA := endpointsForClient(clientA, "cluster-old", 5)
 	endpointOldB := endpointsForClient(clientB, "cluster-old", 6)
 	endpointNewB := endpointsForClient(clientB, "cluster-new", 7)
-	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOldA, endpointOldB})
+	endpointCol := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{endpointOldA, endpointOldB})
 
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
-			endpoints: endpointCol,
-			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		newTestPerClientClustersFromCol(clusterCol, uccs),
+		newTestPerClientClustersFromCol(clusterCol.AsCollection(), uccs),
 		clusterScoping{},
 	)
 
@@ -1536,7 +1536,7 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(goodRoutes, listeners),
 	}
-	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
+	mostXdsSnapshots := krt.NewMutableCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 
 	pcc, _ := newTestPerClientClusters([]uccWithCluster{
 		{
@@ -1551,7 +1551,7 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 	snapshots := snapshotPerClient(
 		krtutil.KrtOptions{},
 		uccs,
-		mostXdsSnapshots,
+		mostXdsSnapshots.AsCollection(),
 		PerClientEnvoyEndpoints{
 			endpoints: endpointCol,
 			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {

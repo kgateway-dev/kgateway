@@ -1,0 +1,16 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: echo-bcp-dynamic
+  namespace: default
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: echo
+  sessionPersistence:
+    type: Cookie
+    absoluteTimeout: 1h
+    cookie:
+      name: Session-A
+      lifetimeType: Permanent

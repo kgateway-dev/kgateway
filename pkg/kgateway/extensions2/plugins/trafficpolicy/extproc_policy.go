@@ -40,6 +40,12 @@ type perProviderExtProcConfig struct {
 	provider       *TrafficPolicyGatewayExtensionIR
 	perRouteConfig *envoy_ext_proc_v3.ExtProcPerRoute
 	filterStage    filters.FilterStage[filters.WellKnownFilterStage]
+	// mergeOrigins holds the IDs of the policies this config came from. It is only set
+	// on copies made while merging, so that a field's merge origins can be rebuilt from
+	// the configs that survive a merge; nil means the config has not been merged yet.
+	// It is merge bookkeeping, not policy config.
+	// +noKrtEquals
+	mergeOrigins sets.Set[string]
 }
 
 var _ PolicySubIR = &extprocIR{}
@@ -255,4 +261,14 @@ func convertFilterStageSpec(
 	default:
 		return filters.DuringStage(stage)
 	}
+}
+
+func (c *perProviderExtProcConfig) getMergeOrigins() sets.Set[string] {
+	return c.mergeOrigins
+}
+
+func (c *perProviderExtProcConfig) withMergeOrigins(origins sets.Set[string]) *perProviderExtProcConfig {
+	cp := *c
+	cp.mergeOrigins = origins
+	return &cp
 }

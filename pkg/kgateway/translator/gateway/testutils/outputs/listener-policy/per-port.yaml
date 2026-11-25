@@ -44,7 +44,7 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~80
 - address:
@@ -76,7 +76,7 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~8080
   perConnectionBufferLimitBytes: 65536
@@ -87,7 +87,7 @@ Routes:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~80
   virtualHosts:
@@ -107,7 +107,7 @@ Routes:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~8080
   virtualHosts:

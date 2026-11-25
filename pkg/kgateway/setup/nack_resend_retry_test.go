@@ -134,7 +134,7 @@ func newNackHarnessOver(t *testing.T, ordered bool, inner envoycache.SnapshotCac
 		sent: make(chan *discoveryv3.DiscoveryResponse, 16),
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
-	suppressor := newWatchPolicy(inner, kgwxds.NewNodeRoleHasher(), true, true)
+	suppressor := newWatchPolicy(inner, kgwxds.NewNodeRoleHasher(), true)
 	var opts []serverconfig.XDSOption
 	if ordered {
 		opts = append(opts, sotwv3.WithOrderedADS())
@@ -265,7 +265,7 @@ func TestNackParkingHoldsPublicationOffUntilTheWatchIsRegistered(t *testing.T) {
 // The stream never waits on a publication: a NACK that arrives while one holds
 // the publication lock is handled as the plain cache would, and re-sent.
 func TestNackDuringPublicationIsAnsweredLikeThePlainCache(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(nackSnapshot("1"))
 	h.subscribe(envoyresource.ClusterType)
 	first := h.receiveType(envoyresource.ClusterType, "1")
@@ -284,7 +284,7 @@ func TestNackDuringPublicationIsAnsweredLikeThePlainCache(t *testing.T) {
 func TestParkedNackRetryReadsItsOwnNode(t *testing.T) {
 	shortenNackRetry(t, time.Millisecond, time.Millisecond)
 	hasher := kgwxds.NewNodeRoleHasher()
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, hasher, nil), hasher, true, true)
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, hasher, nil), hasher, true)
 	node := adsTestNode(t)
 	require.NoError(t, policy.SetSnapshot(t.Context(), hasher.ID(node), nackSnapshot("1")))
 

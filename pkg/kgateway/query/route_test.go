@@ -265,30 +265,38 @@ func TestGetRouteChain(t *testing.T) {
 	}
 }
 
-func TestRouteKeyMatches(t *testing.T) {
-	parents := []client.Object{
-		nil,
-		&gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "gw"}},
-		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "ls"}},
-		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Namespace: "other", Name: "ls"}},
-		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Name: "ls"}},
-	}
-	listenerNames := []string{"https", "http", ""}
+// TestGetRouteChainMultipleDelegatesInRule verifies that each delegate backendRef in a rule
+// maps to only its own children, not to the children of the refs listed before it.
+func TestGetRouteChainMultipleDelegatesInRule(t *testing.T) {
+	a := assert.New(t)
 
-	keys := []string{"", "listener~80", "default/ls", "default/ls/", "default//https", "default/lsx/https", "default/ls/https/extra", "xdefault/ls/https"}
-	for _, p := range parents {
-		for _, ln := range listenerNames {
-			keys = append(keys, query.GenerateRouteKey(p, ln))
-		}
+	refA := ir.ObjectSource{Group: "gateway.networking.k8s.io", Kind: "HTTPRoute", Name: "child-a", Namespace: "default"}
+	refB := ir.ObjectSource{Group: "gateway.networking.k8s.io", Kind: "HTTPRoute", Name: "child-b", Namespace: "default"}
+	parent := &ir.HttpRouteIR{
+		ObjectSource: ir.ObjectSource{Name: "parent", Namespace: "default"},
+		Rules: []ir.HttpRouteRuleIR{
+			{
+				Backends: []ir.HttpBackendOrDelegate{
+					{Delegate: &refA},
+					{Delegate: &refB},
+				},
+			},
+		},
+	}
+	routes := []client.Object{
+		&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "child-a", Namespace: "default"}},
+		&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "child-b", Namespace: "default"}},
 	}
 
-	for _, p := range parents {
-		for _, ln := range listenerNames {
-			want := query.GenerateRouteKey(p, ln)
-			for _, key := range keys {
-				assert.Equal(t, key == want, query.RouteKeyMatches(key, p, ln),
-					"RouteKeyMatches(%q, %T, %q) must agree with GenerateRouteKey %q", key, p, ln, want)
-			}
+	q := newQueries(t, routes...)
+	routeInfo := q.GetRouteChain(krt.TestingDummyContext{}, context.TODO(), parent, nil, gwv1.ParentReference{})
+	a.NotNil(routeInfo)
+
+	for _, ref := range []ir.ObjectSource{refA, refB} {
+		children, err := routeInfo.GetChildrenForRef(ref)
+		a.NoError(err)
+		if a.Len(children, 1, "ref %s should only resolve its own child", ref.Name) {
+			a.Equal(ref.Name, children[0].Object.GetName())
 		}
 	}
 }

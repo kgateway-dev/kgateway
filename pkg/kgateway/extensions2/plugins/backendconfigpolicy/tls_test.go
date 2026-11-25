@@ -16,6 +16,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -96,6 +97,14 @@ r8/mqGkEdNyd5BqGOFWoUi7kDqslOAl359Gd5ndxAoGAK3TVwhuLR9XoicDjmo6b
 -----END PRIVATE KEY-----
 ` // must have this newline at the end
 
+// File paths for tls.files tests. They exist only inside the Envoy container,
+// so translation must pass them through without reading them.
+const (
+	certPath = "/etc/envoy/certs/tls.crt"
+	keyPath  = "/etc/envoy/certs/tls.key"
+	caPath   = "/etc/ssl/certs/ca-certificates.crt"
+)
+
 func TestTranslateTLSConfig(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -150,9 +159,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "file-based TLS config",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				Sni:                new("test.example.com"),
 				AllowRenegotiation: new(true),
@@ -161,12 +170,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: certPath}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: keyPath}},
 					}},
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 						},
 					},
 				},
@@ -178,8 +187,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with parameters",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
 				},
 				Parameters: &kgateway.TLSParameters{
 					MinVersion:          new(kgateway.TLSVersion1_2),
@@ -194,8 +203,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: certPath}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: keyPath}},
 					}},
 					TlsParams: &envoytlsv3.TlsParameters{
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
@@ -222,6 +231,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
 						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
 					},
+					ValidationContextType: systemCAContext().ValidationContextType,
 				},
 			},
 		},
@@ -239,6 +249,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
 						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_3,
 					},
+					ValidationContextType: systemCAContext().ValidationContextType,
 				},
 			},
 		},
@@ -256,7 +267,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should not error with only rootca",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					RootCA: new(CACert),
+					RootCA: new(caPath),
 				},
 			},
 			wantErr: false,
@@ -264,7 +275,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 						},
 					},
 				},
@@ -274,8 +285,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with san and no rootca",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
 				},
 				VerifySubjectAltNames: []string{"test.example.com"},
 			},
@@ -285,7 +296,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should error with only cert and no key",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
+					TLSCertificate: new(certPath),
 				},
 			},
 			wantErr: true,
@@ -294,7 +305,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with only private key provided",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSKey: new(TLSKey),
+					TLSKey: new(keyPath),
 				},
 			},
 			wantErr: true,
@@ -303,9 +314,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "SimpleTLS with SAN verification and root CA",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				SimpleTLS:             new(true),
 				VerifySubjectAltNames: []string{"test.example.com"},
@@ -315,7 +326,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 							MatchTypedSubjectAltNames: []*envoytlsv3.SubjectAltNameMatcher{{
 								SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 								Matcher: &envoymatcher.StringMatcher{MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "test.example.com"}},
@@ -329,9 +340,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "should only have validation context if simple tls",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				SimpleTLS: new(true),
 			},
@@ -340,7 +351,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 						},
 					},
 				},
@@ -380,9 +391,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with SAN verification",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new(certPath),
+					TLSKey:         new(keyPath),
+					RootCA:         new(caPath),
 				},
 				VerifySubjectAltNames: []string{"test.example.com", "api.example.com"},
 				Sni:                   new("test.example.com"),
@@ -391,12 +402,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: certPath}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: keyPath}},
 					}},
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: caPath}},
 							MatchTypedSubjectAltNames: []*envoytlsv3.SubjectAltNameMatcher{
 								{SanType: envoytlsv3.SubjectAltNameMatcher_DNS, Matcher: &envoymatcher.StringMatcher{MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "test.example.com"}}},
 								{SanType: envoytlsv3.SubjectAltNameMatcher_DNS, Matcher: &envoymatcher.StringMatcher{MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "api.example.com"}}},
@@ -446,6 +457,66 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "should error with unsupported well-known ca set",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesType("example.com/corporate-roots")),
+				Sni:                     new("test.example.com"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "TLS config with system ca pins SAN to SNI",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),
+				Sni:                     new("test.example.com"),
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("test.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
+			name: "TLS config with system ca prefers explicit SANs over SNI",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: new(gwv1.WellKnownCACertificatesSystem),
+				Sni:                     new("test.example.com"),
+				VerifySubjectAltNames:   []string{"api.example.com"},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("api.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
+			name:      "stored TLS config with no trust source and no SNI defaults to system ca",
+			tlsConfig: &kgateway.TLS{},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext(),
+			},
+		},
+		{
+			name: "stored TLS config with only SNI defaults to system ca pinned to SNI",
+			tlsConfig: &kgateway.TLS{
+				Sni:       new("test.example.com"),
+				SimpleTLS: new(true),
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("test.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
+			name: "stored TLS config with insecure skip verify false defaults to system ca",
+			tlsConfig: &kgateway.TLS{
+				InsecureSkipVerify: new(false),
+				Sni:                new("test.example.com"),
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: systemCAContext("test.example.com"),
+				Sni:              "test.example.com",
+			},
+		},
+		{
 			name: "TLS config with insecure skip verify",
 			tlsConfig: &kgateway.TLS{
 				InsecureSkipVerify: new(true),
@@ -487,65 +558,15 @@ func TestTranslateTLSConfig(t *testing.T) {
 	}
 }
 
-func TestVerifySanListToTypedMatchSanList(t *testing.T) {
-	tests := []struct {
-		name     string
-		sanList  []string
-		expected []*envoytlsv3.SubjectAltNameMatcher
-	}{
-		{
-			name:     "empty SAN list",
-			sanList:  []string{},
-			expected: []*envoytlsv3.SubjectAltNameMatcher{},
-		},
-		{
-			name:    "single SAN",
-			sanList: []string{"example.com"},
-			expected: []*envoytlsv3.SubjectAltNameMatcher{
-				{
-					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-					Matcher: &envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "example.com"},
-					},
+func systemCAContext(sans ...string) *envoytlsv3.CommonTlsContext {
+	return &envoytlsv3.CommonTlsContext{
+		ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+			CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+				DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
+					MatchTypedSubjectAltNames: sslutils.VerifySanListToTypedMatchSanList(sans),
 				},
+				ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{Name: eiutils.SystemCaSecretName},
 			},
 		},
-		{
-			name:    "multiple SANs",
-			sanList: []string{"example.com", "api.example.com", "www.example.com"},
-			expected: []*envoytlsv3.SubjectAltNameMatcher{
-				{
-					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-					Matcher: &envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "example.com"},
-					},
-				},
-				{
-					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-					Matcher: &envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "api.example.com"},
-					},
-				},
-				{
-					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-					Matcher: &envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "www.example.com"},
-					},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := verifySanListToTypedMatchSanList(tt.sanList)
-
-			assert.Len(t, result, len(tt.expected))
-
-			for i, expected := range tt.expected {
-				assert.Equal(t, expected.SanType, result[i].SanType)
-				assert.Equal(t, expected.Matcher.GetExact(), result[i].Matcher.GetExact())
-			}
-		})
 	}
 }

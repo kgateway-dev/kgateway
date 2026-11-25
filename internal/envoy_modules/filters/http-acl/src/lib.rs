@@ -2,6 +2,7 @@
 
 use acl::{Acl, Action, DenyResponse};
 use envoy_proxy_dynamic_modules_rust_sdk::*;
+use std::cell::OnceCell;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -47,7 +48,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     fn new_http_filter(&self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
         Box::new(Filter {
             default_acl: Arc::clone(&self.acl),
-            per_route_acl: None,
+            per_route_acl: OnceCell::new(),
             blocked_counter: self.blocked_counter,
         })
     }
@@ -79,27 +80,30 @@ impl PerRouteConfig {
 
 struct Filter {
     default_acl: Arc<Acl>,
-    per_route_acl: Option<Arc<Acl>>,
+    // Route configuration is immutable once resolved, including during re-entry.
+    per_route_acl: OnceCell<Arc<Acl>>,
     blocked_counter: EnvoyCounterId,
 }
 
 impl Filter {
     fn effective_acl(&self) -> &Acl {
-        match self.per_route_acl.as_deref() {
+        match self.per_route_acl.get() {
             Some(a) => a,
             None => self.default_acl.as_ref(),
         }
     }
 
-    fn set_per_route_config<EHF: EnvoyHttpFilter>(&mut self, envoy_filter: &mut EHF) {
-        if self.per_route_acl.is_some() {
+    fn set_per_route_config<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
+        if self.per_route_acl.get().is_some() {
             return;
         }
         let Some(cfg) = envoy_filter.get_most_specific_route_config() else {
             return;
         };
         match cfg.downcast_ref::<PerRouteConfig>() {
-            Some(prc) => self.per_route_acl = Some(Arc::clone(&prc.acl)),
+            Some(prc) => {
+                let _ = self.per_route_acl.set(Arc::clone(&prc.acl));
+            }
             None => envoy_log_error!("http-acl: per-route config has unexpected type"),
         }
     }
@@ -107,7 +111,7 @@ impl Filter {
 
 impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
     fn on_request_headers(
-        &mut self,
+        &self,
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {

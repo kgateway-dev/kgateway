@@ -203,6 +203,7 @@ func EndResourceXDSSync(details ResourceSyncDetails) bool {
 	default:
 		syncChLock.RUnlock()
 
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error(
 			"resource metrics sync channel is full, dropping end sync metrics update",
 			"gateway", details.Gateway,

@@ -6,7 +6,6 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -15,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -115,18 +115,19 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 		return errors.New("invalid TLS config: for if providing a client certificate, both certChain and privateKey must be provided")
 	}
 
-	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
-	cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
-	if err != nil {
-		return fmt.Errorf("invalid certificate and key pair: %w", err)
-	}
-
 	var certChainData, privateKeyData *envoycorev3.DataSource
 	if tlsData.inlineDataSource {
+		// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
+		cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
+		if err != nil {
+			return fmt.Errorf("invalid certificate and key pair: %w", err)
+		}
 		certChainData = pluginutils.InlineStringDataSource(cleanedCertChain)
 		privateKeyData = pluginutils.InlineStringDataSource(tlsData.privateKey)
 	} else {
-		certChainData = pluginutils.FileDataSource(cleanedCertChain)
+		// Files are paths inside the Envoy container, so the controller cannot
+		// read them; Envoy loads and validates them.
+		certChainData = pluginutils.FileDataSource(tlsData.certChain)
 		privateKeyData = pluginutils.FileDataSource(tlsData.privateKey)
 	}
 
@@ -141,13 +142,19 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 }
 
 func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
-	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
+	sanMatchers := sslutils.VerifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 
-	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
-	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
-	if tlsConfig.WellKnownCACertificates != nil {
-		switch *tlsConfig.WellKnownCACertificates {
+	// If the user opted to use the system CA bundle, or named no trust source at all,
+	// configure a CombinedValidationContext that references the SDS secret for the
+	// system CA set, and attach SAN matchers if any.
+	if wellKnown := effectiveWellKnownCACertificates(tlsConfig); wellKnown != nil {
+		switch *wellKnown {
 		case gwv1.WellKnownCACertificatesSystem:
+			// A public CA vouches for every hostname it has issued for, so without an
+			// explicit SAN list, pin the certificate to the SNI we are sending.
+			if len(sanMatchers) == 0 && tlsConfig.Sni != nil {
+				sanMatchers = sslutils.VerifySanListToTypedMatchSanList([]string{*tlsConfig.Sni})
+			}
 			combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
 				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
 					DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
@@ -161,7 +168,9 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 			tlsContext.ValidationContextType = combined
 			return nil
 		default:
-			logger.Error("unsupported WellKnownCACertificates value", "value", *tlsConfig.WellKnownCACertificates)
+			// Falling through would leave the context without validation, so Envoy
+			// would accept any certificate the backend presents.
+			return fmt.Errorf("unsupported wellKnownCACertificates value %q: only %q is supported", *wellKnown, gwv1.WellKnownCACertificatesSystem)
 		}
 	}
 
@@ -192,6 +201,21 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	}
 	tlsContext.ValidationContextType = validationCtx
 
+	return nil
+}
+
+// effectiveWellKnownCACertificates returns the well-known CA set to validate the
+// backend against. The CRD requires exactly one trust source, but a policy stored
+// before that was enforced (such as one with insecureSkipVerify: false) can name
+// none. Such a policy is validated against the system CA set rather than skipping
+// validation. Callers handle insecureSkipVerify: true before reaching here.
+func effectiveWellKnownCACertificates(tlsConfig *kgateway.TLS) *gwv1.WellKnownCACertificatesType {
+	if tlsConfig.WellKnownCACertificates != nil {
+		return tlsConfig.WellKnownCACertificates
+	}
+	if tlsConfig.SecretRef == nil && tlsConfig.Files == nil {
+		return new(gwv1.WellKnownCACertificatesSystem)
+	}
 	return nil
 }
 
@@ -270,18 +294,4 @@ func parseTLSVersion(tlsVersion *kgateway.TLSVersion) (envoytlsv3.TlsParameters_
 	default:
 		return 0, fmt.Errorf("invalid TLS version: %s", *tlsVersion)
 	}
-}
-
-func verifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAltNameMatcher {
-	var matchSanList []*envoytlsv3.SubjectAltNameMatcher
-	for _, san := range sanList {
-		matchSan := &envoytlsv3.SubjectAltNameMatcher{
-			SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-			Matcher: &envoymatcher.StringMatcher{
-				MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
-			},
-		}
-		matchSanList = append(matchSanList, matchSan)
-	}
-	return matchSanList
 }

@@ -70,15 +70,12 @@ func (c *requestConfig) executeNative() (*http.Response, error) {
 		}
 	}
 
-	// Create context with timeout
+	// connectionTimeout is enforced by the client's Timeout, which also covers reading the
+	// body. A context timeout here would be canceled when this function returns, cutting off
+	// a body the caller has not read yet.
 	ctx := c.ctx
 	if ctx == nil {
 		ctx = context.Background()
-	}
-	if c.connectionTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(c.connectionTimeout)*time.Second)
-		defer cancel()
 	}
 	if method == "" {
 		method = "GET"
@@ -145,7 +142,7 @@ func (c *requestConfig) buildURL() string {
 		path = "/" + path
 	}
 
-	baseURL := fmt.Sprintf("%s://%s:%d%s", c.scheme, c.host, c.port, path)
+	baseURL := fmt.Sprintf("%s://%s:%d%s", c.scheme, urlHost(c.host), c.port, path)
 
 	if len(c.queryParameters) > 0 {
 		values := url.Values{}
@@ -159,8 +156,11 @@ func (c *requestConfig) buildURL() string {
 }
 
 func (c *requestConfig) buildHTTPClient() *http.Client {
+	// Each request gets its own transport that is never reused, so a kept-alive connection
+	// would only sit idle in its pool until the server closed it.
 	transport := &http.Transport{
-		DialContext: c.buildDialer(),
+		DialContext:       c.buildDialer(),
+		DisableKeepAlives: true,
 	}
 
 	// Configure TLS
@@ -211,6 +211,10 @@ func (c *requestConfig) buildHTTPClient() *http.Client {
 }
 
 func (c *requestConfig) buildDialer() func(context.Context, string, string) (net.Conn, error) {
+	if c.dialContext != nil {
+		return c.dialContext
+	}
+
 	dialer := &net.Dialer{
 		Timeout: 30 * time.Second,
 	}

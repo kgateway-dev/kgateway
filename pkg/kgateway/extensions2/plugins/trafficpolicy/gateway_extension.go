@@ -129,7 +129,7 @@ func TranslateGatewayExtensionBuilder(
 	commoncol *collections.CommonCollections,
 ) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	oidcDiscoverer := newOIDCProviderConfigDiscoverer(
-		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
+		commoncol.GatewayExtensions.List,
 		commoncol.KrtOpts.ToOptions("OIDCDiscoveryTrigger")...,
 	)
 	go oidcDiscoverer.run(ctx)
@@ -191,6 +191,9 @@ func gatewayExtensionBuilder(
 			}
 
 			// Common configuration for both gRPC and HTTP
+			// Emit filter state stats so ext-auth latency can be access-logged
+			// via %FILTER_STATE(ext_auth/<ns>/<name>:FIELD:latency_us)%.
+			p.ExtAuth.EmitFilterStateStats = true
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
 					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32

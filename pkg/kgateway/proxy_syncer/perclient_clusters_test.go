@@ -90,9 +90,9 @@ func newClustersTestFixture(
 	t.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
-	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
-	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
+	uccs := krt.NewMutableCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
+	finalBackends := krt.NewMutableCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends.AsCollection(), uccs.AsCollection())
 	return uccs, finalBackends, clusters
 }
 
@@ -304,8 +304,8 @@ func TestBackendListenerLifecycle(t *testing.T) {
 
 	clients := []ir.UniquelyConnectedClient{clustersTestClient("role-a"), clustersTestClient("role-b")}
 	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
-	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{clustersTestBackendWithProtocol("dest", "cred-1")}, krtopts.ToOptions("FinalBackends")...)
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, tunnelLifecycleTranslator(), finalBackends, uccs)
+	finalBackends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{clustersTestBackendWithProtocol("dest", "cred-1")}, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, tunnelLifecycleTranslator(), finalBackends.AsCollection(), uccs)
 
 	name := clustersTestBackend("dest").ClusterName()
 	listenerName := "tunnel_" + name

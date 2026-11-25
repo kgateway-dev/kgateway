@@ -21,10 +21,22 @@ const (
 	forwardClientCertCAPath        = "/etc/forward-client-cert/ca/ca.crt"
 )
 
+// Ports of the per-test listeners on the shared gw-mtls Gateway. Must match
+// testdata/forward-client-cert/gateway.yaml.
+const (
+	fccBaselinePort           = 8443
+	fccSanitizeSetDefaultPort = 8444
+	fccSanitizeSetAllPort     = 8445
+	fccAppendForwardPort      = 8446
+	fccSanitizePort           = 8447
+	fccForwardOnlyPort        = 8448
+)
+
 var (
 	setupManifest                           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	gatewayManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
 	httpRouteManifest                       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute.yaml")
+	rawHeaderEchoManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "raw-header-echo.yaml")
 	allFieldsManifest                       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-all-fields.yaml")
 	serverHeaderManifest                    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-server-header.yaml")
 	preserveHttp1HeaderCaseManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "preserve-http1-header-case.yaml")
@@ -44,11 +56,12 @@ var (
 	// RequestID test manifests for testing the new RequestID configuration feature
 	listenerPolicyRequestIdManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")
 	requestIdEchoManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo.yaml")
+	requestIdEchoRouteManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo-route.yaml")
 	listenerPolicyRequestIdPackTraceReasonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id-pack-trace-reason.yaml")
 
-	// forwardClientCertDetails test manifests. The three Secret YAMLs are
-	// applied at suite setup time so the gw mtls-https listener and the
-	// curl-mtls pod always have their cert material available.
+	// forwardClientCertDetails test manifests. Everything but the per-test
+	// forward-client-cert policies is applied at suite setup time.
+	forwardClientCertGateway        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "forward-client-cert", "gateway.yaml")
 	forwardClientCertServerSecret   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "forward-client-cert", "server-cert-secret.yaml")
 	forwardClientCertCASecret       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "forward-client-cert", "client-ca-secret.yaml")
 	forwardClientCertAliceSecret    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "forward-client-cert", "client-alice-secret.yaml")
@@ -79,4 +92,7 @@ var (
 			Namespace: "default",
 		},
 	}
+
+	// Service of the gw-mtls Gateway shared by the TestForwardClientCert* tests.
+	mtlsProxyService = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "gw-mtls", Namespace: "default"}}
 )

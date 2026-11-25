@@ -79,7 +79,7 @@ func snapshotPerClient(
 	}, krtopts.ToOptions("EndpointResources")...)
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *XdsSnapWrapper {
-		defer (collectXDSTransformMetrics(ucc.ResourceName()))(nil)
+		defer collectXDSTransformMetrics(ucc.ResourceName())(nil)
 
 		listenerRouteSnapshot := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if listenerRouteSnapshot == nil {
@@ -102,7 +102,8 @@ func snapshotPerClient(
 		clusterVersions := clustersForUcc.clusterVersions
 
 		// Filter after shared backend translation, which stays O(backends). EDS
-		// alignment below drops CLAs for clusters removed here.
+		// alignment below drops CLAs for clusters removed here; backend-owned
+		// LDS listeners and SDS secrets are filtered with their clusters too.
 		var filtered bool
 		clusterResources, clusterVersions, filtered = filterClustersToEmitted(
 			scoping,
@@ -110,7 +111,7 @@ func snapshotPerClient(
 			clusterResources,
 			clusterVersions,
 		)
-		// unscopedBy is why this client's CDS is not scoped: the gateway's own
+		// unscopedBy is why this client's xDS scoping is off: the gateway's own
 		// request-time selectors no claim accounts for, else those in a kept
 		// backend's listeners.
 		var unscopedBy []string
@@ -163,8 +164,11 @@ func snapshotPerClient(
 			clusterResources.Version = strconv.FormatUint(clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
+		// A referenced backend's own listeners route on to clusters no gateway
+		// route names (a CONNECT tunnel's proxy), so its routes wait for those too.
+		referenced := withBackendListenerRoutingTargets(listenerRouteSnapshot.ReferencedClusters, clustersForUcc.backendListeners)
 		missingClusters := findMissingReferencedClusters(
-			listenerRouteSnapshot.ReferencedClusters,
+			referenced,
 			clusterResources.Items,
 			clustersForUcc.erroredClusters,
 		)
@@ -180,7 +184,7 @@ func snapshotPerClient(
 		// Every EDS cluster now has a CLA; synthesized ones mark underived rows.
 		// A derived empty CLA is not a gap.
 		missingEndpointClusters := findMissingReferencedEndpointResources(
-			listenerRouteSnapshot.ReferencedClusters,
+			referenced,
 			clusterResources.Items,
 			synthesizedEndpoints,
 			clustersForUcc.erroredClusters,

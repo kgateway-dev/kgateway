@@ -7,11 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega/gstruct"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -21,6 +19,7 @@ var (
 	setupManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	validListenerSetManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset.yaml")
 	validListenerSetManifest2 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "valid-listenerset-2.yaml")
+	deniedListenerSetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "denied-listenerset.yaml")
 	policyManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "policies.yaml")
 
 	gwListener1Port  = 80
@@ -33,7 +32,6 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
 	expectOKWithCustomHeader = func(key, value string) *testmatchers.HttpResponse {
 		return &testmatchers.HttpResponse{
@@ -46,7 +44,7 @@ var (
 	}
 
 	setup = base.TestCase{
-		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
+		Manifests: []string{setupManifest},
 	}
 
 	// test cases
@@ -55,6 +53,7 @@ var (
 			ManifestsWithTransform: map[string]func(string) string{
 				validListenerSetManifest:  base.TransformListenerSetManifest,
 				validListenerSetManifest2: base.TransformListenerSetManifest,
+				deniedListenerSetManifest: base.TransformListenerSetManifest,
 				policyManifest:            base.TransformListenerSetManifest,
 			},
 		},

@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // rateLimiter uses token bucket for overall rate limiting and exponential backoff for per-item rate limiting
@@ -46,12 +47,14 @@ type GatewayConfig struct {
 	CommonCollections *collections.CommonCollections
 	// GatewayClassName is the configured gateway class name.
 	GatewayClassName string
-	// WaypointGatewayClassName is the configured waypoint gateway class name.
-	WaypointGatewayClassName string
 	// Additional GatewayClass definitions to support extending to other well-known gateway classes
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
 	CertWatcher *certwatcher.CertWatcher
+	// GatewayParametersStatus receives the deployer's verdict on each Gateway's parameters,
+	// which the status syncer reports as the Gateway's Accepted=False/InvalidParameters.
+	// Without it, invalid parameters are not reported.
+	GatewayParametersStatus *reports.GatewayParametersStatus
 }
 
 type HelmValuesGeneratorOverrideFunc func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -90,13 +93,12 @@ func watchGw(
 	)
 
 	inputs := &deployer.Inputs{
-		Dev:                      cfg.Dev,
-		IstioAutoMtlsEnabled:     cfg.IstioAutoMtlsEnabled,
-		ControlPlane:             cfg.ControlPlane,
-		ImageInfo:                cfg.ImageInfo,
-		CommonCollections:        cfg.CommonCollections,
-		GatewayClassName:         cfg.GatewayClassName,
-		WaypointGatewayClassName: cfg.WaypointGatewayClassName,
+		Dev:                  cfg.Dev,
+		IstioAutoMtlsEnabled: cfg.IstioAutoMtlsEnabled,
+		ControlPlane:         cfg.ControlPlane,
+		ImageInfo:            cfg.ImageInfo,
+		CommonCollections:    cfg.CommonCollections,
+		GatewayClassName:     cfg.GatewayClassName,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)

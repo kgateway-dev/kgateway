@@ -17,6 +17,9 @@ func translateHealthCheck(hc *kgateway.HealthCheck) *envoycorev3.HealthCheck {
 
 	healthCheck.Timeout = durationpb.New(hc.Timeout.Duration)
 	healthCheck.Interval = durationpb.New(hc.Interval.Duration)
+	if hc.NoTrafficInterval != nil {
+		healthCheck.NoTrafficInterval = durationpb.New(hc.NoTrafficInterval.Duration)
+	}
 	healthCheck.UnhealthyThreshold = &wrapperspb.UInt32Value{Value: uint32(hc.UnhealthyThreshold)} // nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	healthCheck.HealthyThreshold = &wrapperspb.UInt32Value{Value: uint32(hc.HealthyThreshold)}     // nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 

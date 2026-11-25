@@ -244,8 +244,8 @@ func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...Att
 // Prepend prepends the policies in l in the given to the policies in a.
 func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
 	// iterate in the reverse order so that the input order in l is preserved at the end
-	for i := len(l) - 1; i >= 0; i-- {
-		for k, v := range l[i].Policies {
+	for _, src := range slices.Backward(l) {
+		for k, v := range src.Policies {
 			if a.Policies == nil {
 				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
 			}
@@ -286,10 +286,17 @@ type HttpBackendOrDelegate struct {
 	AttachedPolicies AttachedPolicies
 	Backend          *BackendRefIR
 	Delegate         *ObjectSource
+
+	// FiltersErr contains any error resolving the backendRef's filters (e.g. an ExtensionRef
+	// to a missing policy), so that translation fails closed for this backend.
+	FiltersErr error
 }
 
 func (h HttpBackendOrDelegate) Equals(other HttpBackendOrDelegate) bool {
 	if !h.AttachedPolicies.Equals(other.AttachedPolicies) {
+		return false
+	}
+	if !errorsEqual(h.FiltersErr, other.FiltersErr) {
 		return false
 	}
 	if h.Backend != nil && other.Backend != nil {

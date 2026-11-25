@@ -1,0 +1,343 @@
+Clusters:
+- clusterType:
+    name: envoy.clusters.dynamic_forward_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
+      subClustersConfig:
+        lbPolicy: LEAST_REQUEST
+  connectTimeout: 5s
+  lbPolicy: CLUSTER_PROVIDED
+  name: backend_default_dfp_0
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
+  loadAssignment:
+    clusterName: backend_default_single-hostname_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: backend.example.com
+              portValue: 8080
+          healthCheckConfig:
+            hostname: backend.example.com
+          hostname: backend.example.com
+  name: backend_default_single-hostname_0
+- connectTimeout: 5s
+  loadAssignment:
+    clusterName: backend_default_single-ip_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.1
+              portValue: 8080
+          healthCheckConfig:
+            hostname: 10.0.0.1
+          hostname: 10.0.0.1
+  name: backend_default_single-ip_0
+  type: STATIC
+- commonLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  loadBalancingPolicy:
+    policies:
+    - typedExtensionConfig:
+        name: envoy.load_balancing_policies.ring_hash
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.load_balancing_policies.ring_hash.v3.RingHash
+          consistentHashingLbConfig:
+            hashPolicy:
+            - cookie:
+                name: lb-cookie
+  name: kube_default_backend_3000
+  type: EDS
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 80
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: envoy.filters.http.stateful_session
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
+        - name: envoy.filters.http.dynamic_forward_proxy
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.FilterConfig
+            subClusterConfig: {}
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http_80
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80
+  virtualHosts:
+  - domains:
+    - '*'
+    name: listener~80~*
+    routes:
+    - match:
+        pathSeparatedPrefix: /single-hostname
+      name: listener~80~*-route-0-httproute-example-route-default-2-0-matcher-0
+      route:
+        cluster: backend_default_single-hostname_0
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.filters.http.stateful_session:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: static-session
+                  path: /
+    - match:
+        pathSeparatedPrefix: /single-ip
+      name: listener~80~*-route-1-httproute-example-route-default-1-0-matcher-0
+      route:
+        cluster: backend_default_single-ip_0
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.filters.http.stateful_session:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: static-session
+                  path: /
+    - match:
+        pathSeparatedPrefix: /service
+      name: listener~80~*-route-2-httproute-example-route-default-0-0-matcher-0
+      route:
+        cluster: kube_default_backend_3000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.filters.http.stateful_session:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: kgw-sp-b2ffd5d0b8f4e1b1
+                  path: /
+    - match:
+        pathSeparatedPrefix: /dfp
+      name: listener~80~*-route-3-httproute-example-route-default-3-0-matcher-0
+      route:
+        cluster: backend_default_dfp_0
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        envoy.filters.http.stateful_session:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSessionPerRoute
+          statefulSession:
+            sessionState:
+              name: envoy.http.stateful_session.cookie
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.http.stateful_session.cookie.v3.CookieBasedSessionState
+                cookie:
+                  name: static-session
+                  path: /
+Statuses:
+  backends:
+    default/dfp:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/single-hostname:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/single-ip:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    default/example-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    BackendConfigPolicy/default/service-partially-valid:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: backend
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: spec.sessionPersistence.absoluteTimeout only has an effect for
+            Cookie sessions with spec.sessionPersistence.cookie.lifetimeType Permanent
+          reason: PartiallyValid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+    BackendConfigPolicy/default/static-backends:
+      ancestors:
+      - ancestorRef:
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: dfp
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: 'spec.sessionPersistence has no effect on Backend default/dfp:
+            dynamic forward proxy backends load balance each request within the requested
+            host''s addresses and do not use the session'
+          reason: PartiallyValid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: single-hostname
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: single-ip
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

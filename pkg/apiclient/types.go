@@ -30,11 +30,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.GatewayParametersGVR,
 		wellknown.GatewayParametersGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().GatewayParameters(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().GatewayParameters(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().GatewayParameters(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().GatewayParameters(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.GatewayParameters] {
 			return c.(Client).Kgateway().GatewayKgateway().GatewayParameters(namespace)
@@ -43,24 +43,38 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.TCPRouteV1GVR,
 		wellknown.TCPRouteV1GVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.TCPRoute] {
 			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace)
 		},
 	)
+	// Istio only knows the v1 TCPRoute, so register v1alpha2 for clusters with a pre-v1 TCPRoute CRD.
+	kubeclient.Register(
+		wellknown.TCPRouteGVR,
+		wellknown.TCPRouteGVK,
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).List(ctx, o)
+		},
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).Watch(ctx, o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1a2.TCPRoute] {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace)
+		},
+	)
 	kubeclient.Register(
 		wellknown.TLSRouteGVR,
 		wellknown.TLSRouteGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1a2.TLSRoute] {
 			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace)
@@ -69,11 +83,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.TLSRouteV1Alpha3GVR,
 		wellknown.TLSRouteV1Alpha3GVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1alpha3().TLSRoutes(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1alpha3().TLSRoutes(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1alpha3().TLSRoutes(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1alpha3().TLSRoutes(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1a3.TLSRoute] {
 			return c.GatewayAPI().GatewayV1alpha3().TLSRoutes(namespace)
@@ -82,11 +96,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.BackendGVR,
 		wellknown.BackendGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().Backends(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().Backends(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().Backends(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().Backends(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.Backend] {
 			return c.(Client).Kgateway().GatewayKgateway().Backends(namespace)
@@ -95,11 +109,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.BackendConfigPolicyGVR,
 		wellknown.BackendConfigPolicyGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().BackendConfigPolicies(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().BackendConfigPolicies(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().BackendConfigPolicies(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().BackendConfigPolicies(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.BackendConfigPolicy] {
 			return c.(Client).Kgateway().GatewayKgateway().BackendConfigPolicies(namespace)
@@ -108,11 +122,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.DirectResponseGVR,
 		wellknown.DirectResponseGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().DirectResponses(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().DirectResponses(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().DirectResponses(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().DirectResponses(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.DirectResponse] {
 			return c.(Client).Kgateway().GatewayKgateway().DirectResponses(namespace)
@@ -121,11 +135,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.ListenerPolicyGVR,
 		wellknown.ListenerPolicyGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().ListenerPolicies(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().ListenerPolicies(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().ListenerPolicies(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().ListenerPolicies(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.ListenerPolicy] {
 			return c.(Client).Kgateway().GatewayKgateway().ListenerPolicies(namespace)
@@ -134,11 +148,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.TrafficPolicyGVR,
 		wellknown.TrafficPolicyGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().TrafficPolicies(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().TrafficPolicies(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().TrafficPolicies(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().TrafficPolicies(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.TrafficPolicy] {
 			return c.(Client).Kgateway().GatewayKgateway().TrafficPolicies(namespace)
@@ -147,11 +161,11 @@ func registerTypes() {
 	kubeclient.Register(
 		wellknown.GatewayExtensionGVR,
 		wellknown.GatewayExtensionGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().GatewayExtensions(namespace).List(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayKgateway().GatewayExtensions(namespace).List(ctx, o)
 		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().GatewayExtensions(namespace).Watch(context.Background(), o)
+		func(ctx context.Context, c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayKgateway().GatewayExtensions(namespace).Watch(ctx, o)
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.GatewayExtension] {
 			return c.(Client).Kgateway().GatewayKgateway().GatewayExtensions(namespace)

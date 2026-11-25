@@ -282,9 +282,9 @@ func TestRejectionMetricsFollowResolvedIdentity(t *testing.T) {
 		Named:           krt.Named{Name: "proxy-pod", Namespace: ns},
 		AugmentedLabels: map[string]string{"gateway.networking.k8s.io/gateway-name": "first-gateway"},
 	}
-	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{pod})
+	pods := krt.NewMutableCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{pod})
 	clients, build, _ := krtcollections.NewUniquelyConnectedClients(true)
-	col := build(ctx, krtutil.KrtOptions{Stop: ctx.Done()}, pods)
+	col := build(ctx, krtutil.KrtOptions{Stop: ctx.Done()}, pods.AsCollection())
 	require.True(t, col.WaitUntilSynced(ctx.Done()))
 	metricsCallback := newLogNackCallback(true)
 	chain := chainCallbacks(clients, metricsCallback)

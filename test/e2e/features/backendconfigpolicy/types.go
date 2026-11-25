@@ -12,6 +12,7 @@ import (
 
 var (
 	// manifests
+	backendsManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backends.yaml")
 	setupManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 	nginxManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx.yaml")
 	dnsManifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "dns.yaml")

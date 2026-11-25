@@ -107,9 +107,8 @@ func (r *gatewayClassReconciler) Start(ctx context.Context) error {
 }
 
 func (r *gatewayClassReconciler) reconcile(req types.NamespacedName) (rErr error) {
-	finishMetrics := collectReconciliationMetrics("gatewayclass", req)
 	defer func() {
-		finishMetrics(rErr)
+		recordReconciliation("gatewayclass", rErr)
 	}()
 
 	if req == emptyGatewayClass {
@@ -225,7 +224,7 @@ func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass, contr
 }
 
 func isOurGatewayClass(gwc *gwv1.GatewayClass, ourControllers sets.Set[string]) bool {
-	return ourControllers.Has(string(gwc.Spec.ControllerName))
+	return ourControllers.Has(string(gwc.Spec.ControllerName)) && !wellknown.IsRetiredWaypointClass(gwc)
 }
 
 func (r *gatewayClassReconciler) getControllerName(gwc string) string {

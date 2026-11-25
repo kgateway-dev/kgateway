@@ -39,6 +39,11 @@ var (
 	ErrMissingReferenceGrant = errors.New("missing reference grant")
 	ErrUnknownBackendKind    = errors.New("unknown backend kind")
 	ErrPolicyNotFound        = errors.New("policy not found")
+
+	// ListenerSet denial errors
+	errListenerSetsNotEnabled  = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
+	errAllowedListenersInvalid = errors.New("Unable to parse allowedListeners")
+	errListenerSetNotAllowed   = errors.New("Attachment not allowed")
 )
 
 type NotFoundError struct {
@@ -549,11 +554,77 @@ func (r listenerSetIRRef) Equals(in listenerSetIRRef) bool {
 	return r.ListenerSet.Equals(*in.ListenerSet)
 }
 
+// ListenerSetAttachment decides whether a Gateway's allowedListeners admit a ListenerSet.
+type ListenerSetAttachment struct {
+	enabled bool
+	// allowedNs is nil when allowedListeners could not be parsed.
+	allowedNs func(kctx krt.HandlerContext, namespace string) bool
+}
+
+// NewListenerSetAttachment builds the check for a Gateway in parentNamespace.
+func NewListenerSetAttachment(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (ListenerSetAttachment, error) {
+	allowedNs, err := AllowedListenerSet(allowedListeners, parentNamespace, namespaces)
+	return ListenerSetAttachment{enabled: allowedListeners != nil, allowedNs: allowedNs}, err
+}
+
+// Denial returns why the Gateway denies a ListenerSet in namespace.
+func (a ListenerSetAttachment) Denial(kctx krt.HandlerContext, namespace string) error {
+	if !a.enabled {
+		return errListenerSetsNotEnabled
+	}
+	if a.allowedNs == nil {
+		return errAllowedListenersInvalid
+	}
+	if !a.allowedNs(kctx, namespace) {
+		return errListenerSetNotAllowed
+	}
+	return nil
+}
+
+func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
+	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
+	allowedNs := NoNamespace()
+
+	if allowedListeners != nil {
+		// Determine the allowed namespaces if specified
+		if allowedListeners.Namespaces != nil && allowedListeners.Namespaces.From != nil {
+			switch *allowedListeners.Namespaces.From {
+			case gwv1.NamespacesFromAll:
+				allowedNs = AllNamespace()
+			case gwv1.NamespacesFromSame:
+				allowedNs = SameNamespace(parentNamespace)
+			case gwv1.NamespacesFromSelector:
+				if allowedListeners.Namespaces.Selector == nil {
+					return nil, errors.New("selector must be set")
+				}
+				selector, err := metav1.LabelSelectorAsSelector(allowedListeners.Namespaces.Selector)
+				if err != nil {
+					return nil, err
+				}
+				allowedNs = NamespaceSelector(namespaces, selector)
+			}
+		}
+	}
+
+	return allowedNs, nil
+}
+
+// ListenerSetPrecedence compares ListenerSets by precedence:
+// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
+// - ListenerSet ordered by creation time (oldest first)
+// - ListenerSet ordered alphabetically by “{namespace}/{name}”
+func ListenerSetPrecedence(a, b metav1.Object) int {
+	if c := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); c != 0 {
+		return c
+	}
+	return strings.Compare(a.GetNamespace()+"/"+a.GetName(), b.GetNamespace()+"/"+b.GetName())
+}
+
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 		// only care about gateways that use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
+		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
 		ports := sets.New[int32]()
@@ -561,12 +632,26 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			ports.Insert(l.Port)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
+		// Only the ListenerSets' spec is read, so ignore status-only writes. Otherwise every
+		// ListenerSet status write re-runs this over all of the Gateway's ListenerSets.
+		listenerSets := krt.PartialFetch(kctx, config.ListenerSets, func(ls *gwv1.ListenerSet) *gwv1.ListenerSet {
+			return ls
+		}, func(a, b *gwv1.ListenerSet) bool {
+			return ir.VersionEquals(a, b)
+		}, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
+
+		// ListenerSet denied adds no listener to the proxy and no port.
+		attachment, _ := NewListenerSetAttachment(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
+		listenerSets = slices.FilterInPlace(listenerSets, func(ls *gwv1.ListenerSet) bool {
+			return attachment.Denial(kctx, ls.GetNamespace()) == nil
+		})
+		// Sort ListenerSets to match the precedence used by Envoy translation.
+		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int { return ListenerSetPrecedence(a, b) })
 
 		for _, ls := range listenerSets {
 			for _, l := range ls.Spec.Listeners {
@@ -596,7 +681,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by envoy
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || string(gwClass.Spec.ControllerName) != config.EnvoyControllerName {
+		if gwClass == nil || string(gwClass.Spec.ControllerName) != config.EnvoyControllerName || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
 
@@ -632,7 +717,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			})
 		}
 
-		allowedNs, err := AllowedListenerSet(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
+		attachment, err := NewListenerSetAttachment(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
 		if err != nil {
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
@@ -650,44 +735,16 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 		gwIR.Listeners = append(make([]ir.Listener, 0, numListeners), gwIR.Listeners...)
 
-		// Sort by listener precedence
-		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
-		// - ListenerSet ordered by creation time (oldest first)
-		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int {
-			// primary sort: creation timestamp (oldest first)
-			if cmp := a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time); cmp != 0 {
-				return cmp
-			}
-			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls listenerSetIRRef) string {
-				return ls.Namespace + "/" + ls.Name
-			}
-			return strings.Compare(nnsString(a), nnsString(b))
-		})
+		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int { return ListenerSetPrecedence(a.Obj, b.Obj) })
 
 		for _, ls := range listenerSets {
 			// A copy, since Err is set per Gateway.
 			lsIR := *ls.ListenerSet
 			lsGVK := lsIR.Obj.GetObjectKind().GroupVersionKind()
 
-			if gw.Spec.AllowedListeners == nil {
-				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
-				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
-				continue
-			}
-
-			// allowedNs is nil if allowedListeners could not be parsed, so deny the attachment.
-			if err != nil {
-				lsIR.Err = errors.New("Unable to parse allowedListeners")
-				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
-				continue
-			}
-
-			// Check if the namespace of the listenerSet is allowed by the gateway
-			// We return the denied list of ls to have their status set to rejected during validation
-			if !allowedNs(kctx, lsIR.Namespace) {
-				lsIR.Err = errors.New("Attachment not allowed")
+			// A denied ListenerSet is kept so its status can be set to rejected during validation.
+			if denial := attachment.Denial(kctx, lsIR.Namespace); denial != nil {
+				lsIR.Err = denial
 				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
 			}
@@ -768,34 +825,6 @@ func listenerSetIR(kctx krt.HandlerContext, policyIndex *PolicyIndex, ls *gwv1.L
 		})
 	}
 	return lsIR
-}
-
-func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
-	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
-	allowedNs := NoNamespace()
-
-	if allowedListeners != nil {
-		// Determine the allowed namespaces if specified
-		if allowedListeners.Namespaces != nil && allowedListeners.Namespaces.From != nil {
-			switch *allowedListeners.Namespaces.From {
-			case gwv1.NamespacesFromAll:
-				allowedNs = AllNamespace()
-			case gwv1.NamespacesFromSame:
-				allowedNs = SameNamespace(parentNamespace)
-			case gwv1.NamespacesFromSelector:
-				if allowedListeners.Namespaces.Selector == nil {
-					return nil, errors.New("selector must be set")
-				}
-				selector, err := metav1.LabelSelectorAsSelector(allowedListeners.Namespaces.Selector)
-				if err != nil {
-					return nil, err
-				}
-				allowedNs = NamespaceSelector(namespaces, selector)
-			}
-		}
-	}
-
-	return allowedNs, nil
 }
 
 type TargetRefIndexKey struct {
@@ -1294,11 +1323,9 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	// Each route collection is debounced where it is built, so Gateway translation sees a burst of route changes as
-	// one batch, whether it reads routes by parent or follows delegation to child routes.
-	h.httpRoutes = debounceForTranslation(krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
+	h.httpRoutes = krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 		return h.transformHttpRoute(kctx, i)
-	}, krtopts.ToOptions("http-routes-with-policy")...), krtopts, globalSettings, "http-routes-debounced")
+	}, krtopts.ToOptions("http-routes-with-policy")...)
 
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
@@ -1306,17 +1333,17 @@ func NewRoutesIndex(
 
 	var tcpRoutesCollection, tlsRoutesCollection, grpcRoutesCollection krt.Collection[RouteWrapper]
 
-	grpcRoutesCollection = debounceForTranslation(krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
+	grpcRoutesCollection = krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformGRPCRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...), krtopts, globalSettings, "routes-grpc-routes-debounced")
+	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
 
-	tcpRoutesCollection = debounceForTranslation(krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
+	tcpRoutesCollection = krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTcpRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...), krtopts, globalSettings, "routes-tcp-routes-debounced")
+	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
 
-	tlsRoutesCollection = debounceForTranslation(krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
+	tlsRoutesCollection = krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tls-routes-with-policy")...), krtopts, globalSettings, "routes-tls-routes-debounced")
+	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
 
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
@@ -1510,7 +1537,7 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, r.Name, srcAnnotations, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src, r.Filters, r.Name, srcAnnotations, opts...)
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
@@ -1537,7 +1564,7 @@ func (h *RoutesIndex) transformRules(
 
 func (h *RoutesIndex) getExtensionRefs(
 	kctx krt.HandlerContext,
-	ns string,
+	src ir.ObjectSource,
 	r []gwv1.HTTPRouteFilter,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
@@ -1548,7 +1575,7 @@ func (h *RoutesIndex) getExtensionRefs(
 	}
 	var errs []error
 	for _, ext := range r {
-		policyAtt, err := h.resolveExtension(kctx, ns, ext, ruleName, annotations)
+		policyAtt, err := h.resolveExtension(kctx, src, ext, ruleName, annotations)
 		if policyAtt != nil {
 			for _, o := range opts {
 				o(policyAtt)
@@ -1580,13 +1607,17 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	return ret
 }
 
+// resolveExtension resolves a filter on the route identified by src. Filters on a
+// GRPCRoute are converted to HTTPRouteFilters first, so src (not the filter type)
+// decides the from-kind used for ReferenceGrant checks.
 func (h *RoutesIndex) resolveExtension(
 	kctx krt.HandlerContext,
-	ns string,
+	src ir.ObjectSource,
 	ext gwv1.HTTPRouteFilter,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
 ) (*ir.PolicyAtt, error) {
+	ns := src.Namespace
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
@@ -1626,8 +1657,8 @@ func (h *RoutesIndex) resolveExtension(
 	}
 
 	fromGK := schema.GroupKind{
-		Group: gwv1.GroupVersion.Group,
-		Kind:  "HTTPRoute",
+		Group: src.Group,
+		Kind:  src.Kind,
 	}
 
 	builtinIR, err := h.NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
@@ -1659,12 +1690,13 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 	}
 }
 
+// getBackends resolves the backendRefs of a route rule. An error resolving a backendRef's
+// filters (e.g. an ExtensionRef to a missing policy) is set on that backend, so that only
+// its traffic fails closed instead of forwarding without the policy.
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
-		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
-		// see: https://github.com/kgateway-dev/kgateway/issues/11897
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
+		extensionRefs, filtersErr := h.getExtensionRefs(kctx, src, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
@@ -1672,6 +1704,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			backends = append(backends, ir.HttpBackendOrDelegate{
 				Delegate:         &to,
 				AttachedPolicies: extensionRefs,
+				FiltersErr:       filtersErr,
 			})
 			continue
 		}
@@ -1685,6 +1718,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 				Err:           err,
 			},
 			AttachedPolicies: extensionRefs,
+			FiltersErr:       filtersErr,
 		})
 	}
 	return backends

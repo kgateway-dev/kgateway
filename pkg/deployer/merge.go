@@ -496,6 +496,14 @@ func deepMergeService(dst, src *kgateway.Service) *kgateway.Service {
 		dst.LoadBalancerSourceRanges = src.GetLoadBalancerSourceRanges()
 	}
 
+	if src.GetIPFamilies() != nil {
+		dst.IPFamilies = src.GetIPFamilies()
+	}
+
+	if src.GetIPFamilyPolicy() != nil {
+		dst.IPFamilyPolicy = src.GetIPFamilyPolicy()
+	}
+
 	dst.ExtraLabels = DeepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
 	dst.ExtraAnnotations = DeepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 	dst.Ports = DeepMergeSlices(dst.GetPorts(), src.GetPorts())

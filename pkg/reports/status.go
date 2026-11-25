@@ -94,6 +94,9 @@ func BuildGWStatus(gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[
 				}
 			}
 		}
+		if oldLisStatusIndex != -1 {
+			finalConditions = appendForeignListenerConditions(finalConditions, gw.Status.Listeners[oldLisStatusIndex].Conditions)
+		}
 		listenerStatus.Conditions = finalConditions
 
 		finalListeners = append(finalListeners, listenerStatus)
@@ -118,14 +121,22 @@ func BuildGWStatus(gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[
 
 	gwConditions = handleInvalidAddresses(gwConditions, &gw)
 	gwConditions = handleInsecureFrontendValidationMode(gwConditions, &gw)
-	gwConditions = gatewayConditionsWithDefaults(gwConditions, &gw, finalListeners)
+	// After every other Accepted the report or this builder derives, so the deployer's verdict
+	// takes precedence over all of them.
+	gwConditions = gatewayAccepted(gwConditions, &gw, gwReport.observedGeneration, gwReport.parameters)
+	gwConditions = gatewayConditionsWithDefaults(gwConditions, finalListeners)
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, gwCondition := range gwConditions {
 		// See note above: stamp the report's generation, not the live object's, so a
 		// skew between the translation cache and the syncer's cache cannot freeze
 		// observedGeneration.
-		gwCondition.ObservedGeneration = gwReport.observedGeneration
+		//
+		// Only gatewayAccepted sets a generation of its own: the deployer's verdict is about
+		// the generation the deployer reconciled.
+		if gwCondition.ObservedGeneration == 0 {
+			gwCondition.ObservedGeneration = gwReport.observedGeneration
+		}
 
 		// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 		if cond := meta.FindStatusCondition(gw.Status.Conditions, gwCondition.Type); cond != nil {
@@ -266,13 +277,32 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 		return false
 	}
 
-	if condition.Type == string(gwv1.GatewayConditionAccepted) &&
-		condition.Status == metav1.ConditionFalse &&
-		condition.Reason == string(gwv1.GatewayReasonInvalidParameters) {
-		return true
-	}
-
 	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
+}
+
+func isReporterOwnedListenerConditionType(conditionType gwv1.ListenerConditionType) bool {
+	switch conditionType {
+	case gwv1.ListenerConditionAccepted,
+		gwv1.ListenerConditionProgrammed,
+		gwv1.ListenerConditionResolvedRefs,
+		gwv1.ListenerConditionConflicted:
+		return true
+	default:
+		return false
+	}
+}
+
+// appendForeignListenerConditions appends the conditions from the existing listener status
+// whose type is not owned by our reporter, so conditions set by other controllers are preserved.
+func appendForeignListenerConditions(finalConditions, oldConditions []metav1.Condition) []metav1.Condition {
+	for _, condition := range oldConditions {
+		if meta.FindStatusCondition(finalConditions, condition.Type) != nil ||
+			isReporterOwnedListenerConditionType(gwv1.ListenerConditionType(condition.Type)) {
+			continue
+		}
+		finalConditions = append(finalConditions, condition)
+	}
+	return finalConditions
 }
 
 func (r *ReportMap) BuildListenerSetStatus(ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
@@ -326,6 +356,9 @@ func BuildListenerSetStatus(lsReport *ListenerSetReport, ls gwv1.ListenerSet) *g
 						invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", lis.Name, lisCondition.Message))
 					}
 				}
+			}
+			if oldLisStatusIndex != -1 {
+				finalConditions = appendForeignListenerConditions(finalConditions, ls.Status.Listeners[oldLisStatusIndex].Conditions)
 			}
 			listenerStatus.Conditions = finalConditions
 			finalListeners = append(finalListeners, listenerStatus)
@@ -611,15 +644,9 @@ func ParentString(ref gwv1.ParentReference) string {
 		ptr.OrEmpty(ref.Namespace))
 }
 
-func gatewayConditionsWithDefaults(conditions []metav1.Condition, gw *gwv1.Gateway, listeners []gwv1.ListenerStatus) []metav1.Condition {
+func gatewayConditionsWithDefaults(conditions []metav1.Condition, listeners []gwv1.ListenerStatus) []metav1.Condition {
 	out := slices.Clone(conditions)
-	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
-	// we don't want to override it with a true Accepted status. The controller will set Accepted=True
-	// when the GatewayParameters are valid again. Otherwise there is a race condition between the controller and reporter.
-	// HACK: This is because both the controller and reporter set Accepted status.
-	existingAccepted := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
-	hasInvalidParams := existingAccepted != nil && existingAccepted.Status == metav1.ConditionFalse && existingAccepted.Reason == string(gwv1.GatewayReasonInvalidParameters)
-	if !hasInvalidParams && meta.FindStatusCondition(out, string(gwv1.GatewayConditionAccepted)) == nil {
+	if meta.FindStatusCondition(out, string(gwv1.GatewayConditionAccepted)) == nil {
 		meta.SetStatusCondition(&out, metav1.Condition{
 			Type:    string(gwv1.GatewayConditionAccepted),
 			Status:  metav1.ConditionTrue,

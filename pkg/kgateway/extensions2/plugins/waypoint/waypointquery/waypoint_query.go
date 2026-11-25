@@ -6,20 +6,13 @@ import (
 
 	"istio.io/api/label"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
-	authcr "istio.io/client-go/pkg/apis/security/v1"
-	"istio.io/istio/pkg/config/schema/gvr"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
-	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -36,191 +29,28 @@ const (
 )
 
 type WaypointQueries interface {
-	// GetWaypointServices returns all Services that are marked as using the Gateway
-	// via istio.io/use-waypoint (and possibly istio.io/use-waypoint-namespace).
-	GetWaypointServices(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) []Service
-
 	// GetServiceWaypoint returns the waypoint for the given object (Service or ServiceEntry).
 	// Returns nil if no waypoint is found.
 	GetServiceWaypoint(kctx krt.HandlerContext, ctx context.Context, obj metav1.Object) *types.NamespacedName
 
-	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
-	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
-
-	// GetAuthorizationPoliciesForGateway returns policies targeting a specific gateway
-	GetAuthorizationPoliciesForGateway(kctx krt.HandlerContext, ctx context.Context, gateway *gwv1.Gateway, rootNamespace string) []*authcr.AuthorizationPolicy
-
-	// GetAuthorizationPoliciesForService returns policies targeting a specific service
-	GetAuthorizationPoliciesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []*authcr.AuthorizationPolicy
-
 	HasSynced() bool
 }
 
-func NewQueries(
-	commonCols *collections.CommonCollections,
-	gwQueries query.GatewayQueries,
-) WaypointQueries {
-	waypointedServices, servicesByWaypoint, waypointByService := waypointAttachmentIndex(commonCols)
-
-	// Watch authz policies changes in the cluster.
-	authzInformer := kclient.NewDelayedInformer[*authcr.AuthorizationPolicy](
-		commonCols.Client,
-		gvr.AuthorizationPolicy,
-		kubetypes.StandardInformer,
-		kclient.Filter{ObjectFilter: commonCols.Client.ObjectFilter()},
-	)
-	authzPolicies := krt.WrapClient(authzInformer, commonCols.KrtOpts.ToOptions("AuthorizationPolicies")...)
-	byNamespace := krtutil.UnnamedIndex(authzPolicies, func(p *authcr.AuthorizationPolicy) []string {
-		return []string{p.GetNamespace()}
-	})
-	// Build Authz policies targetRefKey index
-	byTargetRefKey := buildAuthzTargetIndex(authzPolicies, commonCols.Settings.IstioNamespace)
-
+func NewQueries(commonCols *collections.CommonCollections) WaypointQueries {
+	waypointedServices, waypointByService := waypointAttachmentIndex(commonCols)
 	return &waypointQueries{
-		queries:            gwQueries,
-		commonCols:         commonCols,
 		waypointedServices: waypointedServices,
-		servicesByWaypoint: servicesByWaypoint,
 		waypointByService:  waypointByService,
-		authzPolicies:      authzPolicies,
-		byNamespace:        byNamespace,
-		byTargetRefKey:     byTargetRefKey,
 	}
-}
-
-// Helper function for determining effective namespace
-func getEffectiveNamespace(targetNs, policyNs string) string {
-	if targetNs != "" {
-		return targetNs
-	}
-	return policyNs
 }
 
 type waypointQueries struct {
-	queries    query.GatewayQueries
-	commonCols *collections.CommonCollections
-
 	waypointedServices krt.Collection[WaypointedService]
-	servicesByWaypoint krt.Index[types.NamespacedName, WaypointedService]
 	waypointByService  krt.Index[string, WaypointedService]
-	authzPolicies      krt.Collection[*authcr.AuthorizationPolicy]
-	byNamespace        krt.Index[string, *authcr.AuthorizationPolicy]
-	byTargetRefKey     krt.Index[ir.ObjectSource, *authcr.AuthorizationPolicy]
 }
 
 func (w *waypointQueries) HasSynced() bool {
-	waypointSync := w.waypointedServices.HasSynced()
-	authzSync := w.authzPolicies.HasSynced()
-	return waypointSync && authzSync
-}
-
-func (w *waypointQueries) GetHTTPRoutesForService(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	svc *Service,
-) []query.RouteInfo {
-	var out []query.RouteInfo
-	seen := sets.New[types.NamespacedName]()
-	for _, key := range svc.Keys() {
-		nns := types.NamespacedName{
-			// TODO  routes index requires a namespace
-			// meaning global references (such as Hostname) are effectively namespace-local
-			Namespace: getEffectiveNamespace(key.GetNamespace(), svc.GetNamespace()),
-			Name:      key.GetName(),
-		}
-		routes := w.commonCols.Routes.RoutesFor(kctx, nns, key.Group, key.Kind)
-		out = append(out, slices.MapFilter(routes, func(route ir.Route) *query.RouteInfo {
-			if seen.InsertContains(types.NamespacedName{
-				Namespace: route.GetNamespace(),
-				Name:      route.GetName(),
-			}) {
-				return nil
-			}
-
-			// resolve delegation
-			pRef := findParentRef(
-				key,
-				route.GetNamespace(),
-				route.GetParentRefs(),
-				key.GetGroupKind(),
-			)
-			if pRef == nil {
-				return nil
-			}
-			return w.queries.GetRouteChain(kctx, ctx, route, nil, *pRef)
-		})...)
-	}
-
-	return out
-}
-
-// findParentRef that targets the given object
-func findParentRef(
-	key ir.ObjectSource,
-	routeNs string,
-	parentRefs []gwv1.ParentReference,
-	gk schema.GroupKind,
-) *gwv1.ParentReference {
-	// TODO peering will need to consider original and simulated GK
-	matchingParentRefs := findParentRefsForType(parentRefs, gk.Group, gk.Kind)
-	for _, pr := range matchingParentRefs {
-		if string(pr.Name) != key.GetName() {
-			continue
-		}
-
-		// global key, no namespace
-		if key.GetNamespace() == "" && pr.Namespace == nil {
-			return pr
-		}
-
-		// default to routes's own ns if not specified on the ref
-		ns := routeNs
-		if pr.Namespace != nil {
-			ns = string(*pr.Namespace)
-		}
-		if key.GetNamespace() == ns {
-			return pr
-		}
-	}
-	return nil
-}
-
-func findParentRefsForType(refs []gwv1.ParentReference, targetGroup, targetKind string) []*gwv1.ParentReference {
-	var matchingParentRefs []*gwv1.ParentReference
-	for _, pr := range refs {
-		prGroup := wellknown.GatewayGVK.Group
-		prKind := wellknown.GatewayGVK.Kind
-		if pr.Group != nil {
-			prGroup = string(*pr.Group)
-		}
-		if pr.Kind != nil {
-			prKind = string(*pr.Kind)
-		}
-		if compareCanonicalGroup(prGroup, targetGroup) && prKind == targetKind {
-			matchingParentRefs = append(matchingParentRefs, &pr)
-		}
-	}
-	return matchingParentRefs
-}
-
-func compareCanonicalGroup(a, b string) bool {
-	if a == "core" {
-		a = ""
-	}
-	if b == "core" {
-		b = ""
-	}
-	return a == b
-}
-
-func (w *waypointQueries) GetWaypointServices(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) []Service {
-	attached := krt.Fetch(kctx, w.waypointedServices, krt.FilterIndex(w.servicesByWaypoint, types.NamespacedName{
-		Name:      gw.GetName(),
-		Namespace: gw.GetNamespace(),
-	}))
-	return slices.Map(attached, func(e WaypointedService) Service {
-		return e.Service
-	})
+	return w.waypointedServices.HasSynced()
 }
 
 func (w *waypointQueries) GetServiceWaypoint(kctx krt.HandlerContext, ctx context.Context, obj metav1.Object) *types.NamespacedName {
@@ -301,7 +131,6 @@ func waypointAttachmentIndex(
 	commonCols *collections.CommonCollections,
 ) (
 	krt.Collection[WaypointedService],
-	krt.Index[types.NamespacedName, WaypointedService],
 	krt.Index[string, WaypointedService],
 ) {
 	// do basic attachment logic
@@ -318,16 +147,11 @@ func waypointAttachmentIndex(
 		commonCols.KrtOpts.ToOptions("WaypointLogicalServices")...,
 	)
 
-	// enable lookup by gateway
-	byWaypointGateway := krtutil.UnnamedIndex(waypointServiceAttachments, func(o WaypointedService) []types.NamespacedName {
-		return []types.NamespacedName{o.Waypoint}
-	})
-
 	waypointAttachmentsByService := krtutil.UnnamedIndex(waypointServiceAttachments, func(o WaypointedService) []string {
 		return []string{o.Service.String()}
 	})
 
-	return waypointServiceAttachments, byWaypointGateway, waypointAttachmentsByService
+	return waypointServiceAttachments, waypointAttachmentsByService
 }
 
 func getAliases(

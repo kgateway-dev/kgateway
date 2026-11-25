@@ -38,7 +38,7 @@ Listeners:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~80
 - address:
@@ -68,7 +68,7 @@ Listeners:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~8080
 Routes:
@@ -76,7 +76,7 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~80
   virtualHosts:
@@ -94,7 +94,7 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~8080
   virtualHosts:

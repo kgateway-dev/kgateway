@@ -220,7 +220,7 @@ func (s *StrictChurnSuite) SetupSuite() {
 	// (nginx-shared, applied once by TestKgateway's base setup) is the real
 	// backend behind the stable and post-churn routes (the simulated services
 	// have unroutable endpoints, so they can't answer traffic).
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	err = s.testInstallation.ClusterContext.Manifests().ApplyFiles(testdefaults.CurlPodManifest)
 	s.Require().NoError(err, "should apply curl pod")
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx,
 		testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{LabelSelector: testdefaults.CurlPodLabelSelector})
@@ -268,7 +268,7 @@ func (s *StrictChurnSuite) TearDownSuite() {
 	})
 	// The shared nginx backend belongs to the harness, not this suite — do
 	// not delete it. The curl pod is per-suite (siblings re-apply it).
-	_ = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
+	_ = s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, testdefaults.CurlPodManifest)
 }
 
 func (s *StrictChurnSuite) resolveControllerDeployment() (string, error) {

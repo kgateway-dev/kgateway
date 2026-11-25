@@ -23,7 +23,7 @@ func TestNackResendsSuppressedMetric(t *testing.T) {
 				t.Cleanup(xdsNackResendsSuppressed.Reset)
 				metricLabels := []metrics.Label{{Name: typeURLLabel, Value: rejectionTypeURL(resourceType)}}
 				xdsNackResendsSuppressed.Add(0, metricLabels...)
-				policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, false)
+				policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, false)
 				node := &envoycorev3.Node{Id: "node"}
 				version := "rejected"
 				if scenario == "new snapshot" {
@@ -70,7 +70,7 @@ func TestReconnectResponsesMetric(t *testing.T) {
 	xdsReconnectResponses.Reset()
 	t.Cleanup(xdsReconnectResponses.Reset)
 	metricLabels := []metrics.Label{{Name: typeURLLabel, Value: rejectionTypeURL(envoyresource.EndpointType)}}
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, false, true)
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true)
 	node := &envoycorev3.Node{Id: "node"}
 	watch := func(req *discoveryv3.DiscoveryRequest) {
 		t.Helper()

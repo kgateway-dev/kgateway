@@ -30,6 +30,7 @@ func MergeHttpPolicies(
 		mergeGenerateRequestId,
 		mergeNormalizePath,
 		mergeMergeSlashes,
+		mergePathWithEscapedSlashesAction,
 		mergeProxy100Continue,
 		mergeXffNumTrustedHops,
 		mergeXffConfig,
@@ -210,6 +211,22 @@ func mergeMergeSlashes(
 
 	p1.mergeSlashes = p2.mergeSlashes
 	mergeOrigins.SetOne(origin+"mergeSlashes", p2Ref, p2MergeOrigins)
+}
+
+func mergePathWithEscapedSlashesAction(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.pathWithEscapedSlashesAction, p2.pathWithEscapedSlashesAction, opts) {
+		return
+	}
+
+	p1.pathWithEscapedSlashesAction = p2.pathWithEscapedSlashesAction
+	mergeOrigins.SetOne(origin+"pathWithEscapedSlashesAction", p2Ref, p2MergeOrigins)
 }
 
 func mergeProxy100Continue(
