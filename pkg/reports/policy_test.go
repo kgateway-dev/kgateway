@@ -506,3 +506,57 @@ func TestBuildPolicyStatusExcludesForeignAncestors(t *testing.T) {
 	require.Len(t, gotStatus.Ancestors, 1)
 	require.Equal(t, gwv1.GatewayController("example-controller"), gotStatus.Ancestors[0].ControllerName)
 }
+
+// A condition type the reporter owns but did not emit this round no longer holds, so it is
+// removed; condition types someone else set on our ancestor are kept.
+func TestBuildPolicyStatusDropsUnreportedOwnedConditions(t *testing.T) {
+	ancestor := gwv1.ParentReference{
+		Group:     new(gwv1.Group("")),
+		Kind:      new(gwv1.Kind("Service")),
+		Namespace: new(gwv1.Namespace("default")),
+		Name:      "httpbin",
+	}
+	key := reporter.PolicyKey{
+		Group:     "gateway.kgateway.dev",
+		Kind:      "BackendConfigPolicy",
+		Namespace: "default",
+		Name:      "example",
+	}
+	rm := NewReportMap()
+	NewReporter(&rm).Policy(key, 2).AncestorRef(ancestor).SetCondition(reporter.PolicyCondition{
+		Type:   string(shared.PolicyConditionAccepted),
+		Status: metav1.ConditionTrue,
+		Reason: string(shared.PolicyReasonValid),
+	})
+
+	staleOverridden := metav1.Condition{
+		Type:               reporter.PolicyConditionOverridden,
+		Status:             metav1.ConditionTrue,
+		Reason:             "ConflictedWithBackendTLSPolicy",
+		ObservedGeneration: 1,
+	}
+	foreign := metav1.Condition{
+		Type:               "example.com/Audited",
+		Status:             metav1.ConditionTrue,
+		Reason:             "Audited",
+		ObservedGeneration: 1,
+	}
+	currentStatus := gwv1.PolicyStatus{Ancestors: []gwv1.PolicyAncestorStatus{{
+		AncestorRef:    ancestor,
+		ControllerName: "example-controller",
+		Conditions:     []metav1.Condition{staleOverridden, foreign},
+	}}}
+
+	gotStatus := rm.BuildPolicyStatus(key, "example-controller", currentStatus)
+
+	require.NotNil(t, gotStatus)
+	require.Len(t, gotStatus.Ancestors, 1)
+	var types []string
+	for _, c := range gotStatus.Ancestors[0].Conditions {
+		types = append(types, c.Type)
+	}
+	assert.ElementsMatch(t,
+		[]string{string(shared.PolicyConditionAccepted), string(shared.PolicyConditionAttached), foreign.Type},
+		types,
+		"stale Overridden should be removed and the foreign condition kept")
+}

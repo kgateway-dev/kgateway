@@ -146,7 +146,7 @@ func applyHttp2ProtocolOptions(http2ProtocolOptions *envoycorev3.Http2ProtocolOp
 	if backend.AppProtocol != ir.HTTP2AppProtocol {
 		// A BackendTLSPolicy lets a backend without an app protocol negotiate HTTP/2 via ALPN;
 		// the BackendTLSPolicy plugin then applies these options through Http2ProtocolOptions.
-		if backend.AppProtocol == ir.DefaultAppProtocol && hasBackendTLSPolicy(backend) {
+		if backend.AppProtocol == ir.DefaultAppProtocol && backendTLSPolicyOwnsTLS(backend) {
 			return
 		}
 		logger.Warn("can't apply http2 protocol options to non-http2 backend", "backend", backend.GetName())
