@@ -39,6 +39,22 @@ type discoveryNamespacesFilter struct {
 	handlers            []func(added, removed sets.String)
 }
 
+// DiscoveryScope returns the parsed selectors and the current namespace membership.
+// Both are nil when the client supplied a custom filter without this information.
+func (c *CommonCollections) DiscoveryScope() (selectors, namespaces []string) {
+	filter, ok := c.DiscoveryNamespacesFilter.(*discoveryNamespacesFilter)
+	if !ok {
+		return nil, nil
+	}
+	filter.lock.RLock()
+	defer filter.lock.RUnlock()
+	selectors = make([]string, 0, len(filter.discoverySelectors))
+	for _, selector := range filter.discoverySelectors {
+		selectors = append(selectors, selector.String())
+	}
+	return selectors, sets.SortedList(filter.discoveryNamespaces)
+}
+
 // NewDiscoveryNamespacesFilter creates a new DynamicObjectFilter that filters namespaced objects based
 // on the given discovery namespace selector config JSON (cfgJSON).
 func NewDiscoveryNamespacesFilter(

@@ -238,6 +238,10 @@ type Settings struct {
 	// and config snapshots outside the pod unless explicitly enabled.
 	AdminBindAddress string `split_words:"true" default:"localhost"`
 
+	// DiscoveryScopeBindAddress is the host:port for the read-only discovery scope server.
+	// An empty value disables the server.
+	DiscoveryScopeBindAddress string `split_words:"true"`
+
 	EnableIstioIntegration bool `split_words:"true"`
 	EnableIstioAutoMtls    bool `split_words:"true"`
 

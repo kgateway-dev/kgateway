@@ -13,6 +13,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
@@ -112,6 +113,11 @@ type ControllerBuilder struct {
 	paramsStatus *reports.GatewayParametersStatus
 
 	ready atomic.Bool
+}
+
+// ControllerNames returns the Gateway API controller names accepted by the GatewayClass reconciler.
+func (c *ControllerBuilder) ControllerNames() []string {
+	return sets.List(gatewayControllerNames(c.cfg.ControllerName, c.cfg.GatewayClassInfos))
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {

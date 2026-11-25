@@ -53,13 +53,7 @@ func newGatewayClassReconciler(
 		client:                cfg.Client,
 	}
 	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
-	ourControllerNames := []string{cfg.ControllerName}
-	for _, info := range classInfo {
-		if info.ControllerName != "" {
-			ourControllerNames = append(ourControllerNames, info.ControllerName)
-		}
-	}
-	ourControllers := sets.New(ourControllerNames...)
+	ourControllers := gatewayControllerNames(cfg.ControllerName, classInfo)
 
 	r.gwClassClient.AddEventHandler(
 		controllers.FromEventHandler(func(o controllers.Event) {
@@ -85,6 +79,16 @@ func newGatewayClassReconciler(
 		}))
 
 	return r
+}
+
+func gatewayControllerNames(defaultName string, classInfo map[string]*deployer.GatewayClassInfo) sets.Set[string] {
+	names := sets.New(defaultName)
+	for _, info := range classInfo {
+		if info.ControllerName != "" {
+			names.Insert(info.ControllerName)
+		}
+	}
+	return names
 }
 
 // NeedLeaderElection returns true to ensure that the GatewayClass runs only on the leader
