@@ -939,7 +939,7 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 		wantMeta    bool
 	}{
 		{
-			name:        "disabled by default, no route_source metadata",
+			name:        "disabled, no route_source metadata",
 			flagEnabled: false,
 			wantMeta:    false,
 		},

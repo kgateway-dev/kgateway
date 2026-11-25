@@ -329,6 +329,10 @@ func TestTranslationWithExtraPlugins(
 	tc := TestCase{
 		InputFiles: inputFiles,
 	}
+	// Keep route source metadata opt-in for golden tests that focus on other features.
+	settingsOpts = append([]SettingsOpts{func(s *apisettings.Settings) {
+		s.EnableRouteSourceMetadata = false
+	}}, settingsOpts...)
 	results, err := tc.Run(t, ctx, scheme, extraConfig, settingsOpts...)
 	r.NoError(err, "error running test case")
 	r.Len(results, 1, "expected exactly one gateway in the results")

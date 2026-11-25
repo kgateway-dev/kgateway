@@ -380,6 +380,8 @@ spec:
               value: "{}"
             - name: KGW_VALIDATION_MODE
               value: "standard"
+            - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
+              value: "true"
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY
               value: "false"
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
