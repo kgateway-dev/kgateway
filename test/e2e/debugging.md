@@ -336,12 +336,12 @@ If there are multiple tests in a feature suite, you can run a single test by add
 
 ### Running the same tests as our CI pipeline
 We [load balance tests](./load_balancing_tests.md) across different clusters when executing them in CI. If you would like to replicate the exact set of tests that are run for a given cluster, you should:
-1. Inspect the `go-test-run-regex` defined in the [test matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+1. Inspect the `go-test-run-regex` defined in the [test matrix](/.github/workflows/e2e.yaml)
 ```bash
 go-test-run-regex: '(^TestKgateway$$)'
 ```
 _NOTE: There is `$$` in the GitHub action definition, since a single `$` is expanded_
-2. Inspect the `go-test-args` defined in the [test matrix](/.github/workflows/pr-kubernetes-tests.yaml)
+2. Inspect the `go-test-args` defined in the [test matrix](/.github/workflows/e2e.yaml)
 ```bash
 go-test-args: '-v -timeout=25m'
 ```
