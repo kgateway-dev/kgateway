@@ -4218,6 +4218,54 @@ func TestSetupScenarios(t *testing.T) {
 	}
 }
 
+func TestDynamicForwardProxyBackendConfigPolicyTLS(t *testing.T) {
+	dir := fsutils.MustGetThisDir()
+	tc := translatortest.TestCase{
+		InputFiles: []string{
+			filepath.Join(dir, "testutils/inputs/dfp/tls.yaml"),
+			filepath.Join(dir, "testutils/inputs/dfp/tls-backend-config-policy.yaml"),
+		},
+	}
+	results, err := tc.Run(t, t.Context(), translatortest.NewScheme(nil), translatortest.ExtraConfig{})
+	require.NoError(t, err)
+	gateway := types.NamespacedName{Namespace: "default", Name: "example-gateway"}
+	require.Contains(t, results, gateway)
+	clusters := results[gateway].Clusters
+
+	checkTLS := func(t *testing.T, name, clusterType, wantSNI, wantSAN string) {
+		t.Helper()
+		cluster := requireClusterByName(t, clusters, "backend_default_"+name+"_0")
+		assert.Equal(t, clusterType, cluster.GetClusterType().GetName())
+		socket := cluster.GetTransportSocket()
+		require.NotNil(t, socket)
+		tlsContext := &envoytlsv3.UpstreamTlsContext{}
+		require.NoError(t, socket.GetTypedConfig().UnmarshalTo(tlsContext))
+		validation := tlsContext.GetCommonTlsContext().GetCombinedValidationContext()
+		require.NotNil(t, validation)
+		assert.Equal(t, "SYSTEM_CA_CERT", validation.GetValidationContextSdsSecretConfig().GetName())
+		matchers := validation.GetDefaultValidationContext().GetMatchTypedSubjectAltNames()
+		if wantSAN == "" {
+			assert.Empty(t, matchers, "DFP must not pin certificate SANs to the configured SNI")
+		} else {
+			require.Len(t, matchers, 1)
+			assert.Equal(t, envoytlsv3.SubjectAltNameMatcher_DNS, matchers[0].GetSanType())
+			assert.Equal(t, wantSAN, matchers[0].GetMatcher().GetExact())
+		}
+		assert.Equal(t, wantSNI, tlsContext.GetSni())
+	}
+
+	const dfpCluster = "envoy.clusters.dynamic_forward_proxy"
+	t.Run("implicit_sni_pin_is_omitted", func(t *testing.T) {
+		checkTLS(t, "dfp-backend", dfpCluster, "", "")
+	})
+	t.Run("static_backend_sharing_the_policy_keeps_the_pin", func(t *testing.T) {
+		checkTLS(t, "static-backend", "", "wrong-name.invalid", "wrong-name.invalid")
+	})
+	t.Run("explicit_san_equal_to_sni_is_preserved", func(t *testing.T) {
+		checkTLS(t, "dfp-explicit-san", dfpCluster, "", "example.com")
+	})
+}
+
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
 	ctx := t.Context()
 

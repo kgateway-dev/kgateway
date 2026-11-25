@@ -107,6 +107,7 @@ func mergeTLSConfig(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, 
 		return
 	}
 	p1.tlsConfig = p2.tlsConfig
+	p1.dfpTLSConfig = p2.dfpTLSConfig
 	mergeOrigins.SetOne("tls", p2Ref, p2MergeOrigins)
 }
 

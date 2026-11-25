@@ -600,12 +600,11 @@ type TLS struct {
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
-	// When sni is set and verifySubjectAltNames is empty, the certificate must also
-	// be valid for the sni.
-	// WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
-	// chain is checked, so any certificate issued by a publicly trusted CA is accepted,
-	// whatever name it was issued for. Dynamic forward proxy backends are the exception:
-	// they always check the certificate against the request's host.
+	// Dynamic forward proxy backends verify the certificate against the request's host.
+	// For other backends, setting sni without verifySubjectAltNames requires the
+	// certificate to be valid for sni. If neither is set, only the certificate chain
+	// is checked, so any certificate issued by a publicly trusted CA is accepted
+	// regardless of the names it was issued for.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self == 'System'",message="wellKnownCACertificates only supports System"
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
@@ -618,16 +617,17 @@ type TLS struct {
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
 	// Sni is the server name sent in the TLS handshake (Server Name Indication).
-	// When wellKnownCACertificates is System and verifySubjectAltNames is empty,
-	// the backend's certificate must also be valid for this name.
-	// For dynamic forward proxy backends, the request's host is sent instead.
+	// Dynamic forward proxy backends ignore this field and use the request's host for SNI.
+	// For other backends, when wellKnownCACertificates is System and verifySubjectAltNames
+	// is empty, the backend's certificate must also be valid for this name.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
-	// When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
+	// For backends other than dynamic forward proxies, when validating against the system
+	// CA certificates, an empty list falls back to sni if set.
 	// +optional
 	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 

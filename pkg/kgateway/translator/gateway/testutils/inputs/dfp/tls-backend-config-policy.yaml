@@ -1,0 +1,75 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: shared-system-tls
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: dfp-backend
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: static-backend
+  tls:
+    wellKnownCACertificates: System
+    sni: wrong-name.invalid
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: static-backend
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: 192.0.2.1
+      port: 443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp-explicit-san
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy:
+    enableTls: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: explicit-san
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: dfp-explicit-san
+  tls:
+    wellKnownCACertificates: System
+    sni: example.com
+    verifySubjectAltNames:
+    - example.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: policy-tls-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /static
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: static-backend
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /explicit-san
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: dfp-explicit-san
