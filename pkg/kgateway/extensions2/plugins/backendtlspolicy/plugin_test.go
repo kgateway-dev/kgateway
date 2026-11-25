@@ -66,30 +66,6 @@ func TestProcessBackend_NoExistingSocket(t *testing.T) {
 	assert.Equal(t, envoywellknown.TransportSocketTls, cluster.TransportSocket.GetName())
 }
 
-// TestProcessBackend_ReplacesInnerOfProxyProtocolWrapper: if BCP already
-// wrapped the cluster in upstream proxy protocol with a raw_buffer inner, BTP
-// must replace the inner with its TLS socket and keep the wrapper.
-func TestProcessBackend_ReplacesInnerOfProxyProtocolWrapper(t *testing.T) {
-	pol := &backendTlsPolicy{transportSocket: tlsSocket(t, "btp.example.com")}
-	cluster := &envoyclusterv3.Cluster{TransportSocket: proxyProtocolWrappedRawBuffer(t)}
-
-	processBackend(context.Background(), pol, ir.BackendObjectIR{}, cluster)
-
-	require.NotNil(t, cluster.TransportSocket)
-	require.Equal(t, wellknown.TransportSocketUpstreamProxyProtocol, cluster.TransportSocket.GetName(),
-		"BTP must preserve the upstream_proxy_protocol wrapper")
-
-	pp := &envoyproxyprotocolv3.ProxyProtocolUpstreamTransport{}
-	require.NoError(t, cluster.TransportSocket.GetTypedConfig().UnmarshalTo(pp))
-	require.NotNil(t, pp.TransportSocket)
-	assert.Equal(t, envoywellknown.TransportSocketTls, pp.TransportSocket.GetName(),
-		"inner socket should be replaced with BTP's TLS socket")
-
-	inner := &envoytlsv3.UpstreamTlsContext{}
-	require.NoError(t, pp.TransportSocket.GetTypedConfig().UnmarshalTo(inner))
-	assert.Equal(t, "btp.example.com", inner.GetSni(), "inner TLS context should come from BTP")
-}
-
 // TestProcessBackend_NilPolicySocket: a BTP that did not produce a transport
 // socket (e.g. translation error) must not touch the cluster's existing socket.
 func TestProcessBackend_NilPolicySocket(t *testing.T) {
