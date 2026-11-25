@@ -1378,6 +1378,12 @@ spec:
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
+                - message: verifySubjectAltNames cannot be used with insecureSkipVerify
+                  rule: '!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames)
+                    == 0 || !has(self.insecureSkipVerify)'
+                - message: files.rootCA must be set when verifySubjectAltNames is non-empty
+                  rule: '!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames)
+                    == 0 || !has(self.files) || has(self.files.rootCA)'
               tunnel:
                 description: |-
                   Tunnel sends Backend connections through an HTTP CONNECT proxy.

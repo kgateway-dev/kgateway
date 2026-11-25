@@ -180,7 +180,7 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 			return nil
 		}
 		// Root CA is required if SAN verification is specified
-		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+		return errors.New("a root CA must be provided if verifySubjectAltNames is not empty")
 	}
 
 	// If root CA is provided, build a validation context

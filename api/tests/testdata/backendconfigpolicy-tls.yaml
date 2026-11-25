@@ -117,3 +117,79 @@ spec:
   tls:
     sni: example.com
     wellKnownCACertificates: example.com/corporate-roots
+---
+_err: files.rootCA must be set when verifySubjectAltNames is non-empty
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: files-san-without-root-ca
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    files:
+      tlsCertificate: /etc/envoy/certs/tls.crt
+      tlsKey: /etc/envoy/certs/tls.key
+    verifySubjectAltNames:
+    - backend.example.com
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: files-san-with-root-ca
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    files:
+      rootCA: /etc/ssl/certs/ca.crt
+    verifySubjectAltNames:
+    - backend.example.com
+---
+_err: verifySubjectAltNames cannot be used with insecureSkipVerify
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: insecure-skip-verify-with-san
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    insecureSkipVerify: true
+    verifySubjectAltNames:
+    - backend.example.com
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: secret-ref-with-san
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    secretRef:
+      name: tls-secret
+    verifySubjectAltNames:
+    - backend.example.com
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: system-ca-with-san
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    wellKnownCACertificates: System
+    verifySubjectAltNames:
+    - backend.example.com
