@@ -52,6 +52,7 @@ type BackendConfigPolicyIR struct {
 	http1ProtocolOptions          *envoycorev3.Http1ProtocolOptions
 	http2ProtocolOptions          *envoycorev3.Http2ProtocolOptions
 	tlsConfig                     *envoytlsv3.UpstreamTlsContext
+	dfpTLSConfig                  *envoytlsv3.UpstreamTlsContext
 	loadBalancerConfig            *LoadBalancerConfigIR
 	healthCheck                   *envoycorev3.HealthCheck
 	outlierDetection              *envoyclusterv3.OutlierDetection
@@ -107,7 +108,7 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
-	if !proto.Equal(d.tlsConfig, d2.tlsConfig) {
+	if !proto.Equal(d.tlsConfig, d2.tlsConfig) || !proto.Equal(d.dfpTLSConfig, d2.dfpTLSConfig) {
 		return false
 	}
 
@@ -275,7 +276,11 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	// to the same backend. BCP's TLS config is only applied if there is no attached BackendTLSPolicy.
 	tlsAllowed := pol.tlsConfig != nil && !hasBackendTLSPolicy(backend)
 	if tlsAllowed {
-		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
+		tlsConfig := pol.tlsConfig
+		if be, ok := backend.Obj.(*kgateway.Backend); ok && be.Spec.DynamicForwardProxy != nil && pol.dfpTLSConfig != nil {
+			tlsConfig = pol.dfpTLSConfig
+		}
+		typedConfig, err := utils.MessageToAny(tlsConfig)
 		if err != nil {
 			logger.Error("failed to convert tls config to any", "error", err)
 			return
@@ -395,6 +400,17 @@ func translate(
 			errs = append(errs, err)
 		}
 		ir.tlsConfig = tlsConfig
+		if tlsConfig != nil && pol.Spec.TLS.Sni != nil {
+			// Envoy derives SNI and validates the certificate against the request host
+			// for DFP. Keep a separate context because this policy can also target
+			// backends that use the configured SNI.
+			ir.dfpTLSConfig = proto.CloneOf(tlsConfig)
+			ir.dfpTLSConfig.Sni = ""
+			validation := ir.dfpTLSConfig.GetCommonTlsContext().GetCombinedValidationContext().GetDefaultValidationContext()
+			if validation != nil && len(pol.Spec.TLS.VerifySubjectAltNames) == 0 {
+				validation.MatchTypedSubjectAltNames = nil
+			}
+		}
 	}
 
 	if pol.Spec.LoadBalancer != nil {

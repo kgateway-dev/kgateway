@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -25,6 +26,13 @@ func TestBackendConfigPolicyIREquals(t *testing.T) {
 
 	t.Run("identical IRs are equal", func(t *testing.T) {
 		assert.True(t, base().Equals(base()))
+	})
+
+	t.Run("differing DFP TLS contexts are not equal", func(t *testing.T) {
+		a, b := base(), base()
+		a.dfpTLSConfig = &envoytlsv3.UpstreamTlsContext{}
+		assert.False(t, a.Equals(b))
+		assert.False(t, b.Equals(a))
 	})
 
 	t.Run("differing dnsLookupFamily is not equal", func(t *testing.T) {
