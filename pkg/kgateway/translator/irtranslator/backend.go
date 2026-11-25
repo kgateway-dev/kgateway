@@ -68,6 +68,7 @@ type BackendTranslator struct {
 
 	// Base hooks are cached in (Group, Kind) order.
 	baseHooksOnce     sync.Once
+	processBackends   []processBackendPlugin
 	baseClusterHooks  []sdk.ProcessBaseCluster
 	baseResourceHooks []sdk.ProcessBaseClusterResources
 }
@@ -112,7 +113,15 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 	return t.overlayPlugins
 }
 
-// orderBaseHooks caches cluster and resource hooks in (Group, Kind) order.
+// processBackendPlugin is one policy plugin's UCC-invariant ProcessBackend hook.
+type processBackendPlugin struct {
+	gk     schema.GroupKind
+	plugin sdk.PolicyPlugin
+}
+
+// orderBaseHooks caches ProcessBackend, cluster and resource hooks in (Group, Kind) order.
+// ProcessBackend hooks of different kinds edit the same cluster, so their order must not
+// depend on map iteration.
 func (t *BackendTranslator) orderBaseHooks() {
 	t.baseHooksOnce.Do(func() {
 		gks := make([]schema.GroupKind, 0, len(t.ContributedPolicies))
@@ -127,6 +136,9 @@ func (t *BackendTranslator) orderBaseHooks() {
 		})
 		for _, gk := range gks {
 			policyPlugin := t.ContributedPolicies[gk]
+			if policyPlugin.ProcessBackend != nil {
+				t.processBackends = append(t.processBackends, processBackendPlugin{gk: gk, plugin: policyPlugin})
+			}
 			if policyPlugin.ProcessBaseCluster != nil {
 				t.baseClusterHooks = append(t.baseClusterHooks, policyPlugin.ProcessBaseCluster)
 			}
@@ -610,10 +622,9 @@ func (t *BackendTranslator) applyBasePolicies(
 	out *envoyclusterv3.Cluster,
 ) error {
 	var errs []error
-	for gk, policyPlugin := range t.ContributedPolicies {
-		if policyPlugin.ProcessBackend == nil {
-			continue
-		}
+	t.orderBaseHooks()
+	for _, p := range t.processBackends {
+		gk, policyPlugin := p.gk, p.plugin
 		policies := backend.AttachedPolicies.Policies[gk]
 		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
 			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
