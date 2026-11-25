@@ -762,7 +762,8 @@ Alternatives for the follow-up.
 
 The reconciler tells an existing Gateway from a new one by whether its generated
 `ConfigMap` exists; it already has a `ConfigMap` client. For an existing Gateway
-it sets `kgateway.dev/BootstrapOverlayApplied=False` and leaves `Accepted` alone.
+it sets `kgateway.dev/BootstrapOverlayApplied=False`, and the overlay failure does
+not count against `Accepted`.
 Today's error path sets `Accepted=False` with reason `InvalidParameters`, and
 while that is set the translator stops reporting `Accepted=True`
 (`gatewayConditionsWithDefaults` in `pkg/reports/status.go`), so a Gateway still
@@ -770,10 +771,19 @@ serving its last-good config would read as not accepted. The deployer returns a
 distinct error for an invalid overlay, which the reconciler handles in its own
 branch, as it already does for `ErrNoValidPorts`.
 
+`Accepted` then reports the Gateway's other parameters. The deployer still applies
+the object overlays to the objects it rendered, and the reconciler records that
+result as its verdict on the parameters. An object overlay that does not apply is
+reported as `InvalidParameters`, next to the overlay's own condition. A result
+without an error replaces an `InvalidParameters` failure recorded earlier for the
+same Gateway generation, for example for a `GatewayParameters` that did not exist
+and was then created with an overlay that fails.
+
 The same fallback applies when the controller cannot validate the overlays, and the
 reason says why (see Reporting): `ValidationUnavailable` when the controller could
 not run Envoy, retried when the cause can clear, and `ControllerError` for a
-kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
+kgateway defect. In each case the failure does not count against `Accepted` for an
+existing Gateway.
 
 #### Deployer
 
@@ -826,7 +836,14 @@ kgateway defect. In each case `Accepted` is left alone for an existing Gateway.
   generated `ConfigMap`, so the deployer replaces it with the revision key. The
   rendered `Deployment` has no `INPUT_CONF`, so one found at this point was set
   by the user; one built into a custom proxy image is not in the pod spec and is
-  not detected. The deployer then handles what the proxy runs as
+  not detected. The last case is a second volume mounted inside `/etc/envoy`,
+  through `envoyContainer.extraVolumeMounts` or an object overlay, over the file
+  envoyinit reads: `envoy.yaml`, or the file the user's `INPUT_CONF` names. A
+  mount at that file's path, such as a `subPath` mount at `/etc/envoy/envoy.yaml`,
+  or at a directory above it holds the file, so the proxy reads the user's
+  volume, and the deployer does not set `INPUT_CONF`. A volume mounted elsewhere
+  inside `/etc/envoy` leaves the file in the generated `ConfigMap` and is not
+  reported. The deployer then handles what the proxy runs as
   for a Gateway without an `overlay`: it writes no validation key or pod annotation
   and leaves `INPUT_CONF` unset (see Versioned bootstrap keys), so strict
   validation uses Envoy defaults and the constant reserved ports, and the
@@ -931,21 +948,35 @@ key; old pods keep reading theirs.
   `watch` on `apps/replicasets`, which the Helm chart's ClusterRole gains. A
   controller without that rule never finishes the sync and reconciles no
   Gateway.
-- **Reading earlier keys.** The deployer copies each earlier key in use from the
+- **The previous revision.** The deployer also keeps, for one more write, the
+  revision the live `ConfigMap` is current on: the key that holds the same
+  content as `envoy.yaml`. Until the reconcile's objects are applied, the
+  `Deployment`'s pod template names that revision, and the `Deployment`
+  controller can have created a ReplicaSet or pod from it that the controller's
+  informers do not hold yet. Without this, two bootstrap changes in quick
+  succession could remove the first change's key before its ReplicaSet was
+  seen. Nothing is known to use this key, so it is kept only when the
+  `ConfigMap` has room for it and never causes `BootstrapConfigMapTooLarge`.
+  Once a write makes another revision current, it is kept only if a pod or
+  ReplicaSet uses it. When the proxy does not read the generated `ConfigMap`
+  (see A user-mounted bootstrap), no key becomes current, so this one stays
+  until `envoy.yaml` changes.
+- **Reading earlier keys.** The deployer copies each earlier key from the
   `ConfigMap` as the controller's informer holds it. A key names the SHA-256 of
   its content, so a stale informer copy that holds a key holds its current
-  content; staleness can only make a key a pod still uses missing. When the
-  informer copy lacks an earlier key in use, the deployer reads the `ConfigMap`
-  from the API server instead. The key this reconcile writes does not count. So
-  a Gateway outside a rollout causes no API server read, and the controller
-  already runs the `ConfigMap` informer. A read happens in a short window after
-  the controller writes a new key, when a pod can start on it before the
-  informer has the write, and, after an upgrade from a release without revision
-  keys, on each reconcile until the rollout replaces the old pods: their
-  checksum names a key no `ConfigMap` holds, and they read `envoy.yaml`. From the
-  API server, NotFound means the `ConfigMap` does not exist yet; any other error
-  fails the reconcile without changing the Gateway's objects or status, and the
-  reconcile retries.
+  content; staleness can only make a key a pod still uses missing, or make the
+  copy name an older revision as the one the `ConfigMap` is current on. When the
+  informer copy lacks the key this reconcile writes or an earlier key in use,
+  the deployer reads the `ConfigMap` from the API server instead. So a Gateway
+  whose bootstrap is unchanged and that is outside a rollout causes no API
+  server read, and the controller already runs the `ConfigMap` informer. A read
+  happens once for each change of a Gateway's bootstrap, including its first
+  reconcile, and again until the informer has the write. After an upgrade from a
+  release without revision keys, a read also happens on each reconcile until the
+  rollout replaces the old pods: their checksum names a key no `ConfigMap`
+  holds, and they read `envoy.yaml`. From the API server, NotFound means the
+  `ConfigMap` does not exist yet; any other error fails the reconcile without
+  changing the Gateway's objects or status, and the reconcile retries.
 - **Size limit.** The API server rejects a `ConfigMap` whose data is over 1 MiB,
   so the deployer checks the size before writing. A revision is about 10 KB
   (8.7 KB with xDS TLS). Normally one or two are in use, plus `envoy.yaml`. More
@@ -959,7 +990,8 @@ key; old pods keep reading theirs.
   as a `Warning` event on the Gateway. With no condition to compare against, the
   event is recorded on each reconcile that hits the limit.
 - **A key in use is never removed to make room.** After pruning, every remaining
-  key belongs to a pod or a ReplicaSet with replicas. Removing one would leave
+  key belongs to a pod or a ReplicaSet with replicas, apart from the previous
+  revision, which is left out when it does not fit. Removing a key in use would leave
   that pod's next container restart, or the ReplicaSet's next pod, waiting for a
   file that never appears, and the startup probe would put it in a crash loop.
   The cost is that the fallback applies none of the Gateway's objects, so a
@@ -976,7 +1008,9 @@ key; old pods keep reading theirs.
   deployer writes no key for the current revision and leaves `INPUT_CONF` unset,
   so envoyinit reads `envoy.yaml` from the `ConfigMap` the user mounted. When the
   user set `INPUT_CONF` to a file outside `/etc/envoy`, the deployer keeps it,
-  and envoyinit reads that file. Pruning
+  and envoyinit reads that file. When the user mounted a second volume inside
+  `/etc/envoy` over the file envoyinit reads, the deployer leaves `INPUT_CONF` as
+  the user has it, and envoyinit reads the file from that volume. Pruning
   still runs, so old pods that mount the generated `ConfigMap` keep their keys
   until they are gone.
 
@@ -1006,7 +1040,7 @@ translator also writes Gateway conditions but preserves types it does not own
 | `False` | `ValidationUnavailable` | The controller could not run Envoy to validate the merged bootstrap. |
 | `False` | `ControllerError` | The controller failed to process the bootstrap it generated or the merged result. This is a kgateway defect; the message says so. |
 | `False` | `BootstrapConfigMapTooLarge` | The generated `ConfigMap` would exceed the API server's 1 MiB limit, because the new bootstrap is very large or because pods or ReplicaSets still use earlier revisions (see Versioned bootstrap keys). The message gives the size of each; in the second case the change applies once the rollout finishes. |
-| `False` | `BootstrapNotMounted` | An object overlay points the `envoy-config` volume at a `ConfigMap` other than the generated one, or mounts a different volume at `/etc/envoy`, or the proxy container's env sets `INPUT_CONF` to a file outside `/etc/envoy`, so the proxy does not run the merged bootstrap. |
+| `False` | `BootstrapNotMounted` | An object overlay points the `envoy-config` volume at a `ConfigMap` other than the generated one, or mounts a different volume at `/etc/envoy`, or the proxy container's env sets `INPUT_CONF` to a file outside `/etc/envoy`, or a second volume is mounted inside `/etc/envoy` over the bootstrap file the proxy reads, so the proxy does not run the merged bootstrap. |
 
 `True` with `ManagedPathsOverridden` or `PathsIgnored` is deliberate: the overlay did
 apply, and a routine report must not read as a broken Gateway to anyone alerting on
@@ -1450,8 +1484,11 @@ image; Alternatives covers checking stored overlays before an upgrade.
     checksum, with only revision keys added to its `ConfigMap`.
   - An invalid overlay leaves every object of an existing Gateway unchanged
     (including a `Deployment` change in the same edit), sets
-    `BootstrapOverlayApplied=False` and leaves `Accepted` unchanged. A new Gateway
-    also gets `Accepted=False` with `InvalidParameters`.
+    `BootstrapOverlayApplied=False` and does not make the Gateway not accepted. A
+    new Gateway also gets `Accepted=False` with `InvalidParameters`. An existing
+    Gateway whose `GatewayParameters` did not exist, and is then created with an
+    invalid overlay, loses the earlier `InvalidParameters` failure. An invalid
+    overlay together with an object overlay that does not apply reports both.
   - An object overlay that repoints the `envoy-config` volume, or mounts a
     different volume at `/etc/envoy`, gives `BootstrapNotMounted`. The Gateway
     gets no validation key, pod annotation or `INPUT_CONF`, so a route that only
@@ -1460,7 +1497,10 @@ image; Alternatives covers checking stored overlays before an upgrade.
     `envoyContainer.env` to a file outside `/etc/envoy` gives
     `BootstrapNotMounted` too and is kept; without an `overlay` it is kept and
     nothing is reported. One that names a file inside `/etc/envoy` is replaced
-    with the revision key. An invalid overlay on a Gateway whose bootstrap is not
+    with the revision key. A second volume mounted at `/etc/envoy/envoy.yaml`, or
+    over the file an `INPUT_CONF` inside `/etc/envoy` names, gives
+    `BootstrapNotMounted`; one mounted elsewhere inside `/etc/envoy` does not.
+    An invalid overlay on a Gateway whose bootstrap is not
     mounted takes the fallback, keeps the overlay's reason, and the condition
     message ends with the sentence that the overlay has no effect on the proxy,
     also after an error long enough to be cut; with the bootstrap mounted there
@@ -1480,12 +1520,15 @@ image; Alternatives covers checking stored overlays before an upgrade.
     revision, including after an edit that adds or removes the `overlay`.
     Reverting the `GatewayParameters` edit mid-rollout leaves every pod running
     the bootstrap its annotations describe.
-  - Earlier keys come from the informer copy when it holds every one in use, with
-    no API server read; when it lacks one, they come from the API server; the key
-    this reconcile writes does not count; a failed API server read retries the
-    reconcile and removes no key.
+  - Earlier keys come from the informer copy when it holds the key this reconcile
+    writes and every one in use, with no API server read; when it lacks one, they
+    come from the API server; a failed API server read retries the reconcile and
+    removes no key.
   - A key is kept while a pod or a ReplicaSet with `replicas` above zero uses it,
     including while an old ReplicaSet has no pods, and removed once neither does.
+  - The revision the live `ConfigMap` is current on is kept for one more write
+    when nothing is known to use it, and left out when the `ConfigMap` has no
+    room for it.
   - A change that would put the `ConfigMap` over 1 MiB, from one large overlay or
     from earlier revisions still in use, takes the fallback with
     `BootstrapConfigMapTooLarge`, removes no key in use, and applies once the old
@@ -1565,7 +1608,9 @@ sections.
   validated with Envoy defaults, not with the overlays' runtime layers. Setting
   `INPUT_CONF` on the proxy container to a file outside `/etc/envoy`, through
   `envoyContainer.env` or a `deploymentOverlay`, has the same effect: the proxy
-  reads that file. In both cases an overlay that is invalid still holds back every
+  reads that file. So does mounting a second volume inside `/etc/envoy` over the
+  bootstrap file the proxy reads, such as a `subPath` mount at
+  `/etc/envoy/envoy.yaml`. In each case an overlay that is invalid still holds back every
   change to the Gateway's `Deployment`, `Service` and `ConfigMap` until it is
   fixed or removed; the condition message says the overlay has no effect on the
   proxy, so removing it loses nothing.
