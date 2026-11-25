@@ -118,7 +118,7 @@ e.g. In order to add a feature suite to be run with the test installation define
 
 ## Adding Tests to CI
 
-When writing new tests, they should be added to the the [`Kubernetes Tests` that run on all PRs](/.github/workflows/pr-kubernetes-tests.yaml) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies.
+When writing new tests, they should be added to the [`Kubernetes Tests` that run on all PRs](/.github/workflows/e2e.yaml) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies.
 
 When adding it to the list, ensure that the tests are load balanced to allow quick iteration on PRs and update the date and the duration of corresponding test.
 The only exception to this is the Upgrade tests that are not run on the main branch but all LTS branches.
