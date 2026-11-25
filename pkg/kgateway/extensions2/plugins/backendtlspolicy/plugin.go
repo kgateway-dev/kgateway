@@ -24,6 +24,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -114,6 +115,12 @@ func (d *backendTlsPolicy) PolicyHash() uint64 {
 	return utils.HashProto(d.transportSocket)
 }
 
+// Supersedes is the plugin's PolicyPlugin.Supersedes: the standard Gateway API policy owns
+// upstream TLS over BackendConfigPolicy.spec.tls.
+var Supersedes = map[schema.GroupKind][]string{
+	kgwellknown.BackendConfigPolicyGVK.GroupKind(): {backendconfigpolicy.TLSField},
+}
+
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*gwv1.BackendTLSPolicy](
 		commoncol.Client,
@@ -152,6 +159,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				ProcessBackend:     processBackend,
 				ProcessBaseCluster: processBaseCluster,
 				MergePolicies:      MergePolicies,
+				Supersedes:         Supersedes,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,

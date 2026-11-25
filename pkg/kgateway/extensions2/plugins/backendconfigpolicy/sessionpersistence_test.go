@@ -18,6 +18,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -335,7 +336,11 @@ func TestPartiallyValidMessages(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, PartiallyValidMessages(tt.policies, tt.backend))
+			backend := tt.backend
+			backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				wellknown.BackendConfigPolicyGVK.GroupKind(): tt.policies,
+			}}
+			assert.Equal(t, tt.want, PartiallyValidMessages(backend))
 		})
 	}
 

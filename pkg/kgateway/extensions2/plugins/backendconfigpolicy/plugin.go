@@ -204,6 +204,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				// inline CLA built once on the shared base.
 				PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
 				MergePolicies:              mergePolicies,
+				SetFields:                  setFields,
+				ClearFields:                clearFields,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					wellknown.BackendConfigPolicyGVK,
 					col,
@@ -236,13 +238,6 @@ func sortForMerge(pols []ir.PolicyAtt) []ir.PolicyAtt {
 	return out
 }
 
-// hasBackendTLSPolicy reports whether the backend has a BackendTLSPolicy
-// attached. This is used to determine whether BCP's TLS config should be applied,
-// as BTP wins for TLS when both are attached to the same backend.
-func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
-	return len(backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]) > 0
-}
-
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.sessionPersistence != nil {
@@ -271,10 +266,9 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	applyHttp1ProtocolOptions(pol.http1ProtocolOptions, backend, out)
 	applyHttp2ProtocolOptions(pol.http2ProtocolOptions, backend, out)
 
-	// BackendTLSPolicy (standard Gateway API) wins for TLS when both are attached
-	// to the same backend. BCP's TLS config is only applied if there is no attached BackendTLSPolicy.
-	tlsAllowed := pol.tlsConfig != nil && !hasBackendTLSPolicy(backend)
-	if tlsAllowed {
+	// pol is the backend's resolved policy: when another kind supersedes spec.tls (a
+	// BackendTLSPolicy does), the resolution has already cleared it here.
+	if pol.tlsConfig != nil {
 		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
 		if err != nil {
 			logger.Error("failed to convert tls config to any", "error", err)

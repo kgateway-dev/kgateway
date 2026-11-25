@@ -187,8 +187,13 @@ func reportBackendObjectPolicyStatus(
 		return
 	}
 
+	// The policy the backend's resolution chose, which backend translation applies and the
+	// target-ancestor status reports. The merge below is only for a backend that never went
+	// through attachment.
 	var effectivePolicy *ir.PolicyAtt
-	if pass := pluginPass[gk]; pass != nil {
+	if eff, ok := backend.PolicyResolution.Effective(gk); ok {
+		effectivePolicy = &eff
+	} else if pass := pluginPass[gk]; pass != nil {
 		effectivePolicies, _ := mergePolicies(pass, policies)
 		if len(effectivePolicies) > 0 {
 			effectivePolicy = &effectivePolicies[0]

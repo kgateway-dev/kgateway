@@ -225,6 +225,9 @@ func (i *BackendIndex) attachPoliciesToBackend(
 	}
 	backendObj.RequiresPolicyStatus = anyHasRef
 	backendObj.AttachedPolicies = ToAttachedPolicies(policies)
+	// Decide once what each attached policy contributes; translation and status both read
+	// this rather than merging the attached policies again.
+	backendObj.PolicyResolution = sdk.ResolveBackendPolicies(backendObj.AttachedPolicies, i.policies.contributesPolicies)
 	backend := &backendObj
 	return backend
 }
@@ -875,6 +878,9 @@ type PolicyIndex struct {
 	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
 	globalPolicies []globalPolicy
 
+	// contributesPolicies resolves what the policies attached to a backend contribute.
+	contributesPolicies sdk.ContributesPolicies
+
 	hasSyncedFuncs []func() bool
 }
 type policyFetcherMap = map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
@@ -903,6 +909,7 @@ func NewPolicyIndex(
 ) *PolicyIndex {
 	index := &PolicyIndex{
 		globalPolicyNamespace: globalSettings.GlobalPolicyNamespace,
+		contributesPolicies:   contributesPolicies,
 		policiesFetch:         policyFetcherMap{},
 		availablePolicies:     map[schema.GroupKind]policyAndIndex{},
 	}

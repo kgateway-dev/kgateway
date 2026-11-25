@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -87,19 +86,11 @@ func translateTunnelResources(
 // effectiveTunnel returns the tunnel selected by policy precedence.
 // Errored policies fail base translation before resource hooks run.
 func effectiveTunnel(in ir.BackendObjectIR) *tunnelIR {
-	policies := in.AttachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
-	setsTunnel := func(att ir.PolicyAtt) bool {
-		pol, ok := att.PolicyIr.(*BackendConfigPolicyIR)
-		return ok && pol.tunnel != nil
-	}
-	if !slices.ContainsFunc(policies, setsTunnel) {
+	pol := effectivePolicy(in)
+	if pol == nil {
 		return nil
 	}
-	merged, ok := mergePolicies(policies).PolicyIr.(*BackendConfigPolicyIR)
-	if !ok {
-		return nil
-	}
-	return merged.tunnel
+	return pol.tunnel
 }
 
 // tunnelDestination returns the host and port of a single-host Static Backend.

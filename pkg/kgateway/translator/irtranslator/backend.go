@@ -337,6 +337,15 @@ func (t *BackendTranslator) TranslateBackendBase(
 		}
 	}
 
+	if backend.PolicyResolution == nil {
+		// Backends normally resolve their policies when they attach. One that did not, such
+		// as a backend built outside the backend index, is resolved here on a copy, so every
+		// hook below sees the same decision.
+		resolved := *backend
+		resolved.PolicyResolution = sdk.ResolveBackendPolicies(resolved.AttachedPolicies, t.ContributedPolicies)
+		backend = &resolved
+	}
+
 	out := initializeCluster(backend)
 	inlineEps := process.InitEnvoyBackend(ctx, *backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
@@ -625,11 +634,9 @@ func (t *BackendTranslator) applyBasePolicies(
 	t.orderBaseHooks()
 	for _, p := range t.processBackends {
 		gk, policyPlugin := p.gk, p.plugin
-		policies := backend.AttachedPolicies.Policies[gk]
-		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
-			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
-		}
-		for _, polAttachment := range policies {
+		// The backend's resolution: one merged policy per merging kind, with fields another
+		// kind supersedes already cleared.
+		for _, polAttachment := range backend.PolicyResolution.Applied(gk) {
 			if len(polAttachment.Errors) > 0 {
 				//nolint:sloglint // keep the existing log key; renaming it would break log queries
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
