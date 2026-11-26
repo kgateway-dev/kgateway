@@ -40,6 +40,8 @@ type BackendConfigPolicyList struct {
 // BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
 //
 // +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || !has(self.targetSelectors)",message="tunnel does not support targetSelectors"
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r, r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="tunnel requires targetRefs that reference Backends"
 type BackendConfigPolicySpec struct {
 	// TargetRefs specifies the target references to attach the policy to.
 	// +optional
@@ -53,11 +55,12 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend') || (r.group == 'networking.istio.io' && r.kind == 'Hostname'))",message="TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
-	// The timeout for new network connections to hosts in the cluster.
+	// The timeout for new network connections to hosts in the cluster. Must be at least 1ms.
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
 	// DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
@@ -86,12 +89,12 @@ type BackendConfigPolicySpec struct {
 
 	// Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
 	// Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
-	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http2protocoloptions) for more details.
 	// +optional
 	Http2ProtocolOptions *Http2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
 	// TLS contains the options necessary to configure a backend to use TLS origination.
-	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-upstreamtlscontext) for more details.
 	// +optional
 	TLS *TLS `json:"tls,omitempty"`
 
@@ -118,6 +121,180 @@ type BackendConfigPolicySpec struct {
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
 	// +optional
 	UpstreamProxyProtocol *UpstreamProxyProtocol `json:"upstreamProxyProtocol,omitempty"`
+
+	// Tunnel sends Backend connections through an HTTP CONNECT proxy.
+	// Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+	// Requires Backend targetRefs; targetSelectors are not supported.
+	// +optional
+	Tunnel *Tunnel `json:"tunnel,omitempty"`
+
+	// SessionPersistence pins a client to one endpoint of the backend using a
+	// cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+	// the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+	// splits traffic, it only pins a client to an endpoint within the backend
+	// chosen by the split. When set, it takes precedence over the
+	// sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+	//
+	// This field is experimental and subject to breaking changes. It mirrors the
+	// experimental Gateway API SessionPersistence type (v1.7).
+	// +optional
+	SessionPersistence *SessionPersistence `json:"sessionPersistence,omitempty"`
+}
+
+// SessionPersistence defines the desired state of SessionPersistence.
+// It mirrors the Gateway API v1.7 SessionPersistence type.
+//
+// This type is experimental and subject to breaking changes.
+// +kubebuilder:validation:XValidation:message="AbsoluteTimeout must be specified when cookie lifetimeType is Permanent",rule="!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType != 'Permanent' || has(self.absoluteTimeout)"
+// +kubebuilder:validation:XValidation:message="cookie must be nil if type is not Cookie",rule="!has(self.cookie) || self.type == 'Cookie'"
+// +kubebuilder:validation:XValidation:message="cookie must be specified for Cookie type",rule="self.type != 'Cookie' || has(self.cookie)"
+// +kubebuilder:validation:XValidation:message="header must be nil if type is not Header",rule="!has(self.header) || self.type == 'Header'"
+// +kubebuilder:validation:XValidation:message="header must be specified for Header type",rule="self.type != 'Header' || has(self.header)"
+type SessionPersistence struct {
+	// AbsoluteTimeout defines the absolute timeout of the persistent
+	// session. Once the AbsoluteTimeout duration has elapsed, the
+	// session becomes invalid.
+	//
+	// Only cookie sessions with lifetimeType Permanent support this field, where it
+	// sets the cookie lifetime. It has no effect for header sessions and for Session
+	// cookies (the default lifetimeType), as the gateway does not track the session
+	// lifetime separately from the cookie.
+	//
+	// +optional
+	AbsoluteTimeout *gwv1.Duration `json:"absoluteTimeout,omitempty"`
+
+	// Type defines the type of session persistence such as through
+	// the use of a header or cookie. Defaults to cookie based session
+	// persistence.
+	//
+	// +unionDiscriminator
+	// +optional
+	// +kubebuilder:default=Cookie
+	Type *SessionPersistenceType `json:"type,omitempty"`
+
+	// Cookie provides configuration settings that are specific
+	// to cookie-based session persistence.
+	//
+	// +optional
+	Cookie *SessionPersistenceCookieConfig `json:"cookie,omitempty"`
+
+	// Header provides configuration settings that are specific
+	// to header-based session persistence.
+	//
+	// +optional
+	Header *SessionPersistenceHeaderConfig `json:"header,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Cookie;Header
+type SessionPersistenceType string
+
+const (
+	// CookieBasedSessionPersistence specifies cookie-based session
+	// persistence.
+	CookieBasedSessionPersistence SessionPersistenceType = "Cookie"
+
+	// HeaderBasedSessionPersistence specifies header-based session
+	// persistence.
+	HeaderBasedSessionPersistence SessionPersistenceType = "Header"
+)
+
+// SessionPersistenceCookieConfig defines the configuration for cookie-based session persistence.
+type SessionPersistenceCookieConfig struct {
+	// Name defines the name of the cookie used for session persistence.
+	// If not specified, a unique cookie name is generated for each backend.
+	// Users should avoid reusing cookie names to prevent unintended
+	// consequences, such as rejection or unpredictable behavior. Avoid using the
+	// same cookie name for backends in the same traffic split, as clients lose
+	// their session whenever the split switches backends.
+	//
+	// +optional
+	Name *CookieName `json:"name,omitempty"`
+
+	// Path defines the cookie Path attribute. Defaults to "/".
+	//
+	// +optional
+	// +kubebuilder:default="/"
+	// +kubebuilder:validation:MaxLength=1024
+	Path *string `json:"path,omitempty"`
+
+	// LifetimeType specifies whether the cookie has a permanent or
+	// session-based lifetime. A permanent cookie persists until its
+	// specified expiry time, defined by the Expires or Max-Age cookie
+	// attributes, while a session cookie is deleted when the current
+	// session ends.
+	//
+	// When set to "Permanent", AbsoluteTimeout indicates the
+	// cookie's lifetime via the Expires or Max-Age cookie attributes
+	// and is required.
+	//
+	// When set to "Session", AbsoluteTimeout has no effect, as the
+	// gateway does not track the session lifetime separately from
+	// the cookie.
+	//
+	// Defaults to "Session".
+	//
+	// +optional
+	// +kubebuilder:default=Session
+	LifetimeType *CookieLifetimeType `json:"lifetimeType,omitempty"`
+}
+
+// CookieName is the name of a cookie. Cookie names and header names share the
+// same RFC token character set (RFC 6265 defines cookie-name = token).
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
+// +k8s:deepcopy-gen=false
+type CookieName string
+
+// +kubebuilder:validation:Enum=Permanent;Session
+type CookieLifetimeType string
+
+const (
+	// SessionCookieLifetimeType specifies the type for a session
+	// cookie.
+	SessionCookieLifetimeType CookieLifetimeType = "Session"
+
+	// PermanentCookieLifetimeType specifies the type for a permanent
+	// cookie.
+	PermanentCookieLifetimeType CookieLifetimeType = "Permanent"
+)
+
+// SessionPersistenceHeaderConfig defines the configuration for header-based session persistence.
+type SessionPersistenceHeaderConfig struct {
+	// Name defines the name of the header used for session persistence.
+	// The client must include this header in subsequent requests to
+	// maintain the session. Avoid using the same header name for backends in
+	// the same traffic split, as clients lose their session whenever the split
+	// switches backends.
+	//
+	// +required
+	Name gwv1.HeaderName `json:"name"`
+}
+
+// Tunnel configures HTTP CONNECT tunneling through a forward proxy.
+type Tunnel struct {
+	// Proxy identifies the forward proxy that establishes the tunnel.
+	// +required
+	Proxy TunnelProxy `json:"proxy"`
+
+	// Headers are sent only on CONNECT requests. Each requires a name and
+	// exactly one of value or secretRef.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(h, has(h.name))",message="tunnel headers require a name"
+	// +kubebuilder:validation:XValidation:rule="self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')",message="tunnel headers cannot set Host"
+	Headers []shared.HTTPHeader `json:"headers,omitempty"`
+}
+
+// TunnelProxy identifies the forward proxy for a tunnel.
+type TunnelProxy struct {
+	// BackendRef references the proxy Service or Backend. CONNECT uses that
+	// backend's HTTP protocol.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="(self.group == '' && self.kind == 'Service') || (self.group == 'gateway.kgateway.dev' && self.kind == 'Backend')",message="proxy backendRef must reference a Service or a Backend"
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 }
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
@@ -161,7 +338,7 @@ type CircuitBreakers struct {
 type DNS struct {
 	// RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 	//
-	// Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+	// Must be greater than 1ms. If unset, Envoy's default of 5s is used.
 	// When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
 	// so RefreshRate acts as the maximum polling interval.
 	// Recommended value for large-scale deployments is 60s or higher.
@@ -169,7 +346,7 @@ type DNS struct {
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
+	// +kubebuilder:validation:XValidation:rule="duration(self) > duration('1ms')",message="refreshRate must be greater than 1ms"
 	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
 
 	// Jitter adds a random delay of up to this duration before each DNS refresh,
@@ -185,7 +362,56 @@ type DNS struct {
 	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
 	// +optional
 	RespectTTL *bool `json:"respectTTL,omitempty"`
+
+	// LookupFamily selects the address families used to resolve this backend's
+	// hostnames. It applies only to backends resolved through DNS, such as a
+	// Backend with a hostname, and has no effect on Kubernetes Services. When
+	// omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+	// equivalent to IPv4Preferred.
+	//
+	// For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+	// or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+	// selects IPv4 addresses when available, even if those addresses are
+	// unreachable, so a cluster that reaches all IPv4 destinations this way should
+	// change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+	//
+	// Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+	// through a host-local IPv4 address and node SNAT, so the default reaches
+	// IPv4-only backends without an override.
+	//
+	// IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+	// for the preferred family, not when a connection fails. All returns both
+	// families, and for most backends each address becomes a separate endpoint,
+	// so requests sent to an unreachable family fail rather than fall back.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	// +optional
+	LookupFamily *DnsLookupFamily `json:"lookupFamily,omitempty"`
 }
+
+// DnsLookupFamily selects the address families Envoy resolves for a DNS backend.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily) for more details.
+// +kubebuilder:validation:Enum=IPv4Preferred;IPv4Only;IPv6Only;IPv6Preferred;All
+type DnsLookupFamily string
+
+const (
+	// DnsLookupFamilyIPv4Preferred resolves both families and prefers IPv4, falling
+	// back to IPv6 when no IPv4 address is returned. This is kgateway's default.
+	// Equivalent to the V4_PREFERRED value of the KGW_DNS_LOOKUP_FAMILY setting.
+	DnsLookupFamilyIPv4Preferred DnsLookupFamily = "IPv4Preferred"
+	// DnsLookupFamilyIPv4Only resolves only IPv4 addresses.
+	DnsLookupFamilyIPv4Only DnsLookupFamily = "IPv4Only"
+	// DnsLookupFamilyIPv6Only resolves only IPv6 addresses.
+	DnsLookupFamilyIPv6Only DnsLookupFamily = "IPv6Only"
+	// DnsLookupFamilyIPv6Preferred resolves both families and prefers IPv6, falling
+	// back to IPv4 when no IPv6 address is returned. Equivalent to the AUTO value
+	// of the KGW_DNS_LOOKUP_FAMILY setting, which is also Envoy's own default.
+	DnsLookupFamilyIPv6Preferred DnsLookupFamily = "IPv6Preferred"
+	// DnsLookupFamilyAll resolves both families and returns every address. Only
+	// backends that keep all addresses in a single endpoint use happy eyeballs;
+	// for others, each address is load-balanced as a separate endpoint.
+	DnsLookupFamilyAll DnsLookupFamily = "All"
+)
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
 type Http1ProtocolOptions struct {
@@ -235,11 +461,11 @@ type CommonHttpProtocolOptions struct {
 	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
 
 	// Specifies the maximum number of response headers that the upstream connection will accept
-	// from the backend. If not specified, the default of 100 is used.
+	// from the backend. Must be at least 1. If not specified, the default of 100 is used.
 	// To configure the maximum number of headers accepted in downstream requests, use
 	// ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
 
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
@@ -259,14 +485,14 @@ type CommonHttpProtocolOptions struct {
 type Http2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
 	// Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-	// Defaults to 268435456 (256 * 1024 * 1024).
+	// Defaults to 16777216 (16 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-	// Same range and default value as InitialStreamWindowSize.
+	// Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
 	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
@@ -350,9 +576,20 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
+// TLS configures TLS origination to the backend.
+//
+// Exactly one trust source must be set: secretRef, files, wellKnownCACertificates,
+// or insecureSkipVerify. To validate the backend against the system CA certificates,
+// set wellKnownCACertificates to System.
+//
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
-	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
+	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
+	//   - tls.crt: the client certificate chain, used for mTLS.
+	//   - tls.key: the client private key, used for mTLS.
+	//   - ca.crt: the root CA used to validate the backend's certificate. If omitted, the
+	//     backend's certificate is not verified, and verifySubjectAltNames cannot be used.
+	// tls.crt and tls.key must be set together or both omitted. Other keys are ignored.
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
@@ -363,21 +600,34 @@ type TLS struct {
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
+	// When sni is set and verifySubjectAltNames is empty, the certificate must also
+	// be valid for the sni.
+	// WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+	// chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+	// whatever name it was issued for. Dynamic forward proxy backends are the exception:
+	// they always check the certificate against the request's host.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == 'System'",message="wellKnownCACertificates only supports System"
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// It can only be set to true; leave it unset to verify the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self",message="insecureSkipVerify can only be set to true; remove it to verify the backend certificate"
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 
-	// The SNI domains that should be considered for TLS connection
+	// Sni is the server name sent in the TLS handshake (Server Name Indication).
+	// When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+	// the backend's certificate must also be valid for this name.
+	// For dynamic forward proxy backends, the request's host is sent instead.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
-	// note that a root_ca must be provided if this option is used.
+	// When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+	// When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
 	// +optional
 	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 
@@ -523,9 +773,10 @@ type LoadBalancer struct {
 // LoadBalancerLeastRequestConfig configures the least request load balancer type.
 type LoadBalancerLeastRequestConfig struct {
 	// How many choices to take into account.
-	// Defaults to 2.
+	// Defaults to 2. Must be at least 2.
 	// +optional
 	// +kubebuilder:default=2
+	// +kubebuilder:validation:Minimum=2
 	ChoiceCount int32 `json:"choiceCount,omitempty"`
 
 	// SlowStart configures the slow start configuration for the load balancer.
@@ -541,15 +792,19 @@ type LoadBalancerRoundRobinConfig struct {
 }
 
 // LoadBalancerRingHashConfig configures the ring hash load balancer type.
+// +kubebuilder:validation:XValidation:rule="(has(self.minimumRingSize) ? self.minimumRingSize : 1024) <= (has(self.maximumRingSize) ? self.maximumRingSize : 8388608)",message="minimumRingSize (default 1024) must be less than or equal to maximumRingSize (default 8388608)"
 type LoadBalancerRingHashConfig struct {
-	// MinimumRingSize is the minimum size of the ring.
+	// MinimumRingSize is the minimum size of the ring. Must be between 1 and 8388608.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=8388608
 	MinimumRingSize *int64 `json:"minimumRingSize,omitempty"`
 
-	// MaximumRingSize is the maximum size of the ring.
+	// MaximumRingSize is the maximum size of the ring. Must be at most 8388608, and at least
+	// minimumRingSize (default 1024).
 	// +optional
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=8388608
 	MaximumRingSize *int64 `json:"maximumRingSize,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
@@ -681,6 +936,8 @@ type ZoneAwareForce struct {
 	// Defaults to 1.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:validation:Format=uint32
 	// +kubebuilder:default=1
 	MinEndpointsInZoneThreshold *uint32 `json:"minEndpointsInZoneThreshold,omitempty"`
 }
@@ -691,19 +948,32 @@ type ZoneAwareForce struct {
 // +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
-	// health check attempt will be considered a failure.
+	// health check attempt will be considered a failure. Must be at least 1ms.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	Timeout metav1.Duration `json:"timeout"`
 
-	// Interval is the time between health checks.
+	// Interval is the time between health checks after the backend receives its first request.
+	// Must be at least 1ms.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	Interval metav1.Duration `json:"interval"`
+
+	// NoTrafficInterval is the time between health checks before the backend receives
+	// its first request. If unset, uses Envoy's default of 60 seconds.
+	// Must be at least 1ms.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="noTrafficInterval must be at least 1ms"
+	NoTrafficInterval *metav1.Duration `json:"noTrafficInterval,omitempty"`
 
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
 	// unhealthy.
@@ -779,6 +1049,13 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	EnforcingConsecutive5xx *int32 `json:"enforcingConsecutive5xx,omitempty"`
+
+	// The number of consecutive gateway failures (502, 503 and 504 status
+	// codes) before a host is ejected. When set, ejection is always enforced.
+	// When unset, consecutive gateway failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ConsecutiveGatewayFailure *int32 `json:"consecutiveGatewayFailure,omitempty"`
 
 	// Determines whether to distinguish locally originated failures from
 	// externally generated errors. When true, consecutiveLocalOriginFailure and

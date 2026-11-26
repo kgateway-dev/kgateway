@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -92,9 +93,9 @@ func (r *RouteInfo) Clone() *RouteInfo {
 // and the given indexes.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int, ruleName string) string {
 	if ruleName == "" {
-		return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
+		return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx, ruleName)
+	return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx) + "-" + ruleName
 }
 
 // GetRouteChain recursively resolves all backends for the given route object.
@@ -248,13 +249,13 @@ func (r *gatewayQueries) getDelegatedChildren(
 
 	children := NewBackendMap[[]*RouteInfo]()
 	for _, parentRule := range parent.Rules {
-		var refChildren []*RouteInfo
 		for _, backendRef := range parentRule.Backends {
 			// Check if the backend reference is an HTTPRoute
 			if backendRef.Delegate == nil {
 				continue
 			}
 			ref := *backendRef.Delegate
+			var refChildren []*RouteInfo
 			// Fetch child routes based on the backend reference
 			referencedRoutes, err := r.fetchRoutesByRef(kctx, backendRef)
 			if err != nil {
@@ -417,7 +418,7 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	if _, ok := parent.(*gwv1.Gateway); ok {
 		return listenerName
 	}
-	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
+	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
 }
 
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {

@@ -39,6 +39,7 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-A
         type: Header
         absoluteTimeout: 10s 
+        header:
+          name: Session-A

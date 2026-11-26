@@ -63,6 +63,7 @@ spec:
                       MaxConnections is the maximum number of connections that will be made to
                       the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxPendingRequests:
@@ -70,6 +71,7 @@ spec:
                       MaxPendingRequests is the maximum number of pending requests that are
                       allowed to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxRequests:
@@ -77,6 +79,7 @@ spec:
                       MaxRequests is the maximum number of parallel requests that are allowed
                       to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
+                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   maxRetries:
@@ -84,6 +87,7 @@ spec:
                       MaxRetries is the maximum number of parallel retries that are allowed
                       to the upstream cluster. If not specified, defaults to 3.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   trackRemaining:
@@ -135,17 +139,19 @@ spec:
                   maxHeadersCount:
                     description: |-
                       Specifies the maximum number of response headers that the upstream connection will accept
-                      from the backend. If not specified, the default of 100 is used.
+                      from the backend. Must be at least 1. If not specified, the default of 100 is used.
                       To configure the maximum number of headers accepted in downstream requests, use
                       ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
                     format: int32
-                    minimum: 0
+                    maximum: 2147483647
+                    minimum: 1
                     type: integer
                   maxRequestsPerConnection:
                     description: |-
                       Maximum requests for a single upstream connection.
                       If set to 0 or unspecified, defaults to unlimited.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   maxStreamDuration:
@@ -160,12 +166,14 @@ spec:
                 type: object
               connectTimeout:
                 description: The timeout for new network connections to hosts in the
-                  cluster.
+                  cluster. Must be at least 1ms.
                 maxLength: 32
                 type: string
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                - message: must be at least 1ms
+                  rule: duration(self) >= duration('1ms')
               dns:
                 description: |-
                   DNS contains DNS configuration. Note that this only applies to backends that resolve to Envoy DNS clusters, i.e.,
@@ -181,11 +189,42 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  lookupFamily:
+                    description: |-
+                      LookupFamily selects the address families used to resolve this backend's
+                      hostnames. It applies only to backends resolved through DNS, such as a
+                      Backend with a hostname, and has no effect on Kubernetes Services. When
+                      omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+                      equivalent to IPv4Preferred.
+
+                      For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+                      or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+                      selects IPv4 addresses when available, even if those addresses are
+                      unreachable, so a cluster that reaches all IPv4 destinations this way should
+                      change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+
+                      Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+                      through a host-local IPv4 address and node SNAT, so the default reaches
+                      IPv4-only backends without an override.
+
+                      IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+                      for the preferred family, not when a connection fails. All returns both
+                      families, and for most backends each address becomes a separate endpoint,
+                      so requests sent to an unreachable family fail rather than fall back.
+
+                      Note: This feature is experimental and subject to breaking changes in future releases.
+                    enum:
+                    - IPv4Preferred
+                    - IPv4Only
+                    - IPv6Only
+                    - IPv6Preferred
+                    - All
+                    type: string
                   refreshRate:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
 
-                      Minimum value is 1ms. If unset, Envoy's default of 5s is used.
+                      Must be greater than 1ms. If unset, Envoy's default of 5s is used.
                       When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
                       so RefreshRate acts as the maximum polling interval.
                       Recommended value for large-scale deployments is 60s or higher.
@@ -194,8 +233,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                    - message: refreshRate must be at least 1ms
-                      rule: duration(self) >= duration('1ms')
+                    - message: refreshRate must be greater than 1ms
+                      rule: duration(self) > duration('1ms')
                   respectTTL:
                     description: |-
                       RespectTTL instructs Envoy to honor TTL values returned by DNS responses.
@@ -231,6 +270,7 @@ spec:
                       healthy. Note that during startup, only a single successful health check is
                       required to mark a host healthy.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   http:
@@ -264,21 +304,39 @@ spec:
                     - path
                     type: object
                   interval:
-                    description: Interval is the time between health checks.
+                    description: |-
+                      Interval is the time between health checks after the backend receives its first request.
+                      Must be at least 1ms.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
+                  noTrafficInterval:
+                    description: |-
+                      NoTrafficInterval is the time between health checks before the backend receives
+                      its first request. If unset, uses Envoy's default of 60 seconds.
+                      Must be at least 1ms.
+                    maxLength: 32
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: noTrafficInterval must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   timeout:
                     description: |-
                       Timeout is time to wait for a health check response. If the timeout is reached the
-                      health check attempt will be considered a failure.
+                      health check attempt will be considered a failure. Must be at least 1ms.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   unhealthyThreshold:
                     description: |-
                       UnhealthyThreshold is the number of consecutive failed health checks that will be considered
@@ -286,6 +344,7 @@ spec:
                       Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
                       this threshold is ignored and the host is considered immediately unhealthy.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                 required:
@@ -322,7 +381,7 @@ spec:
                 description: |-
                   Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
                   Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
-                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http2protocoloptions) for more details.
                 properties:
                   connectionKeepalive:
                     description: |-
@@ -375,7 +434,7 @@ spec:
                     - type: string
                     description: |-
                       InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
-                      Same range and default value as InitialStreamWindowSize.
+                      Same range as InitialStreamWindowSize. Defaults to 25165824 (24 * 1024 * 1024).
                       Values can be specified with units like "64Ki".
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
@@ -392,7 +451,7 @@ spec:
                     description: |-
                       InitialStreamWindowSize is the initial window size for the stream.
                       Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
-                      Defaults to 268435456 (256 * 1024 * 1024).
+                      Defaults to 16777216 (16 * 1024 * 1024).
                       Values can be specified with units like "64Ki".
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
@@ -452,8 +511,10 @@ spec:
                         default: 2
                         description: |-
                           How many choices to take into account.
-                          Defaults to 2.
+                          Defaults to 2. Must be at least 2.
                         format: int32
+                        maximum: 2147483647
+                        minimum: 2
                         type: integer
                       slowStart:
                         description: SlowStart configures the slow start configuration
@@ -679,14 +740,19 @@ spec:
                         minItems: 1
                         type: array
                       maximumRingSize:
-                        description: MaximumRingSize is the maximum size of the ring.
+                        description: |-
+                          MaximumRingSize is the maximum size of the ring. Must be at most 8388608, and at least
+                          minimumRingSize (default 1024).
                         format: int64
+                        maximum: 8388608
                         minimum: 0
                         type: integer
                       minimumRingSize:
                         description: MinimumRingSize is the minimum size of the ring.
+                          Must be between 1 and 8388608.
                         format: int64
-                        minimum: 0
+                        maximum: 8388608
+                        minimum: 1
                         type: integer
                       useHostnameForHashing:
                         description: |-
@@ -694,6 +760,11 @@ spec:
                           Defaults to false.
                         type: boolean
                     type: object
+                    x-kubernetes-validations:
+                    - message: minimumRingSize (default 1024) must be less than or
+                        equal to maximumRingSize (default 8388608)
+                      rule: '(has(self.minimumRingSize) ? self.minimumRingSize : 1024)
+                        <= (has(self.maximumRingSize) ? self.maximumRingSize : 8388608)'
                   roundRobin:
                     description: RoundRobin configures the round robin load balancer
                       type.
@@ -782,7 +853,8 @@ spec:
                                   If the local zone has fewer endpoints than this threshold, the system
                                   falls back to standard zone-aware routing behavior.
                                   Defaults to 1.
-                                format: int32
+                                format: uint32
+                                maximum: 4294967295
                                 minimum: 1
                                 type: integer
                             type: object
@@ -795,6 +867,7 @@ spec:
                               This maps to Envoy's min_cluster_size setting.
                               Defaults to 6.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 1
                             type: integer
                           routingEnabled:
@@ -850,7 +923,17 @@ spec:
                       health checks will be disabled. In the future, other types of passive
                       health checking might be added, but none will be enabled by default.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
+                    type: integer
+                  consecutiveGatewayFailure:
+                    description: |-
+                      The number of consecutive gateway failures (502, 503 and 504 status
+                      codes) before a host is ejected. When set, ejection is always enforced.
+                      When unset, consecutive gateway failure ejection is disabled.
+                    format: int32
+                    maximum: 2147483647
+                    minimum: 1
                     type: integer
                   consecutiveLocalOriginFailure:
                     description: |-
@@ -859,6 +942,7 @@ spec:
                       splitExternalLocalOriginErrors is true. If this is zero, consecutive local
                       origin failure ejection is disabled.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   enforcingConsecutive5xx:
@@ -915,8 +999,122 @@ spec:
                   Soft limit on the size of the cluster's connections read and write buffers.
                   If unspecified, an implementation-defined default is applied (1MiB).
                 format: int32
+                maximum: 2147483647
                 minimum: 0
                 type: integer
+              sessionPersistence:
+                description: |-
+                  SessionPersistence pins a client to one endpoint of the backend using a
+                  cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+                  the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+                  splits traffic, it only pins a client to an endpoint within the backend
+                  chosen by the split. When set, it takes precedence over the
+                  sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+
+                  This field is experimental and subject to breaking changes. It mirrors the
+                  experimental Gateway API SessionPersistence type (v1.7).
+                properties:
+                  absoluteTimeout:
+                    description: |-
+                      AbsoluteTimeout defines the absolute timeout of the persistent
+                      session. Once the AbsoluteTimeout duration has elapsed, the
+                      session becomes invalid.
+
+                      Only cookie sessions with lifetimeType Permanent support this field, where it
+                      sets the cookie lifetime. It has no effect for header sessions and for Session
+                      cookies (the default lifetimeType), as the gateway does not track the session
+                      lifetime separately from the cookie.
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                  cookie:
+                    description: |-
+                      Cookie provides configuration settings that are specific
+                      to cookie-based session persistence.
+                    properties:
+                      lifetimeType:
+                        default: Session
+                        description: |-
+                          LifetimeType specifies whether the cookie has a permanent or
+                          session-based lifetime. A permanent cookie persists until its
+                          specified expiry time, defined by the Expires or Max-Age cookie
+                          attributes, while a session cookie is deleted when the current
+                          session ends.
+
+                          When set to "Permanent", AbsoluteTimeout indicates the
+                          cookie's lifetime via the Expires or Max-Age cookie attributes
+                          and is required.
+
+                          When set to "Session", AbsoluteTimeout has no effect, as the
+                          gateway does not track the session lifetime separately from
+                          the cookie.
+
+                          Defaults to "Session".
+                        enum:
+                        - Permanent
+                        - Session
+                        type: string
+                      name:
+                        description: |-
+                          Name defines the name of the cookie used for session persistence.
+                          If not specified, a unique cookie name is generated for each backend.
+                          Users should avoid reusing cookie names to prevent unintended
+                          consequences, such as rejection or unpredictable behavior. Avoid using the
+                          same cookie name for backends in the same traffic split, as clients lose
+                          their session whenever the split switches backends.
+                        maxLength: 256
+                        minLength: 1
+                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                        type: string
+                      path:
+                        default: /
+                        description: Path defines the cookie Path attribute. Defaults
+                          to "/".
+                        maxLength: 1024
+                        type: string
+                    type: object
+                  header:
+                    description: |-
+                      Header provides configuration settings that are specific
+                      to header-based session persistence.
+                    properties:
+                      name:
+                        description: |-
+                          Name defines the name of the header used for session persistence.
+                          The client must include this header in subsequent requests to
+                          maintain the session. Avoid using the same header name for backends in
+                          the same traffic split, as clients lose their session whenever the split
+                          switches backends.
+                        maxLength: 256
+                        minLength: 1
+                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type:
+                    default: Cookie
+                    description: |-
+                      Type defines the type of session persistence such as through
+                      the use of a header or cookie. Defaults to cookie based session
+                      persistence.
+                    enum:
+                    - Cookie
+                    - Header
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: AbsoluteTimeout must be specified when cookie lifetimeType
+                    is Permanent
+                  rule: '!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType
+                    != ''Permanent'' || has(self.absoluteTimeout)'
+                - message: cookie must be nil if type is not Cookie
+                  rule: '!has(self.cookie) || self.type == ''Cookie'''
+                - message: cookie must be specified for Cookie type
+                  rule: self.type != 'Cookie' || has(self.cookie)
+                - message: header must be nil if type is not Header
+                  rule: '!has(self.header) || self.type == ''Header'''
+                - message: header must be specified for Header type
+                  rule: self.type != 'Header' || has(self.header)
               targetRefs:
                 description: TargetRefs specifies the target references to attach
                   the policy to.
@@ -1020,6 +1218,7 @@ spec:
                     description: Maximum number of keep-alive probes to send before
                       dropping the connection.
                     format: int32
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   keepAliveTime:
@@ -1036,7 +1235,7 @@ spec:
               tls:
                 description: |-
                   TLS contains the options necessary to configure a backend to use TLS origination.
-                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-upstreamtlscontext) for more details.
                 properties:
                   allowRenegotiation:
                     description: |-
@@ -1070,8 +1269,13 @@ spec:
                   insecureSkipVerify:
                     description: |-
                       InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+                      It can only be set to true; leave it unset to verify the backend's certificate.
                       WARNING: This is an insecure option that should only be used if the risks are understood.
                     type: boolean
+                    x-kubernetes-validations:
+                    - message: insecureSkipVerify can only be set to true; remove
+                        it to verify the backend certificate
+                      rule: self
                   parameters:
                     description: |-
                       General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
@@ -1109,8 +1313,13 @@ spec:
                         type: array
                     type: object
                   secretRef:
-                    description: Reference to the TLS secret containing the certificate,
-                      key, and optionally the root CA.
+                    description: |-
+                      Reference to a Secret in the same namespace as the policy. The following data keys are read:
+                        - tls.crt: the client certificate chain, used for mTLS.
+                        - tls.key: the client private key, used for mTLS.
+                        - ca.crt: the root CA used to validate the backend's certificate. If omitted, the
+                          backend's certificate is not verified, and verifySubjectAltNames cannot be used.
+                      tls.crt and tls.key must be set together or both omitted. Other keys are ignored.
                     properties:
                       name:
                         default: ""
@@ -1130,14 +1339,18 @@ spec:
                       If unset, defaults to false.
                     type: boolean
                   sni:
-                    description: The SNI domains that should be considered for TLS
-                      connection
+                    description: |-
+                      Sni is the server name sent in the TLS handshake (Server Name Indication).
+                      When wellKnownCACertificates is System and verifySubjectAltNames is empty,
+                      the backend's certificate must also be valid for this name.
+                      For dynamic forward proxy backends, the request's host is sent instead.
                     minLength: 1
                     type: string
                   verifySubjectAltNames:
                     description: |-
                       Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
-                      note that a root_ca must be provided if this option is used.
+                      When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+                      When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
                     items:
                       type: string
                     type: array
@@ -1146,16 +1359,196 @@ spec:
                       WellKnownCACertificates specifies whether to use a well-known set of CA
                       certificates for validating the backend's certificate chain. Currently,
                       only the system certificate pool is supported via SDS.
+                      When sni is set and verifySubjectAltNames is empty, the certificate must also
+                      be valid for the sni.
+                      WARNING: If neither sni nor verifySubjectAltNames is set, only the certificate
+                      chain is checked, so any certificate issued by a publicly trusted CA is accepted,
+                      whatever name it was issued for. Dynamic forward proxy backends are the exception:
+                      they always check the certificate against the request's host.
                     maxLength: 253
                     minLength: 1
                     pattern: ^(System|([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/([A-Za-z0-9][-A-Za-z0-9_.]{0,61})?[A-Za-z0-9]))$
                     type: string
+                    x-kubernetes-validations:
+                    - message: wellKnownCACertificates only supports System
+                      rule: self == 'System'
                 type: object
                 x-kubernetes-validations:
                 - message: exactly one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
+              tunnel:
+                description: |-
+                  Tunnel sends Backend connections through an HTTP CONNECT proxy.
+                  Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+                  Requires Backend targetRefs; targetSelectors are not supported.
+                properties:
+                  headers:
+                    description: |-
+                      Headers are sent only on CONNECT requests. Each requires a name and
+                      exactly one of value or secretRef.
+                    items:
+                      description: |-
+                        HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                        be set. When using secretRef, name and key interact as follows:
+                          - Both present: name is the header name, key is the Secret data key.
+                          - name absent, key present: the key is also used as the header name.
+                          - name present, key absent: the name is also used as the Secret data key.
+                          - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                      properties:
+                        name:
+                          description: |-
+                            Name is the HTTP header field name. Name matching is case-insensitive.
+                            (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                            Required when value is set. When secretRef is used, if omitted the Secret data key is
+                            used as the header name; if both name and key are omitted every Secret entry is injected
+                            as a header.
+                          maxLength: 256
+                          minLength: 1
+                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                          type: string
+                        secretRef:
+                          description: |-
+                            SecretRef sources the header value from a key in a Kubernetes Secret.
+                            Mutually exclusive with value.
+                          properties:
+                            key:
+                              description: |-
+                                Key is the key within the Secret's data map to use as the header value. When omitted and
+                                the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                omitted, all entries in the Secret are injected as headers.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name is the name of the Kubernetes Secret.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                namespace permitting access from the policy's namespace.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        value:
+                          description: |-
+                            Value is an inline string value for the header. Mutually exclusive with secretRef.
+                            Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                          maxLength: 4096
+                          minLength: 1
+                          pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                          type: string
+                      type: object
+                      x-kubernetes-validations:
+                      - message: name is required when using an inline value
+                        rule: 'has(self.value) ? has(self.name) : true'
+                      - message: exactly one of the fields in [value secretRef] must
+                          be set
+                        rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                          == 1'
+                    maxItems: 16
+                    type: array
+                    x-kubernetes-list-type: atomic
+                    x-kubernetes-validations:
+                    - message: tunnel headers require a name
+                      rule: self.all(h, has(h.name))
+                    - message: tunnel headers cannot set Host
+                      rule: self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')
+                  proxy:
+                    description: Proxy identifies the forward proxy that establishes
+                      the tunnel.
+                    properties:
+                      backendRef:
+                        description: |-
+                          BackendRef references the proxy Service or Backend. CONNECT uses that
+                          backend's HTTP protocol.
+                        properties:
+                          group:
+                            default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
+                            maxLength: 253
+                            pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
+                          kind:
+                            default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                            type: string
+                          name:
+                            description: Name is the name of the referent.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                          port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                        required:
+                        - name
+                        type: object
+                        x-kubernetes-validations:
+                        - message: proxy backendRef must reference a Service or a
+                            Backend
+                          rule: (self.group == '' && self.kind == 'Service') || (self.group
+                            == 'gateway.kgateway.dev' && self.kind == 'Backend')
+                        - message: Must have port for Service reference
+                          rule: '(size(self.group) == 0 && self.kind == ''Service'')
+                            ? has(self.port) : true'
+                    required:
+                    - backendRef
+                    type: object
+                required:
+                - proxy
+                type: object
               upstreamProxyProtocol:
                 description: |-
                   UpstreamProxyProtocol configures the PROXY protocol for upstream connections to the backend.
@@ -1177,6 +1570,11 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
+            - message: tunnel does not support targetSelectors
+              rule: '!has(self.tunnel) || !has(self.targetSelectors)'
+            - message: tunnel requires targetRefs that reference Backends
+              rule: '!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r,
+                r.group == ''gateway.kgateway.dev'' && r.kind == ''Backend''))'
             - message: at most one of the fields in [http1ProtocolOptions http2ProtocolOptions]
                 may be set
               rule: '[has(self.http1ProtocolOptions),has(self.http2ProtocolOptions)].filter(x,x==true).size()
@@ -1442,6 +1840,7 @@ spec:
                               For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
                               with respect to the current state of the instance.
                             format: int64
+                            maximum: 9223372036854774784
                             minimum: 0
                             type: integer
                           reason:

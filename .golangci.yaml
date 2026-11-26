@@ -19,7 +19,7 @@ linters:
     - forbidigo
     - ginkgolinter
     - gocritic
-    - gomodguard
+    - gomodguard_v2
     - gosec
     - govet
     - importas
@@ -137,23 +137,22 @@ linters:
         - syncMapLoadAndDelete
         - truncateCmp
         - weakCond
-    gomodguard:
+    gomodguard_v2:
       blocked:
-        modules:
-          - github.com/rotisserie/eris:
-              recommendations:
-                - errors.Join
-              reason: Use the std-lib errors package with \\%w instead.
-          - github.com/hashicorp/go-multierror:
-              recommendations:
-                - errors.Join
-              reason: Use errors.Join (Go 1.20+) instead.
-          - github.com/pkg/errors:
-              recommendations:
-                - fmt.Errorf
-                - errors.New
-                - errors.Join
-              reason: Use the std-lib errors package and fmt.Errorf with \\%w instead.
+        - module: github.com/rotisserie/eris
+          recommendations:
+            - errors.Join
+          reason: Use the std-lib errors package with error wrapping instead.
+        - module: github.com/hashicorp/go-multierror
+          recommendations:
+            - errors.Join
+          reason: Use errors.Join (Go 1.20+) instead.
+        - module: github.com/pkg/errors
+          recommendations:
+            - fmt.Errorf
+            - errors.New
+            - errors.Join
+          reason: Use the std-lib errors package and fmt.Errorf error wrapping instead.
     importas:
       alias:
         - pkg: k8s.io/api/apps/v1
@@ -185,6 +184,8 @@ linters:
       disable:
         # disabled because modernize gets confused with conflicting edits. we can probably rely on the kube api linter instead for this one.
         - omitzero
+        # disabled for now because applying it (Go 1.27 promoted field literals) rewrites ~1000 struct literals across ~170 files. enable it in a dedicated follow-up.
+        - embedlit
     nakedret:
       # The team consensus is that naked returns hinder the readability of the code.
       # However, named return values can still be useful as documentation for certain scenarios.
@@ -266,6 +267,17 @@ linters:
         linters:
           - forbidigo
         text: 'use apiclient.Client instead'
+      # Tests intentionally use fake credentials (basic auth, API keys, OIDC secrets).
+      - path: _test\.go$
+        linters:
+          - gosec
+        text: 'G101:'
+      # Test code builds file paths from the test environment (temp dirs, testdata,
+      # env vars like KGW_BENCH_OUT), so taint-based path traversal findings do not apply.
+      - path: (_test\.go$|^test/)
+        linters:
+          - gosec
+        text: 'G703:'
       # Restrict krtequals analyzer to the pkg and internal directories
       - path-except: pkg/|internal/
         linters:

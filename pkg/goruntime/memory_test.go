@@ -1,8 +1,10 @@
 package goruntime
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"math"
 	"os"
 	"runtime/debug"
@@ -140,12 +142,30 @@ func TestConfigureMemoryLimitWithoutContainerLimit(t *testing.T) {
 	t.Setenv(AutoMemoryLimitEnv, "0.9")
 	restoreMemoryLimit(t)
 
+	logs := captureLogs(t)
+
 	err := configureMemoryLimit(context.Background(), func() (uint64, error) {
 		return 0, memlimit.ErrNoLimit
 	}, 0)
 
 	require.NoError(t, err)
 	require.Equal(t, int64(math.MaxInt64), debug.SetMemoryLimit(-1))
+	require.Contains(t, logs.String(), "level=WARN", "missing limit should warn")
+	require.Contains(t, logs.String(), "set a container memory limit", "warning should say how to fix it")
+	require.Contains(t, logs.String(), "automemlimit=0.9")
+}
+
+func TestConfigureMemoryLimitWithContainerLimitDoesNotWarn(t *testing.T) {
+	unsetEnv(t, "GOMEMLIMIT")
+	t.Setenv(AutoMemoryLimitEnv, "0.9")
+	restoreMemoryLimit(t)
+	logs := captureLogs(t)
+
+	err := configureMemoryLimit(context.Background(), memlimit.Limit(1_000), 0)
+
+	require.NoError(t, err)
+	require.Equal(t, int64(900), debug.SetMemoryLimit(-1))
+	require.NotContains(t, logs.String(), "level=WARN", "a finite container limit should not warn")
 }
 
 func TestConfigureMemoryLimitRecoversFromInitialProviderError(t *testing.T) {
@@ -171,6 +191,17 @@ func TestConfigureMemoryLimitRecoversFromInitialProviderError(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return debug.SetMemoryLimit(-1) == 500
 	}, time.Second, time.Millisecond)
+}
+
+// captureLogs redirects the package logger to the returned buffer for the
+// duration of the test.
+func captureLogs(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var logs bytes.Buffer
+	previous := logger
+	logger = slog.New(slog.NewTextHandler(&logs, nil))
+	t.Cleanup(func() { logger = previous })
+	return &logs
 }
 
 func restoreMemoryLimit(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -30,7 +31,7 @@ func TestPrioritizeEndpointsIsByteStable(t *testing.T) {
 	}, 80, "", "")
 	backendEndpoints := ir.NewEndpointsForBackend(backend)
 	// Enough localities that map ordering is overwhelmingly unlikely to be
-	// stable by chance, plus the zero locality, which is emitted with a nil
+	// stable by chance, plus the zero locality, which is emitted with an empty
 	// Locality and so sorts ahead of everything else.
 	localities := []ir.PodLocality{
 		{},
@@ -88,8 +89,62 @@ func TestPrioritizeEndpointsIsByteStable(t *testing.T) {
 	}
 }
 
-// localityOrderKey renders a locality group's locality for ordering assertions. A
-// nil Locality (the zero PodLocality) yields the empty key, which sorts first.
+// TestPrioritizeEndpointsAlwaysSetsLocality pins that a group whose endpoints have
+// no locality is still emitted with a (empty) Locality. Envoy only records a
+// group's load_balancing_weight when the group has a locality, so under
+// locality-weighted LB a group without one gets weight 0 and receives no traffic
+// while any other locality has endpoints.
+func TestPrioritizeEndpointsAlwaysSetsLocality(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group: "networking.istio.io", Kind: "ServiceEntry", Namespace: "ns", Name: "se",
+	}, 80, "", "")
+	backendEndpoints := ir.NewEndpointsForBackend(backend)
+	localities := []ir.PodLocality{
+		{},
+		{Region: "r1", Zone: "z1"},
+	}
+	for i, locality := range localities {
+		backendEndpoints.Add(locality, prioritizeTestEndpoint(locality, i))
+	}
+
+	client := ir.NewUniquelyConnectedClient("role", "ns", map[string]string{
+		corev1.LabelTopologyRegion: "r1",
+		corev1.LabelTopologyZone:   "z1",
+	}, ir.PodLocality{Region: "r1", Zone: "z1"})
+
+	priorityModes := map[string]*PriorityInfo{
+		"noPriorityInfo": nil,
+		"failoverPriority": {
+			FailoverPriority: NewPriorities([]string{corev1.LabelTopologyRegion, corev1.LabelTopologyZone}),
+		},
+		"localityFailover": {},
+	}
+
+	for name, priorityInfo := range priorityModes {
+		t.Run(name, func(t *testing.T) {
+			inputs := EndpointsInputs{EndpointsForBackend: *backendEndpoints, PriorityInfo: priorityInfo}
+			cla := PrioritizeEndpoints(nil, client, inputs)
+
+			// Round-trip through the wire format: Envoy sees field presence, not
+			// the Go pointer, so an empty Locality must survive serialization.
+			raw, err := proto.Marshal(cla)
+			require.NoError(t, err)
+			decoded := &envoyendpointv3.ClusterLoadAssignment{}
+			require.NoError(t, proto.Unmarshal(raw, decoded))
+
+			require.Len(t, decoded.GetEndpoints(), len(localities))
+			for _, group := range decoded.GetEndpoints() {
+				assert.NotNil(t, group.GetLocality(),
+					"every locality group must carry a Locality so Envoy keeps its weight; got %v", group)
+				assert.NotZero(t, group.GetLoadBalancingWeight().GetValue(),
+					"every locality group must carry a load balancing weight; got %v", group)
+			}
+		})
+	}
+}
+
+// localityOrderKey renders a locality group's locality for ordering assertions. An
+// empty Locality (the zero PodLocality) yields the empty key, which sorts first.
 func localityOrderKey(group *envoyendpointv3.LocalityLbEndpoints) string {
 	locality := group.GetLocality()
 	return locality.GetRegion() + "/" + locality.GetZone() + "/" + locality.GetSubZone()

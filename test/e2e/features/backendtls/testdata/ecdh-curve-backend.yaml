@@ -1,0 +1,207 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ecdsa-allowed-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+  hostnames:
+  - "ecdsa-allowed.example.com"
+  rules:
+  - backendRefs:
+    - name: nginx-ecdsa-allowed
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ecdsa-default-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+  hostnames:
+  - "ecdsa-default.example.com"
+  rules:
+  - backendRefs:
+    - name: nginx-ecdsa-default
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: ecdsa-allowed-tls-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: nginx-ecdsa-allowed
+  validation:
+    hostname: "ecdsa.example.com"
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: ecdsa-ca
+  options:
+    kgateway.dev/ecdh-curves: "P-384,P-256"
+    kgateway.dev/min-tls-version: "1.2"
+    kgateway.dev/max-tls-version: "1.2"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: ecdsa-default-tls-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: nginx-ecdsa-default
+  validation:
+    hostname: "ecdsa.example.com"
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: ecdsa-ca
+  options:
+    kgateway.dev/min-tls-version: "1.2"
+    kgateway.dev/max-tls-version: "1.2"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecdsa-ca
+  namespace: kgateway-base
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIICDDCCAZKgAwIBAgIUNKuc+yv9gEQOQ65mq9Efu/eHY/EwCgYIKoZIzj0EAwIw
+    HDEaMBgGA1UEAwwRZWNkc2EuZXhhbXBsZS5jb20wHhcNMjYwOTE2MjAxOTA3WhcN
+    MzYwOTEzMjAxOTA3WjAcMRowGAYDVQQDDBFlY2RzYS5leGFtcGxlLmNvbTB2MBAG
+    ByqGSM49AgEGBSuBBAAiA2IABOSFwiaH6jmlMnknSDXoWz+OdT3/D19H2O8GFoI6
+    3BhLfz7XCYZk/bJ2misYshVQz9sofOiSpnwTkZVfAanp5Tbt96LwTDGWnPBJiFPl
+    Lo2ZiKKRryv8HgujeE/KCIeOUaOBlDCBkTAdBgNVHQ4EFgQUDydI9BvLsg4Yki3y
+    ITQAGg1IxcEwHwYDVR0jBBgwFoAUDydI9BvLsg4Yki3yITQAGg1IxcEwDwYDVR0T
+    AQH/BAUwAwEB/zAcBgNVHREEFTATghFlY2RzYS5leGFtcGxlLmNvbTALBgNVHQ8E
+    BAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwEwCgYIKoZIzj0EAwIDaAAwZQIxAPbU
+    cR/PPeJtTBUQALdTMm7NB44LY0ptvY869h68A9vpm56xkSCWdxy6BDOC+Cu0pgIw
+    a805s6SwzluHHjLe0MPPyKRGPUoQR7VWCMSpY7qaPwr8wycVT0UIF/eh8Y6NGZGp
+    -----END CERTIFICATE-----
+---
+# nginx cert and key generated via:
+# openssl ecparam -genkey -name secp384r1 -out ecdsa.key
+# openssl req -x509 -new -key ecdsa.key -days 3650 -sha256 -out ecdsa.crt \
+#   -subj '/CN=ecdsa.example.com' \
+#   -addext "subjectAltName=DNS:ecdsa.example.com" \
+#   -addext "keyUsage=digitalSignature" \
+#   -addext "extendedKeyUsage=serverAuth"
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-ecdsa-conf
+  namespace: kgateway-base
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes  1;
+    events {
+      worker_connections  10240;
+    }
+    http {
+      server {
+          listen              443 ssl;
+          server_name         ecdsa.example.com;
+          ssl_certificate     /etc/nginx/ecdsa.crt;
+          ssl_certificate_key /etc/nginx/ecdsa.key;
+
+          location / {
+            root   /usr/share/nginx/html;
+            index  index.html index.htm;
+        }
+      }
+    }
+  ecdsa.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIICDDCCAZKgAwIBAgIUNKuc+yv9gEQOQ65mq9Efu/eHY/EwCgYIKoZIzj0EAwIw
+    HDEaMBgGA1UEAwwRZWNkc2EuZXhhbXBsZS5jb20wHhcNMjYwOTE2MjAxOTA3WhcN
+    MzYwOTEzMjAxOTA3WjAcMRowGAYDVQQDDBFlY2RzYS5leGFtcGxlLmNvbTB2MBAG
+    ByqGSM49AgEGBSuBBAAiA2IABOSFwiaH6jmlMnknSDXoWz+OdT3/D19H2O8GFoI6
+    3BhLfz7XCYZk/bJ2misYshVQz9sofOiSpnwTkZVfAanp5Tbt96LwTDGWnPBJiFPl
+    Lo2ZiKKRryv8HgujeE/KCIeOUaOBlDCBkTAdBgNVHQ4EFgQUDydI9BvLsg4Yki3y
+    ITQAGg1IxcEwHwYDVR0jBBgwFoAUDydI9BvLsg4Yki3yITQAGg1IxcEwDwYDVR0T
+    AQH/BAUwAwEB/zAcBgNVHREEFTATghFlY2RzYS5leGFtcGxlLmNvbTALBgNVHQ8E
+    BAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwEwCgYIKoZIzj0EAwIDaAAwZQIxAPbU
+    cR/PPeJtTBUQALdTMm7NB44LY0ptvY869h68A9vpm56xkSCWdxy6BDOC+Cu0pgIw
+    a805s6SwzluHHjLe0MPPyKRGPUoQR7VWCMSpY7qaPwr8wycVT0UIF/eh8Y6NGZGp
+    -----END CERTIFICATE-----
+  ecdsa.key: |
+    -----BEGIN EC PARAMETERS-----
+    BgUrgQQAIg==
+    -----END EC PARAMETERS-----
+    -----BEGIN EC PRIVATE KEY-----
+    MIGkAgEBBDBc0Xwexhen9tGdVzUTeU1E+LWsWvqa7W/FR24UAF5vTkyY6pcUnxns
+    qzkt5OozBm6gBwYFK4EEACKhZANiAATkhcImh+o5pTJ5J0g16Fs/jnU9/w9fR9jv
+    BhaCOtwYS38+1wmGZP2ydporGLIVUM/bKHzokqZ8E5GVXwGp6eU27fei8Ewxlpzw
+    SYhT5S6NmYiika8r/B4Lo3hPygiHjlE=
+    -----END EC PRIVATE KEY-----
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-ecdsa
+  namespace: kgateway-base
+  labels:
+    app.kubernetes.io/name: nginx-ecdsa
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+  - name: nginx
+    image: nginx:1.28.0
+    ports:
+    - containerPort: 443
+      name: https-web-svc
+    volumeMounts:
+    - name: nginx-conf
+      mountPath: /etc/nginx/
+      readOnly: true
+  volumes:
+  - name: nginx-conf
+    configMap:
+      name: nginx-ecdsa-conf
+      items:
+      - key: nginx.conf
+        path: nginx.conf
+      - key: ecdsa.crt
+        path: ecdsa.crt
+      - key: ecdsa.key
+        path: ecdsa.key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ecdsa-allowed
+  namespace: kgateway-base
+spec:
+  selector:
+    app.kubernetes.io/name: nginx-ecdsa
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: https-web-svc
+      name: https
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ecdsa-default
+  namespace: kgateway-base
+spec:
+  selector:
+    app.kubernetes.io/name: nginx-ecdsa
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: https-web-svc
+      name: https

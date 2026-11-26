@@ -140,13 +140,14 @@ func initServiceEntryCollections(
 		SelectingServiceEntries,
 		WorkloadEntries,
 		commonCols.LocalityPods,
+		commonCols.SystemNamespaceNetwork,
 		opts.Aliaser,
 		opts.WorkloadEntriesExclusionLabelKeys,
 		opts.PromoteWorkloadEntryAnnotations,
 	)
 
 	// init the outputs
-	Backends := backendsCollections(logger, ServiceEntries, commonCols.KrtOpts, opts.Aliaser)
+	Backends := backendsCollections(logger, ServiceEntries, commonCols.SystemNamespaceNetwork, commonCols.KrtOpts, opts.Aliaser)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
 
 	return serviceEntryPlugin{
@@ -196,6 +197,7 @@ func selectedWorkloads(
 	ServiceEntries krt.Collection[seSelector],
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
+	systemNamespaceNetwork krt.Singleton[string],
 	aliaser Aliaser,
 	weExclusionLabelKeys sets.Set[string],
 	promoteAnnotationKeys sets.Set[string],
@@ -243,6 +245,7 @@ func selectedWorkloads(
 			promoteAnnotationKeys,
 			&we.Spec,
 			selectedByServiceEntries,
+			krtcollections.FetchSystemNamespaceNetwork(ctx, systemNamespaceNetwork),
 		)
 
 		return &workload
@@ -285,6 +288,7 @@ func selectedWorkloadFromEntry(
 	promoteAnnotationKeys sets.Set[string],
 	weSpec *networking.WorkloadEntry,
 	selectedBy []seSelector,
+	systemNamespaceNetwork string,
 ) selectedWorkload {
 	labels := maps.Clone(weSpec.GetLabels())
 	if labels == nil {
@@ -309,6 +313,11 @@ func selectedWorkloadFromEntry(
 	network := weSpec.GetNetwork()
 	if network == "" && labels[label.TopologyNetwork.Name] != "" {
 		network = labels[label.TopologyNetwork.Name]
+	}
+	// Like Istio, a WorkloadEntry without a network is in the system namespace network,
+	// which is also what pods without a network label resolve to.
+	if network == "" {
+		network = systemNamespaceNetwork
 	}
 
 	// we propagate the value to the labels so that endpoint plugins can see it

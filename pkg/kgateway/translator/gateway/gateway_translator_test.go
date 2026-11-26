@@ -5,18 +5,23 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"maps"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -27,26 +32,45 @@ import (
 	backendplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type translatorTestCase struct {
-	inputFiles []string
-	outputFile string
-	gwNN       types.NamespacedName
+	inputFiles  []string
+	outputFile  string
+	gwNN        types.NamespacedName
+	extraConfig translatortest.ExtraConfig
+}
+
+// TestMain sets the package-level state translation reads, once and before any test
+// runs, so that the tests below can run in parallel.
+//
+// version.Version reaches translation output through the OTel access-log resource
+// attributes (see access_logging_converter.go), so without pinning it a golden recorded
+// from a locally stamped build would not match one recorded in CI.
+//
+// Every backend plugin reads the EC2 instance lister when it is built, but only a
+// gateway with EnableAwsEc2Discovery set (the "AWS EC2 backend" case) ever lists.
+func TestMain(m *testing.M) {
+	version.Version = "v1.0.0-ci1"
+	backendplugin.SetEc2InstancesForTest([]backendplugin.TestEc2Instance{{
+		InstanceID: "i-1234567890",
+		PrivateIP:  "10.0.0.10",
+		Zone:       "us-east-1a",
+		Tags: map[string]string{
+			"app": "payments",
+		},
+	}})
+	os.Exit(m.Run())
 }
 
 func TestBasic(t *testing.T) {
 	test := func(t *testing.T, in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
+		t.Parallel()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
-
-		prevVersion := version.Version
-		version.Version = "v1.0.0-ci1"
-		defer func() {
-			version.Version = prevVersion
-		}()
 
 		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -61,7 +85,7 @@ func TestBasic(t *testing.T) {
 			inputFiles = append(inputFiles, filepath.Join(dir, "testutils/inputs/", input))
 		}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
+		translatortest.TestTranslationWithExtraPlugins(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.extraConfig, settingOpts...)
 	}
 
 	t.Run("gateway with no routes should not add empty filter chain", func(t *testing.T) {
@@ -72,6 +96,35 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	// KGW_LISTENER_BIND_IPV6 decides the family the data-plane listeners bind. The
+	// two cases share an input so the only difference in the goldens is the bind
+	// address: the default binds the IPv6 wildcard with ipv4_compat so it still
+	// accepts IPv4, and disabling it binds the IPv4 wildcard with no ipv4_compat,
+	// which is the only thing that works on a node with IPv6 disabled.
+	t.Run("gateway listener binds IPv6 by default", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-bind/gateway.yaml"},
+			outputFile: "listener-bind/bind-ipv6.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("gateway listener binds IPv4 when ListenerBindIpv6 is disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-bind/gateway.yaml"},
+			outputFile: "listener-bind/bind-ipv4-only.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
 		})
 	})
 
@@ -119,10 +172,34 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// Same as basic.yaml, but the caCertificateRefs spell the core API group as
+	// "core" instead of "". The output must be identical to basic.yaml.
+	t.Run("gateway with FrontendTLSConfig and core group CA certificate refs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/core-group.yaml"},
+			outputFile: "frontendtlsconfig/core-group.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml"},
 			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("frontendtlsconfig with verify subject alt names and ListenerPolicy ca certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/verify-subject-alt-names-listenerpolicy-ca.yaml"},
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-listenerpolicy-ca.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -169,6 +246,28 @@ func TestBasic(t *testing.T) {
 			outputFile: "frontendtlsconfig/listenerset-cross-ns-refgrant.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "namespace-one",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("httproutes with the same hostname intersection sort by route hostname specificity", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/hostname-intersection-precedence.yaml"},
+			outputFile: "http-routing/hostname-intersection-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("httproutes with the same hostname intersection sort by route hostname specificity before matches", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/hostname-intersection-precedence-matches.yaml"},
+			outputFile: "http-routing/hostname-intersection-precedence-matches.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
 				Name:      "example-gateway",
 			},
 		})
@@ -394,6 +493,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/extauth-http.yaml"},
 			outputFile: "traffic-policy/extauth-http.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy on backendRef with errors fails closed", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/backendref-policy-errors.yaml"},
+			outputFile: "traffic-policy/backendref-policy-errors.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -631,6 +741,22 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	// Envoy rejects local_cluster_rate_limit unless the bootstrap names a local cluster, so the
+	// strict validation bootstrap must set one like the proxy bootstrap does, or the targeted
+	// route rule is replaced with a 500.
+	t.Run("TrafficPolicy with local rate limiting shared across the gateway in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-share-across-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 
@@ -1202,6 +1328,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with gRPC-Web enabled on the Gateway and disabled on a route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/grpc-web.yaml"},
+			outputFile: "traffic-policy/grpc-web.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with brotli compression Policy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/brotli-compression-route.yaml"},
@@ -1301,6 +1438,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcp route attached through two parentRefs does not conflict with itself", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/duplicate-parentref.yaml"},
+			outputFile: "tcp-routing/duplicate-parentref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tcp route accepted only on the parentRefs attached to the listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/unmatched-parentref.yaml"},
+			outputFile: "tcp-routing/unmatched-parentref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/basic.yaml"},
@@ -1389,6 +1548,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tls route accepted only on the parentRefs attached to the listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/unmatched-parentref.yaml"},
+			outputFile: "tls-routing/unmatched-parentref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tls gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/basic.yaml"},
@@ -1448,6 +1618,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/multi-backend.yaml"},
 			outputFile: "tls-routing/multi-backend-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroutes with the same hostname intersection resolve by route hostname specificity", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/hostname-intersection-precedence.yaml"},
+			outputFile: "tls-routing/hostname-intersection-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute losing its SNI domain through two parentRefs is conflicted on both", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/hostname-intersection-precedence-duplicate-parentref.yaml"},
+			outputFile: "tls-routing/hostname-intersection-precedence-duplicate-parentref.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1529,6 +1721,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+			// the fixture routes to a backend of the fake plugin-contributed kind
+			extraConfig: translatortest.ExtraConfig{RegisterTestBackendPlugin: true},
 		})
 	})
 
@@ -1567,17 +1761,8 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// The EC2 instances this case discovers are installed by TestMain.
 	t.Run("AWS EC2 backend", func(t *testing.T) {
-		restore := backendplugin.SetEc2InstancesForTest([]backendplugin.TestEc2Instance{{
-			InstanceID: "i-1234567890",
-			PrivateIP:  "10.0.0.10",
-			Zone:       "us-east-1a",
-			Tags: map[string]string{
-				"app": "payments",
-			},
-		}})
-		defer restore()
-
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/aws_ec2.yaml"},
 			outputFile: "backends/aws_ec2.yaml",
@@ -1660,6 +1845,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendtlspolicy/tls.yaml"},
 			outputFile: "backendtlspolicy/tls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy with TLS extension options", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/tls-options.yaml"},
+			outputFile: "backendtlspolicy/tls-options.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1996,6 +2192,72 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("http gateway with BackendConfigPolicy session persistence (cookie)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-cookie.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-cookie.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (header)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-header.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (generated cookie name)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-generated-name.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-generated-name.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (traffic split)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-split.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-split.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (precedence over route rule)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-precedence.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (partially valid)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-partially-valid.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-partially-valid.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with upgrades", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"https-listener-pol/upgrades.yaml"},
@@ -2242,6 +2504,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/merge-slashes-false.yaml"},
 			outputFile: "listener-policy-http/merge-slashes-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with pathWithEscapedSlashesAction", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/path-with-escaped-slashes-action.yaml"},
+			outputFile: "listener-policy-http/path-with-escaped-slashes-action.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2656,6 +2929,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// dns.lookupFamily overrides the cluster-wide KGW_DNS_LOOKUP_FAMILY, which is
+	// what lets a single-stack cluster reach the other family for one backend.
+	t.Run("Backend Config Policy with DNS lookup family", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/dns-lookup-family.yaml"},
+			outputFile: "backendconfigpolicy/dns-lookup-family.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with Health Check", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/healthcheck.yaml"},
@@ -2867,6 +3153,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy http2 options apply to ALPN negotiated by BackendTLSPolicy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml"},
+			outputFile: "backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy TLS overridden by BackendTLSPolicy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml"},
@@ -2875,6 +3172,19 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("Backend Config Policy with tunnel in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/tunnel.yaml"},
+			outputFile: "backendconfigpolicy/tunnel.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 
@@ -3351,6 +3661,23 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// Runs the same inputs through a real Envoy in strict mode. A redirect target is validated
+	// by Envoy itself against RedirectAction.path_redirect's own constraint, so if that
+	// constraint is ever tightened upstream, the targets in this fixture start failing here
+	// instead of silently reaching users as a rejected RouteConfiguration.
+	t.Run("HTTP RequestRedirect filter in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/request-redirect.yaml"},
+			outputFile: "http-routing/request-redirect.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
 	t.Run("HTTP RequestRedirect filter multiple listeners listener-scoped port", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/request-redirect-multi-listener.yaml"},
@@ -3439,6 +3766,72 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with access logs on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-access-log.yaml"},
+			outputFile: "listener-policy/tcp-access-log.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with access logs on TLS terminate and passthrough listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tls-access-log.yaml"},
+			outputFile: "listener-policy/tls-access-log.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy rejects HTTP-only access log filter on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-access-log-http-only-filter.yaml"},
+			outputFile: "listener-policy/tcp-access-log-http-only-filter.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy and HTTP-only policy targeting a TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-listener-section-policies.yaml"},
+			outputFile: "listener-policy/tcp-listener-section-policies.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy per-port entry keeps the gateway-wide transport socket connect timeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-per-port-entry.yaml"},
+			outputFile: "listener-policy/transport-socket-connect-timeout-per-port-entry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with per-listener transport socket connect timeout on TLS listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-tls-listener.yaml"},
+			outputFile: "listener-policy/transport-socket-connect-timeout-tls-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with per port settings", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/per-port.yaml"},
@@ -3476,6 +3869,75 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/per-listener-mtls-merge.yaml"},
 			outputFile: "listener-policy/per-listener-mtls-merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS for the whole Gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls.yaml"},
+			outputFile: "listener-policy/gateway-mtls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS selecting the Gateway by label, including from the global policy namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-selectors.yaml"},
+			outputFile: "listener-policy/gateway-mtls-selectors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		},
+			func(s *apisettings.Settings) {
+				s.GlobalPolicyNamespace = "kgateway-system"
+			})
+	})
+
+	t.Run("ListenerPolicy with mTLS for the whole Gateway overrides frontend TLS validation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS needs a ReferenceGrant from ListenerPolicy for CA refs to other namespaces", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-refgrant.yaml"},
+			outputFile: "listener-policy/gateway-mtls-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation whose CA is missing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-missing-ca.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-missing-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mTLS replaces a frontend validation with unsupported CA kinds", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-mtls-frontend-invalid-kind.yaml"},
+			outputFile: "listener-policy/gateway-mtls-frontend-invalid-kind.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3715,15 +4177,84 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+// setupStructuralSchemas returns the structural schemas for kgateway's CRDs plus the
+// Gateway API's, so fixtures get the same CRD defaulting, pruning and validation an API
+// server would apply. TestCase.Run defaults to kgateway's CRDs alone, which leaves
+// Gateway API defaults (HTTPCORSFilter.maxAge, for one) unapplied - fine for fixtures
+// written against this harness, wrong for the setup fixtures, whose goldens were
+// recorded through a real API server.
+func setupStructuralSchemas(t *testing.T) map[schema.GroupVersionKind]*apiserverschema.Structural {
+	t.Helper()
+
+	schemas, err := testutils.GetStructuralSchemasForAllCharts()
+	require.NoError(t, err, "failed to load kgateway CRD schemas")
+
+	gwAPIDir, err := testutils.GetGatewayAPICRDDir()
+	require.NoError(t, err, "failed to locate Gateway API CRDs")
+	gwAPISchemas, err := testutils.GetStructuralSchemas(gwAPIDir)
+	require.NoError(t, err, "failed to load Gateway API CRD schemas")
+
+	maps.Copy(schemas, gwAPISchemas)
+	return schemas
+}
+
+// TestSetupScenarios covers the fixtures migrated from the envtest-based scenario tests in
+// pkg/kgateway/setup. Each fixture YAML under testutils/inputs/setup/<group>/ defines a gateway
+// named http-gw-for-test in namespace gwtest; testutils/inputs/setup/common.yaml provides the
+// shared pods/nodes the fixtures rely on for endpoints (mirroring setup's testdata/setup_yaml).
+func TestSetupScenarios(t *testing.T) {
+	ctx := t.Context()
+	dir := fsutils.MustGetThisDir()
+
+	structuralSchemas := setupStructuralSchemas(t)
+
+	groups := []struct {
+		name        string
+		settingOpts []translatortest.SettingsOpts
+	}{
+		{name: "standard"},
+		{name: "experimental", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		}}},
+		{name: "listenerbind/v4", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
+		}}},
+		{name: "listenerbind/v6", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = true
+		}}},
+		{name: "autodns", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
+		}}},
+	}
+
+	for _, g := range groups {
+		inputs, err := filepath.Glob(filepath.Join(dir, "testutils/inputs/setup", g.name, "*.yaml"))
+		require.NoError(t, err)
+		require.NotEmpty(t, inputs, "no input files found for group %s", g.name)
+		for _, input := range inputs {
+			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
+			require.NoError(t, err)
+			t.Run(strings.TrimSuffix(filepath.ToSlash(rel), ".yaml"), func(t *testing.T) {
+				t.Parallel()
+				translatortest.TestTranslationWithExtraPlugins(t, ctx, []string{
+					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
+					input,
+				}, filepath.Join(dir, "testutils/outputs", rel), types.NamespacedName{
+					Namespace: "gwtest",
+					Name:      "http-gw-for-test",
+				}, translatortest.ExtraConfig{
+					IncludeEndpoints:      true,
+					GVKToStructuralSchema: structuralSchemas,
+				}, g.settingOpts...)
+			})
+		}
+	}
+}
+
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
 	ctx := t.Context()
 
 	dir := fsutils.MustGetThisDir()
-	prevVersion := version.Version
-	version.Version = "v1.0.0-ci1"
-	defer func() {
-		version.Version = prevVersion
-	}()
 
 	tc := translatortest.TestCase{
 		InputFiles: []string{
@@ -3734,7 +4265,7 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 		t,
 		ctx,
 		translatortest.NewScheme(runtime.SchemeBuilder{}),
-		translatortest.ExtraConfig{},
+		translatortest.ExtraConfig{IncludeEndpoints: true},
 		func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
 		},
@@ -3777,6 +4308,37 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 
 	assert.Equal(t, "client.example.com", requireGatewayClientCertificateCommonName(t, clusterOne))
 	assert.Equal(t, "client2.example.com", requireGatewayClientCertificateCommonName(t, clusterTwo))
+
+	// Each variant is an EDS cluster, so Envoy also needs a CLA under the
+	// variant's own name carrying the base Service's endpoints.
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultOne.Endpoints, expectedClusterOne))
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultTwo.Endpoints, expectedClusterTwo))
+	assert.Nil(t, findCLAByName(resultOne.Endpoints, expectedClusterTwo), "first gateway should not publish endpoints for second gateway variant")
+	assert.Nil(t, findCLAByName(resultTwo.Endpoints, expectedClusterOne), "second gateway should not publish endpoints for first gateway variant")
+}
+
+func findCLAByName(assignments []*envoyendpointv3.ClusterLoadAssignment, name string) *envoyendpointv3.ClusterLoadAssignment {
+	for _, cla := range assignments {
+		if cla.GetClusterName() == name {
+			return cla
+		}
+	}
+	return nil
+}
+
+func claAddressesFor(t *testing.T, assignments []*envoyendpointv3.ClusterLoadAssignment, name string) []string {
+	t.Helper()
+
+	cla := findCLAByName(assignments, name)
+	require.NotNil(t, cla, "expected a load assignment for cluster %s", name)
+	var addresses []string
+	for _, locality := range cla.GetEndpoints() {
+		for _, lbEndpoint := range locality.GetLbEndpoints() {
+			socket := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
+			addresses = append(addresses, fmt.Sprintf("%s:%d", socket.GetAddress(), socket.GetPortValue()))
+		}
+	}
+	return addresses
 }
 
 func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {
@@ -4035,9 +4597,15 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
-			name:      "BackendConfigPolicy Invalid TLS Files Non-existent",
+			name:      "BackendConfigPolicy TLS Files On Proxy Only",
 			category:  "backendconfigpolicy",
-			inputFile: "invalid-tlsfiles-nonexistent.yaml",
+			inputFile: "tlsfiles-proxy-only.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
+		{
+			name:      "BackendConfigPolicy Invalid Tunnel",
+			category:  "backendconfigpolicy",
+			inputFile: "invalid-tunnel.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
@@ -4080,6 +4648,7 @@ func TestValidation(t *testing.T) {
 					continue
 				}
 				t.Run(fmt.Sprintf("%s/%s", test.category, test.name), func(t *testing.T) {
+					t.Parallel()
 					runTest(t, test, mode)
 				})
 			}
@@ -4089,6 +4658,7 @@ func TestValidation(t *testing.T) {
 
 func TestRouteDelegation(t *testing.T) {
 	test := func(t *testing.T, inputFile string) {
+		t.Parallel()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
@@ -4116,6 +4686,10 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "basic_parentref_match.yaml")
 	})
 
+	t.Run("BackendConfigPolicy overrides inherited session persistence", func(t *testing.T) {
+		test(t, "session_persistence_inheritance.yaml")
+	})
+
 	t.Run("Child matches same-namespace parent via parentRefs without namespace", func(t *testing.T) {
 		test(t, "basic_parentref_match_same_namespace.yaml")
 	})
@@ -4130,6 +4704,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Parent delegates to multiple chidren", func(t *testing.T) {
 		test(t, "multiple_children.yaml")
+	})
+
+	t.Run("Parent rule delegates to multiple backendRefs", func(t *testing.T) {
+		test(t, "multiple_delegates_per_rule.yaml")
 	})
 
 	t.Run("Child is invalid as it is delegatee and specifies hostnames", func(t *testing.T) {
@@ -4231,6 +4809,7 @@ func TestRouteDelegation(t *testing.T) {
 
 func TestDiscoveryNamespaceSelector(t *testing.T) {
 	test := func(t *testing.T, cfgJSON string, inputFile string, outputFile string) {
+		t.Parallel()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()

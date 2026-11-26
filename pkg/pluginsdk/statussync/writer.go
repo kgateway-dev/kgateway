@@ -6,7 +6,6 @@ import (
 	"cmp"
 	"context"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -98,11 +97,6 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	// Used to preserve multi-writer fields owned by other controllers or subsystems
 	// (e.g. route status parents, policy ancestors, gateway addresses).
 	Merge func(current O, desired S) S
-
-	// OnSync, when set, is called once per ApplyStatus invocation for which Desired returns
-	// true. current is the last object read from the collection and status the last merged
-	// status. Used to record status sync metrics.
-	OnSync func(res Resource, current O, status S, took time.Duration, err error)
 }
 
 var _ ResourceStatusSyncer = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
@@ -185,23 +179,20 @@ func (w Writer[O, S]) decide(res Resource, current O) writeDecision[S] {
 	return writeDecision[S]{status: merged, has: true, write: true}
 }
 
-// attemptOutcome is what the last write attempt saw, carried out of the retry closure for
-// OnSync. Keeping it in one value rather than three loose variables means the reader does not
-// have to work out which attempt last assigned each of them: they are always from the same one.
-type attemptOutcome[O controllers.ComparableObject, S any] struct {
-	current O
-	merged  S
-	has     bool
+func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
+	if result, ok := w.apply(ctx, obj); ok {
+		recordStatusWrite(obj.GroupVersionKind.Kind, result)
+	}
 }
 
-func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
-	start := time.Now()
+// apply writes the desired status for obj and reports the outcome. ok is false when there was
+// nothing to write: the resource is gone or the writer has no status for it.
+func (w Writer[O, S]) apply(ctx context.Context, obj Resource) (result writeResult, ok bool) {
 	// Log fields are passed inline rather than bound with logger.With: With clones the handler
 	// and preformats the attrs whatever the level, and the two dominant outcomes here are the
 	// debug-only "nothing to do" skips, on every informer event of every registered kind.
-	var last attemptOutcome[O, S]
 	err := retryStatusWrite(ctx, func() error {
-		last = attemptOutcome[O, S]{}
+		result = ""
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
 		current := w.Current(obj)
@@ -219,11 +210,11 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
 			return nil
 		}
-		last = attemptOutcome[O, S]{current: current, merged: decision.status, has: true}
 
 		if !decision.write {
 			logger.Debug("status already up to date, skipping status update",
 				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
+			result = writeResultUnchanged
 			return nil
 		}
 
@@ -240,12 +231,14 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 				// informer delivers the newer object.
 				logger.Debug("updating stale status, skipping",
 					"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
+				result = writeResultConflict
 				return nil
 			}
 			if apierrors.IsNotFound(err) {
 				// ignore status write after resource was deleted.
 				logger.Debug("resource not found, skipping status update",
 					"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
+				result = writeResultNotFound
 				return nil
 			}
 			logger.Error("error updating status",
@@ -253,15 +246,20 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 			return err
 		}
 		logger.Debug("updated status", "kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
+		result = writeResultWritten
 		return nil
 	})
 	if err != nil {
 		logger.Error("failed to sync status after retries",
 			"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
+		if ctx.Err() != nil {
+			// Shutdown or lost leadership cut the retries short; the write did not fail.
+			return "", false
+		}
+		// Only the write returns an error, so the last attempt reached it.
+		return writeResultError, true
 	}
-	if last.has && w.OnSync != nil {
-		w.OnSync(obj, last.current, last.merged, time.Since(start), err)
-	}
+	return result, result != ""
 }
 
 // MergePolicyAncestorStatuses preserves PolicyStatus ancestors owned by other controllers,
@@ -335,12 +333,15 @@ func ownsAnyEntry[T any](ourControllerName string, entries []T, controllerOf fun
 // that several controllers write to. PolicyStatus.ancestors and RouteStatus.parents differ
 // only in element type and the name of their ref field.
 //
-// The published order is canonical: entries are sorted by ParentString, the same key istio
-// and kgateway's own report builders use. That matters because the writer suppresses no-op
-// writes with a plain equality check. If we published in an arbitrary order, a peer
-// controller that rewrites the whole list in sorted order — which is exactly what these
-// builders do — would disagree with us on ordering alone, and the two of us would rewrite
-// the list back and forth forever.
+// The merge preserves the live order. Every entry, ours or not, stays where it is; ours are
+// replaced in place, our stale ones are removed, and our new ones are appended. The Gateway
+// API defines no order for these lists, and peers place their own entries differently: some
+// keep their position, some move theirs to the front or the end on every write. The writer
+// suppresses no-op writes with a plain equality check, so any merge that renormalizes the
+// order (sorting the whole list, say) disagrees with every such peer on ordering alone and
+// spends a write undoing each of their moves, which can in turn provoke theirs. Keeping the
+// order we read is the only choice that agrees with all of them: a reordering we did not make
+// is never, on its own, a difference worth writing.
 func mergeOwnedStatusEntries[T any](
 	ourControllerName string,
 	existing, desired []T,
@@ -349,15 +350,6 @@ func mergeOwnedStatusEntries[T any](
 	limit int,
 	field string,
 ) []T {
-	out := make([]T, 0, len(existing)+len(desired))
-
-	// Preserve any entries not owned by our controller.
-	for _, e := range existing {
-		if controllerOf(e) != ourControllerName {
-			out = append(out, e)
-		}
-	}
-
 	// Only add entries owned by our controller from the desired status.
 	ours := make([]T, 0, len(desired))
 	for _, d := range desired {
@@ -366,52 +358,46 @@ func mergeOwnedStatusEntries[T any](
 		}
 	}
 
-	// Order ours deterministically before the cap, so which of them survives truncation does
-	// not depend on map/set iteration upstream.
-	//
-	// This is not redundant with the canonical sort below, and must not be made conditional on
-	// the cap: that sort is stable and keyed on ParentString, which collapses distinctions
-	// compareParentReference keeps (it canonicalizes nil Group/Kind to the Gateway API
-	// defaults, ParentString renders them empty). Entries that tie on ParentString therefore
-	// publish in whatever order they arrive in, and that order is what this pass fixes.
+	// Order ours deterministically, so where our new entries land and which of them survives
+	// truncation does not depend on map/set iteration upstream.
 	slices.SortFunc(ours, func(a, b T) int {
-		if c := cmp.Compare(controllerOf(a), controllerOf(b)); c != 0 {
-			return c
-		}
 		return compareParentReference(refOf(a), refOf(b))
 	})
 
-	// Foreign entries first so the cap truncates ours before anyone else's.
+	out := make([]T, 0, len(existing)+len(ours))
+	for _, e := range existing {
+		if controllerOf(e) != ourControllerName {
+			// Preserve any entries not owned by our controller, in place.
+			out = append(out, e)
+			continue
+		}
+		// Replace our entry in place with its desired counterpart. An entry of ours with no
+		// counterpart is stale and dropped.
+		ref := refOf(e)
+		if i := slices.IndexFunc(ours, func(d T) bool {
+			return compareParentReference(refOf(d), ref) == 0
+		}); i != -1 {
+			out = append(out, ours[i])
+			ours = slices.Delete(ours, i, i+1)
+		}
+	}
+	// Whatever is left of ours is new to the list.
 	out = append(out, ours...)
-	out = capMergedStatusEntries(out, limit, field)
 
-	// Decorate before sorting: ParentString formats a string, and a comparator would
-	// re-format both operands on every one of the O(n log n) comparisons, on every write
-	// attempt (including retries) of every resource.
-	keyed := make([]keyedStatusEntry[T], len(out))
-	for i, e := range out {
-		keyed[i] = keyedStatusEntry[T]{key: reports.ParentString(refOf(e)), entry: e}
-	}
-	slices.SortStableFunc(keyed, func(a, b keyedStatusEntry[T]) int {
-		return strings.Compare(a.key, b.key)
-	})
-	for i, k := range keyed {
-		out[i] = k.entry
-	}
-	return out
-}
-
-// keyedStatusEntry pairs a status list entry with its precomputed sort key.
-type keyedStatusEntry[T any] struct {
-	key   string
-	entry T
+	return capMergedStatusEntries(ourControllerName, out, controllerOf, limit, field)
 }
 
 // capMergedStatusEntries truncates a merged status list to the Gateway API schema limit,
 // so writes are not rejected by the API server when entries owned by other controllers
-// already fill (or nearly fill) the list. Merged lists place other controllers' entries
-// first, so truncating the tail drops our entries before anyone else's.
-func capMergedStatusEntries[T any](entries []T, limit int, field string) []T {
+// already fill (or nearly fill) the list. Only our entries are dropped, last first, so
+// other controllers' entries are never lost to ours and the survivors keep their order.
+func capMergedStatusEntries[T any](
+	ourControllerName string,
+	entries []T,
+	controllerOf func(T) string,
+	limit int,
+	field string,
+) []T {
 	if len(entries) <= limit {
 		return entries
 	}
@@ -422,7 +408,19 @@ func capMergedStatusEntries[T any](entries []T, limit int, field string) []T {
 		"total_entries", len(entries),
 		"dropped_entries", len(entries)-limit,
 	)
-	return entries[:limit]
+	surplus := len(entries) - limit
+	for i := len(entries) - 1; i >= 0 && surplus > 0; i-- {
+		if controllerOf(entries[i]) == ourControllerName {
+			entries = slices.Delete(entries, i, i+1)
+			surplus--
+		}
+	}
+	// Foreign entries alone exceed the limit; that list was not ours to shorten, but the
+	// API server rejects it regardless, so drop from the tail as before.
+	if len(entries) > limit {
+		entries = entries[:limit]
+	}
+	return entries
 }
 
 func compareParentReference(a, b gwv1.ParentReference) int {

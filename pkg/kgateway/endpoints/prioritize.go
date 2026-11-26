@@ -202,13 +202,14 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 	totalEndpoints := 0
 	for _, loc := range sortedLocalities(ep.LbEps) {
 		eps := ep.LbEps[loc]
-		var l *envoycorev3.Locality
-		if loc != (ir.PodLocality{}) {
-			l = &envoycorev3.Locality{
-				Region:  loc.Region,
-				Zone:    loc.Zone,
-				SubZone: loc.Subzone,
-			}
+		// Always set Locality, even when it is empty. Envoy only records a
+		// group's load_balancing_weight when the group has a locality, so a
+		// group without one gets weight 0 under locality-weighted LB and
+		// receives no traffic while any other locality has endpoints.
+		l := &envoycorev3.Locality{
+			Region:  loc.Region,
+			Zone:    loc.Zone,
+			SubZone: loc.Subzone,
 		}
 
 		eps = filterInvalidEps(eps)

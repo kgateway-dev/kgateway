@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_backend_3000
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -37,7 +35,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -117,6 +115,12 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
+          message: 'rule 0: sessionPersistence.absoluteTimeout only has an effect
+            for Cookie sessions with sessionPersistence.cookie.lifetimeType Permanent'
+          reason: SessionPersistenceAbsoluteTimeoutIgnored
+          status: "True"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
           message: Successfully accepted Route
           reason: Accepted
           status: "True"
@@ -126,11 +130,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Successfully programmed Route
-          reason: Programmed
-          status: "True"
-          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

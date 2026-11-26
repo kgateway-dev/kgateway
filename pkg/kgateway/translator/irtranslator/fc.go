@@ -2,6 +2,7 @@ package irtranslator
 
 import (
 	"fmt"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -11,14 +12,13 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -31,6 +31,18 @@ const (
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
+
+// statPrefixOrDefault returns the chain's StatPrefix, or def when it is unset,
+// with "." replaced by "_". Envoy uses "." as the stats-tree separator and its
+// default tag extractors (e.g. "tcp.$.**") capture a single segment, so a
+// dotted stat_prefix would leak into the metric name instead of the tag.
+func statPrefixOrDefault(fcc ir.FilterChainCommon, def string) string {
+	statPrefix := fcc.StatPrefix
+	if statPrefix == "" {
+		statPrefix = def
+	}
+	return strings.ReplaceAll(statPrefix, ".", "_")
+}
 
 type filterChainTranslator struct {
 	listener        ir.ListenerIR
@@ -118,6 +130,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChai
 		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
 		reporter:          n.reporter,
+		listener:          l,         // policies attached to listener; also used to derive HCM stat_prefix
 		gateway:           n.gateway, // corresponds to Gateway API listener
 		policyAncestorRef: n.listener.PolicyAncestorRef,
 	}
@@ -210,32 +223,26 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 	var attachedPolicies ir.AttachedPolicies
 	// Listener policies take precedence over gateway policies, so they are ordered first
 	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
-	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
-		pols := attachedPolicies.Policies[gk]
-		pass := h.pluginPass[gk]
-		if pass == nil {
-			// TODO: report user error - they attached a non http policy
-			continue
+	// TODO: report user error when a policy without an http translation pass is attached
+	applyPolicies(h.pluginPass, &attachedPolicies, &policyApplyOptions{
+		reporter:    h.reporter,
+		ancestorRef: h.policyAncestorRef,
+	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pctx := &ir.HcmContext{
+			ListenerPort: h.lis.BindPort,
+			Policy:       pol.PolicyIr,
+			Gateway:      h.gateway,
 		}
-		reportPolicyAcceptanceStatus(h.reporter, h.policyAncestorRef, pols...)
-		policies, mergeOrigins := mergePolicies(pass, pols)
-		for _, pol := range policies {
-			pctx := &ir.HcmContext{
-				ListenerPort: h.lis.BindPort,
-				Policy:       pol.PolicyIr,
-				Gateway:      h.gateway,
-			}
-			if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
-				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
-					Type:    gwv1.ListenerConditionProgrammed,
-					Reason:  gwv1.ListenerReasonInvalid,
-					Status:  metav1.ConditionFalse,
-					Message: "Error processing HCM plugin: " + err.Error(),
-				})
-			}
+		if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
+			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing HCM plugin: " + err.Error(),
+			})
 		}
-		reportPolicyAttachmentStatus(h.reporter, h.policyAncestorRef, mergeOrigins, pols...)
-	}
+		return nil
+	})
 
 	// TODO: should we enable websockets by default?
 
@@ -250,10 +257,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 }
 
 func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionManager {
-	statPrefix := h.listener.FilterChainName
-	if statPrefix == "" {
-		statPrefix = DefaultHttpStatPrefix
-	}
+	statPrefix := statPrefixOrDefault(h.listener.FilterChainCommon, DefaultHttpStatPrefix)
 
 	return &envoyhttp.HttpConnectionManager{
 		CodecType:        envoyhttp.HttpConnectionManager_AUTO,
@@ -433,7 +437,7 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
-		StatPrefix: l.FilterChainName,
+		StatPrefix: statPrefixOrDefault(l.FilterChainCommon, l.FilterChainName),
 	}
 	if h.reporter != nil {
 		for _, backend := range l.BackendRefs {
@@ -461,9 +465,70 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 		}
 	}
 
+	h.applyTcpProxyPolicies(l, cfg, listenerReporter)
+
 	tcpFilter, _ := NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 
 	return append(networkFilters, tcpFilter)
+}
+
+// applyTcpProxyPolicies lets plugins tweak the TcpProxy of a TCP filter chain,
+// the same way ApplyHCM does for the HttpConnectionManager of an HTTP filter chain.
+func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.TcpProxy, listenerReporter sdkreporter.ListenerReporter) {
+	var attachedPolicies ir.AttachedPolicies
+	// Listener policies take precedence over gateway policies, so they are ordered first
+	attachedPolicies.Append(l.AttachedPolicies, h.gateway.AttachedHttpPolicies)
+	apply := func(pass *TranslationPass, pol *ir.PolicyAtt) error {
+		pctx := &ir.TcpProxyContext{
+			ListenerPort: h.listener.BindPort,
+			Policy:       pol.PolicyIr,
+			Gateway:      h.gateway,
+		}
+		if err := pass.ApplyTcpProxy(pctx, out); err != nil {
+			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing TcpProxy plugin: " + err.Error(),
+			})
+		}
+		return nil
+	}
+	reported := &policyApplyOptions{reporter: h.reporter, ancestorRef: h.listener.PolicyAncestorRef}
+	unreported := &policyApplyOptions{}
+	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+		pols := attachedPolicies.Policies[gk]
+		pass := h.pluginPass[gk]
+		if pass == nil {
+			continue
+		}
+		tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass)
+		if !ok {
+			applyPolicyGroup(gk, pass, pols, unreported, apply)
+			continue
+		}
+		// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
+		// this chain's Gateway listener only get it here, and only when they have an effect on
+		// TCP filter chains. The others are left out of the merge as well, so that they do not
+		// show up in the merge origins of the policies that do apply.
+		pols = nil
+		for _, pol := range l.AttachedPolicies.Policies[gk] {
+			if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
+				pols = append(pols, pol)
+			}
+		}
+		// Gateway-wide policies are reported again alongside listener policies so that
+		// overriding them is reflected in their attachment state.
+		opts := unreported
+		if h.reporter != nil && len(pols) > 0 {
+			opts = reported
+		}
+		pols = append(pols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
+		if len(pols) == 0 {
+			continue
+		}
+		applyPolicyGroup(gk, pass, pols, opts, apply)
+	}
 }
 
 func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistenerv3.Filter, error) {
@@ -517,12 +582,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		return nil
 	}
 
-	alpnProtocols := tlsConfig.AlpnProtocols
-	if len(alpnProtocols) == 0 {
-		alpnProtocols = defaultDownstreamAlpnProtocols
-	} else if len(alpnProtocols) == 1 && alpnProtocols[0] == string(annotations.AllowEmptyAlpnProtocols) {
-		alpnProtocols = []string{}
-	}
+	alpnProtocols := sslutils.ResolveAlpnProtocols(tlsConfig.AlpnProtocols, defaultDownstreamAlpnProtocols)
 
 	common := &envoytlsv3.CommonTlsContext{
 		// default params
@@ -537,21 +597,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		})
 	}
 
-	if tlsConfig.MinTLSVersion != nil {
-		common.TlsParams.TlsMinimumProtocolVersion = *tlsConfig.MinTLSVersion
-	}
-	if tlsConfig.MaxTLSVersion != nil {
-		common.TlsParams.TlsMaximumProtocolVersion = *tlsConfig.MaxTLSVersion
-	}
-	if len(tlsConfig.CipherSuites) > 0 {
-		common.TlsParams.CipherSuites = tlsConfig.CipherSuites
-	}
-	if len(tlsConfig.EcdhCurves) > 0 {
-		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
-	}
-	if len(tlsConfig.SignatureAlgorithms) > 0 {
-		common.TlsParams.SignatureAlgorithms = tlsConfig.SignatureAlgorithms
-	}
+	sslutils.ApplyTLSParameters(common.TlsParams, tlsConfig)
 
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955
 
@@ -592,14 +638,7 @@ func buildValidationContext(tlsConfig *ir.TLSConfig) *envoytlsv3.CertificateVali
 		if validationContext == nil {
 			validationContext = &envoytlsv3.CertificateValidationContext{}
 		}
-		for _, name := range tlsConfig.VerifySubjectAltNames {
-			validationContext.MatchTypedSubjectAltNames = append(validationContext.MatchTypedSubjectAltNames, &envoytlsv3.SubjectAltNameMatcher{
-				SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-				Matcher: &envoymatcher.StringMatcher{
-					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: name},
-				},
-			})
-		}
+		validationContext.MatchTypedSubjectAltNames = sslutils.VerifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 	}
 
 	// Handle client certificate validation (mTLS) - merge with existing ValidationContext if present

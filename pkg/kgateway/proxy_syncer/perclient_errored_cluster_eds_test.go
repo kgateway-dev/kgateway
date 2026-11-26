@@ -135,8 +135,8 @@ func TestEndpointUpdatesFlowWhileAnotherClusterErrored(t *testing.T) {
 
 	f := newErroredClusterFixture(t)
 	logs := &capturingXdsLogger{}
-	// Same cache and server construction as setup/controlplane.go: ADS mode,
-	// node-role hasher, unordered ADS (EnableOrderedAds defaults to false).
+	// The ADS cache and server as setup/controlplane.go builds them, without
+	// its secrets cache.
 	cache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), logs)
 	envoy := startADSServerAndClient(t, ctx, cache, f.ucc.ResourceName())
 
@@ -237,7 +237,7 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 		edsCluster(ucc, reproBrokenCluster, 2),
 	})
 	f.clusterCols = cols
-	f.endpointCol = krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+	f.endpointCol = krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		f.endpointsFor(reproHealthyCluster, 1),
 		f.endpointsFor(reproBrokenCluster, 1),
 	})
@@ -247,12 +247,13 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: f.endpointCol,
-			index: krtpkg.UnnamedIndex(f.endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: f.endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(f.endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	return f

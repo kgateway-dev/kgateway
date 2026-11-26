@@ -2,14 +2,13 @@ package httproute
 
 import (
 	"context"
+	"errors"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -59,16 +58,6 @@ func translateGatewayHTTPRouteRulesUtil(
 	route, ok := routeInfo.Object.(*ir.HttpRouteIR)
 	if !ok {
 		return
-	}
-
-	// This function is called multiple times during translation of resources, and it is
-	// only required to start the resource metrics tracking when the parent is a Gateway.
-	if routeInfo.ParentRef.Kind != nil && *routeInfo.ParentRef.Kind == wellknown.GatewayKind {
-		defer (metrics.CollectTranslationMetrics(metrics.TranslatorMetricLabels{
-			Name:       string(routeInfo.ParentRef.Name),
-			Namespace:  routeInfo.GetNamespace(),
-			Translator: "TranslateHTTPRoute",
-		}))(nil)
 	}
 
 	for ruleIdx, rule := range route.Rules {
@@ -193,6 +182,12 @@ func setRouteAction(
 		// for which delegated routes are recursively flattened and translated
 		if backend.Delegate != nil {
 			outputRoute.Delegates = true
+			if backend.FiltersErr != nil {
+				// The delegated routes would serve without the backendRef's filters, so they are
+				// not translated; the rule fails closed on its own match, which covers theirs.
+				outputRoute.RouteAcceptanceError = errors.Join(outputRoute.RouteAcceptanceError, backend.FiltersErr)
+				continue
+			}
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
 				ctx,
@@ -220,6 +215,7 @@ func setRouteAction(
 		httpBackend := ir.HttpBackend{
 			Backend:          *backend.Backend, // TODO: Nil check?
 			AttachedPolicies: backend.AttachedPolicies,
+			FiltersErr:       backend.FiltersErr,
 		}
 		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
 	}

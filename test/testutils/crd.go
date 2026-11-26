@@ -1,13 +1,16 @@
 package testutils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -97,8 +100,17 @@ func GetStructuralSchemas(
 }
 
 // GetStructuralSchemasForAllCharts returns a map of GroupVersionKind to Structural schemas for all CRDs
-// from the kgateway-crds chart.
+// from the kgateway-crds chart. The schemas are built once per process; each call returns a new map,
+// so callers may add to it, but the schemas it points to are shared and must not be modified.
 func GetStructuralSchemasForAllCharts() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
+	schemas, err := allChartsStructuralSchemas()
+	if err != nil {
+		return nil, err
+	}
+	return maps.Clone(schemas), nil
+}
+
+var allChartsStructuralSchemas = sync.OnceValues(func() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
 	gitRoot := GitRootDirectory()
 	kgatewayCRDDir := filepath.Join(gitRoot, CRDPath)
 
@@ -108,7 +120,7 @@ func GetStructuralSchemasForAllCharts() (map[schema.GroupVersionKind]*apiservers
 	}
 
 	return buildStructuralSchemaMap(crds)
-}
+})
 
 // buildStructuralSchemaMap converts a list of CRDs to a map of GVK to structural schemas
 func buildStructuralSchemaMap(crds []*apiextensions.CustomResourceDefinition) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
@@ -197,12 +209,28 @@ func parseCRDs(path string) ([]*apiextensions.CustomResourceDefinition, error) {
 	// There could be multiple CRDs per file (e.g., for testing)
 	var crds []*apiextensions.CustomResourceDefinition
 	for {
-		raw := new(unstructured.Unstructured)
-		err := decoder.Decode(raw)
+		// Decode to raw JSON first. A CRD directory is not necessarily CRDs only -
+		// the Gateway API ships its kustomization.yaml and a ValidatingAdmissionPolicy
+		// alongside them - and decoding a document with no kind straight into an
+		// Unstructured fails outright.
+		var doc json.RawMessage
+		err := decoder.Decode(&doc)
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return nil, err
+		}
+		if len(doc) == 0 {
+			continue
+		}
+
+		content := map[string]any{}
+		if err := utiljson.Unmarshal(doc, &content); err != nil {
+			return nil, fmt.Errorf("decoding document in %s: %w", path, err)
+		}
+		raw := &unstructured.Unstructured{Object: content}
+		if raw.GetKind() != "CustomResourceDefinition" {
+			continue
 		}
 
 		// Assume all our CRDs are apiextensions.k8s.io/v1

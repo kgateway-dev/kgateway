@@ -37,7 +37,7 @@ func (s *testingSuite) SetupSuite() {
 	testutils.Cleanup(s.T(), cancel)
 
 	// Apply setup manifest
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest, "-n", testNamespace)
+	err := s.testInstallation.ClusterContext.Manifests().InNamespace(testNamespace).ApplyFiles(setupManifest)
 	s.Require().NoError(err, "Failed to apply setup manifest")
 }
 
@@ -46,7 +46,7 @@ func (s *testingSuite) TearDownSuite() {
 		return
 	}
 	// Clean up core infrastructure
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err := s.testInstallation.ClusterContext.Manifests().DeleteFiles(s.ctx, setupManifest)
 	s.Require().NoError(err)
 }
 

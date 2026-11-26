@@ -11,7 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/multiinstall"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -89,29 +88,21 @@ func multipleInstallsSuiteRunner(namespace string) e2e.SuiteRunner {
 func applyPerInstall(ctx context.Context, ti e2e.Installation, t *testing.T) {
 	namespace := ti.InstallContext().InstallNamespace
 
-	err := ti.ActionsProvider().Kubectl().ApplyFile(ctx, multiinstall.BasicManifest, "-n", namespace)
+	err := ti.Cluster().Manifests().InNamespace(namespace).ApplyFiles(multiinstall.BasicManifest)
 	ti.Assertions(t).Require.NoError(err)
 	for _, obj := range getPerInstallObjects(namespace) {
 		ti.Assertions(t).EventuallyObjectsExist(ctx, obj)
 	}
-
-	err = ti.ActionsProvider().Kubectl().ApplyFile(ctx, defaults.CurlPodManifest)
-	ti.Assertions(t).Require.NoError(err)
-	ti.Assertions(t).EventuallyObjectsExist(ctx, defaults.CurlPod)
 }
 
 func cleanupPerInstall(ctx context.Context, ti e2e.Installation, t *testing.T) {
 	namespace := ti.InstallContext().InstallNamespace
 
-	err := ti.ActionsProvider().Kubectl().DeleteFileSafe(ctx, multiinstall.BasicManifest, "-n", namespace)
+	err := ti.Cluster().Manifests().InNamespace(namespace).DeleteFiles(ctx, multiinstall.BasicManifest)
 	ti.Assertions(t).Require.NoError(err)
 	for _, obj := range getPerInstallObjects(namespace) {
 		ti.Assertions(t).EventuallyObjectsNotExist(ctx, obj)
 	}
-
-	err = ti.ActionsProvider().Kubectl().DeleteFileSafe(ctx, defaults.CurlPodManifest)
-	ti.Assertions(t).Require.NoError(err)
-	ti.Assertions(t).EventuallyObjectsNotExist(ctx, defaults.CurlPod)
 }
 
 func getPerInstallObjects(ns string) []client.Object {

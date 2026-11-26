@@ -31,8 +31,8 @@ func TestBaseRetranslatesWhenARuleForItsHostAppears(t *testing.T) {
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	const host = "svc.ns.svc.cluster.local"
-	rules := krt.NewStaticCollection[destrule.DestinationRuleWrapper](nil, nil, krtopts.ToOptions("DestinationRules")...)
-	index := destrule.NewDestRuleIndexFromCollection(rules)
+	rules := krt.NewMutableCollection[destrule.DestinationRuleWrapper](nil, nil, krtopts.ToOptions("DestinationRules")...)
+	index := destrule.NewDestRuleIndexFromCollection(rules.AsCollection())
 
 	// An endpoint hook shaped like the destrule plugin's: it may apply only to
 	// backends whose host some rule names, and when it runs it orders endpoints

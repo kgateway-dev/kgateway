@@ -4,8 +4,9 @@ package route_delegation
 
 import (
 	"context"
-	"fmt"
+	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -89,7 +90,7 @@ func (s *testingSuite) SetupSuite() {
 	addr := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, proxyTestMeta.Name, proxyTestMeta.Namespace)
 	s.testGateway = common.Gateway{
 		NamespacedName: types.NamespacedName{Name: proxyTestMeta.Name, Namespace: proxyTestMeta.Namespace},
-		Address:        fmt.Sprintf("%s:%d", addr, gatewayTestPort),
+		Address:        net.JoinHostPort(addr, strconv.Itoa(gatewayTestPort)),
 	}
 }
 

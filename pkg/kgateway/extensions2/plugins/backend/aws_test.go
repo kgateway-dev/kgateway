@@ -284,6 +284,37 @@ func TestDeriveStaticSecret(t *testing.T) {
 			mutate:   func(d map[string][]byte) { d[wellknown.SessionToken] = []byte{0xff} },
 			wantErrs: []string{`secret data key "sessionToken" is not a valid UTF-8 string`},
 		},
+		{
+			name:     "whitespace-only access key is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.AccessKey] = []byte(" ") },
+			wantErrs: []string{`secret data key "accessKey" has leading or trailing whitespace`},
+		},
+		{
+			name:     "access key with a trailing newline is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.AccessKey] = []byte("access\n") },
+			wantErrs: []string{`secret data key "accessKey" has leading or trailing whitespace`},
+		},
+		{
+			name:     "secret key with a leading space is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.SecretKey] = []byte(" secret") },
+			wantErrs: []string{`secret data key "secretKey" has leading or trailing whitespace`},
+		},
+		{
+			name:     "session token with surrounding whitespace is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.SessionToken] = []byte("\tsession ") },
+			wantErrs: []string{`secret data key "sessionToken" has leading or trailing whitespace`},
+		},
+		{
+			name: "whitespace in access and secret keys is reported for both",
+			mutate: func(d map[string][]byte) {
+				d[wellknown.AccessKey] = []byte("access ")
+				d[wellknown.SecretKey] = []byte("\n")
+			},
+			wantErrs: []string{
+				`secret data key "accessKey" has leading or trailing whitespace`,
+				`secret data key "secretKey" has leading or trailing whitespace`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

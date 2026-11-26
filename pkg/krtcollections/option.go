@@ -33,21 +33,7 @@ func WithGatewayForEnvoyTransformationFunc(f GatewaysForEnvoyTransformationFunct
 }
 
 func processGatewayIndexConfig(config *GatewayIndexConfig, opts ...GatewayIndexConfigOption) {
-	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, func(in *gwv1.ListenerSet) []TargetRefIndexKey {
-		pRef := in.Spec.ParentRef
-		ns := strOr(pRef.Namespace, "")
-		if ns == "" {
-			ns = in.GetNamespace()
-		}
-		// lookup by the root object
-		return []TargetRefIndexKey{{
-			Group:     wellknown.GatewayGroup,
-			Kind:      wellknown.GatewayKind,
-			Name:      string(pRef.Name),
-			Namespace: ns,
-			// this index intentionally doesn't include sectionName
-		}}
-	})
+	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, listenerSetParentRefKeys)
 
 	config.gatewaysForDeployerTransformationFunc = GatewaysForDeployerTransformationFunc
 	config.gatewaysForEnvoyTransformationFunc = GatewaysForEnvoyTransformationFunc
@@ -55,4 +41,20 @@ func processGatewayIndexConfig(config *GatewayIndexConfig, opts ...GatewayIndexC
 	for _, fn := range opts {
 		fn(config)
 	}
+}
+
+func listenerSetParentRefKeys(in *gwv1.ListenerSet) []TargetRefIndexKey {
+	pRef := in.Spec.ParentRef
+	ns := strOr(pRef.Namespace, "")
+	if ns == "" {
+		ns = in.GetNamespace()
+	}
+	// lookup by the root object
+	return []TargetRefIndexKey{{
+		Group:     wellknown.GatewayGroup,
+		Kind:      wellknown.GatewayKind,
+		Name:      string(pRef.Name),
+		Namespace: ns,
+		// this index intentionally doesn't include sectionName
+	}}
 }

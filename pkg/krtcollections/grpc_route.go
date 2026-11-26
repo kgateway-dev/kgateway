@@ -45,7 +45,7 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(
 
 		// ignore errors as they are irrelevant, GRPCRoute currently does not support extensionRef
 		// see: https://github.com/kgateway-dev/kgateway/issues/11914
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, convertFiltersToHTTP(r.Filters), r.Name, srcAnnotations, opts...)
+		extensionRefs, _ := h.getExtensionRefs(kctx, src, convertFiltersToHTTP(r.Filters), r.Name, srcAnnotations, opts...)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = ToAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, string(*r.Name), srcLabels), opts...)
@@ -80,7 +80,7 @@ func convertFiltersToHTTP(filters []gwv1.GRPCRouteFilter) []gwv1.HTTPRouteFilter
 
 func convertRulesToHTTP(r gwv1.GRPCRouteRule) gwv1.HTTPRouteRule {
 	return gwv1.HTTPRouteRule{
-		SessionPersistence: r.SessionPersistence,
+		SessionPersistence: r.SessionPersistence, //nolint:staticcheck // SA1019: route-level session persistence is still supported
 	}
 }
 

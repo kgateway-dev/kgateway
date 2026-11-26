@@ -92,13 +92,23 @@ type Namespaced interface {
 type AppProtocol string
 
 const (
-	DefaultAppProtocol   AppProtocol = ""
+	DefaultAppProtocol AppProtocol = ""
+	// HTTP1AppProtocol is an explicit HTTP/1.1 app protocol. It is handled like DefaultAppProtocol,
+	// except that a backend with a BackendTLSPolicy keeps HTTP/1.1 instead of negotiating it via ALPN.
+	HTTP1AppProtocol     AppProtocol = "http1"
 	HTTP2AppProtocol     AppProtocol = "http2"
 	WebSocketAppProtocol AppProtocol = "ws"
 )
 
+// HTTPAppProtocolName is the IANA and istio app protocol for HTTP/1.1.
+const HTTPAppProtocolName = "http"
+
+// kubernetesWssAppProtocol is the GEP-1911 app protocol for WebSocket over TLS.
+// It is only valid on Services; TLS comes from a BackendTLSPolicy.
+const kubernetesWssAppProtocol = "kubernetes.io/wss"
+
 // ParseAppProtocol takes an app protocol string provided on a Backend or Kubernetes Service, and maps it
-// to one of the app protocol types supported by kgateway (http2, websocket, or default).
+// to one of the app protocol types supported by kgateway (http1, http2, websocket, or default).
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
@@ -111,7 +121,11 @@ func ParseAppProtocol(appProtocol *string) AppProtocol {
 		fallthrough
 	case string(kgateway.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
+	case HTTPAppProtocolName:
+		return HTTP1AppProtocol
 	case string(kgateway.AppProtocolKubernetesWs):
+		fallthrough
+	case kubernetesWssAppProtocol:
 		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
@@ -257,7 +271,12 @@ func (c BackendObjectIR) ResourceName() string {
 	return c.resourceName
 }
 
-func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
+// Equals has a pointer receiver so that krt finds it for both
+// krt.Collection[BackendObjectIR] and krt.Collection[*BackendObjectIR]. With a
+// value receiver, a pointer collection has no Equaler[*BackendObjectIR] and krt
+// falls back to reflect.DeepEqual, which walks attached policy IR protos and
+// races with goroutines that marshal clusters built from them.
+func (c *BackendObjectIR) Equals(in *BackendObjectIR) bool {
 	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
@@ -448,6 +467,13 @@ type Secret struct {
 
 	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
+
+	// TLSValidation keeps the result of ValidateTLS, so the listeners that reference this
+	// Secret validate it once instead of once each. Copies of a Secret share it. The Secret
+	// collection builds a new Secret for each version of the object, so a changed Secret is
+	// validated again. When nil, ValidateTLS checks on every call.
+	// +noKrtEquals derived from Data
+	TLSValidation *SecretValidation
 }
 
 func (c Secret) ResourceName() string {
@@ -731,7 +757,7 @@ func backendObjectEqual(a, b *BackendObjectIR) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Equals(*b)
+	return a.Equals(b)
 }
 
 func errorsEqual(a, b error) bool {

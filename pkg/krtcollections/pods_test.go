@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"istio.io/api/label"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
@@ -213,6 +214,59 @@ func TestPods(t *testing.T) {
 				Addresses: []string{"1.2.3.4"},
 			},
 		},
+		{
+			name: "pod without network label gets the system namespace network",
+			inputs: []any{
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "ns",
+						Labels:    map[string]string{"a": "b"},
+					},
+					Status: corev1.PodStatus{
+						PodIP: "1.2.3.4",
+					},
+				},
+				istioSystemNamespace("cluster1"),
+			},
+			result: krtcollections.LocalityPod{
+				Named: krt.Named{
+					Name:      "name",
+					Namespace: "ns",
+				},
+				AugmentedLabels: map[string]string{
+					"a":                        "b",
+					label.TopologyNetwork.Name: "cluster1",
+				},
+				Addresses: []string{"1.2.3.4"},
+			},
+		},
+		{
+			name: "pod network label wins over the system namespace network",
+			inputs: []any{
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "name",
+						Namespace: "ns",
+						Labels:    map[string]string{label.TopologyNetwork.Name: "other"},
+					},
+					Status: corev1.PodStatus{
+						PodIP: "1.2.3.4",
+					},
+				},
+				istioSystemNamespace("cluster1"),
+			},
+			result: krtcollections.LocalityPod{
+				Named: krt.Named{
+					Name:      "name",
+					Namespace: "ns",
+				},
+				AugmentedLabels: map[string]string{
+					label.TopologyNetwork.Name: "other",
+				},
+				Addresses: []string{"1.2.3.4"},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -220,11 +274,22 @@ func TestPods(t *testing.T) {
 			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+			namespaces := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+			systemNamespaceNetwork := krtcollections.NewSystemNamespaceNetwork(namespaces, "istio-system", krtutil.KrtOptions{})
+			pods := krtcollections.NewLocalityPodsCollection(nodes, systemNamespaceNetwork, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 			pods.WaitUntilSynced(context.Background().Done())
 			lp := pods.List()[0]
 
 			g.Expect(tc.result.Equals(lp)).To(BeTrue(), "expected %#v, got %#v", lp, tc.result)
 		})
+	}
+}
+
+func istioSystemNamespace(network string) *corev1.Namespace {
+	return &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "istio-system",
+			Labels: map[string]string{label.TopologyNetwork.Name: network},
+		},
 	}
 }
