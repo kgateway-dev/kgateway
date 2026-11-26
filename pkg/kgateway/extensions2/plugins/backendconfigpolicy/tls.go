@@ -270,6 +270,10 @@ func parseTLSParameters(tlsParameters *kgateway.TLSParameters) (*envoytlsv3.TlsP
 		return nil, err
 	}
 
+	if err := sslutils.ValidateSignatureAlgorithms(tlsParameters.SignatureAlgorithms); err != nil {
+		return nil, err
+	}
+
 	return &envoytlsv3.TlsParameters{
 		CipherSuites:              tlsParameters.CipherSuites,
 		EcdhCurves:                tlsParameters.EcdhCurves,
