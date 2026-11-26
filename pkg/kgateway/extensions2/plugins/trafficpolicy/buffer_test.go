@@ -72,9 +72,9 @@ func TestBufferIREquals(t *testing.T) {
 			},
 			b: &kgateway.Buffer{
 				MaxRequestSize: new(resource.MustParse("1Ki")),
-				FilterStage: &kgateway.FilterStageSpec{
-					Stage:     kgateway.FilterStageAuthN,
-					Predicate: kgateway.FilterStagePredicateBefore,
+				FilterStage: &shared.FilterStageSpec{
+					Stage:     shared.FilterStageAuthN,
+					Predicate: shared.FilterStagePredicateBefore,
 				},
 			},
 			want: false,
@@ -83,16 +83,16 @@ func TestBufferIREquals(t *testing.T) {
 			name: "same size, same filter stage",
 			a: &kgateway.Buffer{
 				MaxRequestSize: new(resource.MustParse("1Ki")),
-				FilterStage: &kgateway.FilterStageSpec{
-					Stage:     kgateway.FilterStageAuthN,
-					Predicate: kgateway.FilterStagePredicateBefore,
+				FilterStage: &shared.FilterStageSpec{
+					Stage:     shared.FilterStageAuthN,
+					Predicate: shared.FilterStagePredicateBefore,
 				},
 			},
 			b: &kgateway.Buffer{
 				MaxRequestSize: new(resource.MustParse("1Ki")),
-				FilterStage: &kgateway.FilterStageSpec{
-					Stage:     kgateway.FilterStageAuthN,
-					Predicate: kgateway.FilterStagePredicateBefore,
+				FilterStage: &shared.FilterStageSpec{
+					Stage:     shared.FilterStageAuthN,
+					Predicate: shared.FilterStagePredicateBefore,
 				},
 			},
 			want: true,
@@ -154,7 +154,7 @@ func TestBufferFilterRunsImmediatelyBeforeRustformation(t *testing.T) {
 func TestConstructBufferFilterStage(t *testing.T) {
 	tests := []struct {
 		name string
-		spec *kgateway.FilterStageSpec
+		spec *shared.FilterStageSpec
 		want filters.FilterStage[filters.WellKnownFilterStage]
 	}{
 		{
@@ -163,24 +163,24 @@ func TestConstructBufferFilterStage(t *testing.T) {
 		},
 		{
 			name: "before authn, so the limit enforces ahead of ext_authz",
-			spec: &kgateway.FilterStageSpec{
-				Stage:     kgateway.FilterStageAuthN,
-				Predicate: kgateway.FilterStagePredicateBefore,
+			spec: &shared.FilterStageSpec{
+				Stage:     shared.FilterStageAuthN,
+				Predicate: shared.FilterStagePredicateBefore,
 			},
 			want: filters.BeforeStage(filters.AuthNStage),
 		},
 		{
 			name: "earliest position the API can express",
-			spec: &kgateway.FilterStageSpec{
-				Stage:     kgateway.FilterStageFault,
-				Predicate: kgateway.FilterStagePredicateBefore,
+			spec: &shared.FilterStageSpec{
+				Stage:     shared.FilterStageFault,
+				Predicate: shared.FilterStagePredicateBefore,
 			},
 			want: filters.BeforeStage(filters.FaultStage),
 		},
 		{
 			name: "predicate defaults to during",
-			spec: &kgateway.FilterStageSpec{
-				Stage: kgateway.FilterStageAuthZ,
+			spec: &shared.FilterStageSpec{
+				Stage: shared.FilterStageAuthZ,
 			},
 			want: filters.DuringStage(filters.AuthZStage),
 		},
@@ -283,9 +283,9 @@ func TestDisableOnlyPolicyDoesNotClaimAStage(t *testing.T) {
 	buffersLate := &trafficPolicySpecIr{}
 	constructBuffer(kgateway.TrafficPolicySpec{Buffer: &kgateway.Buffer{
 		MaxRequestSize: new(resource.MustParse("1Ki")),
-		FilterStage: &kgateway.FilterStageSpec{
-			Stage:     kgateway.FilterStageRoute,
-			Predicate: kgateway.FilterStagePredicateBefore,
+		FilterStage: &shared.FilterStageSpec{
+			Stage:     shared.FilterStageRoute,
+			Predicate: shared.FilterStagePredicateBefore,
 		},
 	}}, buffersLate)
 
