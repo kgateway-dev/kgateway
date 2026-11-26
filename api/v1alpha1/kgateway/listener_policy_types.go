@@ -623,7 +623,7 @@ type CommonHttpService struct {
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
 	Path *string `json:"path,omitempty"`
 
-	// The timeout for the HTTP request. If this field is not set, Envoy's default timeout is used.
+	// The timeout for the HTTP request. Defaults to 2s if not set.
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32

@@ -15,6 +15,7 @@ import (
 	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -69,49 +70,46 @@ func convertAccessLogConfig(
 		return nil, nil
 	}
 
-	grpcBackends := make(map[string]*ir.BackendObjectIR, len(configs))
+	logBackends := make(map[string]*ir.BackendObjectIR, len(configs))
 	for idx, log := range configs {
-		if log.GrpcService != nil {
-			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
-			// TODO: what is the correct behavior? maybe route to static blackhole?
-			if err != nil {
-				return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
-			}
-			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
+		var (
+			backendRef gwv1.BackendObjectReference
+			logName    string
+		)
+		switch {
+		case log.GrpcService != nil:
+			backendRef = log.GrpcService.BackendRef.BackendObjectReference
+			logName = log.GrpcService.LogName
+		case log.OpenTelemetry != nil && log.OpenTelemetry.GrpcService != nil:
+			backendRef = log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference
+			logName = log.OpenTelemetry.GrpcService.LogName
+		case log.OpenTelemetry != nil && log.OpenTelemetry.HttpService != nil:
+			backendRef = log.OpenTelemetry.HttpService.BackendRef.BackendObjectReference
+			logName = log.OpenTelemetry.HttpService.LogName
+		default:
 			continue
 		}
-		if log.OpenTelemetry != nil {
-			switch {
-			case log.OpenTelemetry.GrpcService != nil:
-				backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
-				// TODO: what is the correct behavior? maybe route to static blackhole?
-				if err != nil {
-					return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
-				}
-				grpcBackends[getLogId(log.OpenTelemetry.GrpcService.LogName, idx)] = backend
-			case log.OpenTelemetry.HttpService != nil:
-				backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.HttpService.BackendRef.BackendObjectReference)
-				// TODO: what is the correct behavior? maybe route to static blackhole?
-				if err != nil {
-					return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
-				}
-				grpcBackends[getLogId(log.OpenTelemetry.HttpService.LogName, idx)] = backend
-			}
+
+		backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, backendRef)
+		// TODO: what is the correct behavior? maybe route to static blackhole?
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
 		}
+		logBackends[getLogId(logName, idx)] = backend
 	}
 
-	return translateAccessLogs(configs, target, grpcBackends)
+	return translateAccessLogs(configs, target, logBackends)
 }
 
 func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(configs []kgateway.AccessLog, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
+func translateAccessLogs(configs []kgateway.AccessLog, target accessLogTarget, logBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
 	var results []proto.Message
 
 	for idx, logConfig := range configs {
-		accessLogCfg, err := translateAccessLog(logConfig, target, grpcBackends, idx)
+		accessLogCfg, err := translateAccessLog(logConfig, target, logBackends, idx)
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +120,7 @@ func translateAccessLogs(configs []kgateway.AccessLog, target accessLogTarget, g
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logConfig kgateway.AccessLog, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func translateAccessLog(logConfig kgateway.AccessLog, target accessLogTarget, logBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
@@ -137,9 +135,9 @@ func translateAccessLog(logConfig kgateway.AccessLog, target accessLogTarget, gr
 	case logConfig.FileSink != nil:
 		accessLogCfg, err = createFileAccessLog(logConfig.FileSink)
 	case logConfig.GrpcService != nil:
-		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, target, grpcBackends, accessLogId)
+		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, target, logBackends, accessLogId)
 	case logConfig.OpenTelemetry != nil:
-		accessLogCfg, err = createOTelAccessLog(logConfig.OpenTelemetry, grpcBackends, accessLogId)
+		accessLogCfg, err = createOTelAccessLog(logConfig.OpenTelemetry, logBackends, accessLogId)
 	default:
 		return nil, errors.New("no access log sink specified")
 	}
@@ -192,9 +190,9 @@ func createFileAccessLog(fileSink *kgateway.FileSink) (proto.Message, error) {
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, target accessLogTarget, logBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	if target == tcpProxyAccessLog {
-		config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
+		config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, logBackends, accessLogId)
 		if err != nil {
 			return nil, fmt.Errorf("error converting grpc access log config: %w", err)
 		}
@@ -206,27 +204,27 @@ func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, target acce
 	}
 
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
-	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
+	if err := copyGrpcSettings(&cfg, grpcService, logBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
 	}
 	return &cfg, nil
 }
 
 // createOTelAccessLog generates an OTel access log configuration
-func createOTelAccessLog(grpcService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func createOTelAccessLog(grpcService *kgateway.OpenTelemetryAccessLogService, logBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoy_open_telemetry.OpenTelemetryAccessLogConfig
-	if err := copyOTelSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
+	if err := copyOTelSettings(&cfg, grpcService, logBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting otel access log config: %w", err)
 	}
 	return &cfg, nil
 }
 
-func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
+func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcService, logBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
 	if grpcService.LogName == "" {
 		return nil, errors.New("grpc service log name cannot be empty")
 	}
 
-	grpcServiceConfig, err := generateGrpcServiceConfig(grpcService, grpcBackends, accessLogId)
+	grpcServiceConfig, err := generateGrpcServiceConfig(grpcService, logBackends, accessLogId)
 	if err != nil {
 		return nil, err
 	}
@@ -238,8 +236,8 @@ func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcS
 	}, nil
 }
 
-func generateGrpcServiceConfig(grpcService kgateway.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.GrpcService, error) {
-	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
+func generateGrpcServiceConfig(grpcService kgateway.CommonAccessLogGrpcService, logBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.GrpcService, error) {
+	backend := logBackends[getLogId(grpcService.LogName, accessLogId)]
 	if backend == nil {
 		return nil, errors.New("backend ref not found")
 	}
@@ -247,8 +245,8 @@ func generateGrpcServiceConfig(grpcService kgateway.CommonAccessLogGrpcService, 
 	return ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
 }
 
-func generateHttpServiceConfig(httpService kgateway.CommonAccessLogHttpService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.HttpService, error) {
-	backend := grpcBackends[getLogId(httpService.LogName, accessLogId)]
+func generateHttpServiceConfig(httpService kgateway.CommonAccessLogHttpService, logBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.HttpService, error) {
+	backend := logBackends[getLogId(httpService.LogName, accessLogId)]
 	if backend == nil {
 		return nil, errors.New("backend ref not found")
 	}
@@ -256,8 +254,8 @@ func generateHttpServiceConfig(httpService kgateway.CommonAccessLogHttpService, 
 	return ToEnvoyHttp(httpService.CommonHttpService, backend, OTLPHTTPLogsPath)
 }
 
-func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
-	config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
+func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, logBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
+	config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, logBackends, accessLogId)
 	if err != nil {
 		return err
 	}
@@ -269,17 +267,17 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgate
 	return cfg.Validate()
 }
 
-func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
+func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *kgateway.OpenTelemetryAccessLogService, logBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
 	switch {
 	case otelService.GrpcService != nil:
-		config, err := generateGrpcServiceConfig(*otelService.GrpcService, grpcBackends, accessLogId)
+		config, err := generateGrpcServiceConfig(*otelService.GrpcService, logBackends, accessLogId)
 		if err != nil {
 			return err
 		}
 		cfg.LogName = otelService.GrpcService.LogName
 		cfg.GrpcService = config
 	case otelService.HttpService != nil:
-		config, err := generateHttpServiceConfig(*otelService.HttpService, grpcBackends, accessLogId)
+		config, err := generateHttpServiceConfig(*otelService.HttpService, logBackends, accessLogId)
 		if err != nil {
 			return err
 		}

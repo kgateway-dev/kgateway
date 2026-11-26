@@ -25,8 +25,6 @@ Clusters:
       commonTlsContext:
         validationContext: {}
       sni: otel.example.com
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -49,7 +47,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         tracing:
           provider:
             name: envoy.tracers.opentelemetry
@@ -59,7 +57,7 @@ Listeners:
                 httpUri:
                   cluster: backend_default_otel-collector_0
                   timeout: 2s
-                  uri: https://otel.example.com:0/v1/traces
+                  uri: http://otel.example.com:4318/v1/traces
               resourceDetectors:
               - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:

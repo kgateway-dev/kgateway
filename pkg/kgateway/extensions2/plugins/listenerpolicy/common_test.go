@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	kwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -54,7 +53,7 @@ func TestToEnvoyHttp(t *testing.T) {
 	}
 }
 
-func TestToEnvoyHttp_WithBackendTLSPolicy(t *testing.T) {
+func TestToEnvoyHttp_SchemeIsFixedRegardlessOfTLS(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{
 		Kind:      "Backend",
 		Name:      "otel-collector",
@@ -70,31 +69,32 @@ func TestToEnvoyHttp_WithBackendTLSPolicy(t *testing.T) {
 	httpService, err := ToEnvoyHttp(kgateway.CommonHttpService{}, &backend, OTLPHTTPTracesPath)
 	require.NoError(t, err)
 
-	// A BackendTLSPolicy attached to the backend means the scheme should read https, even
-	// though TLS itself is applied to the cluster separately (not by ToEnvoyHttp).
-	assert.Equal(t, "https://otel.example.com:4318/v1/traces", httpService.GetHttpUri().GetUri())
+	// Scheme is always "http": Envoy's OTLP/HTTP exporters only read :path and Host from this
+	// URI, not the scheme, so whether the backend has a BackendTLSPolicy attached is irrelevant
+	// here - TLS is applied to the cluster separately.
+	assert.Equal(t, "http://otel.example.com:4318/v1/traces", httpService.GetHttpUri().GetUri())
 }
 
-func TestToEnvoyHttp_WithBackendConfigPolicy(t *testing.T) {
+func TestToEnvoyHttp_StaticBackendPortFallback(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{
 		Kind:      "Backend",
 		Name:      "otel-collector",
 		Namespace: "default",
-	}, 4318, "", "")
+	}, 0, "", "")
 	backend.CanonicalHostname = "otel.example.com"
-	backend.AttachedPolicies = ir.AttachedPolicies{
-		Policies: map[schema.GroupKind][]ir.PolicyAtt{
-			kwellknown.BackendConfigPolicyGVK.GroupKind(): {
-				{PolicyIr: &backendconfigpolicy.BackendConfigPolicyIR{}},
+	backend.Obj = &kgateway.Backend{
+		Spec: kgateway.BackendSpec{
+			Static: &kgateway.StaticBackend{
+				Hosts: []kgateway.Host{{Host: "otel.example.com", Port: 4318}},
 			},
 		},
 	}
 
+	// A kgateway Backend of type Static always reports port 0 from BackendObjectIR.GetPort(),
+	// since the Backend CRD has no single port the way a Kubernetes Service does. ToEnvoyHttp
+	// falls back to the first host's port so the URI doesn't end up with a bogus ":0".
 	httpService, err := ToEnvoyHttp(kgateway.CommonHttpService{}, &backend, OTLPHTTPTracesPath)
 	require.NoError(t, err)
-
-	// A BackendConfigPolicy attached without TLS configured shouldn't flip the scheme - mere
-	// attachment isn't a reliable signal, unlike BackendTLSPolicy.
 	assert.Equal(t, "http://otel.example.com:4318/v1/traces", httpService.GetHttpUri().GetUri())
 }
 

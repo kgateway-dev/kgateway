@@ -3,7 +3,6 @@ package backendconfigpolicy
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -571,17 +570,3 @@ func systemCAContext(sans ...string) *envoytlsv3.CommonTlsContext {
 		},
 	}
 }
-
-func TestHasTLS(t *testing.T) {
-	assert.True(t, HasTLS(&BackendConfigPolicyIR{tlsConfig: &envoytlsv3.UpstreamTlsContext{}}))
-	assert.False(t, HasTLS(&BackendConfigPolicyIR{}))
-	assert.False(t, HasTLS(nil))
-
-	var otherPolicy ir.PolicyIR = &dummyPolicyIR{}
-	assert.False(t, HasTLS(otherPolicy))
-}
-
-type dummyPolicyIR struct{}
-
-func (d *dummyPolicyIR) CreationTime() time.Time { return time.Time{} }
-func (d *dummyPolicyIR) Equals(in any) bool      { return false }

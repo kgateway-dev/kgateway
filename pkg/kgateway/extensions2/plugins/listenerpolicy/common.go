@@ -12,7 +12,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -86,7 +85,9 @@ const (
 // CommonHttpService has no literal URL of its own: Envoy derives the outgoing request's
 // :path and Host header by parsing HttpUri.uri (see Http::Utility::prepareHeaders), so Uri
 // is built here from the backend's own host/port rather than its (internal, non-resolvable)
-// cluster name.
+// cluster name. The scheme is a fixed "http://" prefix: Envoy doesn't read it from here, and
+// whether the connection actually uses TLS is decided entirely by the transport socket on the
+// referenced cluster (configured via BackendTLSPolicy/BackendConfigPolicy).
 // This requires the backend to have a real, known hostname - a Kubernetes Service
 // or a kgateway Backend of type Static - which rules out backend kinds with no
 // inherent network address (e.g. AWS Lambda, DynamicForwardProxy).
@@ -100,18 +101,9 @@ func ToEnvoyHttp(in kgateway.CommonHttpService, backend *ir.BackendObjectIR, def
 		path = *in.Path
 	}
 
-	// BackendTLSPolicy wins over BackendConfigPolicy's TLS config when both are attached to the
-	// same backend (see backendconfigpolicy.hasBackendTLSPolicy), so check it first.
-	scheme := "http"
-	if len(backend.AttachedPolicies.Policies[kwellknown.BackendTLSPolicyGVK.GroupKind()]) > 0 {
-		scheme = "https"
-	} else {
-		for _, pol := range backend.AttachedPolicies.Policies[kwellknown.BackendConfigPolicyGVK.GroupKind()] {
-			if backendconfigpolicy.HasTLS(pol.PolicyIr) {
-				scheme = "https"
-				break
-			}
-		}
+	port := backend.GetPort()
+	if port == 0 {
+		port = staticBackendPort(backend)
 	}
 
 	// HttpUri.Timeout is required by Envoy's proto validation, so fall back to the same
@@ -123,7 +115,7 @@ func ToEnvoyHttp(in kgateway.CommonHttpService, backend *ir.BackendObjectIR, def
 
 	httpService := &envoycorev3.HttpService{
 		HttpUri: &envoycorev3.HttpUri{
-			Uri: fmt.Sprintf("%s://%s:%d%s", scheme, backend.CanonicalHostname, backend.GetPort(), path),
+			Uri: fmt.Sprintf("http://%s:%d%s", backend.CanonicalHostname, port, path),
 			HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
 				Cluster: backend.ClusterName(),
 			},
@@ -142,6 +134,17 @@ func ToEnvoyHttp(in kgateway.CommonHttpService, backend *ir.BackendObjectIR, def
 		}
 	}
 	return httpService, nil
+}
+
+// staticBackendPort returns the port of a kgateway Backend of type Static. A static backend's
+// BackendObjectIR always reports port 0 (the Backend CRD has no single port the way a
+// Kubernetes Service does), so callers needing a real port for the first host fall back here.
+func staticBackendPort(backend *ir.BackendObjectIR) int32 {
+	kgwBackend, ok := backend.Obj.(*kgateway.Backend)
+	if !ok || kgwBackend.Spec.Static == nil || len(kgwBackend.Spec.Static.Hosts) == 0 {
+		return 0
+	}
+	return kgwBackend.Spec.Static.Hosts[0].Port
 }
 
 // convertAccessLogFilter translates filtering logic to Envoy filter

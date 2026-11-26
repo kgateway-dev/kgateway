@@ -1501,8 +1501,7 @@ spec:
                                       type: array
                                     timeout:
                                       description: The timeout for the HTTP request.
-                                        If this field is not set, Envoy's default
-                                        timeout is used.
+                                        Defaults to 2s if not set.
                                       maxLength: 32
                                       type: string
                                       x-kubernetes-validations:
@@ -3528,8 +3527,7 @@ spec:
                                         type: array
                                       timeout:
                                         description: The timeout for the HTTP request.
-                                          If this field is not set, Envoy's default
-                                          timeout is used.
+                                          Defaults to 2s if not set.
                                         maxLength: 32
                                         type: string
                                         x-kubernetes-validations:
@@ -6409,8 +6407,7 @@ spec:
                                             type: array
                                           timeout:
                                             description: The timeout for the HTTP
-                                              request. If this field is not set, Envoy's
-                                              default timeout is used.
+                                              request. Defaults to 2s if not set.
                                             maxLength: 32
                                             type: string
                                             x-kubernetes-validations:
@@ -8472,8 +8469,7 @@ spec:
                                               type: array
                                             timeout:
                                               description: The timeout for the HTTP
-                                                request. If this field is not set,
-                                                Envoy's default timeout is used.
+                                                request. Defaults to 2s if not set.
                                               maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
