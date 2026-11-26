@@ -75,6 +75,78 @@ func ToEnvoyGrpc(in kgateway.CommonGrpcService, backend *ir.BackendObjectIR) (*e
 	return grpcService, nil
 }
 
+// OTLP/HTTP paths per spec (https://opentelemetry.io/docs/specs/otlp/#otlphttp).
+const (
+	OTLPHTTPLogsPath   = "/v1/logs"
+	OTLPHTTPTracesPath = "/v1/traces"
+)
+
+// ToEnvoyHttp builds the HttpService used by OTLP/HTTP access log and tracing exporters.
+// CommonHttpService has no literal URL of its own: Envoy derives the outgoing request's
+// :path and Host header by parsing HttpUri.uri (see Http::Utility::prepareHeaders), so Uri
+// is built here from the backend's own host/port rather than its (internal, non-resolvable)
+// cluster name. The scheme is a fixed "http://" prefix: Envoy doesn't read it from here, and
+// whether the connection actually uses TLS is decided entirely by the transport socket on the
+// referenced cluster (configured via BackendTLSPolicy/BackendConfigPolicy).
+// This requires the backend to have a real, known hostname - a Kubernetes Service
+// or a kgateway Backend of type Static - which rules out backend kinds with no
+// inherent network address (e.g. AWS Lambda, DynamicForwardProxy).
+func ToEnvoyHttp(in kgateway.CommonHttpService, backend *ir.BackendObjectIR, defaultPath string) (*envoycorev3.HttpService, error) {
+	if backend.CanonicalHostname == "" {
+		return nil, fmt.Errorf("backend %q has no resolvable hostname for an OTLP/HTTP service; use a Kubernetes Service or a kgateway Backend of type Static", backend.ResourceName())
+	}
+
+	path := defaultPath
+	if in.Path != nil {
+		path = *in.Path
+	}
+
+	port := backend.GetPort()
+	if port == 0 {
+		port = staticBackendPort(backend)
+	}
+
+	// HttpUri.Timeout is required by Envoy's proto validation, so fall back to the same
+	// default used for ext_authz/ext_proc HTTP services when the user hasn't set one.
+	timeout := kgateway.HTTPDefaultTimeout
+	if in.Timeout != nil {
+		timeout = in.Timeout.Duration
+	}
+
+	httpService := &envoycorev3.HttpService{
+		HttpUri: &envoycorev3.HttpUri{
+			Uri: fmt.Sprintf("http://%s:%d%s", backend.CanonicalHostname, port, path),
+			HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+				Cluster: backend.ClusterName(),
+			},
+			Timeout: utils.DurationToProto(timeout),
+		},
+	}
+	if in.RequestHeadersToAdd != nil {
+		httpService.RequestHeadersToAdd = make([]*envoycorev3.HeaderValueOption, len(in.RequestHeadersToAdd))
+		for i, header := range in.RequestHeadersToAdd {
+			httpService.RequestHeadersToAdd[i] = &envoycorev3.HeaderValueOption{
+				Header: &envoycorev3.HeaderValue{
+					Key:   header.Key,
+					Value: ptr.Deref(header.Value, ""),
+				},
+			}
+		}
+	}
+	return httpService, nil
+}
+
+// staticBackendPort returns the port of a kgateway Backend of type Static. A static backend's
+// BackendObjectIR always reports port 0 (the Backend CRD has no single port the way a
+// Kubernetes Service does), so callers needing a real port for the first host fall back here.
+func staticBackendPort(backend *ir.BackendObjectIR) int32 {
+	kgwBackend, ok := backend.Obj.(*kgateway.Backend)
+	if !ok || kgwBackend.Spec.Static == nil || len(kgwBackend.Spec.Static.Hosts) == 0 {
+		return 0
+	}
+	return kgwBackend.Spec.Static.Hosts[0].Port
+}
+
 // convertAccessLogFilter translates filtering logic to Envoy filter
 func convertAccessLogFilter(filter *kgateway.AccessLogFilter) (*envoyaccesslogv3.AccessLogFilter, error) {
 	var (
