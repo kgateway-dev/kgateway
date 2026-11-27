@@ -90,8 +90,19 @@ func extractFromSecret(secretRef *corev1.LocalObjectReference, secretGetter Secr
 
 	data.certChain = string(secret.Data["tls.crt"])
 	data.privateKey = string(secret.Data["tls.key"])
-	data.rootCA = string(secret.Data["ca.crt"])
 	data.inlineDataSource = true
+
+	// ca.crt is optional, but when it is set it goes to Envoy as the trusted CA.
+	// Validate it the same way BackendTLSPolicy and Gateway listeners do: Envoy
+	// rejects a cluster whose trusted CA does not parse, and without this check
+	// the policy would report no error.
+	if len(secret.Data["ca.crt"]) > 0 {
+		rootCA, err := sslutils.GetCACertFromSecret(secret)
+		if err != nil {
+			return err
+		}
+		data.rootCA = rootCA
+	}
 
 	return nil
 }
