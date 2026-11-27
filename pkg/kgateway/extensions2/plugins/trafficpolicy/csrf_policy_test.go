@@ -4,11 +4,46 @@ import (
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	csrfv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
+	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+func TestCsrfFilterOrder(t *testing.T) {
+	const chainName = "test-filter-chain"
+	pass := &trafficPolicyPluginGwPass{
+		corsInChain:           map[string]*corsv3.Cors{chainName: {}},
+		csrfInChain:           map[string]*csrfv3.CsrfPolicy{chainName: {}},
+		headerMutationInChain: map[string]*header_mutationv3.HeaderMutationPerRoute{chainName: {}},
+		setTransformationInChain: map[string]bool{
+			chainName: true,
+		},
+	}
+
+	staged, err := pass.HttpFilters(ir.HttpFiltersContext{}, ir.FilterChainCommon{FilterChainName: chainName})
+	require.NoError(t, err)
+	filters.StagedHttpFilterList(staged).Sort()
+
+	names := make([]string, 0, len(staged))
+	for _, filter := range staged {
+		names = append(names, filter.Filter.GetName())
+	}
+	require.Equal(t, []string{
+		envoy_wellknown.CORS,
+		csrfExtensionFilterName,
+		rustformationFilterNamePrefix,
+		headerMutationFilterName,
+	}, names)
+	assert.True(t, staged[1].Filter.GetDisabled(), "CSRF is enabled by per-route policy")
+}
 
 func TestCsrfIREquals(t *testing.T) {
 	createSimpleCsrf := func(additionalOrigin string) *csrfv3.CsrfPolicy {
