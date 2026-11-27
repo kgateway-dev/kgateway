@@ -58,8 +58,8 @@ func GetClusterDomainName() string {
 func getClusterDomainName(r io.Reader) string {
 	// First look in the conf file.
 	for scanner := bufio.NewScanner(r); scanner.Scan(); {
-		elements := strings.Split(scanner.Text(), " ")
-		if elements[0] != "search" {
+		elements := strings.Fields(scanner.Text())
+		if len(elements) == 0 || elements[0] != "search" {
 			continue
 		}
 		for _, e := range elements[1:] {
