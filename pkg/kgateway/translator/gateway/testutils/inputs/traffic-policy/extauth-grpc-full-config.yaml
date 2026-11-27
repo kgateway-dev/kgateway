@@ -89,6 +89,9 @@ metadata:
 spec:
   type: ExtAuth
   extAuth:
+    metadataContextNamespaces:
+    - dev.example.custom
+    - envoy.filters.http.jwt_authn
     grpcService:
       backendRef:
         name: ext-authz
@@ -98,9 +101,8 @@ spec:
         attempts: 3
         backoff:
           baseInterval: 50ms
-          maxInterval: 200ms      
+          maxInterval: 200ms
     failOpen: true
-    clearRouteCache: true
     statusOnError: 400
     statPrefix: my_prefix
     withRequestBody:

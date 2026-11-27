@@ -515,6 +515,76 @@ func TestComputeRouteConfigurationValidatesRouteConfigScopeRouteReplacements(t *
 	assert.True(t, ok, "route pointer replaced by a RouteConfig-scope plugin must be isolated")
 }
 
+type routeConfigLifecyclePass struct {
+	ir.UnimplementedProxyTranslationPass
+	finalize func(*ir.RouteConfigContext, *envoyroutev3.RouteConfiguration)
+	replaced func(*envoyroutev3.Route)
+}
+
+func (p routeConfigLifecyclePass) FinalizeRouteConfig(ctx *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+	if p.finalize != nil {
+		p.finalize(ctx, out)
+	}
+}
+
+func (p routeConfigLifecyclePass) RouteReplaced(out *envoyroutev3.Route) {
+	if p.replaced != nil {
+		p.replaced(out)
+	}
+}
+
+// TestComputeRouteConfigurationRunsFinalizerWithoutAttachedPolicy proves the optional
+// finalizer runs for every route configuration, not only when a route-config policy is
+// attached. Plugins that combine state across scopes depend on this.
+func TestComputeRouteConfigurationRunsFinalizerWithoutAttachedPolicy(t *testing.T) {
+	h := testHTTPRouteTranslator(&routeMockValidator{}, apisettings.ValidationStandard)
+	calls := 0
+	gk := schema.GroupKind{Group: "test", Kind: "LifecyclePolicy"}
+	h.pluginPass = TranslationPassPlugins{gk: &TranslationPass{
+		ProxyTranslationPass: routeConfigLifecyclePass{finalize: func(_ *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+			calls++
+			out.Name = "finalized"
+		}},
+	}}
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name: "test-vhost", Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{testRouteIR(0, "/one", "cluster-one")},
+	}})
+
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, "finalized", cfg.GetName())
+}
+
+// TestComputeRouteConfigurationNotifiesPassOnRouteReplacement proves passes are told
+// about routes the translator replaces with a synthetic direct response, so they can
+// drop route-local state before finalization restores per-route config.
+func TestComputeRouteConfigurationNotifiesPassOnRouteReplacement(t *testing.T) {
+	const marker = "lifecycle-replacement-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	var replacedClusters []string
+	gk := schema.GroupKind{Group: "test", Kind: "LifecyclePolicy"}
+	h.pluginPass = TranslationPassPlugins{gk: &TranslationPass{
+		ProxyTranslationPass: routeConfigLifecyclePass{replaced: func(out *envoyroutev3.Route) {
+			replacedClusters = append(replacedClusters, out.GetRoute().GetCluster())
+		}},
+	}}
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name: "test-vhost", Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", marker),
+		},
+	}})
+
+	assert.Equal(t, []string{marker}, replacedClusters, "notification must carry the original route")
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	out := cfg.GetVirtualHosts()[0].GetRoutes()[1]
+	_, ok := out.GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "invalid route must be replaced with a direct response")
+}
+
 func TestComputeRouteConfigurationValidatesRouteConfigScopeAppendedRoutes(t *testing.T) {
 	const marker = "rc-scope-appended-invalid"
 	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)

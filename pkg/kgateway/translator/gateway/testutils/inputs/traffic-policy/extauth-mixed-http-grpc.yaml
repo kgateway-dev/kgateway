@@ -1,0 +1,183 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http1
+    protocol: HTTP
+    port: 80
+    hostname: "example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /example-route
+---
+# A second route on the same listener has no ext-auth policy. It must keep the
+# gateway provider's legacy pre-AuthN instance.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: legacy-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /legacy-route
+---
+# The gateway-level HTTP provider omits metadataContextNamespaces and keeps its
+# canonical pre-AuthN instance everywhere. The route-level gRPC provider opts in
+# and runs after JWT on its own instance. Stage placement, not policy weight,
+# separates them: a legacy provider must keep receiving the Authorization header.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: mixed-extauth-http
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  extAuth:
+    extensionRef:
+      name: http-extauth
+    contextExtensions:
+      tenant: payments
+    withRequestBody:
+      maxRequestBytes: 2048
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: mixed-extauth-grpc
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+  extAuth:
+    extensionRef:
+      name: grpc-extauth
+  jwtAuth:
+    extensionRef:
+      name: jwt-ext
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: grpc-extauth
+  namespace: infra
+spec:
+  type: ExtAuth
+  extAuth:
+    metadataContextNamespaces:
+    - dev.example.custom
+    grpcService:
+      backendRef:
+        name: grpc-ext-authz
+        port: 9000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: http-extauth
+  namespace: infra
+spec:
+  type: ExtAuth
+  extAuth:
+    httpService:
+      backendRef:
+        name: http-ext-authz
+        port: 9000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-ext
+  namespace: infra
+spec:
+  type: JWT
+  jwt:
+    providers:
+    - name: gateway-example
+      issuer: https://gateway.example.com
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: infra
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: infra
+  name: grpc-ext-authz
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+  selector:
+    app: ext-authz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: infra
+  name: http-ext-authz
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+  selector:
+    app: ext-authz

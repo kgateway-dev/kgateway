@@ -15,17 +15,34 @@ type ProviderNeededMap struct {
 }
 
 type Provider struct {
-	Name        string
+	Name string
+	// FilterName is the name of the emitted filter instance. It is set when a provider
+	// needs more than one instance on a filter chain (for example, ext-auth variants
+	// before and after JWT). Empty means Name is used to derive the filter name.
+	FilterName  string
 	Extension   *TrafficPolicyGatewayExtensionIR
 	FilterStage filters.FilterStage[filters.WellKnownFilterStage]
 }
 
 func (p *ProviderNeededMap) Add(filterChain, providerName string, provider *TrafficPolicyGatewayExtensionIR, filterStage filters.FilterStage[filters.WellKnownFilterStage]) {
+	p.AddNamed(filterChain, "", providerName, provider, filterStage)
+}
+
+// AddNamed registers a named filter instance for a provider, deduplicating by
+// filter name. handlePolicies runs once per route and vhost, so the same provider
+// can be seen many times while building a single filter chain.
+func (p *ProviderNeededMap) AddNamed(filterChain, filterName, providerName string, provider *TrafficPolicyGatewayExtensionIR, filterStage filters.FilterStage[filters.WellKnownFilterStage]) {
 	if p.Providers == nil {
 		p.Providers = make(map[string][]Provider)
 	}
+	for _, existing := range p.Providers[filterChain] {
+		if existing.FilterName == filterName && filterName != "" {
+			return
+		}
+	}
 	p.Providers[filterChain] = append(p.Providers[filterChain], Provider{
 		Name:        providerName,
+		FilterName:  filterName,
 		Extension:   provider,
 		FilterStage: filterStage,
 	})

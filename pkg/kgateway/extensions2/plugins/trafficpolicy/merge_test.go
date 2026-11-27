@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -59,6 +60,56 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 	require.Contains(t, byName, "p2")
 	assert.True(t, errors.Is(byName["p1"], err1))
 	assert.True(t, errors.Is(byName["p2"], err2))
+}
+
+func TestMergeTrafficPolicyValidatesCombinedExtAuthProviders(t *testing.T) {
+	gk := schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy"}
+
+	metadataProvider := &TrafficPolicyGatewayExtensionIR{
+		Name: "default/metadata-extauth",
+		ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+			Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+				GrpcService: &envoycorev3.GrpcService{
+					TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+						EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{ClusterName: "metadata-extauth"},
+					},
+				},
+			},
+			MetadataContextNamespaces: []string{JWTAuthnMetadataNamespace},
+		},
+	}
+	routeCacheClearer := &TrafficPolicyGatewayExtensionIR{
+		Name: "default/header-extauth",
+		ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+			Services: &envoy_ext_authz_v3.ExtAuthz_HttpService{
+				HttpService: &envoy_ext_authz_v3.HttpService{},
+			},
+			ClearRouteCache: true,
+		},
+	}
+
+	att := func(name string, provider *TrafficPolicyGatewayExtensionIR) ir.PolicyAtt {
+		return ir.PolicyAtt{
+			GroupKind: gk,
+			PolicyRef: &ir.AttachedPolicyRef{Name: name},
+			PolicyIr: &TrafficPolicy{spec: trafficPolicySpecIr{
+				extAuth: &extAuthIR{
+					perProviderConfig: []*perProviderExtAuthConfig{{provider: provider}},
+					providerNames:     sets.New(provider.Name),
+				},
+			}},
+		}
+	}
+
+	// Neither attached policy is invalid on its own; the conflict only exists
+	// after their providers are merged onto the same route. DeepMerge is required
+	// because two same-hierarchy ext-auth policies replace one another by default.
+	merged := mergeTrafficPolicyAtts([]ir.PolicyAtt{
+		att("metadata", metadataProvider),
+		att("route-cache", routeCacheClearer),
+	}, `{"trafficPolicy":{"extAuth":"DeepMerge"}}`)
+	require.Len(t, merged.Errors, 1)
+	assert.ErrorContains(t, merged.Errors[0], "clearRouteCache cannot be combined with metadataContextNamespaces")
 }
 
 func TestMergeRequestMirror(t *testing.T) {

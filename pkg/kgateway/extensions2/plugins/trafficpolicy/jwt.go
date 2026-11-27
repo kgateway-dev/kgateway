@@ -34,6 +34,10 @@ import (
 )
 
 const (
+	// JWTAuthnMetadataNamespace is the dynamic metadata namespace written by the
+	// jwt_authn filter (verified payloads and failed_status).
+	JWTAuthnMetadataNamespace = "envoy.filters.http.jwt_authn"
+
 	// PayloadInMetadata is the dynamic metadata key, under the
 	// `envoy.filters.http.jwt_authn` namespace, that the JWT filter writes a verified
 	// token's payload to.

@@ -450,6 +450,33 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  metadataContextNamespaces:
+                    description: |-
+                      MetadataContextNamespaces specifies dynamic metadata namespaces to include in
+                      gRPC authorization requests.
+
+                      Specifying this field opts the gRPC provider into running after AuthN. kgateway
+                      then includes envoy.filters.http.jwt_authn so the authorization service can read
+                      verified JWT payloads. That namespace is added even when the list is empty, and
+                      duplicates are removed. Any other namespaces are passed through in the order given.
+
+                      Omitting this field preserves the legacy AuthN placement and does not request
+                      dynamic metadata. This preserves client Authorization headers for existing gRPC
+                      authorization services when JWT forwarding is disabled. An explicitly empty list
+                      is still an opt-in and requests only the JWT namespace.
+
+                      This field only applies when GrpcService is configured; Envoy ignores it for
+                      HTTP authorization services.
+
+                      The pointer preserves the distinction between an omitted field and an explicitly
+                      empty list when objects go through generated typed clients, which drop empty
+                      non-pointer slices during serialization.
+                    items:
+                      minLength: 1
+                      type: string
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-type: atomic
                   statPrefix:
                     description: |-
                       StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,
@@ -556,6 +583,12 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
+                - message: metadataContextNamespaces is only supported with grpcService
+                  rule: '!has(self.httpService) || !has(self.metadataContextNamespaces)'
+                - message: clearRouteCache cannot be used with metadataContextNamespaces
+                    because post-AuthN route changes could bypass destination route
+                    JWT requirements
+                  rule: '!(has(self.metadataContextNamespaces) && self.clearRouteCache)'
                 - message: exactly one of the fields in [grpcService httpService]
                     must be set
                   rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()

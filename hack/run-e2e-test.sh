@@ -734,6 +734,18 @@ main() {
         fi
     fi
 
+    # Build and load the ext-auth fixture image for e2e tests that need it,
+    # unless SKIP_EXTAUTH_SERVER_SETUP is set. Skip in dry-run mode so the
+    # runner can print the test command without a cluster.
+    if [[ "$dry_run" != "true" ]] && ! is_truthy SKIP_EXTAUTH_SERVER_SETUP; then
+        log_info "Building and loading ext-auth server fixture image..."
+        make extauth-server-docker cluster-load-extauth-server \
+            CLUSTER_TYPE="${CLUSTER_TYPE}" \
+            CLUSTER_NAME="${CLUSTER_NAME}" \
+            K3D_CLUSTER_NAME="${CLUSTER_NAME}"
+        echo ""
+    fi
+
     # Run the test
     log_info "Running test with pattern: ${run_pattern}"
     log_info "Test package: ${test_pkg}"
@@ -743,8 +755,8 @@ main() {
     export CLUSTER_TYPE
     export CLUSTER_NAME
     # Ensure the k3d LoadBalancer IP assigner is running (needed when --persist
-    # skips setup, or if the process died).
-    if [[ "$CLUSTER_TYPE" == "k3d" ]]; then
+    # skips setup, or if the process died). Dry-run must not touch the cluster.
+    if [[ "$dry_run" != "true" ]] && [[ "$CLUSTER_TYPE" == "k3d" ]]; then
         if ! pgrep -f "k3d-loadbalancer.sh ${CLUSTER_NAME}" > /dev/null 2>&1; then
             log_info "Starting k3d LoadBalancer IP assigner"
             bash "${SCRIPT_DIR}/k3d/k3d-loadbalancer.sh" "${CLUSTER_NAME}" &

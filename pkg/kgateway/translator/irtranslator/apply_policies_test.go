@@ -95,6 +95,100 @@ func TestApplyPoliciesSkipErrored(t *testing.T) {
 	assert.ErrorIs(t, errs[1], applyErr)
 }
 
+func TestApplyPoliciesReportsMergedErrorsOnOriginalPolicies(t *testing.T) {
+	a, b := applyTestPolicy("a"), applyTestPolicy("b")
+	mergeErr := errors.New("merged policy is invalid")
+	passes := TranslationPassPlugins{applyTestGK: &TranslationPass{
+		MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
+			return ir.PolicyAtt{
+				GroupKind: applyTestGK,
+				PolicyIr:  &testPolicyIR{name: "merged"},
+				Errors:    []error{mergeErr},
+			}
+		},
+	}}
+	rm := reports.NewReportMap()
+	var applied []string
+	errs := applyPolicies(passes, applyTestAttached(a, b), &policyApplyOptions{
+		reporter:    reports.NewReporter(&rm),
+		ancestorRef: applyTestAncestor,
+		skipErrored: true,
+	}, appliedNames(t, &applied))
+
+	require.Len(t, errs, 1)
+	assert.ErrorIs(t, errs[0], mergeErr)
+	for name := range map[string]bool{"a": true, "b": true} {
+		report := applyTestAncestorReport(rm, name)
+		require.NotNil(t, report, "policy %s must be reported", name)
+		accepted := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted))
+		require.NotNil(t, accepted)
+		assert.Equal(t, metav1.ConditionFalse, accepted.Status)
+		assert.Equal(t, string(shared.PolicyReasonInvalid), accepted.Reason)
+		assert.Contains(t, accepted.Message, mergeErr.Error())
+	}
+}
+
+// mergeFieldTestError is a test error that implements mergeFieldError so that
+// mergedErrorsByField groups it by its field.
+type mergeFieldTestError struct {
+	field string
+	err   error
+}
+
+func (e *mergeFieldTestError) Error() string      { return e.err.Error() }
+func (e *mergeFieldTestError) Unwrap() error      { return e.err }
+func (e *mergeFieldTestError) MergeField() string { return e.field }
+
+// TestApplyPoliciesAttributesMergedErrorsOnlyToContributingPolicies proves that
+// merged validation errors are reported only on the policies that contributed
+// the affected field. Policy c does not set extAuth, so it must stay Accepted=True
+// even though the merged extAuth validation fails.
+func TestApplyPoliciesAttributesMergedErrorsOnlyToContributingPolicies(t *testing.T) {
+	a, b, c := applyTestPolicy("a"), applyTestPolicy("b"), applyTestPolicy("c")
+	mergeErr := errors.New("merged policy is invalid")
+
+	// Merge origins say "extAuth" came from a and b, not c.
+	origins := ir.MergeOrigins{}
+	origins.SetOne("extAuth", a.PolicyRef, nil)
+	origins.Append("extAuth", b.PolicyRef, nil)
+
+	passes := TranslationPassPlugins{applyTestGK: &TranslationPass{
+		MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
+			return ir.PolicyAtt{
+				GroupKind:    applyTestGK,
+				PolicyIr:     &testPolicyIR{name: "merged"},
+				MergeOrigins: origins,
+				Errors:       []error{&mergeFieldTestError{field: "extAuth", err: mergeErr}},
+			}
+		},
+	}}
+	rm := reports.NewReportMap()
+	var applied []string
+	errs := applyPolicies(passes, applyTestAttached(a, b, c), &policyApplyOptions{
+		reporter:    reports.NewReporter(&rm),
+		ancestorRef: applyTestAncestor,
+	}, appliedNames(t, &applied))
+	assert.Empty(t, errs)
+	assert.Equal(t, []string{"merged"}, applied, "a merging pass applies the merged policy once")
+
+	// a and b contributed extAuth, so they must see the conflict.
+	for _, name := range []string{"a", "b"} {
+		report := applyTestAncestorReport(rm, name)
+		require.NotNil(t, report, "policy %s must be reported", name)
+		accepted := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted))
+		require.NotNil(t, accepted)
+		assert.Equal(t, metav1.ConditionFalse, accepted.Status, "policy %s must be rejected", name)
+		assert.Contains(t, accepted.Message, mergeErr.Error(), "policy %s must carry the merge error", name)
+	}
+
+	// c did not contribute extAuth, so it must stay Accepted=True.
+	reportC := applyTestAncestorReport(rm, "c")
+	require.NotNil(t, reportC, "policy c must be reported")
+	acceptedC := meta.FindStatusCondition(reportC.Conditions, string(shared.PolicyConditionAccepted))
+	require.NotNil(t, acceptedC)
+	assert.Equal(t, metav1.ConditionTrue, acceptedC.Status, "policy c must stay accepted")
+}
+
 func TestApplyPoliciesReportsStatusAndMergeOrigins(t *testing.T) {
 	a, b := applyTestPolicy("a"), applyTestPolicy("b")
 	origins := ir.MergeOrigins{}

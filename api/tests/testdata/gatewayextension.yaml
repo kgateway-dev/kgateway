@@ -226,3 +226,144 @@ spec:
         name: ext-proc
         port: 80
     messageTimeout: 2h
+---
+# GatewayExtension: gRPC ext-auth accepts metadata namespaces
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-grpc-metadata-namespaces-valid
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    metadataContextNamespaces:
+    - envoy.filters.http.jwt_authn
+---
+# GatewayExtension: an explicitly empty list is valid for gRPC ext-auth
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-grpc-metadata-namespaces-empty
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    metadataContextNamespaces: []
+---
+# GatewayExtension: HTTP ext-auth rejects metadata namespaces
+_err: metadataContextNamespaces is only supported with grpcService
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-http-metadata-namespaces-invalid
+spec:
+  type: ExtAuth
+  extAuth:
+    httpService:
+      backendRef:
+        name: ext-authz
+        port: 8080
+    metadataContextNamespaces:
+    - envoy.filters.http.jwt_authn
+---
+# GatewayExtension: HTTP ext-auth rejects even an empty namespace list
+_err: metadataContextNamespaces is only supported with grpcService
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-http-metadata-namespaces-empty-invalid
+spec:
+  type: ExtAuth
+  extAuth:
+    httpService:
+      backendRef:
+        name: ext-authz
+        port: 8080
+    metadataContextNamespaces: []
+---
+# GatewayExtension: metadata namespace items cannot be empty
+_err: metadataContextNamespaces[0] in body should be at least 1 chars long
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-grpc-metadata-namespace-empty-item
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    metadataContextNamespaces:
+    - ""
+---
+# GatewayExtension: a post-AuthN metadata consumer cannot clear the route cache,
+# because a route recomputed after JWT validation could bypass the destination route's JWT requirement.
+_err: clearRouteCache cannot be used with metadataContextNamespaces because post-AuthN route changes could bypass destination route JWT requirements
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-grpc-metadata-route-cache-invalid
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    metadataContextNamespaces: []
+    clearRouteCache: true
+---
+# GatewayExtension: metadata namespaces are bounded
+_err: 'spec.extAuth.metadataContextNamespaces: Too many: 33: must have at most 32 items'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-grpc-metadata-namespaces-too-many
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    metadataContextNamespaces:
+    - namespace-01
+    - namespace-02
+    - namespace-03
+    - namespace-04
+    - namespace-05
+    - namespace-06
+    - namespace-07
+    - namespace-08
+    - namespace-09
+    - namespace-10
+    - namespace-11
+    - namespace-12
+    - namespace-13
+    - namespace-14
+    - namespace-15
+    - namespace-16
+    - namespace-17
+    - namespace-18
+    - namespace-19
+    - namespace-20
+    - namespace-21
+    - namespace-22
+    - namespace-23
+    - namespace-24
+    - namespace-25
+    - namespace-26
+    - namespace-27
+    - namespace-28
+    - namespace-29
+    - namespace-30
+    - namespace-31
+    - namespace-32
+    - namespace-33

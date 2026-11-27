@@ -1,0 +1,118 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    hostname: "example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /example-route
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+# The gateway policy clears the route cache. The route policy opts into
+# post-AuthN metadata. Each policy is valid on its own, but their effective
+# provider set conflicts on the route, so both source policies must report it.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-clear-route-cache
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  extAuth:
+    extensionRef:
+      name: clear-extauth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-metadata
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+  extAuth:
+    extensionRef:
+      name: metadata-extauth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: clear-extauth
+  namespace: infra
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: grpc-ext-authz
+        port: 9000
+    clearRouteCache: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: metadata-extauth
+  namespace: infra
+spec:
+  type: ExtAuth
+  extAuth:
+    metadataContextNamespaces:
+    - dev.example.custom
+    grpcService:
+      backendRef:
+        name: grpc-ext-authz
+        port: 9000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: infra
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: infra
+  name: grpc-ext-authz
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+  selector:
+    app: ext-authz

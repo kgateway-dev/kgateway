@@ -21,6 +21,8 @@ var (
 	// the buffer filter's default placement
 	bufferedRouteManifest             = getTestFile("buffered-route.yaml")
 	bufferedRouteDefaultStageManifest = getTestFile("buffered-route-default-stage.yaml")
+	// JWT + gRPC ext-auth pair used to prove metadataContextNamespaces forwards the verified JWT payload
+	metadataContextNamespacesManifest = getTestFile("metadata-context-namespaces.yaml")
 )
 
 func getTestFile(filename string) string {

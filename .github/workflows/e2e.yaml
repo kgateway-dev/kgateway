@@ -227,6 +227,13 @@ jobs:
           CLUSTER_NAME: ${{ matrix.test.cluster-name }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         run: make cluster-load cluster-load-extproc-server
+      - name: Load shared extauth metadata server
+        shell: bash
+        env:
+          CLUSTER_NAME: ${{ matrix.test.cluster-name }}
+          CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+        run: make cluster-load-extauth-server
+
       - name: Disable ordered ADS escape hatch
         if: ${{ matrix.test.ordered-ads == 'false' }}
         shell: bash
@@ -244,6 +251,7 @@ jobs:
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
           SKIP_EXTPROC_SERVER_SETUP: "true"
+          SKIP_EXTAUTH_SERVER_SETUP: "true"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
