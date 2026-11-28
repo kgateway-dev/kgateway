@@ -1,6 +1,8 @@
 package irtranslator
 
 import (
+	"errors"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -60,14 +62,18 @@ func applyPolicyGroup(
 	apply func(pass *TranslationPass, pol *ir.PolicyAtt) error,
 ) []error {
 	report := opts.reporter != nil
+	policies, mergeOrigins := mergePolicies(pass, pols)
+	var statusPols []ir.PolicyAtt
 	if report {
-		reportPolicyAcceptanceStatus(opts.reporter, opts.ancestorRef, pols...)
+		// Merged policies have no PolicyRef, so their own validation errors would
+		// otherwise never reach the source policies' Accepted conditions.
+		statusPols = policyStatusesWithMergedErrors(pols, policies, mergeOrigins)
+		reportPolicyAcceptanceStatus(opts.reporter, opts.ancestorRef, statusPols...)
 		if opts.reportErrored != nil {
 			opts.reportErrored(pols)
 		}
 	}
 	var errs []error
-	policies, mergeOrigins := mergePolicies(pass, pols)
 	for i := range policies {
 		pol := &policies[i]
 		if opts.skipErrored && len(pol.Errors) > 0 {
@@ -85,6 +91,79 @@ func applyPolicyGroup(
 		reportPolicyAttachmentStatus(opts.reporter, opts.ancestorRef, mergeOrigins, pols...)
 	}
 	return errs
+}
+
+// mergeFieldError is implemented by a merged-policy validation error that knows
+// which mergeable field produced it. The translator reports such an error only
+// on the policies that contributed that field.
+type mergeFieldError interface {
+	MergeField() string
+}
+
+// mergedErrorsByField groups the errors produced while validating a merged
+// policy by the merge field they belong to. Errors with no field are grouped
+// under "". Errors already wrapped with a source policy ref are excluded: those
+// belong to the original attachment and are reported with it.
+func mergedErrorsByField(policies []ir.PolicyAtt) map[string][]error {
+	var out map[string][]error
+	for _, pol := range policies {
+		if pol.PolicyRef != nil {
+			continue
+		}
+		for _, originalErr := range pol.Errors {
+			for _, err := range ir.FlattenJoinedErr(originalErr) {
+				field := ""
+				var fieldErr mergeFieldError
+				if errors.As(err, &fieldErr) {
+					field = fieldErr.MergeField()
+				} else {
+					var policyErr *ir.PolicyError
+					if errors.As(err, &policyErr) && policyErr.Ref != nil {
+						continue
+					}
+				}
+				if out == nil {
+					out = map[string][]error{}
+				}
+				out[field] = append(out[field], err)
+			}
+		}
+	}
+	return out
+}
+
+// policyStatusesWithMergedErrors returns the original attachments with the
+// merged validation errors added to the policies that contributed the affected
+// field. A policy that did not contribute, e.g. one that only sets a different
+// field, keeps its Accepted=True status.
+func policyStatusesWithMergedErrors(
+	pols, policies []ir.PolicyAtt,
+	mergeOrigins ir.MergeOrigins,
+) []ir.PolicyAtt {
+	fieldErrs := mergedErrorsByField(policies)
+	if len(fieldErrs) == 0 {
+		return pols
+	}
+	statusPols := make([]ir.PolicyAtt, len(pols))
+	copy(statusPols, pols)
+	for i := range statusPols {
+		applicable := append([]error(nil), fieldErrs[""]...)
+		if ref := statusPols[i].PolicyRef; ref != nil {
+			for field, errs := range fieldErrs {
+				if field == "" {
+					continue
+				}
+				if mergeOrigins[field].Has(ref.ID()) {
+					applicable = append(applicable, errs...)
+				}
+			}
+		}
+		if len(applicable) == 0 {
+			continue
+		}
+		statusPols[i].Errors = append(append([]error(nil), statusPols[i].Errors...), applicable...)
+	}
+	return statusPols
 }
 
 func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyAtt, ir.MergeOrigins) {

@@ -1717,6 +1717,15 @@ func (in *ExtAuthProvider) DeepCopyInto(out *ExtAuthProvider) {
 		*out = new(ExtHttpService)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.MetadataContextNamespaces != nil {
+		in, out := &in.MetadataContextNamespaces, &out.MetadataContextNamespaces
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
+	}
 	if in.HeadersToForward != nil {
 		in, out := &in.HeadersToForward, &out.HeadersToForward
 		*out = make([]string, len(*in))

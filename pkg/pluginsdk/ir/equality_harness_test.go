@@ -449,6 +449,12 @@ func TestHarnessGatewayExtensionEquals(t *testing.T) {
 			},
 		},
 		{
+			Field: "ExtAuth.MetadataContextNamespaces",
+			Mutate: func(e *GatewayExtension) {
+				e.ExtAuth.MetadataContextNamespaces = &[]string{"dev.example.custom"}
+			},
+		},
+		{
 			Field: "ExtProc",
 			Mutate: func(e *GatewayExtension) {
 				e.ExtProc = &kgateway.ExtProcProvider{}

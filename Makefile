@@ -428,6 +428,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # send through port-forwards (also works for kind on macOS).
 CLUSTER_TYPE ?= kind
 SKIP_EXTPROC_SERVER_SETUP ?= false
+SKIP_EXTAUTH_SERVER_SETUP ?= false
 
 E2E_SHARED_IMAGE_ARCHIVE ?= $(OUTPUT_DIR)/e2e-images/shared-images.tar
 E2E_SHARED_IMAGE_TAGS = \
@@ -435,7 +436,8 @@ E2E_SHARED_IMAGE_TAGS = \
 	$(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION) \
 	$(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) \
 	$(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) \
-	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) \
+	$(IMAGE_REGISTRY)/$(EXTAUTH_SERVER_IMAGE_REPO):$(EXTAUTH_SERVER_VERSION)
 
 # Load prebuilt kgateway images into the kind or k3d cluster named by CLUSTER_NAME.
 .PHONY: cluster-load
@@ -452,8 +454,16 @@ else
 cluster-load-extproc-server: kind-load-extproc-server
 endif
 
+.PHONY: cluster-load-extauth-server
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load-extauth-server: k3d-load-extauth-server
+else
+cluster-load-extauth-server: kind-load-extauth-server
+endif
+
 .PHONY: e2e-test
 e2e-test: maybe-setup-extproc-server
+e2e-test: maybe-setup-extauth-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
@@ -468,7 +478,7 @@ warm-e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 warm-e2e-test: GO_TEST_USER_ARGS = -exec=true
 
 .PHONY: e2e-shared-images-docker
-e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
+e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker extauth-server-docker ## Build shared docker images for e2e shards
 
 .PHONY: save-e2e-shared-images
 save-e2e-shared-images: e2e-shared-images-docker ## Save shared e2e shard images to a docker archive
@@ -483,6 +493,13 @@ else
 maybe-setup-extproc-server: extproc-server-docker cluster-load-extproc-server
 endif
 
+.PHONY: maybe-setup-extauth-server
+ifeq ($(SKIP_EXTAUTH_SERVER_SETUP),true)
+maybe-setup-extauth-server:
+	@echo "Skipping extauth-server build and load"
+else
+maybe-setup-extauth-server: extauth-server-docker cluster-load-extauth-server
+endif
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: test-with-coverage
@@ -998,6 +1015,39 @@ kind-load-extproc-server:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------
+# extauth-server (JWT metadata ext-auth test server, used in e2e tests)
+#----------------------------------------------------------------------------------
+
+EXTAUTH_SERVER_DIR=test/e2e/defaults/extauth
+EXTAUTH_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(EXTAUTH_SERVER_DIR)
+export EXTAUTH_SERVER_IMAGE_REPO ?= extauth-metadata-server
+EXTAUTH_SERVER_VERSION=0.0.1
+
+# Built from the root module so it shares the root go.mod/go.sum (and their CVE bumps).
+$(EXTAUTH_SERVER_OUTPUT_DIR)/extauth-server-linux-$(GOARCH): $(shell find $(EXTAUTH_SERVER_DIR) -name '*.go') go.mod go.sum
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./$(EXTAUTH_SERVER_DIR)
+
+.PHONY: extauth-server
+extauth-server: $(EXTAUTH_SERVER_OUTPUT_DIR)/extauth-server-linux-$(GOARCH)
+
+$(EXTAUTH_SERVER_OUTPUT_DIR)/Dockerfile.extauth-server: $(EXTAUTH_SERVER_DIR)/Dockerfile
+	@mkdir -p $(dir $@)
+	cp $< $@
+
+$(EXTAUTH_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTAUTH_SERVER_VERSION)-$(GOARCH): $(EXTAUTH_SERVER_OUTPUT_DIR)/extauth-server-linux-$(GOARCH) $(EXTAUTH_SERVER_OUTPUT_DIR)/Dockerfile.extauth-server
+	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTAUTH_SERVER_OUTPUT_DIR) -f $(EXTAUTH_SERVER_OUTPUT_DIR)/Dockerfile.extauth-server \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/$(EXTAUTH_SERVER_IMAGE_REPO):$(EXTAUTH_SERVER_VERSION)
+	@touch $@
+
+.PHONY: extauth-server-docker
+extauth-server-docker: $(EXTAUTH_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTAUTH_SERVER_VERSION)-$(GOARCH)
+
+.PHONY: kind-load-extauth-server
+kind-load-extauth-server:
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(EXTAUTH_SERVER_IMAGE_REPO):$(EXTAUTH_SERVER_VERSION) --name $(CLUSTER_NAME)
+
+#----------------------------------------------------------------------------------
 # Helm
 #----------------------------------------------------------------------------------
 
@@ -1273,6 +1323,10 @@ k3d-load-dummy-idp:
 .PHONY: k3d-load-extproc-server
 k3d-load-extproc-server:
 	$(K3D) image import $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: k3d-load-extauth-server
+k3d-load-extauth-server:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(EXTAUTH_SERVER_IMAGE_REPO):$(EXTAUTH_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
 
 .PHONY: setup-base-k3d
 setup-base-k3d: k3d-create gw-api-crds ## Setup k3d base infrastructure (cluster, CRDs, custom instant-setup loadbalancer).

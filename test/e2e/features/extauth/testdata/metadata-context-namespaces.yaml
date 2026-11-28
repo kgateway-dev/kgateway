@@ -1,0 +1,279 @@
+# gRPC ext-auth services used by the metadataContextNamespaces e2e test:
+#   * metadata-extauth sets an explicit empty list, proving an empty opt-in still
+#     includes the implementation-required JWT namespace;
+#   * metadata-extauth-explicit lists a user namespace, proving configured
+#     namespaces are included alongside the JWT namespace;
+#   * metadata-extauth-header omits the field, proving the historical pre-AuthN
+#     placement still forwards client headers such as Authorization.
+# No claim headers are configured on the JWT filter, so a metadata-based 200 can
+# only come from dynamic metadata.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extauth-metadata
+  namespace: kgateway-base
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extauth-metadata
+  template:
+    metadata:
+      labels:
+        app: extauth-metadata
+        app.kubernetes.io/name: extauth-metadata
+    spec:
+      containers:
+      - name: extauth-metadata
+        # Source code for this image is in test/e2e/defaults/extauth
+        image: ghcr.io/kgateway-dev/extauth-metadata-server:0.0.1
+        imagePullPolicy: IfNotPresent
+        args:
+        - --grpcport=:9000
+        - --metadata-namespace=envoy.filters.http.jwt_authn
+        - --claim-key=email
+        - --claim-value=dev1@kgateway.io
+        ports:
+        - containerPort: 9000
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 1
+          periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extauth-metadata
+  namespace: kgateway-base
+  labels:
+    app: extauth-metadata
+spec:
+  ports:
+  - port: 4444
+    targetPort: 9000
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+  selector:
+    app: extauth-metadata
+---
+# Checks only the Authorization header. This proves that omitting
+# metadataContextNamespaces preserves the historical filter order, before JWT
+# strips the bearer token.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extauth-header
+  namespace: kgateway-base
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extauth-header
+  template:
+    metadata:
+      labels:
+        app: extauth-header
+        app.kubernetes.io/name: extauth-header
+    spec:
+      containers:
+      - name: extauth-header
+        image: ghcr.io/kgateway-dev/extauth-metadata-server:0.0.1
+        imagePullPolicy: IfNotPresent
+        args:
+        - --grpcport=:9000
+        - --skip-jwt-metadata=true
+        - --require-header=authorization
+        ports:
+        - containerPort: 9000
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 1
+          periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extauth-header
+  namespace: kgateway-base
+  labels:
+    app: extauth-header
+spec:
+  ports:
+  - port: 4444
+    targetPort: 9000
+    protocol: TCP
+    appProtocol: kubernetes.io/h2c
+  selector:
+    app: extauth-header
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: metadata-extauth
+  namespace: kgateway-base
+spec:
+  type: ExtAuth
+  extAuth:
+    # Explicit empty opt-in: run after AuthN and receive the JWT namespace.
+    metadataContextNamespaces: []
+    grpcService:
+      backendRef:
+        name: extauth-metadata
+        port: 4444
+---
+# The user namespace is asserted from the Envoy config dump. Runtime requests on
+# this route still use the JWT namespace, which must be appended to the list.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: metadata-extauth-explicit
+  namespace: kgateway-base
+spec:
+  type: ExtAuth
+  extAuth:
+    metadataContextNamespaces:
+    - custom.auth.example
+    grpcService:
+      backendRef:
+        name: extauth-metadata
+        port: 4444
+---
+# No metadataContextNamespaces: keep the legacy pre-AuthN placement so the
+# Authorization header is still present when the gRPC check runs.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: metadata-extauth-header
+  namespace: kgateway-base
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: extauth-header
+        port: 4444
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: metadata-jwt
+  namespace: kgateway-base
+spec:
+  type: JWT
+  jwt:
+    providers:
+    - name: metadata-provider
+      issuer: https://dev.example.com
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: metadata-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: kgateway-base
+  hostnames:
+  - metadata-extauth.com
+  rules:
+  - backendRefs:
+    - name: backend
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: metadata-explicit-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: kgateway-base
+  hostnames:
+  - metadata-explicit.com
+  rules:
+  - backendRefs:
+    - name: backend
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: metadata-legacy-route
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: kgateway-base
+  hostnames:
+  - metadata-legacy.com
+  rules:
+  - backendRefs:
+    - name: backend
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: metadata-jwt-extauth-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: metadata-route
+  extAuth:
+    extensionRef:
+      name: metadata-extauth
+  jwtAuth:
+    extensionRef:
+      name: metadata-jwt
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: metadata-jwt-extauth-explicit-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: metadata-explicit-route
+  extAuth:
+    extensionRef:
+      name: metadata-extauth-explicit
+  jwtAuth:
+    extensionRef:
+      name: metadata-jwt
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: metadata-jwt-extauth-legacy-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: metadata-legacy-route
+  extAuth:
+    extensionRef:
+      name: metadata-extauth-header
+  jwtAuth:
+    extensionRef:
+      name: metadata-jwt

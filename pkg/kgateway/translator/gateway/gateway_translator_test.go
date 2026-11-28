@@ -523,6 +523,85 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// ExtAuth must run after JWT so the verified payload is present in the gRPC
+	// CheckRequest's metadata context.
+	t.Run("TrafficPolicy ExtAuth with JWT metadata", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-jwt.yaml"},
+			outputFile: "traffic-policy/extauth-jwt.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// A route-cache-clearing provider must remain before JWT so a recomputed
+	// destination route still runs its own JWT checks.
+	t.Run("TrafficPolicy ExtAuth clearRouteCache keeps legacy stage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-clear-route-cache.yaml"},
+			outputFile: "traffic-policy/extauth-clear-route-cache.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// A backendRef ext-auth policy belongs to its route rule, not to the cluster
+	// it shares with another route that selects the same Service.
+	t.Run("TrafficPolicy ExtAuth backendRef does not leak to a route sharing the Service", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-backendref-shared-service.yaml"},
+			outputFile: "traffic-policy/extauth-backendref-shared-service.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// A backendRef ext-auth policy on one weighted cluster must be written on
+	// that cluster, not at route scope where its siblings inherit it.
+	t.Run("TrafficPolicy ExtAuth backendRef stays on its weighted cluster", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-backendref-weighted.yaml"},
+			outputFile: "traffic-policy/extauth-backendref-weighted.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// A gateway-level route-cache clearer and a route-level metadata consumer
+	// are each valid alone; their cross-scope combination is reported on both
+	// source policies.
+	t.Run("TrafficPolicy ExtAuth cross-scope conflict reports both policies", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-cross-scope-conflict.yaml"},
+			outputFile: "traffic-policy/extauth-cross-scope-conflict.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// A legacy HTTP provider keeps its pre-AuthN instance while a gRPC metadata
+	// consumer moves to its own post-AuthN instance.
+	t.Run("TrafficPolicy mixed HTTP and gRPC ExtAuth providers", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-mixed-http-grpc.yaml"},
+			outputFile: "traffic-policy/extauth-mixed-http-grpc.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	// test the default and fully configured values for HTTP ExtAuth
 	t.Run("TrafficPolicy HTTP ExtAuth Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{

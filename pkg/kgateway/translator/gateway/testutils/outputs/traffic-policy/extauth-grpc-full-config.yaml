@@ -65,7 +65,6 @@ Listeners:
           name: ext_auth/infra/full-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
-            clearRouteCache: true
             emitFilterStateStats: true
             failureModeAllow: true
             filterEnabledMetadata:
@@ -84,6 +83,41 @@ Listeners:
                   baseInterval: 0.050s
                   maxInterval: 0.200s
               timeout: 0.200s
+            metadataContextNamespaces:
+            - dev.example.custom
+            - envoy.filters.http.jwt_authn
+            statPrefix: my_prefix
+            statusOnError:
+              code: BadRequest
+            withRequestBody:
+              allowPartialMessage: true
+              maxRequestBytes: 420000
+              packAsBytes: true
+        - disabled: true
+          name: ext_auth/infra/full-extauth/post-authn
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
+            failureModeAllow: true
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_infra_ext-authz_9000
+              retryPolicy:
+                numRetries: 3
+                retryBackOff:
+                  baseInterval: 0.050s
+                  maxInterval: 0.200s
+              timeout: 0.200s
+            metadataContextNamespaces:
+            - dev.example.custom
+            - envoy.filters.http.jwt_authn
             statPrefix: my_prefix
             statusOnError:
               code: BadRequest
@@ -138,6 +172,10 @@ Routes:
         ext_auth/infra/default-extauth:
           '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
           config: {}
+        ext_auth/infra/full-extauth/post-authn:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+          disabled: true
         ext_auth_enabled:
           '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
           dynamicModuleConfig:
@@ -160,6 +198,10 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         ext_auth/infra/full-extauth:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+          disabled: true
+        ext_auth/infra/full-extauth/post-authn:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
           checkSettings:
             contextExtensions:

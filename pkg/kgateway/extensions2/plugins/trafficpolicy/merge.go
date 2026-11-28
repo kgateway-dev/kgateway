@@ -214,6 +214,66 @@ func mergeTrafficPolicies(
 	MergeTrafficPolicies(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, polMergeOpts.TrafficPolicy)
 }
 
+// fieldValidationError marks a validation error as belonging to a mergeable
+// field. The translator uses MergeField to report the error only on the source
+// policies that contributed that field, instead of every policy in the merge.
+type fieldValidationError struct {
+	field string
+	err   error
+}
+
+func (e *fieldValidationError) Error() string { return e.err.Error() }
+
+func (e *fieldValidationError) Unwrap() error { return e.err }
+
+func (e *fieldValidationError) MergeField() string { return e.field }
+
+// extAuthSourcePoliciesFromOrigins maps the extAuth merge origins back to the
+// identities of the source policies. MergePolicies drops PolicyRef from its
+// result, so the merged IR carries these identities for status reporting.
+func extAuthSourcePoliciesFromOrigins(origins sets.Set[string], pols []ir.PolicyAtt) map[string]extAuthPolicyIdentity {
+	if len(origins) == 0 {
+		return nil
+	}
+	out := make(map[string]extAuthPolicyIdentity, len(origins))
+	for _, pol := range pols {
+		if pol.PolicyRef == nil {
+			continue
+		}
+		id := pol.PolicyRef.ID()
+		if origins.Has(id) {
+			out[id] = newExtAuthPolicyIdentity(pol.PolicyRef, pol.Generation)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// mergeTrafficPolicyAtts is the production merge path. Validation of each
+// individual policy happens when its IR is constructed; this adds validation of
+// the combined IR so conflicts introduced by merging separate policies are
+// reported on the attachment.
+func mergeTrafficPolicyAtts(pols []ir.PolicyAtt, mergeSettingsJSON string) ir.PolicyAtt {
+	merged := policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettingsJSON)
+	tp, ok := merged.PolicyIr.(*TrafficPolicy)
+	if !ok {
+		return merged
+	}
+	if tp.spec.extAuth != nil {
+		// The merged accumulator can still share the source IR when only one
+		// policy contributed the field. Copy before attaching merge bookkeeping
+		// so the KRT-shared source IR is not modified.
+		tp.spec.extAuth = copyForMerge(tp.spec.extAuth)
+		tp.spec.extAuth.sourcePolicies = extAuthSourcePoliciesFromOrigins(merged.MergeOrigins["extAuth"], pols)
+	}
+	if err := tp.ValidateMerged(); err != nil {
+		merged.Errors = append(merged.Errors, &fieldValidationError{field: "extAuth", err: err})
+	}
+	return merged
+}
+
 func mergeExtProc(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,

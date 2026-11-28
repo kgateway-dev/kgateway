@@ -35,7 +35,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -217,6 +216,16 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	return true
 }
 
+// ValidateMerged checks invariants that only become visible after attached
+// policies have been combined into one IR, such as ext-auth providers that
+// cannot coexist on the same route.
+func (p *TrafficPolicy) ValidateMerged() error {
+	if p == nil {
+		return nil
+	}
+	return p.spec.extAuth.Validate()
+}
+
 // Validate performs PGV (protobuf-generated validation) validation by delegating
 // to each policy sub-IR's Validate() method. This follows the exact same pattern as the Equals() method.
 // PGV validation is always performed regardless of route replacement mode.
@@ -269,14 +278,27 @@ type trafficPolicyPluginGwPass struct {
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
 	extAuthPerProvider       ProviderNeededMap
-	extProcPerProvider       ProviderNeededMap
-	jwtPerProvider           ProviderNeededMap
-	rateLimitPerProvider     ProviderNeededMap
-	oauth2PerProvider        ProviderNeededMap
-	rbacInChain              map[string]*envoyrbacv3.RBAC
-	corsInChain              map[string]*corsv3.Cors
-	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
-	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
+	// Ext-auth variants are selected after every attachment scope has been seen,
+	// because a route can inherit providers from the route config and vhost.
+	extAuthRouteConfigStates map[*envoyroutev3.RouteConfiguration]*extAuthScopeState
+	extAuthVhostStates       map[*envoyroutev3.VirtualHost]*extAuthScopeState
+	extAuthRouteStates       map[*envoyroutev3.Route]*extAuthScopeState
+	// BackendRef policies are recorded per owning route and per-backend identity
+	// (the weighted cluster pointer, or the cluster name for single-backend
+	// routes). A cluster can be shared by routes that attach different
+	// backendRef policies, and two weighted refs to the same Service can carry
+	// different policies.
+	extAuthBackendStates  map[*envoyroutev3.Route]map[any]*extAuthScopeState
+	extAuthReplacedRoutes map[*envoyroutev3.Route]struct{}
+	reportedExtAuthErrors map[string]struct{}
+	extProcPerProvider    ProviderNeededMap
+	jwtPerProvider        ProviderNeededMap
+	rateLimitPerProvider  ProviderNeededMap
+	oauth2PerProvider     ProviderNeededMap
+	rbacInChain           map[string]*envoyrbacv3.RBAC
+	corsInChain           map[string]*corsv3.Cors
+	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
+	headerMutationInChain map[string]*header_mutationv3.HeaderMutationPerRoute
 	// Route names we've already applied requestMirror settings to on this pass, so the first
 	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
 	// pass, so the name is a safe key.
@@ -293,7 +315,11 @@ type trafficPolicyPluginGwPass struct {
 	secrets map[string]*envoytlsv3.Secret
 }
 
-var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
+var (
+	_ ir.ProxyTranslationPass    = &trafficPolicyPluginGwPass{}
+	_ ir.RouteConfigFinalizer    = &trafficPolicyPluginGwPass{}
+	_ ir.RouteReplacementHandler = &trafficPolicyPluginGwPass{}
+)
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*kgateway.TrafficPolicy](
@@ -344,7 +370,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 				},
 				Policies: policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
+					return mergeTrafficPolicyAtts(pols, mergeSettings)
 				},
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					wellknown.TrafficPolicyGVK,
@@ -368,6 +394,12 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 		enableAuthMetadata:       enableAuthMetadata,
 		setTransformationInChain: map[string]bool{},
 		secrets:                  map[string]*envoytlsv3.Secret{},
+		extAuthRouteConfigStates: map[*envoyroutev3.RouteConfiguration]*extAuthScopeState{},
+		extAuthVhostStates:       map[*envoyroutev3.VirtualHost]*extAuthScopeState{},
+		extAuthRouteStates:       map[*envoyroutev3.Route]*extAuthScopeState{},
+		extAuthBackendStates:     map[*envoyroutev3.Route]map[any]*extAuthScopeState{},
+		extAuthReplacedRoutes:    map[*envoyroutev3.Route]struct{}{},
+		reportedExtAuthErrors:    map[string]struct{}{},
 	}
 }
 
@@ -380,12 +412,40 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 	out *envoyroutev3.RouteConfiguration,
 ) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
-	if !ok {
-		return
+	if ok {
+		p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+
+		rcState := p.recordExtAuthScope(out, pCtx.FilterChainName, policy.spec.extAuth, newExtAuthPolicyIdentity(pCtx.PolicyRef, pCtx.Generation))
+		if rcState != nil {
+			p.writeExtAuthProtoConfigs(&pCtx.TypedFilterConfig, rcState)
+		}
 	}
 
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
-	p.applyGatewayLevelPerRouteSettings(policy.spec, out)
+	if ok {
+		p.applyGatewayLevelPerRouteSettings(policy.spec, out)
+	}
+}
+
+// FinalizeRouteConfig runs after every attachment scope has been applied. Ext-auth
+// variant selection needs the route, vhost, route-config and backendRef scopes
+// together, and must also run when no route-config TrafficPolicy is attached.
+func (p *trafficPolicyPluginGwPass) FinalizeRouteConfig(_ *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+	p.materializeExtAuth(out)
+}
+
+// RouteReplaced drops state for a route the translator replaced with a synthetic
+// direct response. Finalization must not restore ext-auth config cleared on that
+// route.
+func (p *trafficPolicyPluginGwPass) RouteReplaced(out *envoyroutev3.Route) {
+	if out == nil {
+		return
+	}
+	if p.extAuthReplacedRoutes == nil {
+		p.extAuthReplacedRoutes = map[*envoyroutev3.Route]struct{}{}
+	}
+	p.extAuthReplacedRoutes[out] = struct{}{}
+	delete(p.extAuthRouteStates, out)
+	delete(p.extAuthBackendStates, out)
 }
 
 func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
@@ -428,6 +488,9 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 	p.applyPerRouteSettings(policy.spec, out.Routes)
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	if state := p.recordExtAuthScope(out, pCtx.FilterChainName, policy.spec.extAuth, newExtAuthPolicyIdentity(pCtx.PolicyRef, pCtx.Generation)); state != nil {
+		p.writeExtAuthProtoConfigs(&pCtx.TypedFilterConfig, state)
+	}
 }
 
 // called 0 or more times
@@ -443,6 +506,9 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	// rather than in handlePerRoutePolicies.
 	applyStatPrefix(policy.spec.statPrefix, pCtx, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	if state := p.recordExtAuthScope(outputRoute, pCtx.FilterChainName, policy.spec.extAuth, newExtAuthPolicyIdentity(pCtx.PolicyRef, pCtx.Generation)); state != nil {
+		p.writeExtAuthProtoConfigs(&pCtx.TypedFilterConfig, state)
+	}
 
 	return nil
 }
@@ -457,6 +523,19 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
+	// Record the state under both the weighted entry pointer (so two refs to
+	// the same Service keep distinct contexts) and the cluster name (used for
+	// single-backend routes, where translateRouteAction discards the weighted
+	// entry and sets RouteAction.Cluster instead).
+	clusterName := ""
+	if pCtx.WeightedCluster != nil {
+		clusterName = pCtx.WeightedCluster.GetName()
+	} else if pCtx.Backend != nil {
+		clusterName = pCtx.Backend.ClusterName()
+	}
+	if state := p.recordExtAuthBackendScope(pCtx.OutRoute, pCtx.WeightedCluster, clusterName, pCtx.FilterChainName, rtPolicy.spec.extAuth, newExtAuthPolicyIdentity(pCtx.PolicyRef, pCtx.Generation)); state != nil {
+		p.writeExtAuthProtoConfigs(&pCtx.TypedFilterConfig, extAuthScopeStates(state)...)
+	}
 
 	return nil
 }
@@ -550,21 +629,25 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, ExtAuthGlobalDisableFilterName, ExtAuthGlobalDisableFilterMetadataNamespace)
 		stagedFilters = AddAuthEnabledFilterIfNeeded(stagedFilters, ExtAuthEnabledFilterName, p.enableAuthMetadata)
 	}
+	// ExtAuth providers are registered as separate pre- and post-JWT instances.
+	// Routes select the instance they need through per-route config, so unrelated
+	// routes keep the legacy Authorization header behavior.
+	extAuthProviders := p.extAuthPerProvider.Providers[fcc.FilterChainName]
+
 	// Add Ext_authz filter for listener
-	for _, provider := range p.extAuthPerProvider.Providers[fcc.FilterChainName] {
+	for _, provider := range extAuthProviders {
 		extAuthFilter := provider.Extension.ExtAuth
 		if extAuthFilter == nil {
 			continue
 		}
 
-		// add the specific auth filter
-		// Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want
-		// the ordering to be during the AuthNStage because we are using this filter for authentication
-		// purposes
-		extauthName := extAuthFilterName(provider.Name)
+		extauthName := provider.FilterName
+		if extauthName == "" {
+			extauthName = extAuthFilterName(provider.Name)
+		}
 		stagedExtAuthFilter := filters.MustNewStagedFilterWithWeight(extauthName,
 			extAuthFilter,
-			filters.DuringStage(filters.AuthNStage),
+			provider.FilterStage,
 			provider.Extension.PrecedenceWeight,
 		)
 

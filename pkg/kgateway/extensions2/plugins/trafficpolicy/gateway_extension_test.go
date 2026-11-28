@@ -1,16 +1,20 @@
 package trafficpolicy
 
 import (
+	"slices"
 	"testing"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
 func TestBuildStringListMatcher(t *testing.T) {
@@ -56,6 +60,142 @@ func TestBuildStringListMatcher(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildExtAuthMetadataContextNamespaces(t *testing.T) {
+	empty := []string{}
+	configuredNamespaces := []string{"dev.example.a", "dev.example.b"}
+	withJWTDuplicate := []string{JWTAuthnMetadataNamespace, "dev.example.a"}
+	withUserDuplicate := []string{"dev.example.a", "dev.example.a"}
+
+	tests := []struct {
+		name       string
+		configured *[]string
+		want       []string
+	}{
+		{
+			name: "nil config preserves legacy behavior",
+			want: nil,
+		},
+		{
+			name:       "empty config only includes the required JWT namespace",
+			configured: &empty,
+			want:       []string{JWTAuthnMetadataNamespace},
+		},
+		{
+			name:       "user namespaces are kept in order before the required namespace",
+			configured: &configuredNamespaces,
+			want:       []string{"dev.example.a", "dev.example.b", JWTAuthnMetadataNamespace},
+		},
+		{
+			name:       "required namespace is not duplicated",
+			configured: &withJWTDuplicate,
+			want:       []string{JWTAuthnMetadataNamespace, "dev.example.a"},
+		},
+		{
+			name:       "duplicate user namespaces are collapsed",
+			configured: &withUserDuplicate,
+			want:       []string{"dev.example.a", JWTAuthnMetadataNamespace},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var original []string
+			if tt.configured != nil {
+				original = slices.Clone(*tt.configured)
+			}
+			got := buildExtAuthMetadataContextNamespaces(tt.configured)
+			assert.Equal(t, tt.want, got)
+			if tt.configured != nil {
+				assert.Equal(t, original, *tt.configured, "input slice must not be mutated")
+			}
+		})
+	}
+}
+
+func TestExtAuthFilterStage(t *testing.T) {
+	tests := []struct {
+		name    string
+		extAuth *envoy_ext_authz_v3.ExtAuthz
+		want    filters.HTTPFilterStage
+	}{
+		{
+			name: "grpc without metadata keeps historical AuthN placement",
+			extAuth: &envoy_ext_authz_v3.ExtAuthz{
+				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+					GrpcService: &envoycorev3.GrpcService{},
+				},
+			},
+			want: filters.DuringStage(filters.AuthNStage),
+		},
+		{
+			name: "grpc with metadata runs after AuthN",
+			extAuth: &envoy_ext_authz_v3.ExtAuthz{
+				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+					GrpcService: &envoycorev3.GrpcService{},
+				},
+				MetadataContextNamespaces: []string{JWTAuthnMetadataNamespace},
+			},
+			want: filters.AfterStage(filters.AuthNStage),
+		},
+		{
+			name: "route cache clearing keeps legacy placement as defense in depth",
+			extAuth: &envoy_ext_authz_v3.ExtAuthz{
+				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+					GrpcService: &envoycorev3.GrpcService{},
+				},
+				MetadataContextNamespaces: []string{JWTAuthnMetadataNamespace},
+				ClearRouteCache:           true,
+			},
+			want: filters.DuringStage(filters.AuthNStage),
+		},
+		{
+			name: "http keeps its original AuthN placement",
+			extAuth: &envoy_ext_authz_v3.ExtAuthz{
+				Services: &envoy_ext_authz_v3.ExtAuthz_HttpService{
+					HttpService: &envoy_ext_authz_v3.HttpService{},
+				},
+			},
+			want: filters.DuringStage(filters.AuthNStage),
+		},
+		{
+			name:    "missing service keeps the original AuthN placement",
+			extAuth: &envoy_ext_authz_v3.ExtAuthz{},
+			want:    filters.DuringStage(filters.AuthNStage),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, extAuthFilterStage(tt.extAuth))
+		})
+	}
+}
+
+func TestGrpcExtAuthWithMetadataIsOrderedAfterJWT(t *testing.T) {
+	grpcExtAuth := &envoy_ext_authz_v3.ExtAuthz{
+		Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+			GrpcService: &envoycorev3.GrpcService{},
+		},
+		MetadataContextNamespaces: []string{JWTAuthnMetadataNamespace},
+	}
+	extAuth := filters.MustNewStagedFilter(
+		extAuthFilterName("ext-auth"),
+		grpcExtAuth,
+		extAuthFilterStage(grpcExtAuth),
+	)
+	jwt := filters.MustNewStagedFilter(
+		jwtFilterName("jwt-ext"),
+		&envoymatchingv3.ExtensionWithMatcher{},
+		filters.DuringStage(filters.AuthNStage),
+	)
+	list := filters.StagedHttpFilterList{jwt, extAuth}
+	list.Sort()
+
+	require.Len(t, list, 2)
+	assert.Equal(t, jwtFilterName("jwt-ext"), list[0].Filter.GetName())
+	assert.Equal(t, extAuthFilterName("ext-auth"), list[1].Filter.GetName())
 }
 
 func TestBuildRateLimitFilterShadowMode(t *testing.T) {

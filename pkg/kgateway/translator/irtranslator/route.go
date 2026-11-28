@@ -107,6 +107,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 			FilterChainName:   h.fc.FilterChainName,
 			TypedFilterConfig: typedPerFilterConfigRoute,
 			Policy:            pol.PolicyIr,
+			PolicyRef:         pol.PolicyRef,
+			Generation:        pol.Generation,
 			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 		}, cfg)
 		return nil
@@ -126,6 +128,20 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		return cfg
 	}
 	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
+
+	// Optional finalizers run once for every route configuration, even when no
+	// policy was attached at this scope. Plugins that need to combine state from
+	// several attachment scopes must materialize it here.
+	finalizeCtx := &ir.RouteConfigContext{
+		FilterChainName:   h.fc.FilterChainName,
+		TypedFilterConfig: typedPerFilterConfigRoute,
+		GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
+	}
+	for _, pass := range h.pluginPass {
+		if finalizer, ok := pass.ProxyTranslationPass.(ir.RouteConfigFinalizer); ok {
+			finalizer.FinalizeRouteConfig(finalizeCtx, cfg)
+		}
+	}
 
 	h.validateRouteConfiguration(ctx, cfg, validationCtx)
 
@@ -481,6 +497,11 @@ func (h *httpRouteConfigurationTranslator) finalizeRoute(
 
 		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
 			incRouteReplacementMetric(h.gw, routeReplacementErr)
+			for _, pass := range h.pluginPass {
+				if handler, ok := pass.ProxyTranslationPass.(ir.RouteReplacementHandler); ok {
+					handler.RouteReplaced(out)
+				}
+			}
 			return replaceRouteWithDirectResponse(out)
 		}
 	}
@@ -824,6 +845,8 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 	}, func(pass *TranslationPass, pol *ir.PolicyAtt) error {
 		pass.ApplyVhostPlugin(&ir.VirtualHostContext{
 			Policy:            pol.PolicyIr,
+			PolicyRef:         pol.PolicyRef,
+			Generation:        pol.Generation,
 			TypedFilterConfig: typedPerFilterConfig,
 			FilterChainName:   h.fc.FilterChainName,
 			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
@@ -888,6 +911,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		// Builtin policies use InheritedPolicyPriority
 		pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
 		pctx.Policy = pol.PolicyIr
+		pctx.PolicyRef = pol.PolicyRef
+		pctx.Generation = pol.Generation
 		return pass.ApplyForRoute(pctx, out)
 	})
 
@@ -928,8 +953,9 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			// TODO: should never happen, log error and report condition
 			continue
 		}
-		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
+		reportPolicyAcceptanceStatus(h.reporter, ancestorRef,
+			policyStatusesWithMergedErrors(pols, policies, mergeOrigins)...)
 		for _, pol := range policies {
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
@@ -939,6 +965,8 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			}
 
 			// Policy on extension ref
+			pCtx.PolicyRef = pol.PolicyRef
+			pCtx.Generation = pol.Generation
 			err := pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
@@ -1054,6 +1082,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		pCtx := ir.RouteBackendContext{
 			GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			FilterChainName:   h.fc.FilterChainName,
+			OutRoute:          outRoute,
+			WeightedCluster:   cw,
 			Backend:           backend.Backend.BackendObject,
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
 		}

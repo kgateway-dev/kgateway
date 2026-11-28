@@ -48,6 +48,8 @@ type HttpFiltersContext struct {
 
 type RouteConfigContext struct {
 	Policy            PolicyIR
+	PolicyRef         *AttachedPolicyRef
+	Generation        int64
 	FilterChainName   string
 	TypedFilterConfig TypedFilterConfigMap
 	GatewayContext    GatewayContext
@@ -55,6 +57,8 @@ type RouteConfigContext struct {
 
 type VirtualHostContext struct {
 	Policy            PolicyIR
+	PolicyRef         *AttachedPolicyRef
+	Generation        int64
 	FilterChainName   string
 	TypedFilterConfig TypedFilterConfigMap
 	GatewayContext    GatewayContext
@@ -100,6 +104,18 @@ func (r *TypedFilterConfigMap) ToAnyMap() map[string]*anypb.Any {
 type RouteBackendContext struct {
 	GatewayContext  GatewayContext
 	FilterChainName string
+	PolicyRef       *AttachedPolicyRef
+	Generation      int64
+	// OutRoute is the route the backend belongs to. Plugins that keep backend
+	// state until the route is finalized need it to distinguish backends of
+	// different routes that share a cluster.
+	OutRoute *envoyroutev3.Route
+	// WeightedCluster is the weighted cluster entry created for this backend.
+	// It is present for every backend; for single-backend routes the translator
+	// discards it and sets RouteAction.Cluster instead. Plugins that keep
+	// per-backend state use the entry pointer to distinguish two backendRefs
+	// that share a cluster name but carry different policies.
+	WeightedCluster *envoyroutev3.WeightedCluster_ClusterWeight
 	Backend         *BackendObjectIR
 	// TypedFilterConfig will be output on the Route or WeightedCluster level after all plugins have run
 	TypedFilterConfig       TypedFilterConfigMap
@@ -112,6 +128,8 @@ type RouteBackendContext struct {
 type RouteContext struct {
 	FilterChainName string
 	Policy          PolicyIR
+	PolicyRef       *AttachedPolicyRef
+	Generation      int64
 	GatewayContext  GatewayContext
 	In              HttpRouteRuleMatchIR
 	// TypedFilterConfig will be output on the Route level after all plugins have run
@@ -224,6 +242,19 @@ type ProxyTranslationPass interface {
 
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd() Resources
+}
+
+// RouteConfigFinalizer is an optional interface a ProxyTranslationPass can implement to
+// run after every policy scope of a route configuration has been applied. It runs even when
+// no policy was attached at route-configuration scope.
+type RouteConfigFinalizer interface {
+	FinalizeRouteConfig(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration)
+}
+
+// RouteReplacementHandler is an optional interface a ProxyTranslationPass can implement to
+// drop state for a route the translator replaced with a synthetic direct response.
+type RouteReplacementHandler interface {
+	RouteReplaced(out *envoyroutev3.Route)
 }
 
 // BackendObjectPolicyApplier is an optional interface a ProxyTranslationPass can implement to

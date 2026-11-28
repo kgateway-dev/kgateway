@@ -212,7 +212,8 @@ func TestBufferFilterStageMovesBufferAheadOfExtAuth(t *testing.T) {
 		extAuthPerProvider: ProviderNeededMap{
 			Providers: map[string][]Provider{
 				filterChainName: {{
-					Name: "test-extension",
+					Name:        "test-extension",
+					FilterStage: filters.DuringStage(filters.AuthNStage),
 					Extension: &TrafficPolicyGatewayExtensionIR{
 						Name:    "test-extension",
 						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{},

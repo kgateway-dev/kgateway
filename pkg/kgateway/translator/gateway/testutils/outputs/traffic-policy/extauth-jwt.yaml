@@ -1,0 +1,316 @@
+Clusters:
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_infra_example-svc_80
+  type: EDS
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_infra_ext-authz_9000
+  type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 80
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - disabled: true
+          name: global_disable/ext_auth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_ext_auth
+              value:
+                disable: true
+        - disabled: true
+          name: global_disable/jwt
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_jwt
+              value:
+                disable: true
+        - disabled: true
+          name: ext_auth/infra/ext-auth
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_infra_ext-authz_9000
+            metadataContextNamespaces:
+            - dev.example.custom
+            - envoy.filters.http.jwt_authn
+            statusOnError:
+              code: Forbidden
+        - disabled: true
+          name: jwt/infra/jwt-ext
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_jwt
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.jwt_authn
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                            providers:
+                              jwt-ext_infra_gateway-example:
+                                failedStatusInMetadata: failed_status
+                                issuer: https://gateway.example.com
+                                localJwks:
+                                  inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
+                                payloadInMetadata: payload
+                            requirementMap:
+                              jwt-ext_infra_requirements:
+                                providerName: jwt-ext_infra_gateway-example
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_jwt
+                          path:
+                          - key: disable
+        - disabled: true
+          name: ext_auth/infra/ext-auth/post-authn
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
+            filterEnabledMetadata:
+              filter: dev.kgateway.disable_ext_auth
+              invert: true
+              path:
+              - key: disable
+              value:
+                boolMatch: true
+            grpcService:
+              envoyGrpc:
+                clusterName: kube_infra_ext-authz_9000
+            metadataContextNamespaces:
+            - dev.example.custom
+            - envoy.filters.http.jwt_authn
+            statusOnError:
+              code: Forbidden
+        - disabled: true
+          name: ext_auth_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
+        - disabled: true
+          name: jwt_enabled
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilter
+            dynamicModuleConfig:
+              name: rust_module
+            filterConfig:
+              '@type': type.googleapis.com/google.protobuf.StringValue
+              value: '{}'
+            filterName: rustformation
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~80
+        statPrefix: http_80
+        useRemoteAddress: true
+    name: listener~80
+  name: listener~80
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~80
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~80~example_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /example-route
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            extAuth:
+            - gateway.kgateway.dev/TrafficPolicy/infra/extauth-jwt
+            jwt:
+            - gateway.kgateway.dev/TrafficPolicy/infra/extauth-jwt
+      name: listener~80~example_com-route-0-httproute-example-route-infra-0-0-matcher-0
+      route:
+        cluster: kube_infra_example-svc_80
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ext_auth/infra/ext-auth:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+          disabled: true
+        ext_auth/infra/ext-auth/post-authn:
+          '@type': type.googleapis.com/envoy.config.route.v3.FilterConfig
+          config: {}
+        ext_auth_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
+          perRouteConfigName: rustformation
+        jwt/infra/jwt-ext:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
+          requirementName: jwt-ext_infra_requirements
+        jwt_enabled:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.dynamic_modules.v3.DynamicModuleFilterPerRoute
+          dynamicModuleConfig:
+            name: rust_module
+          filterConfig:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
+          filterName: rustformation
+          perRouteConfigName: rustformation
+Statuses:
+  gateways:
+    infra/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http1
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    infra/example-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+  policies:
+    TrafficPolicy/infra/extauth-jwt:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: infra
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway

@@ -56,7 +56,15 @@ type ExtAuthBufferSettings struct {
 }
 
 // ExtAuthProvider defines the configuration for an ExtAuth provider.
+//
+// By default, gRPC and HTTP providers use the historical AuthN placement. This preserves
+// the original request headers, including Authorization, for existing gRPC authorization
+// services. Configuring MetadataContextNamespaces is an explicit opt-in to run the gRPC
+// provider after AuthN so it can consume dynamic metadata written by earlier filters.
+//
 // +kubebuilder:validation:ExactlyOneOf=grpcService;httpService
+// +kubebuilder:validation:XValidation:rule="!has(self.httpService) || !has(self.metadataContextNamespaces)",message="metadataContextNamespaces is only supported with grpcService"
+// +kubebuilder:validation:XValidation:rule="!(has(self.metadataContextNamespaces) && self.clearRouteCache)",message="clearRouteCache cannot be used with metadataContextNamespaces because post-AuthN route changes could bypass destination route JWT requirements"
 type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the auth.
 	// Mutually exclusive with HttpService.
@@ -67,6 +75,31 @@ type ExtAuthProvider struct {
 	// Mutually exclusive with GrpcService.
 	// +optional
 	HttpService *ExtHttpService `json:"httpService,omitempty"`
+
+	// MetadataContextNamespaces specifies dynamic metadata namespaces to include in
+	// gRPC authorization requests.
+	//
+	// Specifying this field opts the gRPC provider into running after AuthN. kgateway
+	// then includes envoy.filters.http.jwt_authn so the authorization service can read
+	// verified JWT payloads. That namespace is added even when the list is empty, and
+	// duplicates are removed. Any other namespaces are passed through in the order given.
+	//
+	// Omitting this field preserves the legacy AuthN placement and does not request
+	// dynamic metadata. This preserves client Authorization headers for existing gRPC
+	// authorization services when JWT forwarding is disabled. An explicitly empty list
+	// is still an opt-in and requests only the JWT namespace.
+	//
+	// This field only applies when GrpcService is configured; Envoy ignores it for
+	// HTTP authorization services.
+	//
+	// The pointer preserves the distinction between an omitted field and an explicitly
+	// empty list when objects go through generated typed clients, which drop empty
+	// non-pointer slices during serialization.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:items:MinLength=1
+	MetadataContextNamespaces *[]string `json:"metadataContextNamespaces,omitempty"`
 
 	// HeadersToForward specifies which headers from the client request should be
 	// forwarded to the external authorization service.

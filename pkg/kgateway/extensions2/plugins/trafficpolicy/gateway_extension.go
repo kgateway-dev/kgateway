@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
@@ -164,10 +165,11 @@ func gatewayExtensionBuilder(
 					Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
 						GrpcService: envoyGrpcService,
 					},
-					FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
-					FailureModeAllow:      gExt.ExtAuth.FailOpen,
-					ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
-					StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
+					FilterEnabledMetadata:     ExtAuthzEnabledMetadataMatcher,
+					MetadataContextNamespaces: buildExtAuthMetadataContextNamespaces(gExt.ExtAuth.MetadataContextNamespaces),
+					FailureModeAllow:          gExt.ExtAuth.FailOpen,
+					ClearRouteCache:           gExt.ExtAuth.ClearRouteCache,
+					StatusOnError:             &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
 				}
 			} else if gExt.ExtAuth.HttpService != nil {
 				envoyHttpService, err := ResolveExtHttpService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, gExt.ExtAuth.HttpService)
@@ -446,6 +448,26 @@ func buildStringListMatcher(headers []string) *envoymatcherv3.ListStringMatcher 
 	}
 }
 
+// buildExtAuthMetadataContextNamespaces keeps user-configured namespaces in the order
+// given, removes duplicates, and ensures the jwt_authn namespace is present when users
+// explicitly opt in to receiving metadata. A nil pointer means the field was omitted and
+// preserves legacy gRPC ext-auth placement and request-header behavior.
+func buildExtAuthMetadataContextNamespaces(configured *[]string) []string {
+	if configured == nil {
+		return nil
+	}
+	namespaces := make([]string, 0, len(*configured)+1)
+	for _, ns := range *configured {
+		if !slices.Contains(namespaces, ns) {
+			namespaces = append(namespaces, ns)
+		}
+	}
+	if !slices.Contains(namespaces, JWTAuthnMetadataNamespace) {
+		namespaces = append(namespaces, JWTAuthnMetadataNamespace)
+	}
+	return namespaces
+}
+
 // FIXME: Should this live here instead of the global rate limit plugin?
 // providerName is the unique (namespace/name) resource name of the owning GatewayExtension -
 // unlike RateLimitProvider.Domain, it cannot collide across providers, so it is safe to use to
@@ -569,7 +591,7 @@ func buildCompositeJwtFilter(jwtConfig *envoyjwtauthnv3.JwtAuthentication) *envo
 		"composite_jwt",
 		jwtGlobalDisableFilterMetadataNamespace,
 		&envoycorev3.TypedExtensionConfig{
-			Name:        "envoy.filters.http.jwt_authn",
+			Name:        JWTAuthnMetadataNamespace,
 			TypedConfig: utils.MustMessageToAny(jwtConfig),
 		},
 	)
