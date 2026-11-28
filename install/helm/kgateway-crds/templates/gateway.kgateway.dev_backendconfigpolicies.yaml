@@ -1350,6 +1350,7 @@ spec:
                     description: |-
                       Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
                       When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+                      Cannot be used with insecureSkipVerify.
                       When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
                     items:
                       type: string
@@ -1378,12 +1379,11 @@ spec:
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
-                - message: verifySubjectAltNames cannot be used with insecureSkipVerify
+                - message: 'verifySubjectAltNames requires a root CA: use secretRef
+                    (with ca.crt), files.rootCA, or wellKnownCACertificates'
                   rule: '!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames)
-                    == 0 || !has(self.insecureSkipVerify)'
-                - message: files.rootCA must be set when verifySubjectAltNames is non-empty
-                  rule: '!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames)
-                    == 0 || !has(self.files) || has(self.files.rootCA)'
+                    == 0 || has(self.secretRef) || has(self.wellKnownCACertificates)
+                    || (has(self.files) && has(self.files.rootCA))'
               tunnel:
                 description: |-
                   Tunnel sends Backend connections through an HTTP CONNECT proxy.

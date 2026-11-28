@@ -179,7 +179,11 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 		if len(sanMatchers) == 0 {
 			return nil
 		}
-		// Root CA is required if SAN verification is specified
+		// CEL enforces rootCA/trust-source rules at admission, so this only fires for
+		// secretRef when ca.crt is missing or for policies stored before the CEL rule.
+		if tlsData.inlineDataSource && tlsConfig.SecretRef != nil {
+			return fmt.Errorf("secret %q has no ca.crt, which is required when verifySubjectAltNames is set", tlsConfig.SecretRef.Name)
+		}
 		return errors.New("a root CA must be provided if verifySubjectAltNames is not empty")
 	}
 

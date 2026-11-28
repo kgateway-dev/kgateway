@@ -583,8 +583,7 @@ type TCPKeepalive struct {
 // set wellKnownCACertificates to System.
 //
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
-// +kubebuilder:validation:XValidation:rule="!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames) == 0 || !has(self.insecureSkipVerify)",message="verifySubjectAltNames cannot be used with insecureSkipVerify"
-// +kubebuilder:validation:XValidation:rule="!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames) == 0 || !has(self.files) || has(self.files.rootCA)",message="files.rootCA must be set when verifySubjectAltNames is non-empty"
+// +kubebuilder:validation:XValidation:rule="!has(self.verifySubjectAltNames) || size(self.verifySubjectAltNames) == 0 || has(self.secretRef) || has(self.wellKnownCACertificates) || (has(self.files) && has(self.files.rootCA))",message="verifySubjectAltNames requires a root CA: use secretRef (with ca.crt), files.rootCA, or wellKnownCACertificates"
 type TLS struct {
 	// Reference to a Secret in the same namespace as the policy. The following data keys are read:
 	//   - tls.crt: the client certificate chain, used for mTLS.
@@ -629,6 +628,7 @@ type TLS struct {
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+	// Cannot be used with insecureSkipVerify.
 	// When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
 	// +optional
 	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
