@@ -390,3 +390,215 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
         abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
     );
 }
+
+/// Body storage shared by the SDK mock's read and mutation callbacks.
+#[derive(Clone)]
+struct BodyBuffer(std::rc::Rc<std::cell::RefCell<Vec<u8>>>);
+
+impl BodyBuffer {
+    fn new(bytes: &[u8]) -> Self {
+        Self(std::rc::Rc::new(std::cell::RefCell::new(bytes.to_vec())))
+    }
+
+    fn chunks(&self) -> Option<Vec<EnvoyMutBuffer<'static>>> {
+        let mut bytes = self.0.borrow_mut();
+        if bytes.is_empty() {
+            return None;
+        }
+        // SAFETY: the test owns the allocation throughout the filter callback. The
+        // mock only mutates it after the filter releases its borrowed SDK buffers.
+        Some(vec![unsafe { EnvoyMutBuffer::new(bytes.as_mut_slice()) }])
+    }
+
+    fn drain(&self, count: usize) -> bool {
+        let mut bytes = self.0.borrow_mut();
+        let count = count.min(bytes.len());
+        bytes.drain(..count);
+        true
+    }
+
+    fn append(&self, bytes: &[u8]) -> bool {
+        self.0.borrow_mut().extend_from_slice(bytes);
+        true
+    }
+
+    fn len(&self) -> usize {
+        self.0.borrow().len()
+    }
+}
+
+#[test]
+fn request_transform_includes_final_data_frame() {
+    use abi::{
+        envoy_dynamic_module_type_on_http_filter_request_body_status as BodyStatus,
+        envoy_dynamic_module_type_on_http_filter_request_headers_status as HeadersStatus,
+    };
+
+    let config = FilterConfig::new(r#"{"request":{"body":{"value":"[{{ body() }}]"}}}"#).unwrap();
+    for (prefix, tail, aliased) in [
+        ("AAAA", "ZZZZ", false),
+        ("AAAAZZZZ", "", false),
+        ("", "AAAAZZZZ", false),
+        ("AAAAZZZZ", "", true),
+    ] {
+        let mut envoy = MockEnvoyHttpFilter::default();
+        envoy
+            .expect_get_most_specific_route_config()
+            .returning(|| None);
+        envoy.expect_get_request_headers().returning(Vec::new);
+        let filter = config.new_http_filter(&mut envoy);
+        assert_eq!(
+            filter.on_request_headers(&mut envoy, false),
+            HeadersStatus::StopIteration
+        );
+
+        if !prefix.is_empty() && !aliased {
+            assert_eq!(
+                filter.on_request_body(&mut envoy, false),
+                BodyStatus::StopIterationAndBuffer
+            );
+        }
+
+        // Envoy has moved the earlier frame into its buffer. The final callback
+        // sees the current frame separately, unless Envoy is replaying its buffer.
+        let buffered = BodyBuffer::new(prefix.as_bytes());
+        let received = if aliased {
+            buffered.clone()
+        } else {
+            BodyBuffer::new(tail.as_bytes())
+        };
+        envoy.expect_get_buffered_request_body().returning_st({
+            let buffered = buffered.clone();
+            move || buffered.chunks()
+        });
+        envoy.expect_get_received_request_body().returning_st({
+            let received = received.clone();
+            move || received.chunks()
+        });
+        envoy.expect_get_buffered_request_body_size().returning_st({
+            let buffered = buffered.clone();
+            move || buffered.len()
+        });
+        envoy
+            .expect_received_buffered_request_body()
+            .return_const(aliased);
+        envoy.expect_drain_buffered_request_body().returning_st({
+            let buffered = buffered.clone();
+            move |count| buffered.drain(count)
+        });
+        envoy.expect_drain_received_request_body().returning_st({
+            let received = received.clone();
+            move |count| received.drain(count)
+        });
+        envoy.expect_append_buffered_request_body().returning_st({
+            let buffered = buffered.clone();
+            move |bytes| buffered.append(bytes)
+        });
+        envoy.expect_append_received_request_body().returning_st({
+            let received = received.clone();
+            move |bytes| received.append(bytes)
+        });
+        let captured_length = std::rc::Rc::new(Cell::new(0));
+        envoy.expect_set_request_header().times(1).returning_st({
+            let captured_length = captured_length.clone();
+            move |key, value| {
+                assert_eq!(key, "content-length");
+                captured_length.set(std::str::from_utf8(value).unwrap().parse().unwrap());
+                true
+            }
+        });
+
+        assert_eq!(
+            filter.on_request_body(&mut envoy, true),
+            BodyStatus::Continue
+        );
+        let mut forwarded = buffered.0.borrow().clone();
+        if !aliased {
+            forwarded.extend_from_slice(&received.0.borrow());
+        }
+        assert_eq!(
+            std::str::from_utf8(&forwarded).unwrap(),
+            "[AAAAZZZZ]",
+            "prefix={prefix:?}, final frame={tail:?}, aliased={aliased}"
+        );
+        assert_eq!(captured_length.get(), forwarded.len());
+    }
+}
+
+#[test]
+fn response_transform_includes_final_data_frame_in_json() {
+    use abi::{
+        envoy_dynamic_module_type_on_http_filter_response_body_status as BodyStatus,
+        envoy_dynamic_module_type_on_http_filter_response_headers_status as HeadersStatus,
+    };
+
+    let config = FilterConfig::new(
+        r#"{"response":{"body":{"parseAs":"AsJson","value":"{{ model }}:{{ body() }}"}}}"#,
+    )
+    .unwrap();
+    let mut envoy = MockEnvoyHttpFilter::default();
+    envoy
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+    envoy.expect_get_request_headers().returning(Vec::new);
+    envoy.expect_get_response_headers().returning(Vec::new);
+    let filter = config.new_http_filter(&mut envoy);
+    assert_eq!(
+        filter.on_response_headers(&mut envoy, false),
+        HeadersStatus::StopIteration
+    );
+    assert_eq!(
+        filter.on_response_body(&mut envoy, false),
+        BodyStatus::StopIterationAndBuffer
+    );
+
+    let buffered = BodyBuffer::new(br#"{"model":"gpt-"#);
+    let received = BodyBuffer::new(br#"4"}"#);
+    envoy.expect_get_buffered_response_body().returning_st({
+        let buffered = buffered.clone();
+        move || buffered.chunks()
+    });
+    envoy.expect_get_received_response_body().returning_st({
+        let received = received.clone();
+        move || received.chunks()
+    });
+    envoy
+        .expect_get_buffered_response_body_size()
+        .returning_st({
+            let buffered = buffered.clone();
+            move || buffered.len()
+        });
+    envoy
+        .expect_received_buffered_response_body()
+        .return_const(false);
+    envoy.expect_drain_buffered_response_body().returning_st({
+        let buffered = buffered.clone();
+        move |count| buffered.drain(count)
+    });
+    envoy.expect_drain_received_response_body().returning_st({
+        let received = received.clone();
+        move |count| received.drain(count)
+    });
+    envoy.expect_append_buffered_response_body().returning_st({
+        let buffered = buffered.clone();
+        move |bytes| buffered.append(bytes)
+    });
+    envoy.expect_set_response_header().returning(|key, value| {
+        assert_eq!(key, "content-length");
+        assert_eq!(value, b"23");
+        true
+    });
+    envoy.expect_send_response().returning(|status, _, _, _| {
+        panic!("complete response JSON should render, got HTTP {status}");
+    });
+
+    assert_eq!(
+        filter.on_response_body(&mut envoy, true),
+        BodyStatus::Continue
+    );
+    assert_eq!(
+        buffered.0.borrow().as_slice(),
+        br#"gpt-4:{"model":"gpt-4"}"#
+    );
+    assert_eq!(received.len(), 0);
+}
