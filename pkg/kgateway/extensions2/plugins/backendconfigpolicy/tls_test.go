@@ -293,6 +293,29 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "should error with secretRef, san, and no ca.crt",
+			tlsConfig: &kgateway.TLS{
+				SecretRef: &corev1.LocalObjectReference{
+					Name: "test-secret",
+				},
+				VerifySubjectAltNames: []string{"test.example.com"},
+			},
+			secret: &ir.Secret{
+				ObjectSource: ir.ObjectSource{
+					Group:     "",
+					Kind:      "Secret",
+					Namespace: "default",
+					Name:      "test-secret",
+				},
+				Obj: &corev1.Secret{},
+				Data: map[string][]byte{
+					"tls.crt": []byte(CACert),
+					"tls.key": []byte(TLSKey),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "should error with only cert and no key",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
