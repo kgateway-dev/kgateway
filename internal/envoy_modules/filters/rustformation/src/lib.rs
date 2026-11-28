@@ -11,6 +11,7 @@ use once_cell::sync::Lazy;
 use serde_json::Value as JsonValue;
 use std::cell::{Cell, OnceCell};
 use std::collections::HashMap;
+use std::io::{Cursor, Read};
 use transformation::{
     jinja::{ProcessFlags, TransformFlags},
     LocalTransform, LocalTransformationConfig, TransformationError, TransformationOps,
@@ -27,19 +28,28 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a, EHF: EnvoyHttpFilter> {
     envoy_filter: &'a mut EHF,
-    used_received_request_body: Option<bool>,
-    used_received_response_body: Option<bool>,
+    rewrite_received_request_body: bool,
+    rewrite_received_response_body: bool,
 }
 
 impl<'a, EHF: EnvoyHttpFilter> EnvoyTransformationOps<'a, EHF> {
     fn new(envoy_filter: &'a mut EHF) -> EnvoyTransformationOps<'a, EHF> {
         EnvoyTransformationOps {
             envoy_filter,
-            used_received_request_body: None,
-            used_received_response_body: None,
+            rewrite_received_request_body: false,
+            rewrite_received_response_body: false,
         }
     }
 }
+fn copy_body_chunks(buffers: Option<Vec<EnvoyMutBuffer<'_>>>) -> Vec<u8> {
+    buffers
+        .unwrap_or_default()
+        .iter()
+        .flat_map(|buffer| buffer.as_slice())
+        .copied()
+        .collect()
+}
+
 impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF> {
     fn add_request_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.add_request_header(key, value)
@@ -52,44 +62,36 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         self.envoy_filter.remove_request_header(key)
     }
     fn parse_request_json_body(&mut self) -> Result<JsonValue> {
-        use std::io::Read as _;
         let mut reader = self.get_request_body_reader();
         let mut peek = [0u8; 1];
         if reader.read(&mut peek)? == 0 {
             return Ok(JsonValue::Null);
         }
-        let chained = std::io::Cursor::new(peek).chain(reader);
+        let chained = Cursor::new(peek).chain(reader);
         serde_json::from_reader(chained).context("failed to parse request body as json")
     }
-    fn get_request_body_reader(&mut self) -> Box<dyn std::io::Read + '_> {
-        self.used_received_request_body = Some(false);
-
-        // Check buffered first; if None, fall back to received.
-        // TODO: in envoy v1.38, there is a function received_buffered_request_body()
-        //       to check if it's buffered
-        if self.envoy_filter.get_buffered_request_body().is_some() {
-            // Called twice to avoid holding the borrow across the is_some() check.
-            // The unwrap is safe: is_some() was just verified above.
-            #[allow(clippy::unwrap_used)]
-            let buffers = self.envoy_filter.get_buffered_request_body().unwrap();
-            return Box::new(EnvoyBuffersReader::new(buffers));
+    fn get_request_body_reader(&mut self) -> Box<dyn Read + '_> {
+        if self.envoy_filter.get_buffered_request_body().is_none() {
+            return match self.envoy_filter.get_received_request_body() {
+                Some(buffers) => Box::new(EnvoyBuffersReader::new(buffers)),
+                None => Box::new(std::io::empty()),
+            };
         }
 
-        // When the body arrives in a single chunk (common for small JSON
-        // payloads), the first on_request_body callback fires with
-        // end_of_stream=true before any prior StopIterationAndBuffer could
-        // populate the buffered body.  In that case the data is only in the
-        // "received" buffer — mirror the same fallback used for responses.
-        match self.envoy_filter.get_received_request_body() {
-            Some(buffers) => {
-                self.used_received_request_body = Some(true);
-                Box::new(EnvoyBuffersReader::new(buffers))
-            }
-            None => Box::new(std::io::empty()),
-        }
+        // Envoy adds the final DATA frame to the buffered prefix after the callback.
+        // Copy only that frame so the reader can borrow the prefix from the SDK.
+        let tail = if self.envoy_filter.received_buffered_request_body() {
+            Vec::new()
+        } else {
+            copy_body_chunks(self.envoy_filter.get_received_request_body())
+        };
+        let prefix = self
+            .envoy_filter
+            .get_buffered_request_body()
+            .unwrap_or_default();
+        Box::new(EnvoyBuffersReader::new(prefix).chain(Cursor::new(tail)))
     }
     fn get_request_body(&mut self) -> Vec<u8> {
-        // TODO: switch to use read_whole_request_body() after upgrading to v1.38 envoy
         let mut body = Vec::new();
         self.get_request_body_reader()
             .read_to_end(&mut body)
@@ -100,25 +102,32 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         body
     }
     fn drain_request_body(&mut self, number_of_bytes: usize) -> bool {
-        if self.used_received_request_body.is_none() {
-            self.used_received_request_body = Some(false);
-            if self.envoy_filter.get_buffered_request_body().is_none()
-                && self.envoy_filter.get_received_request_body().is_some()
-            {
-                self.used_received_request_body = Some(true);
-            }
+        let buffered_size = self.envoy_filter.get_buffered_request_body_size();
+        self.rewrite_received_request_body =
+            buffered_size == 0 && self.envoy_filter.get_received_request_body().is_some();
+        if self.rewrite_received_request_body {
+            return self
+                .envoy_filter
+                .drain_received_request_body(number_of_bytes);
         }
 
-        if self.used_received_request_body.unwrap_or(false) {
-            self.envoy_filter
-                .drain_received_request_body(number_of_bytes)
-        } else {
-            self.envoy_filter
-                .drain_buffered_request_body(number_of_bytes)
-        }
+        // Envoy can replay the buffered body as the current frame. Drain a
+        // separate frame only after accounting for the buffered prefix.
+        let received_count = number_of_bytes.saturating_sub(buffered_size);
+        let drain_received = buffered_size > 0
+            && received_count > 0
+            && !self.envoy_filter.received_buffered_request_body();
+        let drained_buffered = self
+            .envoy_filter
+            .drain_buffered_request_body(number_of_bytes);
+        let drained_received = drain_received
+            && self
+                .envoy_filter
+                .drain_received_request_body(received_count);
+        drained_buffered || drained_received
     }
     fn append_request_body(&mut self, data: &[u8]) -> bool {
-        if self.used_received_request_body.unwrap_or(false) {
+        if self.rewrite_received_request_body {
             self.envoy_filter.append_received_request_body(data)
         } else {
             self.envoy_filter.append_buffered_request_body(data)
@@ -135,40 +144,36 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         self.envoy_filter.remove_response_header(key)
     }
     fn parse_response_json_body(&mut self) -> Result<JsonValue> {
-        use std::io::Read as _;
         let mut reader = self.get_response_body_reader();
         let mut peek = [0u8; 1];
         if reader.read(&mut peek)? == 0 {
             return Ok(JsonValue::Null);
         }
-        let chained = std::io::Cursor::new(peek).chain(reader);
+        let chained = Cursor::new(peek).chain(reader);
         serde_json::from_reader(chained).context("failed to parse response body as json")
     }
-    fn get_response_body_reader(&mut self) -> Box<dyn std::io::Read + '_> {
-        self.used_received_response_body = Some(false);
-
-        // Check buffered first; if None, fall back to received.
-        // TODO: in envoy v1.38, there is a function received_buffered_response_body()
-        //       to check if it's buffered
-        if self.envoy_filter.get_buffered_response_body().is_some() {
-            // Called twice to avoid holding the borrow across the is_some() check.
-            // The unwrap is safe: is_some() was just verified above.
-            #[allow(clippy::unwrap_used)]
-            let buffers = self.envoy_filter.get_buffered_response_body().unwrap();
-            return Box::new(EnvoyBuffersReader::new(buffers));
+    fn get_response_body_reader(&mut self) -> Box<dyn Read + '_> {
+        if self.envoy_filter.get_buffered_response_body().is_none() {
+            return match self.envoy_filter.get_received_response_body() {
+                Some(buffers) => Box::new(EnvoyBuffersReader::new(buffers)),
+                None => Box::new(std::io::empty()),
+            };
         }
 
-        // For LocalReply, the body is in the "received_response_body"
-        match self.envoy_filter.get_received_response_body() {
-            Some(buffers) => {
-                self.used_received_response_body = Some(true);
-                Box::new(EnvoyBuffersReader::new(buffers))
-            }
-            None => Box::new(std::io::empty()),
-        }
+        // Envoy adds the final DATA frame to the buffered prefix after the callback.
+        // Copy only that frame so the reader can borrow the prefix from the SDK.
+        let tail = if self.envoy_filter.received_buffered_response_body() {
+            Vec::new()
+        } else {
+            copy_body_chunks(self.envoy_filter.get_received_response_body())
+        };
+        let prefix = self
+            .envoy_filter
+            .get_buffered_response_body()
+            .unwrap_or_default();
+        Box::new(EnvoyBuffersReader::new(prefix).chain(Cursor::new(tail)))
     }
     fn get_response_body(&mut self) -> Vec<u8> {
-        // TODO: switch to use read_whole_response_body() after upgrading to v1.38 envoy
         let mut body = Vec::new();
         self.get_response_body_reader()
             .read_to_end(&mut body)
@@ -179,39 +184,32 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         body
     }
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool {
-        // With testing, it seems to be unnecessary to detect
-        // if we should drain the "received_response_body" if the body is from there.
-        // As long as something get pushed to the "buffered_response_body", that
-        // seems to get used first before the received_response_body.
-
-        // ie in the case of LocalReply, the body comes from "received_response_body"
-        // but we can push the new body in "buffered_response_body" without draining
-        // the "received_response_body", the new body is sent to end user.
-
-        // However, not sure if there is any side effect for that, so doing it here
-        // just in case.
-        if self.used_received_response_body.is_none() {
-            // the used_received_response_body boolean only get set if
-            // the body() inja function is used in the transformation
-            // so, detect it here again if not set.
-            self.used_received_response_body = Some(false);
-            if self.envoy_filter.get_buffered_response_body().is_none()
-                && self.envoy_filter.get_received_response_body().is_some()
-            {
-                self.used_received_response_body = Some(true);
-            }
+        let buffered_size = self.envoy_filter.get_buffered_response_body_size();
+        self.rewrite_received_response_body =
+            buffered_size == 0 && self.envoy_filter.get_received_response_body().is_some();
+        if self.rewrite_received_response_body {
+            return self
+                .envoy_filter
+                .drain_received_response_body(number_of_bytes);
         }
 
-        if self.used_received_response_body.unwrap_or(false) {
-            self.envoy_filter
-                .drain_received_response_body(number_of_bytes)
-        } else {
-            self.envoy_filter
-                .drain_buffered_response_body(number_of_bytes)
-        }
+        // Envoy can replay the buffered body as the current frame. Drain a
+        // separate frame only after accounting for the buffered prefix.
+        let received_count = number_of_bytes.saturating_sub(buffered_size);
+        let drain_received = buffered_size > 0
+            && received_count > 0
+            && !self.envoy_filter.received_buffered_response_body();
+        let drained_buffered = self
+            .envoy_filter
+            .drain_buffered_response_body(number_of_bytes);
+        let drained_received = drain_received
+            && self
+                .envoy_filter
+                .drain_received_response_body(received_count);
+        drained_buffered || drained_received
     }
     fn append_response_body(&mut self, data: &[u8]) -> bool {
-        if self.used_received_response_body.unwrap_or(false) {
+        if self.rewrite_received_response_body {
             self.envoy_filter.append_received_response_body(data)
         } else {
             self.envoy_filter.append_buffered_response_body(data)
